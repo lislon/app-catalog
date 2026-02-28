@@ -70,9 +70,6 @@ jobs:
       - name: Publish to @alpha tag
         if: github.ref == 'refs/heads/alpha'
         run: pnpm changeset publish --tag alpha --no-git-tag
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Commit version changes (alpha)
         if: github.ref == 'refs/heads/alpha'
         run: |
