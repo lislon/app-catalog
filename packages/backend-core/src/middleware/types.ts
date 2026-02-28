@@ -1,7 +1,7 @@
 import type { Router } from 'express'
 import type { LanguageModel, Tool } from 'ai'
 import type { BetterAuthOptions, BetterAuthPlugin } from 'better-auth'
-import type { EhBackendCompanySpecificBackend } from '../types/backend/companySpecificBackend'
+import type { AppCatalogCompanySpecificBackend } from '../types/backend/companySpecificBackend'
 import type { BetterAuth } from '../modules/auth/auth'
 import type { TRPCRouter } from '../server/controller'
 
@@ -100,9 +100,9 @@ export interface EhFeatureToggles {
  * 3. Async factory function
  */
 export type EhBackendProvider =
-  | EhBackendCompanySpecificBackend
-  | (() => EhBackendCompanySpecificBackend)
-  | (() => Promise<EhBackendCompanySpecificBackend>)
+  | AppCatalogCompanySpecificBackend
+  | (() => AppCatalogCompanySpecificBackend)
+  | (() => Promise<AppCatalogCompanySpecificBackend>)
 
 /**
  * Lifecycle hooks for database and middleware events.
@@ -119,7 +119,7 @@ export interface EhLifecycleHooks {
 }
 
 /**
- * Main configuration options for the env-hopper middleware.
+ * Main configuration options for the app-catalog middleware.
  */
 export interface EhMiddlewareOptions {
   /**
@@ -175,7 +175,7 @@ export interface EhMiddlewareOptions {
  * ```
  */
 export interface EhMiddlewareResult {
-  /** Express router with all env-hopper routes */
+  /** Express router with all app-catalog routes */
   router: Router
   /** Better Auth instance (for extending auth functionality) */
   auth: BetterAuth
@@ -196,7 +196,7 @@ export interface MiddlewareContext {
   auth: BetterAuth
   trpcRouter: TRPCRouter
   createContext: () => Promise<{
-    companySpecificBackend: EhBackendCompanySpecificBackend
+    companySpecificBackend: AppCatalogCompanySpecificBackend
   }>
   authConfig: EhAuthConfig
 }

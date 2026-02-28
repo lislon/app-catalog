@@ -1,4 +1,4 @@
-import type { AppForCatalog } from '@env-hopper/backend-core'
+import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import {

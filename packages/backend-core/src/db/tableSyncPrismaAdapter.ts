@@ -1,4 +1,4 @@
-import { tableSync } from '@env-hopper/table-sync'
+import { tableSync } from '@igstack/app-catalog-table-sync'
 import type { Prisma, PrismaClient } from '@prisma/client'
 import type * as runtime from '@prisma/client/runtime/library'
 import { mapValues, omit, pick } from 'radashi'

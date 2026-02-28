@@ -1,4 +1,4 @@
-import type { TRPCRouter } from '@env-hopper/backend-core'
+import type { TRPCRouter } from '@igstack/app-catalog-backend-core'
 import type { QueryClient } from '@tanstack/react-query'
 import type { TRPCClient } from '@trpc/client'
 import { HomeIcon } from 'lucide-react'

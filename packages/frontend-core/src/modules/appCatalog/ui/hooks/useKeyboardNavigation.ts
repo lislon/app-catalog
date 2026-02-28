@@ -1,4 +1,4 @@
-import type { AppForCatalog } from '@env-hopper/backend-core'
+import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
 import React from 'react'
 
 export interface UseKeyboardNavigationProps {

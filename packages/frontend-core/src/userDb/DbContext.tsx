@@ -1,19 +1,19 @@
 import { createContext, use } from 'react'
 import type { ReactNode } from 'react'
-import type { EhDb } from './EhDb'
+import type { AcDb } from './AcDb'
 
-const DbContext = createContext<EhDb | undefined>(undefined)
+const DbContext = createContext<AcDb | undefined>(undefined)
 
 interface DbProviderProps {
   children: ReactNode
-  db: EhDb
+  db: AcDb
 }
 
 export function DbProvider({ children, db }: DbProviderProps) {
   return <DbContext value={db}>{children}</DbContext>
 }
 
-export function useDb(): EhDb {
+export function useDb(): AcDb {
   const context = use(DbContext)
   if (context === undefined) {
     throw new Error('useDb must be used within a DbProvider')

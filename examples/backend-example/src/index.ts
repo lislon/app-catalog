@@ -7,96 +7,25 @@ import {
   createEhMiddleware,
   getAssetByName,
   staticControllerContract,
-} from '@env-hopper/backend-core'
+} from '@igstack/app-catalog-backend-core'
 import type { Express, Request, Response } from 'express'
-import type {
-  BootstrapConfigData,
-  EhBackendCompanySpecificBackend,
-  RenameRuleParams,
-  ResourceJumpsData,
-  ResourceJumpsExtendedData,
-} from '@env-hopper/backend-core'
+import type { AppCatalogCompanySpecificBackend } from '@igstack/app-catalog-backend-core'
 import {
   getAdminGroups,
   getAuthPlugins,
   getAuthProviders,
   validateAuthConfig,
 } from './config/authProviders.js'
-import { getRandomAvailabilityMatrix } from './utils.js'
 
 loadEnv()
 
 // Validate auth configuration
 validateAuthConfig()
 
-interface DataShape {
-  bootstrapConfigData: BootstrapConfigData
-  resourceJumpsData: ResourceJumpsData
-  resourceJumpsDataExtended: ResourceJumpsExtendedData
-}
-
-async function loadStaticData(): Promise<DataShape> {
-  try {
-    // Try to load local override first, fallback to example data
-    return await import('./local/example-data.local.js')
-  } catch {
-    // Use the clean example data as fallback
-    return {
-      bootstrapConfigData: {
-        envs: {},
-        apps: {},
-        appsMeta: {
-          tags: {
-            descriptions: [],
-          },
-        },
-        contexts: [],
-        defaults: {
-          envSlug: '',
-          resourceJumpSlug: '',
-        },
-      },
-      resourceJumpsData: {
-        envs: [],
-        lateResolvableParams: [],
-        resourceJumps: [],
-      },
-      resourceJumpsDataExtended: {
-        envs: [],
-      },
-    }
-  }
-}
-
 // Company-specific backend implementation
-const companySpecificBackend: EhBackendCompanySpecificBackend = {
-  async getBootstrapData() {
-    return (await loadStaticData()).bootstrapConfigData
-  },
-  async getNameMigrations(params: RenameRuleParams) {
-    const { resourceSlug } = params
-    if (resourceSlug?.includes('@')) {
-      return {
-        type: 'resourceRename',
-        oldSlug: resourceSlug,
-        targetSlug: resourceSlug.replace('@', '-'),
-      }
-    }
-    return false
-  },
-  async getAvailabilityMatrix() {
-    const bootstrapConfigData = (await loadStaticData()).bootstrapConfigData
-    return getRandomAvailabilityMatrix({
-      apps: Object.values(bootstrapConfigData.apps),
-      envs: Object.values(bootstrapConfigData.envs),
-    })
-  },
-  async getResourceJumps() {
-    return (await loadStaticData()).resourceJumpsData
-  },
-  async getResourceJumpsExtended() {
-    return (await loadStaticData()).resourceJumpsDataExtended
-  },
+// Optional: implement getApps() to provide app catalog data
+const companySpecificBackend: AppCatalogCompanySpecificBackend = {
+  // Example: async getApps() { return [...] }
 }
 
 // Create the middleware with all configuration
@@ -187,6 +116,6 @@ app.use(eh.router)
 await eh.connect()
 const port = process.env.PORT || 4001
 app.listen(port)
-console.log(`Example env-hopper listening on port ${port}`)
+console.log(`Example app-catalog listening on port ${port}`)
 
 export const viteNodeApp: Express = app

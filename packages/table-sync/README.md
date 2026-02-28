@@ -1,18 +1,18 @@
-# @env-hopper/table-sync
+# @igstack/app-catalog-table-sync
 
-Database table sync utilities for Env Hopper.
+Database table sync utilities for App Catalog.
 
 ## Installation
 
 ```bash
-npm install @env-hopper/table-sync
+npm install @igstack/app-catalog-table-sync
 # or
-pnpm add @env-hopper/table-sync
+pnpm add @igstack/app-catalog-table-sync
 ```
 
 ## Usage
 
-This package provides utilities for syncing database tables in Env Hopper.
+This package provides utilities for syncing database tables in App Catalog.
 
 ## License
 

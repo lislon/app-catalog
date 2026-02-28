@@ -1,4 +1,4 @@
-import type { AppRole } from '@env-hopper/backend-core'
+import type { AppRole } from '@igstack/app-catalog-backend-core'
 import { Bot, ExternalLink, Mail, Ticket, User, Users } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '~/ui/card'
 import { Badge } from '~/ui/badge'

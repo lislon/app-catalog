@@ -49,17 +49,17 @@ cd packages/frontend-core
 pnpm test src/__tests__/integration/resourceJump.integration.test.tsx
 
 # Or from root via nx
-nx run @env-hopper/frontend-core:test:unit -- src/__tests__/integration/resourceJump.integration.test.tsx
+nx run @igstack/app-catalog-frontend-core:test:unit -- src/__tests__/integration/resourceJump.integration.test.tsx
 
 # Run all frontend tests
 pnpm run test:frontend-core
-# or: pnpm --filter @env-hopper/frontend-core... test
+# or: pnpm --filter @igstack/app-catalog-frontend-core... test
 ```
 
 **Building & database:**
 
 ```bash
-pnpm --filter @env-hopper/frontend-core... build   # Build with dependencies
+pnpm --filter @igstack/app-catalog-frontend-core... build   # Build with dependencies
 pnpm prisma db push --force-reset                  # Reset local dev DB (no migrations)
 pnpm prisma:generate                               # Regenerate Prisma client
 ```
@@ -156,7 +156,7 @@ pnpm prisma:generate                               # Regenerate Prisma client
 
 - tRPC client created in `App.tsx` via `createTRPCClient` with `httpLink`
 - Wrapped in `TRPCProvider` which connects to React Query
-- Backend types auto-imported via `TRPCRouter` from `@env-hopper/backend-core`
+- Backend types auto-imported via `TRPCRouter` from `@igstack/app-catalog-backend-core`
 
 **IndexedDB local storage:**
 
@@ -171,4 +171,4 @@ pnpm prisma:generate                               # Regenerate Prisma client
 - .cursor/rules/prisma.mdc — Schema development workflow
 - .cursor/rules/shadcn-ui.mdc — Component installation and usage
 - .cursor/rules/testing-commands.mdc — Quick test commands reference
-- .cursor/rules/env-hopper.mdc — Project-wide TypeScript conventions
+- .cursor/rules/app-catalog.mdc — Project-wide TypeScript conventions

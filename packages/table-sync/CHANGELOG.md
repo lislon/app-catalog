@@ -1,4 +1,4 @@
-# @env-hopper/table-sync
+# @igstack/app-catalog-table-sync
 
 ## 2.0.1-alpha-20260224192214
 

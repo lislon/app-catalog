@@ -78,7 +78,7 @@ function convertToCoreMessages(
 export function createAdminChatHandler(options: AdminChatHandlerOptions) {
   const {
     model,
-    systemPrompt = 'You are a helpful admin assistant for the Env Hopper application. Help users manage apps, data sources, and MCP server configurations.',
+    systemPrompt = 'You are a helpful admin assistant for the App Catalog application. Help users manage apps, data sources, and MCP server configurations.',
     tools = {},
     validateConfig,
   } = options

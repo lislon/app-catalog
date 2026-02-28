@@ -3,18 +3,18 @@
  * Sync App Catalog Script
  *
  * This script syncs the appCatalog data to the database using the
- * syncAppCatalog function from @env-hopper/backend-core.
+ * syncAppCatalog function from @igstack/app-catalog-backend-core.
  *
  * Usage:
  *   pnpm run db:sync-catalog
  */
 
-import type { AppForCatalog } from '@env-hopper/backend-core'
+import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
 import {
     connectDb,
     disconnectDb,
     syncAppCatalog,
-} from '@env-hopper/backend-core'
+} from '@igstack/app-catalog-backend-core'
 import { config as loadEnv } from 'dotenv-defaults'
 
 loadEnv()

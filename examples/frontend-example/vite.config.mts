@@ -1,4 +1,4 @@
-import { frontendViteConfig } from '@env-hopper/frontend-build-vite'
+import { frontendViteConfig } from '@igstack/app-catalog-frontend-build-vite'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
 import type { PluginOption } from 'vite'

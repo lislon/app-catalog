@@ -1,7 +1,7 @@
 /**
  * Auth provider types and utilities
  *
- * Note: env-hopper backend-core does not read environment variables directly.
+ * Note: app-catalog backend-core does not read environment variables directly.
  * Auth configuration (providers, plugins, admin groups) should be passed via
  * middleware parameters by the client application.
  *

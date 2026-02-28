@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { resourceJumpsData } from '../example-data.js'
-import type { ResourceJumpsData } from '@env-hopper/backend-core'
+import type { ResourceJumpsData } from '@igstack/app-catalog-backend-core'
 
-// Mock implementation of EhBackendCompanySpecificBackend for testing
+// Mock implementation of AppCatalogCompanySpecificBackend for testing
 const mockBackend = {
   async getResourceJumps(): Promise<ResourceJumpsData> {
     return resourceJumpsData

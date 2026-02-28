@@ -39,7 +39,7 @@ if (isValidType(result)) {
 
 **Prioritize backend type reuse over duplication:**
 
-- Import types from `@env-hopper/backend-core` or `@env-hopper/shared-core` when available
+- Import types from `@igstack/app-catalog-backend-core` or `@igstack/app-catalog-shared-core` when available
 - Avoid creating duplicate type definitions in frontend code
 - For modifications with 1-2 fields, use TypeScript utility types:
   - `Pick<Type, Keys>` - select specific properties
@@ -60,11 +60,11 @@ interface FrontendApp {
 }
 
 // ✅ Good - reusing backend types
-import type { App } from '@env-hopper/backend-core';
+import type { App } from '@igstack/app-catalog-backend-core';
 type FrontendApp = App;
 
 // ✅ Good - modifying with utilities
-import type { App } from '@env-hopper/backend-core';
+import type { App } from '@igstack/app-catalog-backend-core';
 type AppFormData = Omit<App, 'id' | 'createdAt'>;
 type AppPreview = Pick<App, 'id' | 'name' | 'iconId'>;
 ```

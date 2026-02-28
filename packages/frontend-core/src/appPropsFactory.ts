@@ -1,7 +1,7 @@
 import { createBrowserHistory } from '@tanstack/react-router'
 import { createTRPCClient, httpBatchLink } from '@trpc/client'
-import { EhDb } from './userDb/EhDb'
-import type { TRPCRouter } from '@env-hopper/backend-core'
+import { AcDb } from './userDb/AcDb'
+import type { TRPCRouter } from '@igstack/app-catalog-backend-core'
 import type { AppProps } from './App'
 import type { EhPlugin } from './modules/pluginCore/types'
 import { createQueryClient } from '~/api/infra/createQueryClient'
@@ -17,7 +17,7 @@ export function appPropsFactory(): AppProps {
     ],
   })
 
-  const db = new EhDb()
+  const db = new AcDb()
   const queryClient = createQueryClient({ trpcClient, db })
   const plugins: Array<EhPlugin> = [
     // Future plugins can be added here

@@ -2,7 +2,7 @@ import type { Plugin, ViteDevServer } from 'vite'
 
 export interface WatchExternalSourceOptions {
   /**
-   * Name to display in console logs (e.g., '@env-hopper/frontend-core')
+   * Name to display in console logs (e.g., '@igstack/app-catalog-frontend-core')
    */
   name: string
   /**
@@ -26,14 +26,14 @@ export interface WatchExternalSourceOptions {
  * @example
  * ```ts
  * // In vite.config.ts
- * import { watchExternalSource } from '@env-hopper/frontend-build-vite'
+ * import { watchExternalSource } from '@igstack/app-catalog-frontend-build-vite'
  * import path from 'node:path'
  *
  * export default defineConfig({
  *   plugins: [
  *     watchExternalSource({
- *       name: '@env-hopper/frontend-core',
- *       srcPath: path.resolve(__dirname, '../../../env-hopper/packages/frontend-core/src'),
+ *       name: '@igstack/app-catalog-frontend-core',
+ *       srcPath: path.resolve(__dirname, '../../../app-catalog/packages/frontend-core/src'),
  *     }),
  *   ],
  * })
@@ -146,15 +146,15 @@ export function watchExternalSource(
  * @example
  * ```ts
  * // In vite.config.ts
- * import { createSourceAliases } from '@env-hopper/frontend-build-vite'
+ * import { createSourceAliases } from '@igstack/app-catalog-frontend-build-vite'
  * import path from 'node:path'
  *
- * const frontendCoreSrc = path.resolve(__dirname, '../../../env-hopper/packages/frontend-core/src')
+ * const frontendCoreSrc = path.resolve(__dirname, '../../../app-catalog/packages/frontend-core/src')
  *
  * export default defineConfig({
  *   resolve: {
  *     alias: createSourceAliases({
- *       '@env-hopper/frontend-core': `${frontendCoreSrc}/index.tsx`,
+ *       '@igstack/app-catalog-frontend-core': `${frontendCoreSrc}/index.tsx`,
  *       '~': frontendCoreSrc, // Internal path alias used by frontend-core
  *     }),
  *   },

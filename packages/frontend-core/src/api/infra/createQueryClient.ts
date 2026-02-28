@@ -1,11 +1,11 @@
 import { QueryClient } from '@tanstack/react-query'
-import type { TRPCRouter } from '@env-hopper/backend-core'
+import type { TRPCRouter } from '@igstack/app-catalog-backend-core'
 import type { TRPCClient } from '@trpc/client'
-import type { EhDb } from '~/userDb/EhDb'
+import type { AcDb } from '~/userDb/AcDb'
 
 export interface CreateQueryParams {
   trpcClient: TRPCClient<TRPCRouter>
-  db: EhDb
+  db: AcDb
 }
 
 export function createQueryClient({ trpcClient, db }: CreateQueryParams) {
