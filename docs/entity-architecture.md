@@ -2,7 +2,7 @@
 
 ## Overview
 
-Restructure env-hopper to use a Backstage.io-inspired entity system with explicit `kind` discriminators, enabling pluggable architecture for different resource types.
+Restructure app-catalog to use a Backstage.io-inspired entity system with explicit `kind` discriminators, enabling pluggable architecture for different resource types.
 
 ## Core Principles
 
@@ -147,7 +147,7 @@ Parameters can be resolved from different sources:
 ### New Interface Methods
 
 ```typescript
-interface EhBackendCompanySpecificBackend {
+interface AppCatalogCompanySpecificBackend {
   // Existing methods (for backwards compatibility)
   getBootstrapData: () => Promise<BootstrapConfigData>
   getResourceJumps: () => Promise<ResourceJumpsData>

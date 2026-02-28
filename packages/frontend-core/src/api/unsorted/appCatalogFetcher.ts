@@ -1,15 +1,15 @@
 import { createCachingFetcher } from './createCachingFetcher'
-import type { AppCatalogData, TRPCRouter } from '@env-hopper/backend-core'
+import type { AppCatalogData, TRPCRouter } from '@igstack/app-catalog-backend-core'
 import type { QueryFunctionContext, QueryKey } from '@tanstack/react-query'
 import type { TRPCClient } from '@trpc/client'
-import type { EhDb } from '~/userDb/EhDb'
-import { dbCacheDbKeys } from '~/userDb/EhDb'
+import type { AcDb } from '~/userDb/AcDb'
+import { dbCacheDbKeys } from '~/userDb/AcDb'
 import { getDbFromMeta, getTrpcFromMeta } from '~/util/reactQueryUtils'
 
 export const queryKey: QueryKey = ['appCatalog']
 
 export interface AppCatalogFetcherParams {
-  db?: EhDb
+  db?: AcDb
   trpcClient?: TRPCClient<TRPCRouter>
 }
 

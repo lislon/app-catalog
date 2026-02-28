@@ -1,7 +1,7 @@
-import type { TRPCRouter } from '@env-hopper/backend-core'
+import type { TRPCRouter } from '@igstack/app-catalog-backend-core'
 import type { TRPCClient } from '@trpc/client'
 import type { EhReactQueryMeta } from '~/types/tanstackQuery'
-import type { EhDb } from '~/userDb/EhDb'
+import type { AcDb } from '~/userDb/AcDb'
 
 export function getTrpcFromMeta(ctx: {
   meta?: EhReactQueryMeta
@@ -12,7 +12,7 @@ export function getTrpcFromMeta(ctx: {
   return ctx.meta.trpcClient
 }
 
-export function getDbFromMeta(ctx: { meta?: EhReactQueryMeta }): EhDb {
+export function getDbFromMeta(ctx: { meta?: EhReactQueryMeta }): AcDb {
   if (!ctx.meta) {
     throw new Error('Missing DB in context of react-query')
   }

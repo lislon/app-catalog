@@ -1,4 +1,4 @@
-# @env-hopper/frontend-core
+# @igstack/app-catalog-frontend-core
 
 ## 2.0.1-alpha-20260224192214
 

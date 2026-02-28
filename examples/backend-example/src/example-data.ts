@@ -1,7 +1,7 @@
 import type {
   BootstrapConfigData,
   ResourceJumpsData,
-} from '@env-hopper/backend-core'
+} from '@igstack/app-catalog-backend-core'
 
 export const bootstrapConfigData: BootstrapConfigData = {
   apps: {

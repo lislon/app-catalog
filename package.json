@@ -1,5 +1,5 @@
 {
-  "name": "@env-hopper/source",
+  "name": "@igstack/app-catalog-source",
   "version": "0.0.0-semantically-released",
   "private": true,
   "license": "MIT",
@@ -14,10 +14,10 @@
     "changeset:version": "changeset version && pnpm install --no-frozen-lockfile",
     "clean": "pnpm --filter \"./packages/**\" run clean",
     "db:repush": "pnpm run prisma:generate && pnpm run prisma:push && pnpm run db:sync",
-    "db:sync": "pnpm --filter @env-hopper/backend-example run db:sync",
-    "dev": "nx run-many -t dev -p @env-hopper/backend-example,@env-hopper/frontend-example,@env-hopper/frontend-core --parallel=3",
-    "dev:backend": "nx run-many --target=dev --projects=@env-hopper/backend-example",
-    "dev:frontend": "nx run-many -t dev -p @env-hopper/frontend-example,@env-hopper/frontend-core --parallel=2",
+    "db:sync": "pnpm --filter @igstack/app-catalog-backend-example run db:sync",
+    "dev": "nx run-many -t dev -p @igstack/app-catalog-backend-example,@igstack/app-catalog-frontend-example,@igstack/app-catalog-frontend-core --parallel=3",
+    "dev:backend": "nx run-many --target=dev --projects=@igstack/app-catalog-backend-example",
+    "dev:frontend": "nx run-many -t dev -p @igstack/app-catalog-frontend-example,@igstack/app-catalog-frontend-core --parallel=2",
     "dev:x": "nx run-many --target=dev --projects=packages/frontend-core",
     "dev:z": "nx run-many -t dev -p 'examples/*,packages/frontend-core' --parallel=10 --nx-ignore-cycles",
     "format": "prettier --write . && nx run-many -t test:eslint --fix --projects=*",
@@ -26,13 +26,13 @@
     "prepare": "husky",
     "prettier": "prettier",
     "prettier:write": "pnpm run prettier --write",
-    "prisma:generate": "pnpm --filter @env-hopper/backend-core prisma:generate",
-    "prisma:push": "pnpm --filter @env-hopper/backend-example exec prisma db push --force-reset --skip-generate --schema=../../packages/backend-core/prisma/schema.prisma",
+    "prisma:generate": "pnpm --filter @igstack/app-catalog-backend-core prisma:generate",
+    "prisma:push": "pnpm --filter @igstack/app-catalog-backend-example exec prisma db push --force-reset --skip-generate --schema=../../packages/backend-core/prisma/schema.prisma",
     "syncpack:fix": "syncpack fix-mismatches",
     "test:build": "publint --strict && attw --ignore-rules no-resolution --pack .",
     "test:ci": "nx run-many --targets=prisma:generate,test:eslint,test:unit,test:types,test:build,build",
     "test:eslint": "nx affected --target=test:eslint",
-    "test:frontend": "pnpm --filter @env-hopper/frontend-core run test:unit",
+    "test:frontend": "pnpm --filter @igstack/app-catalog-frontend-core run test:unit",
     "test:pr": "nx affected --targets=prisma:generate,test:eslint,test:unit,test:e2e,test:types,test:build,build",
     "test:syncpack": "syncpack list-mismatches",
     "test:unit": "nx affected --target=test:unit --exclude=examples/**,e2e/**",
@@ -111,8 +111,8 @@
   "packageManager": "pnpm@10.30.2",
   "pnpm": {
     "overrides": {
-      "@env-hopper/backend-core": "workspace:*",
-      "@env-hopper/frontend": "workspace:*"
+      "@igstack/app-catalog-backend-core": "workspace:*",
+      "@igstack/app-catalog-frontend": "workspace:*"
     }
   }
 }

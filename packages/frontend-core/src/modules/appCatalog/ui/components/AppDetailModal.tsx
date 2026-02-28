@@ -1,4 +1,4 @@
-import type { AppForCatalog } from '@env-hopper/backend-core'
+import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
 import { AppWindowIcon, EditIcon, ExternalLinkIcon, XIcon } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { useUser } from '~/modules/auth/AuthContext'

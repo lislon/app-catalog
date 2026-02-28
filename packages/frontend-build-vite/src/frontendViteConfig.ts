@@ -27,7 +27,7 @@ export function frontendViteConfig(options?: {
       viteStaticCopy({
         targets: [
           {
-            src: 'node_modules/@env-hopper/frontend-core/public/[!.]*',
+            src: 'node_modules/@igstack/app-catalog-frontend-core/public/[!.]*',
             dest: '.',
           },
           ...(fs.existsSync(appPublicDir)
@@ -65,11 +65,11 @@ export function frontendViteConfig(options?: {
       includeAssets: [
         'favicon.ico',
         'apple-touch-180x180.png',
-        'env-hopper-*.png',
-        'env-hopper-square.svg',
+        'app-catalog-*.png',
+        'app-catalog-square.svg',
       ],
       manifest: {
-        name: 'Env Hopper',
+        name: 'App Catalog',
         short_name: 'EH',
         description: 'Jump between environments',
         theme_color: '#1f2937',
@@ -83,37 +83,37 @@ export function frontendViteConfig(options?: {
             type: 'image/x-icon',
           },
           {
-            src: 'env-hopper-16x16.png',
+            src: 'app-catalog-16x16.png',
             sizes: '16x16',
             type: 'image/png',
           },
           {
-            src: 'env-hopper-32x32.png',
+            src: 'app-catalog-32x32.png',
             sizes: '32x32',
             type: 'image/png',
           },
           {
-            src: 'env-hopper-48x48.png',
+            src: 'app-catalog-48x48.png',
             sizes: '48x48',
             type: 'image/png',
           },
           {
-            src: 'env-hopper-192x192.png',
+            src: 'app-catalog-192x192.png',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: 'env-hopper-512x512.png',
+            src: 'app-catalog-512x512.png',
             sizes: '512x512',
             type: 'image/png',
           },
           {
-            src: 'env-hopper-square.svg',
+            src: 'app-catalog-square.svg',
             sizes: '150x150',
             type: 'image/svg+xml',
           },
           {
-            src: 'env-hopper-square.svg',
+            src: 'app-catalog-square.svg',
             sizes: '150x150',
             purpose: 'maskable',
             type: 'image/svg+xml',
@@ -168,7 +168,7 @@ export function frontendViteConfig(options?: {
       },
     },
     resolve: {
-      // Use 'my-custom-condition' to resolve @env-hopper/frontend-core to source files
+      // Use 'my-custom-condition' to resolve @igstack/app-catalog-frontend-core to source files
       // This enables HMR when developing the core library alongside the consuming app
       conditions: ['my-custom-condition'],
     },

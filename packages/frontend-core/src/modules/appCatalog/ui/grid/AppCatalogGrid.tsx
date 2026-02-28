@@ -1,7 +1,7 @@
 import type {
   AppForCatalog,
   GroupingTagDefinition,
-} from '@env-hopper/backend-core'
+} from '@igstack/app-catalog-backend-core'
 import type { ColumnDef } from '@tanstack/react-table'
 import {
   flexRender,

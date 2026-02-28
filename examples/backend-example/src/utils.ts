@@ -4,7 +4,7 @@ import type {
   AvailiabilityMatrixData,
   EhAppIndexed,
   EhEnvIndexed,
-} from '@env-hopper/backend-core'
+} from '@igstack/app-catalog-backend-core'
 
 export interface RandomAvailablityMatrixParams {
   apps: Array<EhAppIndexed>

@@ -1,4 +1,4 @@
-import type { ApprovalMethodType, TRPCRouter } from '@env-hopper/backend-core'
+import type { ApprovalMethodType, TRPCRouter } from '@igstack/app-catalog-backend-core'
 import type { ColumnDef } from '@tanstack/react-table'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'

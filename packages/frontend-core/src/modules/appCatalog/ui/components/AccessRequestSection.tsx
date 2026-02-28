@@ -1,4 +1,4 @@
-import type { AppApprovalMethod, AppForCatalog } from '@env-hopper/backend-core'
+import type { AppApprovalMethod, AppForCatalog } from '@igstack/app-catalog-backend-core'
 import { Bot, Check, Copy, ExternalLink, Settings, Users } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'

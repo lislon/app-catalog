@@ -2,15 +2,15 @@
   "$schema": "https://unpkg.com/@changesets/config@3.1.2/schema.json",
   "changelog": [
     "@changesets/changelog-github",
-    { "repo": "lislon/env-hopper" }
+    { "repo": "lislon/app-catalog" }
   ],
   "commit": false,
-  "fixed": [["@env-hopper/*"]],
+  "fixed": [["@igstack/app-catalog-*"]],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@env-hopper/backend-example", "@env-hopper/frontend-example"],
+  "ignore": ["@igstack/app-catalog-backend-example", "@igstack/app-catalog-frontend-example"],
   "snapshot": {
     "useCalculatedVersion": true
   }

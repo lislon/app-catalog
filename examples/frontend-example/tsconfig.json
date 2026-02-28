@@ -6,7 +6,7 @@
     "outDir": "./dist-ts",
     "rootDir": "."
     // "paths": {
-    //   "~/*": ["./@env-hopper/frontend-core/src22222222222/*"]
+    //   "~/*": ["./@igstack/app-catalog-frontend-core/src22222222222/*"]
     // }
   },
   "include": ["src", "*.config.ts", "*.config.js", "package.json"]

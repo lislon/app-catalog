@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 
-import type { AppForCatalog } from '@env-hopper/backend-core'
+import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
 
 import { Gallery } from '~/modules/gallery/Gallery'
 import type { GalleryImage } from '~/modules/gallery/Gallery'

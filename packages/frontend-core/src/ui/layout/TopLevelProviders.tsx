@@ -1,6 +1,6 @@
 import React, { Suspense, useMemo, useState } from 'react'
 
-import type { TRPCRouter } from '@env-hopper/backend-core'
+import type { TRPCRouter } from '@igstack/app-catalog-backend-core'
 import type { QueryClient } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
@@ -9,7 +9,6 @@ import { ThemeProvider } from '~/components/theme-provider'
 import { AuthProvider } from '~/modules/auth'
 import { AuthModalProvider } from '~/modules/auth/AuthModalContext'
 import { LoginModal } from '~/modules/auth/ui/LoginModal'
-import { BootstrapConfigProvider } from '~/modules/config/BootstrapConfigContext'
 import { GlobalConfigProvider } from '~/modules/config/GlobalConfigContext'
 import { makePluginInterfaceForCore } from '~/modules/pluginCore/makePluginManagerContext'
 import { PluginManagerContextProvider } from '~/modules/pluginCore/PluginManagerContext'
@@ -45,31 +44,17 @@ export function TopLevelProviders({ children }: MainLayoutProps) {
       <AuthModalProvider>
         <AuthProvider>
           <Suspense fallback={<LoadingScreen />}>
-            <BootstrapConfigProvider
-              bootstrapConfig={{
-                apps: {},
-                appsMeta: {
-                  tags: {
-                    descriptions: [],
-                  },
-                },
-                envs: {},
-                contexts: [],
-                defaults: { envSlug: '', resourceJumpSlug: '' },
-              }}
-            >
-              <GlobalConfigProvider>
-                <PluginManagerContextProvider
-                  plugins={plugins}
-                  pluginInterfaceForCore={pluginInterfaceForCore}
-                >
-                  {children}
-                  <LoginModal />
-                  <TanStackRouterDevtools />
-                  <ReactQueryDevtools initialIsOpen={false} />
-                </PluginManagerContextProvider>
-              </GlobalConfigProvider>
-            </BootstrapConfigProvider>
+            <GlobalConfigProvider>
+              <PluginManagerContextProvider
+                plugins={plugins}
+                pluginInterfaceForCore={pluginInterfaceForCore}
+              >
+                {children}
+                <LoginModal />
+                <TanStackRouterDevtools />
+                <ReactQueryDevtools initialIsOpen={false} />
+              </PluginManagerContextProvider>
+            </GlobalConfigProvider>
           </Suspense>
         </AuthProvider>
       </AuthModalProvider>

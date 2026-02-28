@@ -1,11 +1,11 @@
-import type { TRPCRouter } from '@env-hopper/backend-core'
+import type { TRPCRouter } from '@igstack/app-catalog-backend-core'
 import '@tanstack/react-query'
 import type { TRPCClient } from '@trpc/client'
-import type { EhDb } from '~/userDb/EhDb'
+import type { AcDb } from '~/userDb/AcDb'
 
 export interface EhReactQueryMeta extends Record<string, unknown> {
   trpcClient: TRPCClient<TRPCRouter>
-  db: EhDb
+  db: AcDb
 }
 
 declare module '@tanstack/react-query' {

@@ -8,7 +8,7 @@ applyTo: 'examples/backend-example/**'
 
 ## Purpose
 
-- **Minimal wrapper** around `@env-hopper/backend-core`
+- **Minimal wrapper** around `@igstack/app-catalog-backend-core`
 - Sets up environment variables and external services (auth providers, OpenAI, etc.)
 - Demonstrates how to configure and mount the backend
 - Provides a development server for testing
@@ -32,7 +32,7 @@ applyTo: 'examples/backend-example/**'
 ```
 examples/backend-example
   └── configures & mounts
-       └── @env-hopper/backend-core
+       └── @igstack/app-catalog-backend-core
             ├── modules/auth
             ├── modules/admin
             ├── modules/icons
@@ -63,7 +63,7 @@ app.get('/api/my-feature', (req, res) => {
 export function createMyFeatureRouter(db: PrismaClient) { ... }
 
 // examples/backend-example/src/index.ts
-import { createMyFeatureRouter } from '@env-hopper/backend-core'
+import { createMyFeatureRouter } from '@igstack/app-catalog-backend-core'
 const myFeatureRouter = createMyFeatureRouter(db)
 app.use(myFeatureRouter)
 ```
@@ -84,7 +84,7 @@ const db = new PrismaClient()
 **Right (do this):**
 ```typescript
 // Inject the PrismaClient from backend-core
-import { getPrismaClient } from '@env-hopper/backend-core'
+import { getPrismaClient } from '@igstack/app-catalog-backend-core'
 const db = getPrismaClient()
 ```
 

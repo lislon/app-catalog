@@ -48,11 +48,11 @@ jobs:
             echo "No changeset found, creating one..."
             cat > .changeset/snapshot-release.md << 'EOF'
           ---
-          "@env-hopper/backend-core": patch
-          "@env-hopper/frontend-core": patch
-          "@env-hopper/shared-core": patch
-          "@env-hopper/table-sync": patch
-          "@env-hopper/frontend-build-vite": patch
+          "@igstack/app-catalog-backend-core": patch
+          "@igstack/app-catalog-frontend-core": patch
+          "@igstack/app-catalog-shared-core": patch
+          "@igstack/app-catalog-table-sync": patch
+          "@igstack/app-catalog-frontend-build-vite": patch
           ---
 
           Snapshot release from alpha branch

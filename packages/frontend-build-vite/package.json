@@ -1,11 +1,11 @@
 {
-  "name": "@env-hopper/frontend-build-vite",
+  "name": "@igstack/app-catalog-frontend-build-vite",
   "version": "2.0.1-alpha-20260224192214",
-  "description": "Vite build config for Env Hopper frontend",
-  "homepage": "https://github.com/lislon/env-hopper",
+  "description": "Vite build config for App Catalog frontend",
+  "homepage": "https://github.com/lislon/app-catalog",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lislon/env-hopper.git",
+    "url": "git+https://github.com/lislon/app-catalog.git",
     "directory": "packages/frontend-build-vite"
   },
   "license": "MIT",
@@ -45,7 +45,7 @@
     "vite-plugin-svgr": "catalog:"
   },
   "devDependencies": {
-    "@env-hopper/shared-core": "workspace:*",
+    "@igstack/app-catalog-shared-core": "workspace:*",
     "@tanstack/vite-config": "catalog:",
     "@types/node": "catalog:",
     "chokidar": "^5.0.0",

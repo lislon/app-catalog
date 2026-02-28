@@ -1,4 +1,4 @@
-import type { EhAppIndexed } from '@env-hopper/backend-core'
+import type { EhAppIndexed } from '@igstack/app-catalog-backend-core'
 import { Button } from '~/ui/button'
 import { AppIcon } from './AppIcon'
 

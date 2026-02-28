@@ -71,14 +71,3 @@ export interface EhAppsMeta {
   defaultIcon?: string
   tags: EhBackendTagsDescriptionDataIndexed
 }
-
-export interface RenameRuleParams {
-  envSlug?: string
-  resourceSlug?: string
-}
-
-export interface RenameRule {
-  type: 'resourceRename' | 'envRename'
-  oldSlug: string
-  targetSlug: string
-}

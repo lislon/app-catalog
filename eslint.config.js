@@ -8,7 +8,7 @@ import vitest from '@vitest/eslint-plugin'
 /** @type {import('eslint').Linter.Config[]} */
 const config = [
   {
-    name: 'env-hopper/ignores',
+    name: 'app-catalog/ignores',
     ignores: ['**/dist-ts/**', '**/src/generated/**'],
   },
   ...tanstackConfig,

@@ -1,9 +1,9 @@
 // Prisma schema for backend-core library
-// Uses EH_CORE_DATABASE_URL environment variable
+// Uses AC_CORE_DATABASE_URL environment variable
 
 datasource db {
   provider = "postgresql"
-  url      = env("EH_CORE_DATABASE_URL")
+  url      = env("AC_CORE_DATABASE_URL")
 }
 
 generator client {

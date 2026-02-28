@@ -1,11 +1,11 @@
 {
-  "name": "@env-hopper/backend-core",
+  "name": "@igstack/app-catalog-backend-core",
   "version": "2.0.1-alpha-20260224192214",
-  "description": "Backend core library for Env Hopper",
-  "homepage": "https://github.com/lislon/env-hopper",
+  "description": "Backend core library for App Catalog",
+  "homepage": "https://github.com/lislon/app-catalog",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lislon/env-hopper.git",
+    "url": "git+https://github.com/lislon/app-catalog.git",
     "directory": "packages/backend-core"
   },
   "license": "MIT",
@@ -41,8 +41,8 @@
     "test:unit:dev": "pnpm run test:unit --watch"
   },
   "dependencies": {
-    "@env-hopper/shared-core": "workspace:*",
-    "@env-hopper/table-sync": "workspace:*",
+    "@igstack/app-catalog-shared-core": "workspace:*",
+    "@igstack/app-catalog-table-sync": "workspace:*",
     "@kubernetes/client-node": "^1.2.0",
     "@prisma/client": "6.19.1",
     "@trpc/client": "catalog:",

@@ -1,5 +1,5 @@
 /**
- * Middleware module for env-hopper backend integration.
+ * Middleware module for app-catalog backend integration.
  *
  * Provides a batteries-included middleware factory that handles all backend wiring:
  * - Database connection management

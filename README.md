@@ -1,6 +1,6 @@
-# EnvHopper
+# App Catalog
 
-Env Hopper allow to keep a list of parameterized bookmarks for browser and it aimed to ease the work of QAs when they need to switch from one webapp to another or to switch between environments.
+App Catalog allows you to maintain a centralized directory of applications with metadata, tags, screenshots, and approval workflows.
 
 # Stage of project
 

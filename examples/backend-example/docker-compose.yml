@@ -1,12 +1,12 @@
-name: 'env-hopper'
+name: 'app-catalog'
 services:
-  env-hopper-preview:
+  app-catalog-preview:
     build:
       context: .
     restart: unless-stopped
     ports:
       - '4002:4002'
-    container_name: env-hopper-preview
+    container_name: app-catalog-preview
     volumes:
       - ./db:/var/db/
     environment:
@@ -16,9 +16,9 @@ services:
     image: postgres:16
     restart: unless-stopped
     environment:
-      POSTGRES_USER: env-hopper
-      POSTGRES_PASSWORD: env-hopper
-      POSTGRES_DB: env-hopper
+      POSTGRES_USER: app-catalog
+      POSTGRES_PASSWORD: app-catalog
+      POSTGRES_DB: app-catalog
     ports:
       - '5532:5432'
     volumes:

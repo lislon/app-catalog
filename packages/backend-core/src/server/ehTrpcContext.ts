@@ -1,14 +1,14 @@
-import type { EhBackendCompanySpecificBackend } from '../types'
+import type { AppCatalogCompanySpecificBackend } from '../types'
 import type { User } from 'better-auth/types'
 
 export interface EhTrpcContext {
-  companySpecificBackend: EhBackendCompanySpecificBackend
+  companySpecificBackend: AppCatalogCompanySpecificBackend
   user: User | null
   adminGroups: Array<string>
 }
 
 export interface EhTrpcContextOptions {
-  companySpecificBackend: EhBackendCompanySpecificBackend
+  companySpecificBackend: AppCatalogCompanySpecificBackend
   user?: User | null
   adminGroups: Array<string>
 }

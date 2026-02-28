@@ -21,7 +21,7 @@
   "testing.automaticallyOpenTestResults": "neverOpen",
   "chat.tools.terminal.autoApprove": {
     "docker-compose": true,
-    "/^nx run @env-hopper/shared-core:compile$/": {
+    "/^nx run @igstack/app-catalog-shared-core:compile$/": {
       "approve": true,
       "matchCommandLine": true
     }

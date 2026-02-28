@@ -21,15 +21,8 @@ import { Route as AdminAppForCatalogRouteImport } from './routes/admin/app-for-c
 import { Route as LayoutLoginRouteImport } from './routes/_layout/login'
 import { Route as AdminApprovalMethodsIndexRouteImport } from './routes/admin/approval-methods/index'
 import { Route as AdminAppForCatalogIndexRouteImport } from './routes/admin/app-for-catalog/index'
-import { Route as LayoutEnvsIndexRouteImport } from './routes/_layout/envs.index'
-import { Route as LayoutDashboardIndexRouteImport } from './routes/_layout/dashboard.index'
-import { Route as LayoutCatalogIndexRouteImport } from './routes/_layout/catalog.index'
-import { Route as LayoutAppsIndexRouteImport } from './routes/_layout/apps.index'
 import { Route as AdminAppForCatalogIdRouteImport } from './routes/admin/app-for-catalog/$id'
-import { Route as LayoutEnvEnvSlugIndexRouteImport } from './routes/_layout/env.$envSlug.index'
 import { Route as LayoutCatalogAppsIndexRouteImport } from './routes/_layout/catalog.apps.index'
-import { Route as LayoutAppAppSlugIndexRouteImport } from './routes/_layout/app.$appSlug.index'
-import { Route as LayoutEnvEnvSlugAppAppSlugIndexRouteImport } from './routes/_layout/env.$envSlug.app.$appSlug.index'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
@@ -91,52 +84,16 @@ const AdminAppForCatalogIndexRoute = AdminAppForCatalogIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminAppForCatalogRoute,
 } as any)
-const LayoutEnvsIndexRoute = LayoutEnvsIndexRouteImport.update({
-  id: '/envs/',
-  path: '/envs/',
-  getParentRoute: () => LayoutRoute,
-} as any)
-const LayoutDashboardIndexRoute = LayoutDashboardIndexRouteImport.update({
-  id: '/dashboard/',
-  path: '/dashboard/',
-  getParentRoute: () => LayoutRoute,
-} as any)
-const LayoutCatalogIndexRoute = LayoutCatalogIndexRouteImport.update({
-  id: '/catalog/',
-  path: '/catalog/',
-  getParentRoute: () => LayoutRoute,
-} as any)
-const LayoutAppsIndexRoute = LayoutAppsIndexRouteImport.update({
-  id: '/apps/',
-  path: '/apps/',
-  getParentRoute: () => LayoutRoute,
-} as any)
 const AdminAppForCatalogIdRoute = AdminAppForCatalogIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => AdminAppForCatalogRoute,
-} as any)
-const LayoutEnvEnvSlugIndexRoute = LayoutEnvEnvSlugIndexRouteImport.update({
-  id: '/env/$envSlug/',
-  path: '/env/$envSlug/',
-  getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutCatalogAppsIndexRoute = LayoutCatalogAppsIndexRouteImport.update({
   id: '/catalog/apps/',
   path: '/catalog/apps/',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutAppAppSlugIndexRoute = LayoutAppAppSlugIndexRouteImport.update({
-  id: '/app/$appSlug/',
-  path: '/app/$appSlug/',
-  getParentRoute: () => LayoutRoute,
-} as any)
-const LayoutEnvEnvSlugAppAppSlugIndexRoute =
-  LayoutEnvEnvSlugAppAppSlugIndexRouteImport.update({
-    id: '/env/$envSlug/app/$appSlug/',
-    path: '/env/$envSlug/app/$appSlug/',
-    getParentRoute: () => LayoutRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
@@ -149,16 +106,9 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/app-for-catalog/$id': typeof AdminAppForCatalogIdRoute
-  '/apps/': typeof LayoutAppsIndexRoute
-  '/catalog/': typeof LayoutCatalogIndexRoute
-  '/dashboard/': typeof LayoutDashboardIndexRoute
-  '/envs/': typeof LayoutEnvsIndexRoute
   '/admin/app-for-catalog/': typeof AdminAppForCatalogIndexRoute
   '/admin/approval-methods/': typeof AdminApprovalMethodsIndexRoute
-  '/app/$appSlug/': typeof LayoutAppAppSlugIndexRoute
   '/catalog/apps/': typeof LayoutCatalogAppsIndexRoute
-  '/env/$envSlug/': typeof LayoutEnvEnvSlugIndexRoute
-  '/env/$envSlug/app/$appSlug/': typeof LayoutEnvEnvSlugAppAppSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LayoutLoginRoute
@@ -168,16 +118,9 @@ export interface FileRoutesByTo {
   '/': typeof LayoutIndexRoute
   '/admin': typeof AdminIndexRoute
   '/admin/app-for-catalog/$id': typeof AdminAppForCatalogIdRoute
-  '/apps': typeof LayoutAppsIndexRoute
-  '/catalog': typeof LayoutCatalogIndexRoute
-  '/dashboard': typeof LayoutDashboardIndexRoute
-  '/envs': typeof LayoutEnvsIndexRoute
   '/admin/app-for-catalog': typeof AdminAppForCatalogIndexRoute
   '/admin/approval-methods': typeof AdminApprovalMethodsIndexRoute
-  '/app/$appSlug': typeof LayoutAppAppSlugIndexRoute
   '/catalog/apps': typeof LayoutCatalogAppsIndexRoute
-  '/env/$envSlug': typeof LayoutEnvEnvSlugIndexRoute
-  '/env/$envSlug/app/$appSlug': typeof LayoutEnvEnvSlugAppAppSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -192,16 +135,9 @@ export interface FileRoutesById {
   '/_layout/': typeof LayoutIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/app-for-catalog/$id': typeof AdminAppForCatalogIdRoute
-  '/_layout/apps/': typeof LayoutAppsIndexRoute
-  '/_layout/catalog/': typeof LayoutCatalogIndexRoute
-  '/_layout/dashboard/': typeof LayoutDashboardIndexRoute
-  '/_layout/envs/': typeof LayoutEnvsIndexRoute
   '/admin/app-for-catalog/': typeof AdminAppForCatalogIndexRoute
   '/admin/approval-methods/': typeof AdminApprovalMethodsIndexRoute
-  '/_layout/app/$appSlug/': typeof LayoutAppAppSlugIndexRoute
   '/_layout/catalog/apps/': typeof LayoutCatalogAppsIndexRoute
-  '/_layout/env/$envSlug/': typeof LayoutEnvEnvSlugIndexRoute
-  '/_layout/env/$envSlug/app/$appSlug/': typeof LayoutEnvEnvSlugAppAppSlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -216,16 +152,9 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/admin/'
     | '/admin/app-for-catalog/$id'
-    | '/apps/'
-    | '/catalog/'
-    | '/dashboard/'
-    | '/envs/'
     | '/admin/app-for-catalog/'
     | '/admin/approval-methods/'
-    | '/app/$appSlug/'
     | '/catalog/apps/'
-    | '/env/$envSlug/'
-    | '/env/$envSlug/app/$appSlug/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -235,16 +164,9 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/admin/app-for-catalog/$id'
-    | '/apps'
-    | '/catalog'
-    | '/dashboard'
-    | '/envs'
     | '/admin/app-for-catalog'
     | '/admin/approval-methods'
-    | '/app/$appSlug'
     | '/catalog/apps'
-    | '/env/$envSlug'
-    | '/env/$envSlug/app/$appSlug'
   id:
     | '__root__'
     | '/_layout'
@@ -258,16 +180,9 @@ export interface FileRouteTypes {
     | '/_layout/'
     | '/admin/'
     | '/admin/app-for-catalog/$id'
-    | '/_layout/apps/'
-    | '/_layout/catalog/'
-    | '/_layout/dashboard/'
-    | '/_layout/envs/'
     | '/admin/app-for-catalog/'
     | '/admin/approval-methods/'
-    | '/_layout/app/$appSlug/'
     | '/_layout/catalog/apps/'
-    | '/_layout/env/$envSlug/'
-    | '/_layout/env/$envSlug/app/$appSlug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -362,47 +277,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAppForCatalogIndexRouteImport
       parentRoute: typeof AdminAppForCatalogRoute
     }
-    '/_layout/envs/': {
-      id: '/_layout/envs/'
-      path: '/envs'
-      fullPath: '/envs/'
-      preLoaderRoute: typeof LayoutEnvsIndexRouteImport
-      parentRoute: typeof LayoutRoute
-    }
-    '/_layout/dashboard/': {
-      id: '/_layout/dashboard/'
-      path: '/dashboard'
-      fullPath: '/dashboard/'
-      preLoaderRoute: typeof LayoutDashboardIndexRouteImport
-      parentRoute: typeof LayoutRoute
-    }
-    '/_layout/catalog/': {
-      id: '/_layout/catalog/'
-      path: '/catalog'
-      fullPath: '/catalog/'
-      preLoaderRoute: typeof LayoutCatalogIndexRouteImport
-      parentRoute: typeof LayoutRoute
-    }
-    '/_layout/apps/': {
-      id: '/_layout/apps/'
-      path: '/apps'
-      fullPath: '/apps/'
-      preLoaderRoute: typeof LayoutAppsIndexRouteImport
-      parentRoute: typeof LayoutRoute
-    }
     '/admin/app-for-catalog/$id': {
       id: '/admin/app-for-catalog/$id'
       path: '/$id'
       fullPath: '/admin/app-for-catalog/$id'
       preLoaderRoute: typeof AdminAppForCatalogIdRouteImport
       parentRoute: typeof AdminAppForCatalogRoute
-    }
-    '/_layout/env/$envSlug/': {
-      id: '/_layout/env/$envSlug/'
-      path: '/env/$envSlug'
-      fullPath: '/env/$envSlug/'
-      preLoaderRoute: typeof LayoutEnvEnvSlugIndexRouteImport
-      parentRoute: typeof LayoutRoute
     }
     '/_layout/catalog/apps/': {
       id: '/_layout/catalog/apps/'
@@ -411,47 +291,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutCatalogAppsIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/app/$appSlug/': {
-      id: '/_layout/app/$appSlug/'
-      path: '/app/$appSlug'
-      fullPath: '/app/$appSlug/'
-      preLoaderRoute: typeof LayoutAppAppSlugIndexRouteImport
-      parentRoute: typeof LayoutRoute
-    }
-    '/_layout/env/$envSlug/app/$appSlug/': {
-      id: '/_layout/env/$envSlug/app/$appSlug/'
-      path: '/env/$envSlug/app/$appSlug'
-      fullPath: '/env/$envSlug/app/$appSlug/'
-      preLoaderRoute: typeof LayoutEnvEnvSlugAppAppSlugIndexRouteImport
-      parentRoute: typeof LayoutRoute
-    }
   }
 }
 
 interface LayoutRouteChildren {
   LayoutLoginRoute: typeof LayoutLoginRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
-  LayoutAppsIndexRoute: typeof LayoutAppsIndexRoute
-  LayoutCatalogIndexRoute: typeof LayoutCatalogIndexRoute
-  LayoutDashboardIndexRoute: typeof LayoutDashboardIndexRoute
-  LayoutEnvsIndexRoute: typeof LayoutEnvsIndexRoute
-  LayoutAppAppSlugIndexRoute: typeof LayoutAppAppSlugIndexRoute
   LayoutCatalogAppsIndexRoute: typeof LayoutCatalogAppsIndexRoute
-  LayoutEnvEnvSlugIndexRoute: typeof LayoutEnvEnvSlugIndexRoute
-  LayoutEnvEnvSlugAppAppSlugIndexRoute: typeof LayoutEnvEnvSlugAppAppSlugIndexRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutLoginRoute: LayoutLoginRoute,
   LayoutIndexRoute: LayoutIndexRoute,
-  LayoutAppsIndexRoute: LayoutAppsIndexRoute,
-  LayoutCatalogIndexRoute: LayoutCatalogIndexRoute,
-  LayoutDashboardIndexRoute: LayoutDashboardIndexRoute,
-  LayoutEnvsIndexRoute: LayoutEnvsIndexRoute,
-  LayoutAppAppSlugIndexRoute: LayoutAppAppSlugIndexRoute,
   LayoutCatalogAppsIndexRoute: LayoutCatalogAppsIndexRoute,
-  LayoutEnvEnvSlugIndexRoute: LayoutEnvEnvSlugIndexRoute,
-  LayoutEnvEnvSlugAppAppSlugIndexRoute: LayoutEnvEnvSlugAppAppSlugIndexRoute,
 }
 
 const LayoutRouteWithChildren =

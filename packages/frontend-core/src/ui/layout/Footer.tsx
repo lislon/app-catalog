@@ -3,12 +3,12 @@ export function Footer() {
     <footer className="footer items-center p-4 bg-base-200 text-base-content mt-8">
       <div className="items-center grid-flow-col">
         <a
-          href="https://github.com/lislon/env-hopper"
+          href="https://github.com/lislon/app-catalog"
           target="_blank"
           rel="noopener noreferrer"
           className="link link-hover"
         >
-          GitHub: lislon/env-hopper
+          GitHub: lislon/app-catalog
         </a>
       </div>
     </footer>

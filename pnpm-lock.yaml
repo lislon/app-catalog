@@ -188,8 +188,8 @@ catalogs:
       version: 4.3.5
 
 overrides:
-  '@env-hopper/backend-core': workspace:*
-  '@env-hopper/frontend': workspace:*
+  '@igstack/app-catalog-backend-core': workspace:*
+  '@igstack/app-catalog-frontend': workspace:*
 
 importers:
 
@@ -334,10 +334,10 @@ importers:
       '@ai-sdk/openai':
         specifier: ^3.0.11
         version: 3.0.11(zod@4.3.5)
-      '@env-hopper/backend-core':
+      '@igstack/app-catalog-backend-core':
         specifier: workspace:*
         version: link:../../packages/backend-core
-      '@env-hopper/shared-core':
+      '@igstack/app-catalog-shared-core':
         specifier: 2.0.1-alpha-20260224192214
         version: link:../../packages/shared-core
       '@prisma/client':
@@ -407,10 +407,10 @@ importers:
 
   examples/frontend-example:
     dependencies:
-      '@env-hopper/frontend-build-vite':
+      '@igstack/app-catalog-frontend-build-vite':
         specifier: 2.0.1-alpha-20260224192214
         version: link:../../packages/frontend-build-vite
-      '@env-hopper/frontend-core':
+      '@igstack/app-catalog-frontend-core':
         specifier: 2.0.1-alpha-20260224192214
         version: link:../../packages/frontend-core
       cross-env:
@@ -452,7 +452,7 @@ importers:
         version: 1.2.0(vite@6.4.1(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(sass-embedded@1.97.1)(sass@1.97.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2))(workbox-build@7.4.0(@types/babel__core@7.20.5))(workbox-window@7.4.0)
       vite-plugin-svgr:
         specifier: 'catalog:'
-        version: 4.5.0(rollup@4.54.0)(typescript@5.9.2)(vite@6.4.1(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(sass-embedded@1.97.1)(sass@1.97.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2))
+        version: 4.5.0(rollup@2.79.2)(typescript@5.9.2)(vite@6.4.1(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(sass-embedded@1.97.1)(sass@1.97.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2))
       vite-tsconfig-paths:
         specifier: 'catalog:'
         version: 5.1.4(typescript@5.9.2)(vite@6.4.1(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(sass-embedded@1.97.1)(sass@1.97.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2))
@@ -462,10 +462,10 @@ importers:
 
   packages/backend-core:
     dependencies:
-      '@env-hopper/shared-core':
+      '@igstack/app-catalog-shared-core':
         specifier: workspace:*
         version: link:../shared-core
-      '@env-hopper/table-sync':
+      '@igstack/app-catalog-table-sync':
         specifier: workspace:*
         version: link:../table-sync
       '@kubernetes/client-node':
@@ -590,7 +590,7 @@ importers:
         specifier: 'catalog:'
         version: 4.5.0(rollup@4.54.0)(typescript@5.9.2)(vite@6.4.1(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(sass-embedded@1.97.1)(sass@1.97.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2))
     devDependencies:
-      '@env-hopper/shared-core':
+      '@igstack/app-catalog-shared-core':
         specifier: workspace:*
         version: link:../shared-core
       '@tanstack/vite-config':
@@ -822,10 +822,10 @@ importers:
         specifier: 'catalog:'
         version: 2.8.1
     devDependencies:
-      '@env-hopper/backend-core':
+      '@igstack/app-catalog-backend-core':
         specifier: workspace:*
         version: link:../backend-core
-      '@env-hopper/shared-core':
+      '@igstack/app-catalog-shared-core':
         specifier: workspace:*
         version: link:../shared-core
       '@tailwindcss/vite':
@@ -14709,7 +14709,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 2.0.0
-      vitest: 3.2.2(@types/debug@4.1.12)(@types/node@25.0.3)(@vitest/ui@3.2.2)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.30.2)(msw@2.12.4(@types/node@25.0.3)(typescript@5.9.2))(sass-embedded@1.97.1)(sass@1.97.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
+      vitest: 3.2.2(@types/debug@4.1.12)(@types/node@24.10.4)(@vitest/ui@3.2.2)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.30.2)(msw@2.12.4(@types/node@24.10.4)(typescript@5.9.2))(sass-embedded@1.97.1)(sass@1.97.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
 
   '@vitest/utils@3.2.2':
     dependencies:
@@ -15097,7 +15097,7 @@ snapshots:
       react: 19.1.2
       react-dom: 19.1.2(react@19.1.2)
       solid-js: 1.9.10
-      vitest: 3.2.2(@types/debug@4.1.12)(@types/node@25.0.3)(@vitest/ui@3.2.2)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.30.2)(msw@2.12.4(@types/node@25.0.3)(typescript@5.9.2))(sass-embedded@1.97.1)(sass@1.97.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
+      vitest: 3.2.2(@types/debug@4.1.12)(@types/node@24.10.4)(@vitest/ui@3.2.2)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.30.2)(msw@2.12.4(@types/node@24.10.4)(typescript@5.9.2))(sass-embedded@1.97.1)(sass@1.97.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
 
   better-auth@1.4.18(@prisma/client@6.19.1(prisma@6.19.1(typescript@5.9.2))(typescript@5.9.2))(prisma@6.19.1(typescript@5.9.2))(react-dom@19.1.2(react@19.1.2))(react@19.1.2)(solid-js@1.9.10)(vitest@3.2.2):
     dependencies:
@@ -20195,6 +20195,17 @@ snapshots:
       picocolors: 1.1.1
       tinyglobby: 0.2.15
       vite: 6.4.1(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(sass-embedded@1.97.1)(sass@1.97.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
+
+  vite-plugin-svgr@4.5.0(rollup@2.79.2)(typescript@5.9.2)(vite@6.4.1(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(sass-embedded@1.97.1)(sass@1.97.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)):
+    dependencies:
+      '@rollup/pluginutils': 5.3.0(rollup@2.79.2)
+      '@svgr/core': 8.1.0(typescript@5.9.2)
+      '@svgr/plugin-jsx': 8.1.0(@svgr/core@8.1.0(typescript@5.9.2))
+      vite: 6.4.1(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(sass-embedded@1.97.1)(sass@1.97.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
+    transitivePeerDependencies:
+      - rollup
+      - supports-color
+      - typescript
 
   vite-plugin-svgr@4.5.0(rollup@4.54.0)(typescript@5.9.2)(vite@6.4.1(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(sass-embedded@1.97.1)(sass@1.97.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)):
     dependencies:
