@@ -2,7 +2,7 @@ import type {
   AppApprovalMethod,
   AppForCatalog,
   GroupingTagDefinition,
-} from '@env-hopper/backend-core'
+} from '@igstack/app-catalog-backend-core'
 import { useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { createContext, use, useMemo } from 'react'

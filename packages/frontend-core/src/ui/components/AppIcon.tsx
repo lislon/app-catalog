@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Package } from 'lucide-react'
-import type { EhAppIndexed } from '@env-hopper/backend-core'
+import type { EhAppIndexed } from '@igstack/app-catalog-backend-core'
 // import { useBootstrapConfig } from '~/modules/config/BootstrapConfigContext'
 
 interface AppIconProps {

@@ -1,11 +1,5 @@
-import z from 'zod'
-
 import { getAppCatalogData } from '../modules/appCatalog/service'
-import type {
-  AppCatalogData,
-  BootstrapConfigData,
-  ResourceJumpsData,
-} from '../types'
+import type { AppCatalogData } from '../types'
 
 import { createAppCatalogAdminRouter } from '../modules/appCatalogAdmin/appCatalogAdminRouter.js'
 import { createApprovalMethodRouter } from '../modules/approvalMethod/approvalMethodRouter.js'
@@ -21,54 +15,11 @@ import { publicProcedure, router, t } from './trpcSetup'
  */
 export function createTrpcRouter(auth?: BetterAuth) {
   return router({
-    bootstrap: publicProcedure.query(
-      async ({ ctx }): Promise<BootstrapConfigData> => {
-        return await ctx.companySpecificBackend.getBootstrapData()
-      },
-    ),
-
     authConfig: publicProcedure.query(async ({ ctx }) => {
       return {
         adminGroups: ctx.adminGroups,
       }
     }),
-
-    availabilityMatrix: publicProcedure.query(async ({ ctx }) => {
-      return await ctx.companySpecificBackend.getAvailabilityMatrix()
-    }),
-
-    tryFindRenameRule: publicProcedure
-      .input(
-        z.object({
-          envSlug: z.string().optional(),
-          resourceSlug: z.string().optional(),
-        }),
-      )
-      .query(async ({ input, ctx }) => {
-        return await ctx.companySpecificBackend.getNameMigrations(input)
-      }),
-
-    resourceJumps: publicProcedure.query(async ({ ctx }) => {
-      return await ctx.companySpecificBackend.getResourceJumps()
-    }),
-
-    resourceJumpsExtended: publicProcedure.query(async ({ ctx }) => {
-      return await ctx.companySpecificBackend.getResourceJumpsExtended()
-    }),
-    resourceJumpBySlugAndEnv: publicProcedure
-      .input(
-        z.object({
-          jumpResourceSlug: z.string(),
-          envSlug: z.string(),
-        }),
-      )
-      .query(async ({ input, ctx }) => {
-        return filterSingleResourceJump(
-          await ctx.companySpecificBackend.getResourceJumps(),
-          input.jumpResourceSlug,
-          input.envSlug,
-        )
-      }),
 
     appCatalog: publicProcedure.query(
       async ({ ctx }): Promise<AppCatalogData> => {
@@ -91,23 +42,6 @@ export function createTrpcRouter(auth?: BetterAuth) {
     // Auth routes (requires auth instance)
     auth: createAuthRouter(t, auth),
   })
-}
-
-function filterSingleResourceJump(
-  resourceJumps: ResourceJumpsData,
-  jumpResourceSlug: string,
-  envSlug: string,
-): ResourceJumpsData {
-  const filteredResourceJump = resourceJumps.resourceJumps.find(
-    (item) => item.slug === jumpResourceSlug,
-  )
-  const filteredEnv = resourceJumps.envs.find((item) => item.slug === envSlug)
-
-  return {
-    resourceJumps: filteredResourceJump ? [filteredResourceJump] : [],
-    envs: filteredEnv ? [filteredEnv] : [],
-    lateResolvableParams: resourceJumps.lateResolvableParams,
-  }
 }
 
 export type TRPCRouter = ReturnType<typeof createTrpcRouter>

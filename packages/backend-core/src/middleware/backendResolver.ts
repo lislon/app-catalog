@@ -1,35 +1,28 @@
-import type { EhBackendCompanySpecificBackend } from '../types/backend/companySpecificBackend'
+import type { AppCatalogCompanySpecificBackend } from '../types/backend/companySpecificBackend'
 import type { EhBackendProvider } from './types'
 
 /**
- * Type guard to check if an object implements EhBackendCompanySpecificBackend.
+ * Type guard to check if an object implements AppCatalogCompanySpecificBackend.
  */
-function isBackendInstance(obj: unknown): obj is EhBackendCompanySpecificBackend {
+function isBackendInstance(obj: unknown): obj is AppCatalogCompanySpecificBackend {
   return (
     typeof obj === 'object' &&
     obj !== null &&
-    typeof (obj as EhBackendCompanySpecificBackend).getBootstrapData === 'function' &&
-    typeof (obj as EhBackendCompanySpecificBackend).getAvailabilityMatrix ===
-      'function' &&
-    typeof (obj as EhBackendCompanySpecificBackend).getNameMigrations ===
-      'function' &&
-    typeof (obj as EhBackendCompanySpecificBackend).getResourceJumps ===
-      'function' &&
-    typeof (obj as EhBackendCompanySpecificBackend).getResourceJumpsExtended ===
-      'function'
+    (typeof (obj as AppCatalogCompanySpecificBackend).getApps === 'function' ||
+      typeof (obj as AppCatalogCompanySpecificBackend).getApps === 'undefined')
   )
 }
 
 /**
  * Normalizes different backend provider types into a consistent async factory function.
  * Supports:
- * - Direct object implementing EhBackendCompanySpecificBackend
+ * - Direct object implementing AppCatalogCompanySpecificBackend
  * - Sync factory function that returns the backend
  * - Async factory function that returns the backend
  */
 export function createBackendResolver(
   provider: EhBackendProvider,
-): () => Promise<EhBackendCompanySpecificBackend> {
+): () => Promise<AppCatalogCompanySpecificBackend> {
   // If it's already an object with the required methods, wrap it
   if (isBackendInstance(provider)) {
     return async () => provider
@@ -44,6 +37,6 @@ export function createBackendResolver(
   }
 
   throw new Error(
-    'Invalid backend provider: must be an object implementing EhBackendCompanySpecificBackend or a factory function',
+    'Invalid backend provider: must be an object implementing AppCatalogCompanySpecificBackend or a factory function',
   )
 }

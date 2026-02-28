@@ -1,4 +1,4 @@
-# @env-hopper/frontend-build-vite
+# @igstack/app-catalog-frontend-build-vite
 
 ## 2.0.1-alpha-20260224192214
 

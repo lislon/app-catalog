@@ -1,8 +1,8 @@
 import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
-import '@env-hopper/frontend-core/src/index.css'
+import '@igstack/app-catalog-frontend-core/src/index.css'
 import './index.css'
-import { App, appPropsFactory } from '@env-hopper/frontend-core'
+import { App, appPropsFactory } from '@igstack/app-catalog-frontend-core'
 
 // Render the app
 

@@ -1,4 +1,4 @@
-# @env-hopper/shared-core
+# @igstack/app-catalog-shared-core
 
 ## 2.0.1-alpha-20260224192214
 

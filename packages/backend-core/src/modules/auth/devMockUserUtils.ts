@@ -2,7 +2,7 @@ import type { EhDevMockUser } from '../../middleware/types'
 import type { User } from 'better-auth/types'
 
 /**
- * Extended User type with env-hopper specific fields
+ * Extended User type with app-catalog specific fields
  */
 type EhUser = User & {
   env_hopper_groups?: Array<string>

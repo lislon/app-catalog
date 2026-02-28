@@ -85,7 +85,7 @@ export function DefaultErrorComponent({ error, reset }: ErrorComponentProps) {
           </EmptyMedia>
           <EmptyTitle>Ooops!</EmptyTitle>
           <EmptyDescription>
-            Error inside env-hopper occured: {<i>{error.message}</i>}
+            Error inside app-catalog occured: {<i>{error.message}</i>}
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>

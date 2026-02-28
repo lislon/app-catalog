@@ -1,7 +1,6 @@
 // Export all common types
 export * from './common/sharedTypes.js'
 export * from './common/resourceTypes.js'
-export * from './common/dataRootTypes.js'
 export * from './common/appCatalogTypes.js'
 export * from './common/approvalMethodTypes.js'
 export * from './common/env/envTypes.js'

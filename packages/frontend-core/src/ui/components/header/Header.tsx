@@ -1,10 +1,8 @@
-import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { LogOut, Settings } from 'lucide-react'
 import type React from 'react'
 import AppCatalogLogo from '~/assets/app-catalog.svg?react'
-import EnvHopperLogo from '~/assets/env-hopper-logo.svg?react'
 import { ThemeSwitcher } from '~/components/ThemeSwitcher'
-import { getAppMode } from '~/lib/getAppMode'
 import {
   useAuth,
   useAuthActions,
@@ -12,7 +10,6 @@ import {
   useUser,
 } from '~/modules/auth'
 import { useAuthModal } from '~/modules/auth/AuthModalContext'
-import { ShareLinkButton } from '~/modules/resourceJump/ui/ShareLinkButton'
 import { Button } from '~/ui/button'
 import {
   DropdownMenu,
@@ -27,25 +24,6 @@ export interface HeaderProps {
   middle?: React.ReactNode
 }
 
-function HeaderNavLink({ to, label }: { to: string; label: string }) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const isActive = pathname === to || pathname.startsWith(`${to}/`)
-
-  return (
-    <Link
-      to={to}
-      className={
-        'px-4 py-3 text-sm font-medium rounded-md transition-colors ' +
-        (isActive
-          ? 'bg-accent text-foreground'
-          : 'text-muted-foreground hover:text-foreground hover:bg-accent/40')
-      }
-    >
-      {label}
-    </Link>
-  )
-}
-
 export function Header({ middle }: HeaderProps) {
   const { isLoading } = useAuth()
   const isAuthenticated = useIsAuthenticated()
@@ -53,7 +31,6 @@ export function Header({ middle }: HeaderProps) {
   const { logout } = useAuthActions()
   const navigate = useNavigate()
   const { open: openLoginModal } = useAuthModal()
-  const appMode = getAppMode()
 
   const handleLogout = async () => {
     try {
@@ -73,34 +50,20 @@ export function Header({ middle }: HeaderProps) {
     openLoginModal(currentUrl)
   }
 
-  const isCatalogMode = appMode === 'catalog'
-  const Logo = isCatalogMode ? AppCatalogLogo : EnvHopperLogo
-  const appTitle = isCatalogMode ? 'App Catalog' : 'Env‑Hopper'
-
   return (
     <div className="flex items-center mb-4 justify-between gap-2">
       <div className="flex items-center gap-4">
         <Link to="/">
           <div className="flex items-center gap-2">
-            <Logo className="h-16 w-16" />
+            <AppCatalogLogo className="h-16 w-16" />
             <span className="text-lg font-bold hidden md:block">
-              {appTitle}
+              App Catalog
             </span>
           </div>
         </Link>
-
-        {!isCatalogMode && (
-          <div className="hidden md:flex items-center gap-1">
-            <HeaderNavLink to="/catalog/apps" label="Apps" />
-            <HeaderNavLink to="/envs" label="Envs" />
-            <HeaderNavLink to="/dashboard" label="Hopper" />
-            {isAuthenticated && <HeaderNavLink to="/admin" label="Admin" />}
-          </div>
-        )}
       </div>
       {middle && <div className="sm:min-w-75">{middle}</div>}
       <div className="flex items-center gap-3">
-        <ShareLinkButton />
         <ThemeSwitcher />
         {isLoading ? (
           <Skeleton className="w-8 h-8 rounded-full" />

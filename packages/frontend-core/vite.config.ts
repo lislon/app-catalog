@@ -1,8 +1,6 @@
 import tanstackRouter from '@tanstack/router-plugin/vite'
 import { tanstackViteConfig } from '@tanstack/vite-config'
 import viteReact from '@vitejs/plugin-react'
-import fs from 'node:fs'
-import path from 'node:path'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
 import svgr from 'vite-plugin-svgr'
 import { defineConfig, mergeConfig } from 'vitest/config'
@@ -14,37 +12,6 @@ import type { ViteUserConfig } from 'vitest/config'
 const config = defineConfig(({ mode }) => {
   const tsconfigPath =
     mode === 'lenient' ? './tsconfig-lenient.json' : './tsconfig.json'
-
-  // Determine app mode and copy appropriate favicon
-  const appMode = process.env.VITE_EH_MODE || 'catalog'
-  const faviconSource =
-    appMode === 'hopper'
-      ? 'public/favicon-env-hopper.ico'
-      : 'public/favicon-app-catalog.ico'
-
-  // Copy favicon during config to ensure it's available for the build
-  const favIconPath = path.resolve(__dirname, faviconSource)
-  const faviconDestPath = path.resolve(__dirname, 'public/favicon.ico')
-
-  // Hook to handle favicon copy during build
-  const faviconPlugin = {
-    name: 'copy-favicon',
-    apply: 'build' as const,
-    resolveId: (id: string) => {
-      if (id === 'virtual-favicon') return id
-      return null
-    },
-    load: (id: string) => {
-      if (id === 'virtual-favicon') {
-        if (fs.existsSync(favIconPath)) {
-          const data = fs.readFileSync(favIconPath)
-          fs.writeFileSync(faviconDestPath, data)
-        }
-        return ''
-      }
-      return null
-    },
-  }
 
   const myConfig: ViteUserConfig = {
     server: {
@@ -165,7 +132,6 @@ const config = defineConfig(({ mode }) => {
           },
         ],
       }),
-      faviconPlugin,
     ],
   }
 

@@ -1,7 +1,7 @@
 import { useNavigate, useRouter, useSearch } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import type { AppForCatalog } from '@env-hopper/backend-core'
+import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { AppCatalogGrid } from '../grid/AppCatalogGrid'
 
