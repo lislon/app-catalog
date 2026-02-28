@@ -45,3 +45,5 @@ cd apps/backend
 prisma generate
 npx prisma migrate dev
 ```
+
+# Test alpha snapshot
