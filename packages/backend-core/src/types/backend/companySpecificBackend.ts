@@ -1,5 +1,3 @@
-import type { AppForCatalog } from '../common/appCatalogTypes'
-
 export interface AppCatalogCompanySpecificBackend {
-  getApps?: () => Promise<Array<AppForCatalog>>
+  // Empty interface - can be extended by company-specific implementations
 }

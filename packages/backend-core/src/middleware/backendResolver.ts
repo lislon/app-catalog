@@ -4,13 +4,10 @@ import type { EhBackendProvider } from './types'
 /**
  * Type guard to check if an object implements AppCatalogCompanySpecificBackend.
  */
-function isBackendInstance(obj: unknown): obj is AppCatalogCompanySpecificBackend {
-  return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    (typeof (obj as AppCatalogCompanySpecificBackend).getApps === 'function' ||
-      typeof (obj as AppCatalogCompanySpecificBackend).getApps === 'undefined')
-  )
+function isBackendInstance(
+  obj: unknown,
+): obj is AppCatalogCompanySpecificBackend {
+  return typeof obj === 'object' && obj !== null
 }
 
 /**
@@ -31,8 +28,12 @@ export function createBackendResolver(
   // If it's a function, call it and handle both sync and async results
   if (typeof provider === 'function') {
     return async () => {
-      const result = provider()
-      return result instanceof Promise ? result : result
+      const result = (
+        provider as () =>
+          | AppCatalogCompanySpecificBackend
+          | Promise<AppCatalogCompanySpecificBackend>
+      )()
+      return result instanceof Promise ? await result : result
     }
   }
 

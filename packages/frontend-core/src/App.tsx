@@ -5,8 +5,8 @@ import type { QueryClient } from '@tanstack/react-query'
 import type { TRPCRouter } from '@igstack/app-catalog-backend-core'
 import type { TRPCClient } from '@trpc/client'
 import type { AcDb } from './userDb/AcDb'
-import type { createEhRouter } from '~/util/createEhRouter'
-import { TRPCProvider } from '~/api/infra/trpc'
+import type { createEhRouter } from './util/createEhRouter'
+import { TRPCProvider } from './api/infra/trpc'
 
 export interface AppProps {
   router: ReturnType<typeof createEhRouter>
