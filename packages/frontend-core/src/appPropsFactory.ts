@@ -4,8 +4,8 @@ import { AcDb } from './userDb/AcDb'
 import type { TRPCRouter } from '@igstack/app-catalog-backend-core'
 import type { AppProps } from './App'
 import type { EhPlugin } from './modules/pluginCore/types'
-import { createQueryClient } from '~/api/infra/createQueryClient'
-import { createEhRouter } from '~/util/createEhRouter'
+import { createQueryClient } from './api/infra/createQueryClient'
+import { createEhRouter } from './util/createEhRouter'
 
 // registerSW();
 export function appPropsFactory(): AppProps {

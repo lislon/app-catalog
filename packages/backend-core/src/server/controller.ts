@@ -21,11 +21,9 @@ export function createTrpcRouter(auth?: BetterAuth) {
       }
     }),
 
-    appCatalog: publicProcedure.query(
-      async ({ ctx }): Promise<AppCatalogData> => {
-        return await getAppCatalogData(ctx.companySpecificBackend.getApps)
-      },
-    ),
+    appCatalog: publicProcedure.query(async (): Promise<AppCatalogData> => {
+      return await getAppCatalogData()
+    }),
 
     // Icon management routes
     icon: createIconRouter(),
