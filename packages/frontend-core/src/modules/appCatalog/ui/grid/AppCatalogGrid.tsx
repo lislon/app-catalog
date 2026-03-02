@@ -14,12 +14,7 @@ import React from 'react'
 import { cn } from '~/lib/utils'
 import type {} from '~/types/table'
 import { Badge } from '~/ui/badge'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '~/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '~/ui/tooltip'
 import {
   ResizableHandle,
   ResizablePanel,
@@ -373,16 +368,14 @@ export function AppCatalogGrid({
                 {row.original.displayName || 'Unnamed App'}
               </span>
               {row.original.deprecated && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <AlertCircle className="size-4 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">Deprecated</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <AlertCircle className="size-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="text-xs">Deprecated</p>
+                  </TooltipContent>
+                </Tooltip>
               )}
             </div>
           </div>
