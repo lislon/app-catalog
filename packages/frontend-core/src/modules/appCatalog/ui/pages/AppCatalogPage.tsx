@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { AppCatalogGrid } from '../grid/AppCatalogGrid'
+import { searchApps } from '../../utils/searchApps'
 
 import { Input } from '~/ui/input'
 
@@ -69,31 +70,17 @@ export function AppCatalogPage() {
   }, [searchValue, navigate, router.state.location.pathname, search])
 
   const filteredApps = useMemo(() => {
-    const normalizedSearchValue = searchValue.trim().toLowerCase()
+    // First apply search with smart sorting
+    const searchedApps = searchApps(apps, searchValue)
 
-    return apps
-      .filter((app) => {
-        if (normalizedSearchValue === '') {
-          return true
-        }
-        const name = app.displayName.toLowerCase() || ''
-        const slug = app.slug.toLowerCase() || ''
-        const description = app.description?.toLowerCase() || ''
-        const tags = app.tags?.join(' ').toLowerCase() || ''
+    // Then apply tag filter if present
+    if (filterTag === undefined) {
+      return searchedApps
+    }
 
-        return (
-          name.includes(normalizedSearchValue) ||
-          slug.includes(normalizedSearchValue) ||
-          description.includes(normalizedSearchValue) ||
-          tags.includes(normalizedSearchValue)
-        )
-      })
-      .filter((app) => {
-        return (
-          filterTag === undefined ||
-          app.tags?.some((tag) => tag.toLowerCase() === filterTag.toLowerCase())
-        )
-      })
+    return searchedApps.filter((app) =>
+      app.tags?.some((tag) => tag.toLowerCase() === filterTag.toLowerCase()),
+    )
   }, [apps, searchValue, filterTag])
 
   const handleAppClick = (app: AppForCatalog) => {
