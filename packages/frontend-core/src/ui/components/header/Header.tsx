@@ -3,6 +3,7 @@ import { LogOut, Settings } from 'lucide-react'
 import type React from 'react'
 import AppCatalogLogo from '~/assets/app-catalog.svg?react'
 import { ThemeSwitcher } from '~/components/ThemeSwitcher'
+import { useAppCatalogContext } from '~/modules/appCatalog/context/AppCatalogContext'
 import {
   useAuth,
   useAuthActions,
@@ -31,6 +32,7 @@ export function Header({ middle }: HeaderProps) {
   const { logout } = useAuthActions()
   const navigate = useNavigate()
   const { open: openLoginModal } = useAuthModal()
+  const { appVersion } = useAppCatalogContext()
 
   const handleLogout = async () => {
     try {
@@ -56,9 +58,25 @@ export function Header({ middle }: HeaderProps) {
         <Link to="/">
           <div className="flex items-center gap-2">
             <AppCatalogLogo className="h-16 w-16" />
-            <span className="text-lg font-bold hidden md:block">
-              App Catalog
-            </span>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold">App Catalog</span>
+              {appVersion &&
+                (appVersion.url ? (
+                  <a
+                    href={appVersion.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary hover:text-primary/80 transition-colors font-medium py-0.5"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {appVersion.displayName}
+                  </a>
+                ) : (
+                  <span className="text-xs text-muted-foreground py-0.5">
+                    {appVersion.displayName}
+                  </span>
+                ))}
+            </div>
           </div>
         </Link>
       </div>

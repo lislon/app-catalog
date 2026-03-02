@@ -5,7 +5,7 @@ import type {
 } from '@igstack/app-catalog-backend-core'
 import { useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import { createContext, use, useMemo } from 'react'
+import { createContext, use, useEffect, useMemo } from 'react'
 import { ApiQueryMagazineAppCatalog } from '~/modules/appCatalog'
 
 export interface AppCatalogContextIface {
@@ -13,6 +13,7 @@ export interface AppCatalogContextIface {
   isLoadingApps: boolean
   tagsDefinitions: Array<GroupingTagDefinition>
   approvalMethods: Array<AppApprovalMethod>
+  appVersion?: { displayName: string; url?: string }
 }
 
 export const AppCatalogContext = createContext<
@@ -34,9 +35,25 @@ export function AppCatalogProvider({ children }: AppCatalogProviderProps) {
       isLoadingApps,
       tagsDefinitions: data?.tagsDefinitions ?? [],
       approvalMethods: data?.approvalMethods ?? [],
+      appVersion: data?.appVersion,
     }),
-    [data?.approvalMethods, data?.apps, data?.tagsDefinitions, isLoadingApps],
+    [
+      data?.approvalMethods,
+      data?.apps,
+      data?.tagsDefinitions,
+      data?.appVersion,
+      isLoadingApps,
+    ],
   )
+
+  // Update document title based on app version
+  useEffect(() => {
+    if (data?.appVersion?.displayName === 'local') {
+      document.title = 'Local'
+    } else {
+      document.title = 'App Catalog'
+    }
+  }, [data?.appVersion?.displayName])
 
   return <AppCatalogContext value={contextValue}>{children}</AppCatalogContext>
 }
