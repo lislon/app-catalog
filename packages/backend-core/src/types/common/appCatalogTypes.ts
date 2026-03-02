@@ -68,4 +68,5 @@ export interface AppCatalogData {
   apps: Array<AppForCatalog>
   tagsDefinitions: Array<GroupingTagDefinition>
   approvalMethods: Array<AppApprovalMethod>
+  appVersion?: { displayName: string; url?: string }
 }

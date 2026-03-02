@@ -97,15 +97,6 @@ export function AppCatalogPage() {
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <div className="pb-4 shrink-0">
-        <div className="flex items-start justify-between gap-4 pb-4">
-          <div>
-            <div className="font-medium text-2xl">App Catalog</div>
-            <div className="text-sm text-muted-foreground">
-              {filteredApps.length} apps available
-            </div>
-          </div>
-        </div>
-
         <div className="w-full">
           <Input
             value={searchValue}
@@ -113,6 +104,9 @@ export function AppCatalogPage() {
             placeholder="Search apps by name, description, or tags…"
             aria-label="Search apps"
           />
+          <div className="text-sm text-muted-foreground p-1">
+            {filteredApps.length} apps available
+          </div>
         </div>
       </div>
 
