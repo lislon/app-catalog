@@ -280,6 +280,7 @@ export async function syncAppCatalog(
         links: app.links ?? null,
         iconName: app.iconName ?? null,
         screenshotIds: app.screenshotIds ?? [],
+        deprecated: app.deprecated ?? null,
       }
     })
 
