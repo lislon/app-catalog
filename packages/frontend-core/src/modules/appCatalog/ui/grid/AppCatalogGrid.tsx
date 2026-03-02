@@ -8,13 +8,12 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { AlertCircle, AppWindow, ExternalLink } from 'lucide-react'
+import { AppWindow, ExternalLink } from 'lucide-react'
 import React from 'react'
 
 import { cn } from '~/lib/utils'
 import type {} from '~/types/table'
 import { Badge } from '~/ui/badge'
-import { Tooltip, TooltipContent, TooltipTrigger } from '~/ui/tooltip'
 import {
   ResizableHandle,
   ResizablePanel,
@@ -368,14 +367,9 @@ export function AppCatalogGrid({
                 {row.original.displayName || 'Unnamed App'}
               </span>
               {row.original.deprecated && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <AlertCircle className="size-4 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs">Deprecated</p>
-                  </TooltipContent>
-                </Tooltip>
+                <span className="text-[0.7rem] text-muted-foreground">
+                  (Deprecated)
+                </span>
               )}
             </div>
           </div>
