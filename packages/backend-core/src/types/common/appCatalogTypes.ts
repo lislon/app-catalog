@@ -28,6 +28,12 @@ export interface AppForCatalog {
   links?: Array<{ url: string; title?: string }>
   iconName?: string // Optional icon identifier for display
   screenshotIds?: Array<string>
+  deprecated?: {
+    /** Slug of the replacement app */
+    replacementSlug: string
+    /** Deprecation message */
+    comment: string
+  }
 }
 
 // Derived catalog data returned by backend

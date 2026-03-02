@@ -124,15 +124,26 @@ function AppScreenshot({ app }: { app: AppForCatalog }) {
   )
 }
 
-function AppDetails({ app }: { app: AppForCatalog }) {
+function AppDetails({
+  app,
+  onAppClick,
+}: {
+  app: AppForCatalog
+  onAppClick?: (app: AppForCatalog) => void
+}) {
   const [isGalleryOpen, setIsGalleryOpen] = React.useState(false)
   const [galleryInitialIndex, setGalleryInitialIndex] = React.useState(0)
-  const { approvalMethods } = useAppCatalogContext()
+  const { approvalMethods, apps } = useAppCatalogContext()
 
   const handleScreenshotClick = (index: number) => {
     setGalleryInitialIndex(index)
     setIsGalleryOpen(true)
   }
+
+  // Find replacement app if deprecated
+  const replacementApp = app.deprecated?.replacementSlug
+    ? apps.find((a) => a.slug === app.deprecated?.replacementSlug)
+    : null
 
   return (
     <>
@@ -141,7 +152,12 @@ function AppDetails({ app }: { app: AppForCatalog }) {
         <div className="flex items-center gap-4 border-b pb-6">
           <AppIcon app={app} className="size-16" />
           <div>
-            <h2 className="text-2xl font-semibold">{app.displayName}</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-semibold">{app.displayName}</h2>
+              {app.deprecated && (
+                <Badge variant="destructive">Deprecated</Badge>
+              )}
+            </div>
             {app.appUrl && (
               <a
                 href={app.appUrl}
@@ -155,6 +171,27 @@ function AppDetails({ app }: { app: AppForCatalog }) {
             )}
           </div>
         </div>
+
+        {/* Deprecation Warning */}
+        {app.deprecated && (
+          <div className="mt-6 p-4 border border-destructive/50 rounded-lg bg-destructive/10">
+            <h3 className="text-sm font-semibold text-destructive mb-2">
+              This application is deprecated
+            </h3>
+            <p className="text-sm text-muted-foreground mb-3">
+              {app.deprecated.comment}
+            </p>
+            {replacementApp && (
+              <button
+                onClick={() => onAppClick?.(replacementApp)}
+                className="text-sm font-medium text-primary hover:underline inline-flex items-center gap-1"
+              >
+                View replacement: {replacementApp.displayName}
+                <ExternalLink className="size-3" />
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Description */}
         {app.description && (
@@ -325,9 +362,16 @@ export function AppCatalogGrid({
         cell: ({ row }) => (
           <div className="flex items-center gap-3">
             <AppIcon app={row.original} className="size-6" />
-            <span className="font-medium">
-              {row.original.displayName || 'Unnamed App'}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-medium">
+                {row.original.displayName || 'Unnamed App'}
+              </span>
+              {row.original.deprecated && (
+                <Badge variant="destructive" className="text-xs">
+                  Deprecated
+                </Badge>
+              )}
+            </div>
           </div>
         ),
         meta: {
@@ -474,7 +518,7 @@ export function AppCatalogGrid({
       <ResizablePanel defaultSize={40} minSize={25} className="overflow-hidden">
         <div className="h-full overflow-y-auto border-l bg-background pl-4">
           {selectedApp ? (
-            <AppDetails app={selectedApp} />
+            <AppDetails app={selectedApp} onAppClick={onAppClick} />
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               Select an app to view details
