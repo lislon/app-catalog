@@ -15,7 +15,7 @@ const config = defineConfig(({ mode }) => {
 
   const myConfig: ViteUserConfig = {
     server: {
-      port: 3999,
+      port: 4999,
       strictPort: true,
     },
     build: {

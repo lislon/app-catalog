@@ -81,6 +81,10 @@ export async function getAppsFromPrisma(): Promise<Array<AppForCatalog>> {
     const notes = row.notes == null ? undefined : row.notes
     const appUrl = row.appUrl == null ? undefined : row.appUrl
     const iconName = row.iconName == null ? undefined : row.iconName
+    const deprecated =
+      row.deprecated == null
+        ? undefined
+        : (row.deprecated as unknown as AppForCatalog['deprecated'])
 
     return {
       id: row.id,
@@ -94,6 +98,7 @@ export async function getAppsFromPrisma(): Promise<Array<AppForCatalog>> {
       appUrl,
       iconName,
       screenshotIds,
+      deprecated,
     }
   })
 }

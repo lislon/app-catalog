@@ -107,6 +107,8 @@ model DbAppForCatalog {
   links         Json? // Array of {displayName?: string, url: string}
   iconName      String? // Optional icon identifier matching DbAsset.name
   screenshotIds String[] @default([]) // Ordered array of DbAsset IDs
+  /// [AppDeprecation] - Deprecation info with optional replacement slug
+  deprecated    Json?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
