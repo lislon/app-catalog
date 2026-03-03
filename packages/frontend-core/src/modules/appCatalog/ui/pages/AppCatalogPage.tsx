@@ -156,6 +156,7 @@ export function AppCatalogPage() {
             selectedAppSlug={selectedAppSlug}
             groupingDefinition={groupingDefinition}
             onAppClick={handleAppClick}
+            hasSearch={!!deferredSearchValue}
           />
         )}
       </div>

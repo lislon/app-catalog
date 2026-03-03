@@ -39,6 +39,8 @@ export interface AppCatalogGridProps {
   selectedAppSlug?: string
   groupingDefinition?: GroupingTagDefinition
   onAppClick?: (app: AppForCatalog) => void
+  /** Whether search is active (affects group sorting) */
+  hasSearch?: boolean
 }
 
 function getIconUrl(iconName: string): string {
@@ -311,6 +313,7 @@ interface GroupedApps {
 function groupApps(
   apps: Array<AppForCatalog>,
   groupingDef?: GroupingTagDefinition,
+  hasSearch?: boolean,
 ): Array<GroupedApps> {
   if (!groupingDef) {
     const sortedApps = [...apps].sort((a, b) =>
@@ -362,6 +365,12 @@ function groupApps(
     result.push({ groupName: 'Other', apps: sortedUngrouped })
   }
 
+  // Sort groups: when no search, sort by app count descending
+  // When search is active, keep the order based on app relevance
+  if (!hasSearch) {
+    result.sort((a, b) => b.apps.length - a.apps.length)
+  }
+
   return result
 }
 
@@ -370,12 +379,13 @@ export function AppCatalogGrid({
   selectedAppSlug,
   groupingDefinition,
   onAppClick,
+  hasSearch = false,
 }: AppCatalogGridProps) {
   const selectedApp = selectedAppSlug
     ? apps.find((a) => a.slug === selectedAppSlug)
     : null
 
-  const groupedApps = groupApps(apps, groupingDefinition)
+  const groupedApps = groupApps(apps, groupingDefinition, hasSearch)
 
   // Flatten grouped apps to get display order for keyboard navigation
   const appsInDisplayOrder = React.useMemo(
