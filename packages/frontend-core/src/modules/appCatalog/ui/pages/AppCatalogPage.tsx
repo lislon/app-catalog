@@ -1,6 +1,6 @@
 import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
 import { X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { Button } from '~/ui/button'
 import {
   Empty,
@@ -35,6 +35,9 @@ export function AppCatalogPage() {
   const searchValue = filterState.searchValue
   const setSearchValue = actions.setSearchValue
 
+  // Defer the search value used for filtering to avoid blocking the input
+  const deferredSearchValue = useDeferredValue(searchValue)
+
   // State for top apps (loaded async)
   const [topAppSlugs, setTopAppSlugs] = useState<Array<string>>([])
 
@@ -64,13 +67,13 @@ export function AppCatalogPage() {
       })
     }
 
-    // Step 2: Apply search
-    result = searchApps(result, searchValue)
+    // Step 2: Apply search (using deferred value)
+    result = searchApps(result, deferredSearchValue)
 
     return result
   }, [
     apps,
-    searchValue,
+    deferredSearchValue,
     filterState.recentMode,
     filterState.tagFilters,
     topAppSlugs,
