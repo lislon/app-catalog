@@ -41,6 +41,8 @@ export interface AppCatalogFiltersState {
   recentMode: boolean
   /** Active tag filters (prefix -> value) */
   tagFilters: Record<string, string>
+  /** Search query value */
+  searchValue: string
 }
 
 /**
@@ -51,6 +53,8 @@ export interface AppCatalogFiltersActions {
   setRecentMode: (enabled: boolean) => void
   /** Set a tag filter (clears recent mode) */
   setTagFilter: (prefix: string, value: string | undefined) => void
+  /** Set search value */
+  setSearchValue: (value: string) => void
   /** Clear all filters (keeps search) */
   clearAllFilters: () => void
 }
@@ -90,6 +94,12 @@ export function AppCatalogFiltersProvider({
     defaultValue: {},
     decode: decodeFiltersParam,
     encode: encodeFiltersParam,
+  })
+
+  const [searchValue, setSearchValue] = useUrlSyncedState<string>({
+    key: 'q',
+    defaultValue: '',
+    encode: (value) => value.trim() || undefined,
   })
 
   // Compute available tags by prefix
@@ -142,12 +152,13 @@ export function AppCatalogFiltersProvider({
           setTagFilters({ ...tagFilters, [prefix]: value })
         }
       },
+      setSearchValue,
       clearAllFilters: () => {
         setRecentMode(false)
         setTagFilters({})
       },
     }),
-    [setRecentMode, setTagFilters, tagFilters],
+    [setRecentMode, setTagFilters, tagFilters, setSearchValue],
   )
 
   const contextValue = useMemo<AppCatalogFiltersContextValue>(
@@ -156,6 +167,7 @@ export function AppCatalogFiltersProvider({
         filterableTagPrefixes,
         recentMode,
         tagFilters,
+        searchValue,
       },
       data: {
         availableTagsByPrefix,
@@ -167,6 +179,7 @@ export function AppCatalogFiltersProvider({
       filterableTagPrefixes,
       recentMode,
       tagFilters,
+      searchValue,
       availableTagsByPrefix,
       hasActiveFilters,
       actions,

@@ -20,7 +20,7 @@ import { AppCatalogGrid } from '../grid/AppCatalogGrid'
 
 export function AppCatalogPage() {
   const { apps, isLoadingApps, tagsDefinitions } = useAppCatalogContext()
-  const { state: filterState } = useAppCatalogFilters()
+  const { state: filterState, actions } = useAppCatalogFilters()
   const { getTopApps } = useAppClickHistory()
 
   // URL-synced state
@@ -31,12 +31,9 @@ export function AppCatalogPage() {
     defaultValue: undefined,
   })
 
-  // Read search value from URL (managed by SearchAndFilterHeader)
-  const [searchValue, setSearchValue] = useUrlSyncedState<string>({
-    key: 'q',
-    defaultValue: '',
-    encode: (value) => value.trim() || undefined,
-  })
+  // Search value from context (URL-synced in AppCatalogFiltersContext)
+  const searchValue = filterState.searchValue
+  const setSearchValue = actions.setSearchValue
 
   // State for top apps (loaded async)
   const [topAppSlugs, setTopAppSlugs] = useState<Array<string>>([])
