@@ -8,12 +8,13 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { AppWindow, ExternalLink } from 'lucide-react'
-import React from 'react'
+import { AppWindow, ExternalLink, X } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
 
 import { cn } from '~/lib/utils'
 import type {} from '~/types/table'
 import { Badge } from '~/ui/badge'
+import { Button } from '~/ui/button'
 import {
   ResizableHandle,
   ResizablePanel,
@@ -402,6 +403,16 @@ export function AppCatalogGrid({
     getRowId: (row) => row.id,
   })
 
+  // Panel visibility state - default to closed
+  const [isPanelOpen, setIsPanelOpen] = useState(false)
+
+  // Open panel when app is selected
+  useEffect(() => {
+    if (selectedApp) {
+      setIsPanelOpen(true)
+    }
+  }, [selectedApp])
+
   // Auto-scroll to selected app (only on initial load)
   const hasScrolledRef = React.useRef(false)
   React.useEffect(() => {
@@ -419,11 +430,50 @@ export function AppCatalogGrid({
     onAppClick?.(app)
   }
 
+  const handleClosePanel = () => {
+    setIsPanelOpen(false)
+  }
+
   return (
     <ResizablePanelGroup orientation="horizontal" className="h-full w-full">
-      {/* Left Panel - Table */}
-      <ResizablePanel defaultSize={60} minSize={30} className="overflow-hidden">
-        <div className="h-full overflow-y-auto pr-2">
+      {/* Left Panel - Details (only render when panel is open) */}
+      {isPanelOpen && (
+        <>
+          <ResizablePanel
+            defaultSize={40}
+            minSize={25}
+            className="overflow-hidden"
+          >
+            <div className="h-full overflow-y-auto border-r bg-background pr-4">
+              {selectedApp ? (
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 z-10"
+                    onClick={handleClosePanel}
+                    aria-label="Close details panel"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                  <AppDetails app={selectedApp} onAppClick={onAppClick} />
+                </div>
+              ) : null}
+            </div>
+          </ResizablePanel>
+
+          {/* Resizable Handle */}
+          <ResizableHandle withHandle />
+        </>
+      )}
+
+      {/* Right Panel - Table */}
+      <ResizablePanel
+        defaultSize={isPanelOpen ? 60 : 100}
+        minSize={30}
+        className="overflow-hidden"
+      >
+        <div className="h-full overflow-y-auto pl-2">
           <Table>
             <TableHeader className="sticky top-0 border-b bg-background z-10">
               {table.getHeaderGroups().map((headerGroup) => (
@@ -511,22 +561,6 @@ export function AppCatalogGrid({
               ))}
             </TableBody>
           </Table>
-        </div>
-      </ResizablePanel>
-
-      {/* Resizable Handle */}
-      <ResizableHandle withHandle />
-
-      {/* Right Panel - Details */}
-      <ResizablePanel defaultSize={40} minSize={25} className="overflow-hidden">
-        <div className="h-full overflow-y-auto border-l bg-background pl-4">
-          {selectedApp ? (
-            <AppDetails app={selectedApp} onAppClick={onAppClick} />
-          ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              Select an app to view details
-            </div>
-          )}
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>

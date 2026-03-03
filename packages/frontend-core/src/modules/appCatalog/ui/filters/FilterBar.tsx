@@ -18,11 +18,6 @@ interface FilterBarProps {
 export function FilterBar({ totalCount, recentCount }: FilterBarProps) {
   const { state, data, actions } = useAppCatalogFilters()
 
-  // Don't show filter bar if no recent apps
-  if (recentCount === 0) {
-    return null
-  }
-
   return (
     <Card className="p-3">
       <div className="flex items-center gap-3">
@@ -41,6 +36,7 @@ export function FilterBar({ totalCount, recentCount }: FilterBarProps) {
             size="sm"
             onClick={() => actions.setRecentMode(true)}
             className="rounded-l-none"
+            disabled={recentCount === 0}
           >
             My Recent ({recentCount})
           </Button>
