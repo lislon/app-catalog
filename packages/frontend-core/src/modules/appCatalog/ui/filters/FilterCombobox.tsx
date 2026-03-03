@@ -64,6 +64,24 @@ export function FilterCombobox({
             <CommandList>
               <CommandEmpty>No options found.</CommandEmpty>
               <CommandGroup>
+                {/* Clear/Reset option */}
+                <CommandItem
+                  value="__clear__"
+                  onSelect={() => {
+                    onValueChange(undefined)
+                    setOpen(false)
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      'mr-2 h-4 w-4',
+                      !value ? 'opacity-100' : 'opacity-0',
+                    )}
+                  />
+                  <span className="text-muted-foreground">All</span>
+                </CommandItem>
+
+                {/* Regular options */}
                 {options.map((option) => (
                   <CommandItem
                     key={option.value}
