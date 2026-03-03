@@ -26,7 +26,7 @@ export function FilterBar({ totalCount, recentCount }: FilterBarProps) {
   return (
     <Card className="p-3">
       <div className="flex items-center gap-3">
-        {/* All / My Recent toggle group */}
+        {/* Show All / My Recent toggle group */}
         <div className="flex items-center rounded-md border">
           <Button
             variant={!state.recentMode ? 'default' : 'ghost'}
@@ -34,7 +34,7 @@ export function FilterBar({ totalCount, recentCount }: FilterBarProps) {
             onClick={() => actions.setRecentMode(false)}
             className="rounded-r-none border-r"
           >
-            All ({totalCount})
+            Show All ({totalCount})
           </Button>
           <Button
             variant={state.recentMode ? 'default' : 'ghost'}
@@ -46,15 +46,20 @@ export function FilterBar({ totalCount, recentCount }: FilterBarProps) {
           </Button>
         </div>
 
+        {/* Vertical divider */}
+        {state.filterableTagPrefixes.length > 0 && (
+          <div className="h-8 w-px bg-border" />
+        )}
+
         {/* Dynamic tag filter comboboxes */}
         {state.filterableTagPrefixes.map((prefix) => {
           const options = data.availableTagsByPrefix[prefix] || []
           const value = state.tagFilters[prefix]
 
-          // Find the display name for the prefix from tag definitions
-          // We'll just capitalize the prefix as a fallback
-          const label =
+          // Create "Filter By <Name>" label
+          const displayName =
             prefix.charAt(0).toUpperCase() + prefix.slice(1).replace(/-/g, ' ')
+          const label = `Filter By ${displayName}`
 
           return (
             <FilterCombobox
