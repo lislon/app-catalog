@@ -119,7 +119,10 @@ export function AppCatalogPage() {
               {searchValue && (
                 <Button
                   variant="outline"
-                  onClick={() => setSearchValue('')}
+                  onClick={() => {
+                    setSearchValue('')
+                    setSelectedAppSlug(undefined)
+                  }}
                   className="gap-2"
                 >
                   <X className="h-4 w-4" />
