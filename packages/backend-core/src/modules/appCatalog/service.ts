@@ -23,9 +23,48 @@ export async function getGroupingTagDefinitionsFromPrisma(): Promise<
 > {
   const prisma = getDbClient()
 
-  // Fetch all apps
+  // Fetch all tag definitions
   const rows = await prisma.dbAppTagDefinition.findMany()
-  return rows.map((row) => omit(row, ['id', 'updatedAt', 'createdAt']))
+
+  // Fetch all apps to count tag usage
+  const apps = await prisma.dbAppForCatalog.findMany({
+    select: { tags: true },
+  })
+
+  // Count tag values across all apps
+  const tagCounts = new Map<string, Map<string, number>>()
+
+  for (const app of apps) {
+    const tags = (app.tags as unknown as Array<string> | null) ?? []
+    for (const tag of tags) {
+      const [prefix, value] = tag.split(':')
+      if (prefix && value) {
+        if (!tagCounts.has(prefix)) {
+          tagCounts.set(prefix, new Map())
+        }
+        const prefixCounts = tagCounts.get(prefix)!
+        prefixCounts.set(value, (prefixCounts.get(value) ?? 0) + 1)
+      }
+    }
+  }
+
+  // Sort values by count and return definitions
+  return rows.map((row) => {
+    const definition = omit(row, ['id', 'updatedAt', 'createdAt'])
+    const counts = tagCounts.get(definition.prefix) ?? new Map()
+
+    // Sort values by count (descending)
+    const sortedValues = [...definition.values].sort((a, b) => {
+      const countA = counts.get(a.value) ?? 0
+      const countB = counts.get(b.value) ?? 0
+      return countB - countA
+    })
+
+    return {
+      ...definition,
+      values: sortedValues,
+    }
+  })
 }
 
 export async function getApprovalMethodsFromPrisma(): Promise<
