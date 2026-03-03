@@ -157,9 +157,23 @@ function AppDetails({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-2xl font-semibold">{app.displayName}</h2>
-              {app.deprecated && (
-                <Badge variant="destructive">Deprecated</Badge>
-              )}
+              {app.deprecated &&
+                (() => {
+                  const deprecationType = app.deprecated.type || 'deprecated'
+                  return (
+                    <Badge
+                      variant={
+                        deprecationType === 'discouraged'
+                          ? 'secondary'
+                          : 'destructive'
+                      }
+                    >
+                      {deprecationType === 'discouraged'
+                        ? 'Discouraged'
+                        : 'Deprecated'}
+                    </Badge>
+                  )
+                })()}
             </div>
             {app.appUrl && (
               <a
@@ -176,26 +190,45 @@ function AppDetails({
           </div>
         </div>
 
-        {/* Deprecation Warning */}
-        {app.deprecated && (
-          <div className="mt-6 p-4 border border-destructive/50 rounded-lg bg-destructive/10">
-            <h3 className="text-sm font-semibold text-destructive mb-2">
-              This application is deprecated
-            </h3>
-            <p className="text-sm text-muted-foreground mb-3">
-              {app.deprecated.comment}
-            </p>
-            {replacementApp && (
-              <button
-                onClick={() => onAppClick?.(replacementApp)}
-                className="text-sm font-medium text-primary hover:underline inline-flex items-center gap-1"
+        {/* Deprecation/Discouraged Warning */}
+        {app.deprecated &&
+          (() => {
+            const deprecationType = app.deprecated.type || 'deprecated'
+            const isDiscouraged = deprecationType === 'discouraged'
+            return (
+              <div
+                className={
+                  isDiscouraged
+                    ? 'mt-6 p-4 border border-yellow-500/50 rounded-lg bg-yellow-50 dark:bg-yellow-950/20'
+                    : 'mt-6 p-4 border border-destructive/50 rounded-lg bg-destructive/10'
+                }
               >
-                View replacement: {replacementApp.displayName}
-                <ExternalLink className="size-3" />
-              </button>
-            )}
-          </div>
-        )}
+                <h3
+                  className={
+                    isDiscouraged
+                      ? 'text-sm font-semibold text-yellow-700 dark:text-yellow-500 mb-2'
+                      : 'text-sm font-semibold text-destructive mb-2'
+                  }
+                >
+                  {isDiscouraged
+                    ? 'Usage discouraged'
+                    : 'This application is deprecated'}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  {app.deprecated.comment}
+                </p>
+                {replacementApp && (
+                  <button
+                    onClick={() => onAppClick?.(replacementApp)}
+                    className="text-sm font-medium text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    View replacement: {replacementApp.displayName}
+                    <ExternalLink className="size-3" />
+                  </button>
+                )}
+              </div>
+            )
+          })()}
 
         {/* Description */}
         {app.description && (
@@ -370,11 +403,26 @@ export function AppCatalogGrid({
               <span className="font-medium">
                 {row.original.displayName || 'Unnamed App'}
               </span>
-              {row.original.deprecated && (
-                <span className="text-[0.7rem] text-muted-foreground">
-                  (Deprecated)
-                </span>
-              )}
+              {row.original.deprecated &&
+                (() => {
+                  const deprecationType =
+                    row.original.deprecated.type || 'deprecated'
+                  return (
+                    <span
+                      className={
+                        deprecationType === 'discouraged'
+                          ? 'text-[0.7rem] text-yellow-600 dark:text-yellow-500'
+                          : 'text-[0.7rem] text-muted-foreground'
+                      }
+                    >
+                      (
+                      {deprecationType === 'discouraged'
+                        ? 'Discouraged'
+                        : 'Deprecated'}
+                      )
+                    </span>
+                  )
+                })()}
             </div>
           </div>
         ),
@@ -442,7 +490,7 @@ export function AppCatalogGrid({
         minSize={30}
         className="overflow-hidden"
       >
-        <div className="h-full overflow-y-auto pr-2 [scrollbar-gutter:stable]">
+        <div className="h-full overflow-y-auto pr-2 pb-6 [scrollbar-gutter:stable]">
           <Table>
             <TableHeader className="sticky top-0 border-b bg-background z-10">
               {table.getHeaderGroups().map((headerGroup) => (

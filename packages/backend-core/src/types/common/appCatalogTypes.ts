@@ -29,6 +29,8 @@ export interface AppForCatalog {
   iconName?: string // Optional icon identifier for display
   screenshotIds?: Array<string>
   deprecated?: {
+    /** Type of deprecation: 'deprecated' (fully deprecated) or 'discouraged' (use alternatives). Defaults to 'deprecated'. */
+    type?: 'deprecated' | 'discouraged'
     /** Slug of the replacement app (optional) */
     replacementSlug?: string
     /** Deprecation message */
