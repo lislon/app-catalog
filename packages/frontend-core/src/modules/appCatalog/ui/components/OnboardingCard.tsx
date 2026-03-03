@@ -1,6 +1,6 @@
 import { ArrowDown, ArrowUp, X } from 'lucide-react'
-import {  useEffect, useState } from 'react'
-import type {ReactNode} from 'react';
+import { useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Button } from '~/ui/button'
 import { Card } from '~/ui/card'
 
@@ -39,7 +39,7 @@ export function OnboardingCard({
   }
 
   return (
-    <Card className="p-6 mb-4 relative">
+    <Card className="p-4 mb-3 relative">
       <Button
         variant="ghost"
         size="icon"
@@ -51,12 +51,12 @@ export function OnboardingCard({
       </Button>
 
       <div className="pr-10">
-        <h2 className="text-xl font-bold mb-3">{title}</h2>
-        <p className="text-muted-foreground mb-4">{description}</p>
+        <h2 className="text-lg font-bold mb-2">{title}</h2>
+        <p className="text-muted-foreground mb-3 text-sm">{description}</p>
 
-        <div className="bg-muted/50 rounded-lg p-4">
-          <h3 className="font-semibold mb-2 text-sm">⌨️ Keyboard Navigation</h3>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+        <div className="bg-muted/50 rounded-lg p-3">
+          <h3 className="font-semibold mb-2 text-xs">Keyboard Navigation</h3>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1">
                 <kbd className="px-2 py-1 bg-background border rounded text-xs flex items-center">

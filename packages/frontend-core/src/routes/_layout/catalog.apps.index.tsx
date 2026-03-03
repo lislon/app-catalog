@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { catalogRouteLoader } from '~/modules/appCatalog/catalogRouteLoader'
-import { SearchAndFilterHeader } from '~/modules/appCatalog/ui/components/SearchAndFilterHeader'
 import { AppCatalogLayout } from '~/modules/appCatalog/ui/layout/AppCatalogLayout'
 import { AppCatalogPage } from '~/modules/appCatalog/ui/pages/AppCatalogPage'
 
@@ -22,11 +21,7 @@ function RouteComponent() {
   const { queryClient, trpcClient } = Route.useRouteContext()
 
   return (
-    <AppCatalogLayout
-      queryClient={queryClient}
-      trpcClient={trpcClient}
-      headerMiddle={<SearchAndFilterHeader />}
-    >
+    <AppCatalogLayout queryClient={queryClient} trpcClient={trpcClient}>
       <AppCatalogPage />
     </AppCatalogLayout>
   )
