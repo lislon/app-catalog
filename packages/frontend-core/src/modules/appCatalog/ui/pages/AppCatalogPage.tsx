@@ -1,87 +1,85 @@
-import { useNavigate, useRouter, useSearch } from '@tanstack/react-router'
-import { useEffect, useMemo, useRef, useState } from 'react'
-
 import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
-import { useAppCatalogContext } from '../../context/AppCatalogContext'
-import { AppCatalogGrid } from '../grid/AppCatalogGrid'
-import { searchApps } from '../../utils/searchApps'
-
+import { X } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Button } from '~/ui/button'
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '~/ui/empty'
 import { Input } from '~/ui/input'
+import { useAppCatalogContext } from '../../context/AppCatalogContext'
+import { useAppClickHistory } from '../../hooks/useAppClickHistory'
+import { useUrlSyncedState } from '../../hooks/useUrlSyncedState'
+import { searchApps } from '../../utils/searchApps'
+import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
+import { FilterBar } from '../filters/FilterBar'
+import { AppCatalogGrid } from '../grid/AppCatalogGrid'
 
 export function AppCatalogPage() {
-  const navigate = useNavigate()
-  const router = useRouter()
-  const search = useSearch({ strict: false })
   const { apps, isLoadingApps, tagsDefinitions } = useAppCatalogContext()
-  const [searchValue, setSearchValue] = useState('')
+  const { state: filterState } = useAppCatalogFilters()
+  const { getTopApps } = useAppClickHistory()
 
-  // Local state for app selection (source of truth)
-  const [selectedAppSlug, setSelectedAppSlug] = useState<string | undefined>()
+  // URL-synced state
+  const [selectedAppSlug, setSelectedAppSlug] = useUrlSyncedState<
+    string | undefined
+  >({
+    key: 'app',
+    defaultValue: undefined,
+  })
 
-  const filterTag = search.filterTag
+  const [searchValue, setSearchValue] = useUrlSyncedState<string>({
+    key: 'q',
+    defaultValue: '',
+    encode: (value) => value.trim() || undefined,
+  })
 
-  // Initialize from URL on mount (once only)
-  const isInitializedRef = useRef(false)
+  // State for top apps (loaded async)
+  const [topAppSlugs, setTopAppSlugs] = useState<Array<string>>([])
+
+  // Load top apps when recent mode is enabled
   useEffect(() => {
-    if (!isInitializedRef.current) {
-      if (search.app) {
-        setSelectedAppSlug(search.app)
-      }
-      if (search.q) {
-        setSearchValue(search.q)
-      }
-      isInitializedRef.current = true
+    if (filterState.recentMode) {
+      void getTopApps(10).then(setTopAppSlugs)
     }
-  }, [search.app, search.q])
-
-  // Sync app selection state to URL (async side effect)
-  useEffect(() => {
-    // Don't sync until after initialization
-    if (!isInitializedRef.current) return
-    if (selectedAppSlug === search.app) return // Already in sync
-
-    const currentPath = router.state.location.pathname
-    navigate({
-      to: currentPath,
-      search: { ...search, app: selectedAppSlug },
-      replace: true, // Use replace to avoid polluting history
-    })
-  }, [selectedAppSlug, navigate, router.state.location.pathname, search])
-
-  // Sync search value state to URL (async side effect)
-  useEffect(() => {
-    // Don't sync until after initialization
-    if (!isInitializedRef.current) return
-
-    const normalizedSearchValue = searchValue.trim()
-    const urlSearchValue = search.q || ''
-
-    if (normalizedSearchValue === urlSearchValue) return // Already in sync
-
-    const currentPath = router.state.location.pathname
-    navigate({
-      to: currentPath,
-      search: {
-        ...search,
-        q: normalizedSearchValue || undefined, // Remove param if empty
-      },
-      replace: true, // Use replace to avoid polluting history
-    })
-  }, [searchValue, navigate, router.state.location.pathname, search])
+  }, [filterState.recentMode, getTopApps])
 
   const filteredApps = useMemo(() => {
-    // First apply search with smart sorting
-    const searchedApps = searchApps(apps, searchValue)
+    let result = apps
 
-    // Then apply tag filter if present
-    if (filterTag === undefined) {
-      return searchedApps
+    // Step 1: Apply recent mode or tag filters
+    if (filterState.recentMode) {
+      // Filter to top 10 most clicked apps
+      result = apps.filter((app) => topAppSlugs.includes(app.slug))
+    } else if (Object.keys(filterState.tagFilters).length > 0) {
+      // Apply tag filters (AND condition)
+      result = apps.filter((app) => {
+        return Object.entries(filterState.tagFilters).every(
+          ([prefix, value]) => {
+            const fullTag = `${prefix}:${value}`
+            return app.tags?.some(
+              (tag) => tag.toLowerCase() === fullTag.toLowerCase(),
+            )
+          },
+        )
+      })
     }
 
-    return searchedApps.filter((app) =>
-      app.tags?.some((tag) => tag.toLowerCase() === filterTag.toLowerCase()),
-    )
-  }, [apps, searchValue, filterTag])
+    // Step 2: Apply search
+    result = searchApps(result, searchValue)
+
+    return result
+  }, [
+    apps,
+    searchValue,
+    filterState.recentMode,
+    filterState.tagFilters,
+    topAppSlugs,
+  ])
 
   const handleAppClick = (app: AppForCatalog) => {
     setSelectedAppSlug(app.slug)
@@ -97,13 +95,16 @@ export function AppCatalogPage() {
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <div className="pb-4 shrink-0">
-        <div className="w-full">
+        <div className="w-full space-y-2">
           <Input
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             placeholder="Search apps by name, description, or tags…"
             aria-label="Search apps"
           />
+
+          <FilterBar />
+
           <div className="text-sm text-muted-foreground p-1">
             {filteredApps.length} apps available
           </div>
@@ -111,12 +112,40 @@ export function AppCatalogPage() {
       </div>
 
       <div className="flex-1 min-h-0">
-        <AppCatalogGrid
-          apps={filteredApps}
-          selectedAppSlug={selectedAppSlug}
-          groupingDefinition={groupingDefinition}
-          onAppClick={handleAppClick}
-        />
+        {filteredApps.length === 0 ? (
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <X className="h-6 w-6" />
+              </EmptyMedia>
+              <EmptyTitle>
+                No apps found{searchValue && ` for "${searchValue}"`}
+              </EmptyTitle>
+              <EmptyDescription>
+                Try adjusting your search or filters
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              {searchValue && (
+                <Button
+                  variant="outline"
+                  onClick={() => setSearchValue('')}
+                  className="gap-2"
+                >
+                  <X className="h-4 w-4" />
+                  Clear search
+                </Button>
+              )}
+            </EmptyContent>
+          </Empty>
+        ) : (
+          <AppCatalogGrid
+            apps={filteredApps}
+            selectedAppSlug={selectedAppSlug}
+            groupingDefinition={groupingDefinition}
+            onAppClick={handleAppClick}
+          />
+        )}
       </div>
     </div>
   )
