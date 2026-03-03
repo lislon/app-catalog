@@ -53,7 +53,7 @@ export function Header({ middle }: HeaderProps) {
   }
 
   return (
-    <div className="flex items-center mb-4 gap-2">
+    <div className="flex items-center mb-4 pb-4 gap-2 border-b">
       <div className="flex items-center gap-4">
         <Link to="/">
           <div className="flex items-center gap-2">
