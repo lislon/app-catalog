@@ -10,13 +10,11 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '~/ui/empty'
-import { Input } from '~/ui/input'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { useUrlSyncedState } from '../../hooks/useUrlSyncedState'
 import { searchApps } from '../../utils/searchApps'
 import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
-import { FilterBar } from '../filters/FilterBar'
 import { AppCatalogGrid } from '../grid/AppCatalogGrid'
 
 export function AppCatalogPage() {
@@ -32,6 +30,7 @@ export function AppCatalogPage() {
     defaultValue: undefined,
   })
 
+  // Read search value from URL (managed by SearchAndFilterHeader)
   const [searchValue, setSearchValue] = useUrlSyncedState<string>({
     key: 'q',
     defaultValue: '',
@@ -92,26 +91,6 @@ export function AppCatalogPage() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div className="pb-4 shrink-0">
-        <div className="w-full space-y-2">
-          <Input
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            placeholder="Search apps by name, description, or tags…"
-            aria-label="Search apps"
-          />
-
-          <FilterBar
-            totalCount={apps.length}
-            recentCount={topAppSlugs.length}
-          />
-
-          <div className="text-sm text-muted-foreground p-1">
-            {filteredApps.length} apps available
-          </div>
-        </div>
-      </div>
-
       <div className="flex-1 min-h-0">
         {filteredApps.length === 0 ? (
           <Empty>
