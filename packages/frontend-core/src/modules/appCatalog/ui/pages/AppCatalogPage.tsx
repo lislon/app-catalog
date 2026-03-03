@@ -10,13 +10,14 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '~/ui/empty'
-import { Input } from '~/ui/input'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
+import { useAppCounts } from '../../hooks/useAppCounts'
 import { useUrlSyncedState } from '../../hooks/useUrlSyncedState'
 import { searchApps } from '../../utils/searchApps'
 import { OnboardingCard } from '../components/OnboardingCard'
 import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
+import { FilterBar } from '../filters/FilterBar'
 import { AppCatalogGrid } from '../grid/AppCatalogGrid'
 
 export function AppCatalogPage() {
@@ -80,6 +81,13 @@ export function AppCatalogPage() {
     topAppSlugs,
   ])
 
+  // Calculate counts for FilterBar
+  const { allCount, recentCount } = useAppCounts({
+    apps,
+    topAppSlugs,
+    searchValue: deferredSearchValue,
+  })
+
   const handleAppClick = (app: AppForCatalog) => {
     setSelectedAppSlug(app.slug)
   }
@@ -97,13 +105,8 @@ export function AppCatalogPage() {
         <OnboardingCard />
       </div>
 
-      <div className="pb-4 shrink-0">
-        <Input
-          value={searchValue}
-          onChange={(e) => setSearchValue(e.target.value)}
-          placeholder="Search apps by name, description, or tags…"
-          aria-label="Search apps"
-        />
+      <div className="shrink-0">
+        <FilterBar totalCount={allCount} recentCount={recentCount} />
       </div>
 
       <div className="flex-1 min-h-0">

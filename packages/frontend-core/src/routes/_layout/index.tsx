@@ -3,7 +3,6 @@ import { z } from 'zod'
 import { appCatalogRouteLoader } from '~/modules/appCatalog/routeLoader'
 import { AppCatalogLayout } from '~/modules/appCatalog/ui/layout/AppCatalogLayout'
 import { AppCatalogPage } from '~/modules/appCatalog/ui/pages/AppCatalogPage'
-import { SearchAndFilterHeader } from '~/modules/appCatalog/ui/components/SearchAndFilterHeader'
 
 const searchSchema = z.object({
   app: z.string().optional(),
@@ -25,11 +24,7 @@ function RouteComponent() {
   const { queryClient, trpcClient } = Route.useRouteContext()
 
   return (
-    <AppCatalogLayout
-      queryClient={queryClient}
-      trpcClient={trpcClient}
-      headerMiddle={<SearchAndFilterHeader />}
-    >
+    <AppCatalogLayout queryClient={queryClient} trpcClient={trpcClient}>
       <AppCatalogPage />
     </AppCatalogLayout>
   )
