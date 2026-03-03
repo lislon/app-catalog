@@ -9,30 +9,82 @@ interface LinkCheck {
   linkType: 'appUrl' | 'sources' | 'accessRequest.urls'
 }
 
-async function checkUrl(
+interface CheckLinksOptions {
+  maxConcurrent?: number
+  timeout?: number
+  maxRetries?: number
+  onProgress?: (result: LinkCheck) => void
+}
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function checkUrlWithRetry(
   url: string,
+  options: {
+    timeout: number
+    maxRetries: number
+  },
 ): Promise<{ status: number | null; error?: string }> {
-  try {
-    const response = await fetch(url, {
-      method: 'HEAD',
-      redirect: 'follow',
-      signal: AbortSignal.timeout(5000), // 5 second timeout
-    })
-    return { status: response.status }
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      return { status: null, error: error.message }
+  let lastError: string | undefined
+
+  for (let attempt = 0; attempt <= options.maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, {
+        method: 'HEAD',
+        redirect: 'manual', // Don't follow redirects
+        signal: AbortSignal.timeout(options.timeout),
+      })
+      return { status: response.status }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error)
+      lastError = errorMessage
+
+      // Check if it's a retryable error (timeout or fetch failed)
+      const isRetryable =
+        errorMessage.includes('aborted') ||
+        errorMessage.includes('timeout') ||
+        errorMessage.includes('fetch failed')
+
+      if (isRetryable && attempt < options.maxRetries) {
+        // Exponential backoff: 1s, 2s, 4s
+        const backoffMs = 1000 * 2 ** attempt
+        await sleep(backoffMs)
+        continue
+      }
+
+      break
     }
-    return { status: null, error: String(error) }
   }
+
+  return { status: null, error: lastError }
 }
 
 function getStatusEmoji(status: number | null): string {
   if (status === null) return '❌'
   if (status >= 200 && status < 300) return '✅'
   if (status >= 300 && status < 400) return '🔀'
-  if (status >= 400 && status < 500) return '⚠️'
+  if (status === 403) return '🔒' // 403 is not an error, just forbidden
+  if (status && status >= 400 && status < 500) return '⚠️'
   return '❌'
+}
+
+function isWorkingLink(status: number | null): boolean {
+  if (status === null) return false
+  // 2xx, 3xx, and 403 are considered working
+  if (status >= 200 && status < 400) return true
+  if (status === 403) return true
+  return false
+}
+
+function isBrokenLink(status: number | null): boolean {
+  if (status === null) return true
+  // 403 is not broken
+  if (status === 403) return false
+  // 4xx (except 403) and 5xx are broken
+  return status >= 400
 }
 
 function formatStatus(status: number | null, error?: string): string {
@@ -83,15 +135,22 @@ async function getAppsFromDb(): Promise<Array<AppForCatalog>> {
 /**
  * Check all links in the app catalog and return a report
  */
-export async function checkAllLinks(): Promise<{
+export async function checkAllLinks(options: CheckLinksOptions = {}): Promise<{
   total: number
   working: number
   broken: number
   redirects: number
   checks: Array<LinkCheck>
 }> {
+  const {
+    maxConcurrent = 10,
+    timeout = 60000,
+    maxRetries = 3,
+    onProgress,
+  } = options
+
   const apps = await getAppsFromDb()
-  const checks: Array<LinkCheck> = []
+  const checks: Array<Omit<LinkCheck, 'status' | 'error'>> = []
 
   // Collect all links
   for (const app of apps) {
@@ -99,7 +158,6 @@ export async function checkAllLinks(): Promise<{
     if (app.appUrl) {
       checks.push({
         url: app.appUrl,
-        status: null,
         appSlug: app.slug,
         linkType: 'appUrl',
       })
@@ -110,7 +168,6 @@ export async function checkAllLinks(): Promise<{
       for (const source of app.sources) {
         checks.push({
           url: source,
-          status: null,
           appSlug: app.slug,
           linkType: 'sources',
         })
@@ -122,7 +179,6 @@ export async function checkAllLinks(): Promise<{
       for (const link of app.accessRequest.urls) {
         checks.push({
           url: link.url,
-          status: null,
           appSlug: app.slug,
           linkType: 'accessRequest.urls',
         })
@@ -130,24 +186,51 @@ export async function checkAllLinks(): Promise<{
     }
   }
 
-  // Check all links
+  // Check all links with concurrency control
   const results: Array<LinkCheck> = []
+  const queue = [...checks]
+  const inProgress = new Set<Promise<void>>()
 
-  for (const check of checks) {
-    const result = await checkUrl(check.url)
+  while (queue.length > 0 || inProgress.size > 0) {
+    // Start new requests up to maxConcurrent
+    while (queue.length > 0 && inProgress.size < maxConcurrent) {
+      const check = queue.shift()!
 
-    const linkCheck: LinkCheck = {
-      ...check,
-      status: result.status,
-      error: result.error,
+      const promise = (async () => {
+        const result = await checkUrlWithRetry(check.url, {
+          timeout,
+          maxRetries,
+        })
+
+        const linkCheck: LinkCheck = {
+          ...check,
+          status: result.status,
+          error: result.error,
+        }
+        results.push(linkCheck)
+
+        // Stream result if callback provided
+        if (onProgress) {
+          onProgress(linkCheck)
+        }
+      })()
+
+      inProgress.add(promise)
+
+      // Clean up when promise completes
+      void promise.finally(() => {
+        inProgress.delete(promise)
+      })
     }
-    results.push(linkCheck)
+
+    // Wait for at least one to complete before continuing
+    if (inProgress.size > 0) {
+      await Promise.race(inProgress)
+    }
   }
 
-  const working = results.filter(
-    (r) => r.status && r.status >= 200 && r.status < 300,
-  )
-  const broken = results.filter((r) => r.status === null || r.status >= 400)
+  const working = results.filter((r) => isWorkingLink(r.status))
+  const broken = results.filter((r) => isBrokenLink(r.status))
   const redirects = results.filter(
     (r) => r.status && r.status >= 300 && r.status < 400,
   )
@@ -177,9 +260,7 @@ export function printLinkCheckReport(report: {
   console.log(`🔀 Redirects: ${report.redirects}`)
   console.log()
 
-  const broken = report.checks.filter(
-    (r) => r.status === null || r.status >= 400,
-  )
+  const broken = report.checks.filter((r) => isBrokenLink(r.status))
   const redirects = report.checks.filter(
     (r) => r.status && r.status >= 300 && r.status < 400,
   )
@@ -222,7 +303,7 @@ export function printLinkCheckReport(report: {
       total: 0,
     }
     stats.total++
-    if (result.status && result.status >= 200 && result.status < 300) {
+    if (isWorkingLink(result.status)) {
       stats.working++
     } else {
       stats.broken++
