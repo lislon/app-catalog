@@ -408,13 +408,7 @@ export function AppCatalogGrid({
                   const deprecationType =
                     row.original.deprecated.type || 'deprecated'
                   return (
-                    <span
-                      className={
-                        deprecationType === 'discouraged'
-                          ? 'text-[0.7rem] text-yellow-600 dark:text-yellow-500'
-                          : 'text-[0.7rem] text-muted-foreground'
-                      }
-                    >
+                    <span className="text-[0.7rem] text-muted-foreground">
                       (
                       {deprecationType === 'discouraged'
                         ? 'Discouraged'

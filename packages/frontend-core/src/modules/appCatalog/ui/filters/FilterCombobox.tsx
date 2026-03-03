@@ -22,6 +22,8 @@ interface FilterComboboxProps {
   options: Array<TagOption>
   /** Currently selected value */
   value: string | undefined
+  /** Counts for each option value */
+  counts: Record<string, number>
   /** Callback when value changes */
   onValueChange: (value: string | undefined) => void
 }
@@ -34,11 +36,13 @@ export function FilterCombobox({
   label,
   options,
   value,
+  counts,
   onValueChange,
 }: FilterComboboxProps) {
   const [open, setOpen] = useState(false)
 
   const selectedOption = options.find((opt) => opt.value === value)
+  const selectedCount = value ? counts[value] || 0 : 0
 
   return (
     <div className="flex items-center gap-1">
@@ -48,20 +52,22 @@ export function FilterCombobox({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="min-w-[180px] justify-between"
+            className="min-w-[220px] justify-between"
           >
             {selectedOption ? (
-              <span className="truncate">{selectedOption.displayName}</span>
+              <span className="truncate">
+                {selectedOption.displayName} ({selectedCount})
+              </span>
             ) : (
               <span className="text-muted-foreground">{label}</span>
             )}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[240px] p-0">
+        <PopoverContent className="w-[320px] p-0">
           <Command>
             <CommandInput placeholder={`Search ${label.toLowerCase()}...`} />
-            <CommandList>
+            <CommandList className="max-h-[400px]">
               <CommandEmpty>No options found.</CommandEmpty>
               <CommandGroup>
                 {/* Clear/Reset option */}
@@ -82,31 +88,39 @@ export function FilterCombobox({
                 </CommandItem>
 
                 {/* Regular options */}
-                {options.map((option) => (
-                  <CommandItem
-                    key={option.value}
-                    value={option.displayName}
-                    onSelect={() => {
-                      onValueChange(option.value)
-                      setOpen(false)
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        'mr-2 h-4 w-4',
-                        value === option.value ? 'opacity-100' : 'opacity-0',
-                      )}
-                    />
-                    <div className="flex flex-col">
-                      <span>{option.displayName}</span>
-                      {option.description && (
-                        <span className="text-xs text-muted-foreground">
-                          {option.description}
-                        </span>
-                      )}
-                    </div>
-                  </CommandItem>
-                ))}
+                {options.map((option) => {
+                  const count = counts[option.value] || 0
+                  return (
+                    <CommandItem
+                      key={option.value}
+                      value={option.displayName}
+                      onSelect={() => {
+                        onValueChange(option.value)
+                        setOpen(false)
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          'mr-2 h-4 w-4',
+                          value === option.value ? 'opacity-100' : 'opacity-0',
+                        )}
+                      />
+                      <div className="flex flex-col flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span>{option.displayName}</span>
+                          <span className="text-xs text-muted-foreground">
+                            ({count})
+                          </span>
+                        </div>
+                        {option.description && (
+                          <span className="text-xs text-muted-foreground">
+                            {option.description}
+                          </span>
+                        )}
+                      </div>
+                    </CommandItem>
+                  )
+                })}
               </CommandGroup>
             </CommandList>
           </Command>

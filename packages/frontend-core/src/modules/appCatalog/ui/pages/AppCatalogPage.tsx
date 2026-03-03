@@ -51,13 +51,18 @@ export function AppCatalogPage() {
   const filteredApps = useMemo(() => {
     let result = apps
 
-    // Step 1: Apply recent mode or tag filters
+    // Step 1: Filter deprecated apps (if not showing them)
+    if (!filterState.showDeprecated) {
+      result = result.filter((app) => !app.deprecated)
+    }
+
+    // Step 2: Apply recent mode or tag filters
     if (filterState.recentMode) {
       // Filter to top 10 most clicked apps
-      result = apps.filter((app) => topAppSlugs.includes(app.slug))
+      result = result.filter((app) => topAppSlugs.includes(app.slug))
     } else if (Object.keys(filterState.tagFilters).length > 0) {
       // Apply tag filters (AND condition)
-      result = apps.filter((app) => {
+      result = result.filter((app) => {
         return Object.entries(filterState.tagFilters).every(
           ([prefix, value]) => {
             const fullTag = `${prefix}:${value}`
@@ -69,7 +74,7 @@ export function AppCatalogPage() {
       })
     }
 
-    // Step 2: Apply search (using deferred value)
+    // Step 3: Apply search (using deferred value)
     result = searchApps(result, deferredSearchValue)
 
     return result
@@ -78,11 +83,12 @@ export function AppCatalogPage() {
     deferredSearchValue,
     filterState.recentMode,
     filterState.tagFilters,
+    filterState.showDeprecated,
     topAppSlugs,
   ])
 
   // Calculate counts for FilterBar
-  const { allCount, recentCount } = useAppCounts({
+  const { allCount, recentCount, deprecatedCount } = useAppCounts({
     apps,
     topAppSlugs,
     searchValue: deferredSearchValue,
@@ -106,7 +112,12 @@ export function AppCatalogPage() {
       </div>
 
       <div className="shrink-0">
-        <FilterBar totalCount={allCount} recentCount={recentCount} />
+        <FilterBar
+          totalCount={allCount}
+          recentCount={recentCount}
+          deprecatedCount={deprecatedCount}
+          apps={apps}
+        />
       </div>
 
       <div className="flex-1 min-h-0">

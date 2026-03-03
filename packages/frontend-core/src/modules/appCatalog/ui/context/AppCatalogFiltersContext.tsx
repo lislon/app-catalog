@@ -43,6 +43,8 @@ export interface AppCatalogFiltersState {
   tagFilters: Record<string, string>
   /** Search query value */
   searchValue: string
+  /** Whether to show deprecated apps (default: false) */
+  showDeprecated: boolean
 }
 
 /**
@@ -55,6 +57,8 @@ export interface AppCatalogFiltersActions {
   setTagFilter: (prefix: string, value: string | undefined) => void
   /** Set search value */
   setSearchValue: (value: string) => void
+  /** Set whether to show deprecated apps */
+  setShowDeprecated: (show: boolean) => void
   /** Clear all filters (keeps search) */
   clearAllFilters: () => void
 }
@@ -102,6 +106,13 @@ export function AppCatalogFiltersProvider({
     encode: (value) => value.trim() || undefined,
   })
 
+  const [showDeprecated, setShowDeprecated] = useUrlSyncedState({
+    key: 'deprecated',
+    defaultValue: false,
+    decode: (value) => value === '1',
+    encode: (value) => (value ? '1' : undefined),
+  })
+
   // Compute available tags by prefix
   const availableTagsByPrefix = useMemo(() => {
     const result: Record<string, Array<TagOption>> = {}
@@ -130,10 +141,8 @@ export function AppCatalogFiltersProvider({
   const actions = useMemo<AppCatalogFiltersActions>(
     () => ({
       setRecentMode: (enabled: boolean) => {
-        if (enabled) {
-          // Clear tag filters when enabling recent mode
-          setTagFilters({})
-        }
+        // Always clear tag filters when changing mode
+        setTagFilters({})
         setRecentMode(enabled)
       },
       setTagFilter: (prefix: string, value: string | undefined) => {
@@ -153,12 +162,19 @@ export function AppCatalogFiltersProvider({
         }
       },
       setSearchValue,
+      setShowDeprecated,
       clearAllFilters: () => {
         setRecentMode(false)
         setTagFilters({})
       },
     }),
-    [setRecentMode, setTagFilters, tagFilters, setSearchValue],
+    [
+      setRecentMode,
+      setTagFilters,
+      tagFilters,
+      setSearchValue,
+      setShowDeprecated,
+    ],
   )
 
   const contextValue = useMemo<AppCatalogFiltersContextValue>(
@@ -168,6 +184,7 @@ export function AppCatalogFiltersProvider({
         recentMode,
         tagFilters,
         searchValue,
+        showDeprecated,
       },
       data: {
         availableTagsByPrefix,
@@ -180,6 +197,7 @@ export function AppCatalogFiltersProvider({
       recentMode,
       tagFilters,
       searchValue,
+      showDeprecated,
       availableTagsByPrefix,
       hasActiveFilters,
       actions,

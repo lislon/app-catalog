@@ -20,19 +20,32 @@ export function useAppCounts({
 }: UseAppCountsOptions) {
   const { state: filterState } = useAppCatalogFilters()
 
-  // Count for "My Recent" (with search applied)
-  const recentCount = useMemo(() => {
-    const recentApps = apps.filter((app) => topAppSlugs.includes(app.slug))
-    return searchApps(recentApps, searchValue).length
-  }, [apps, topAppSlugs, searchValue])
+  // Count of deprecated apps (total, no filters applied)
+  const deprecatedCount = useMemo(() => {
+    return apps.filter((app) => app.deprecated).length
+  }, [apps])
 
-  // Count for "Show All" (with tag filters and search applied, but not recent mode)
+  // Count for "My Recent" (with search applied, respects showDeprecated)
+  const recentCount = useMemo(() => {
+    let recentApps = apps.filter((app) => topAppSlugs.includes(app.slug))
+    if (!filterState.showDeprecated) {
+      recentApps = recentApps.filter((app) => !app.deprecated)
+    }
+    return searchApps(recentApps, searchValue).length
+  }, [apps, topAppSlugs, searchValue, filterState.showDeprecated])
+
+  // Count for "Show All" (respects showDeprecated, tag filters, and search)
   const allCount = useMemo(() => {
     let result = apps
 
+    // Apply deprecated filter
+    if (!filterState.showDeprecated) {
+      result = result.filter((app) => !app.deprecated)
+    }
+
     // Apply tag filters if any
     if (Object.keys(filterState.tagFilters).length > 0) {
-      result = apps.filter((app) => {
+      result = result.filter((app) => {
         return Object.entries(filterState.tagFilters).every(
           ([prefix, value]) => {
             const fullTag = `${prefix}:${value}`
@@ -45,7 +58,7 @@ export function useAppCounts({
     }
 
     return searchApps(result, searchValue).length
-  }, [apps, filterState.tagFilters, searchValue])
+  }, [apps, filterState.tagFilters, filterState.showDeprecated, searchValue])
 
-  return { recentCount, allCount }
+  return { recentCount, allCount, deprecatedCount }
 }
