@@ -30,6 +30,7 @@ import {
 import { AccessRequestSection } from '../components/AccessRequestSection'
 import { ScreenshotGallery } from '../components/ScreenshotGallery'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
+import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation'
 
 export interface AppCatalogGridProps {
@@ -134,6 +135,7 @@ function AppDetails({
   const [isGalleryOpen, setIsGalleryOpen] = React.useState(false)
   const [galleryInitialIndex, setGalleryInitialIndex] = React.useState(0)
   const { approvalMethods, apps } = useAppCatalogContext()
+  const { recordClick } = useAppClickHistory()
 
   const handleScreenshotClick = (index: number) => {
     setGalleryInitialIndex(index)
@@ -163,6 +165,7 @@ function AppDetails({
                 href={app.appUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => recordClick(app.slug)}
                 className="mt-1 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
               >
                 {app.appUrl.replaceAll(/https?:\/\//g, '')}

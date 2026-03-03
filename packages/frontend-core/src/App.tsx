@@ -7,20 +7,31 @@ import type { TRPCClient } from '@trpc/client'
 import type { AcDb } from './userDb/AcDb'
 import type { createEhRouter } from './util/createEhRouter'
 import { TRPCProvider } from './api/infra/trpc'
+import type { UiSettings } from './types/uiSettings'
+import { UiSettingsContext } from './context/UiSettingsContext'
 
 export interface AppProps {
   router: ReturnType<typeof createEhRouter>
   queryClient: QueryClient
   trpcClient: TRPCClient<TRPCRouter>
   db: AcDb
+  uiSettings?: UiSettings
 }
 
-export function App({ router, queryClient, trpcClient, db }: AppProps) {
+export function App({
+  router,
+  queryClient,
+  trpcClient,
+  db,
+  uiSettings,
+}: AppProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <TRPCProvider queryClient={queryClient} trpcClient={trpcClient}>
         <DbProvider db={db}>
-          <RouterProvider router={router} />
+          <UiSettingsContext value={uiSettings}>
+            <RouterProvider router={router} />
+          </UiSettingsContext>
         </DbProvider>
       </TRPCProvider>
     </QueryClientProvider>
