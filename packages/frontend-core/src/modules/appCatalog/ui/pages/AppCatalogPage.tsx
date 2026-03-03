@@ -15,6 +15,7 @@ import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { useUrlSyncedState } from '../../hooks/useUrlSyncedState'
 import { searchApps } from '../../utils/searchApps'
+import { OnboardingCard } from '../components/OnboardingCard'
 import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
 import { AppCatalogGrid } from '../grid/AppCatalogGrid'
 
@@ -92,6 +93,10 @@ export function AppCatalogPage() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
+      <div className="shrink-0">
+        <OnboardingCard />
+      </div>
+
       <div className="pb-4 shrink-0">
         <Input
           value={searchValue}

@@ -442,7 +442,7 @@ export function AppCatalogGrid({
         minSize={30}
         className="overflow-hidden"
       >
-        <div className="h-full overflow-y-auto pr-2">
+        <div className="h-full overflow-y-auto pr-2 [scrollbar-gutter:stable]">
           <Table>
             <TableHeader className="sticky top-0 border-b bg-background z-10">
               {table.getHeaderGroups().map((headerGroup) => (
