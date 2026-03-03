@@ -153,6 +153,15 @@ export interface EhMiddlewareOptions {
 
   /** Lifecycle hooks */
   hooks?: EhLifecycleHooks
+
+  /**
+   * Custom script URLs to inject at the end of the HTML body.
+   * Useful for analytics, monitoring, or other third-party scripts.
+   *
+   * @example
+   * customScripts: ['/assets-static/analytics/analytics.js']
+   */
+  customScripts?: Array<string>
 }
 
 /**
