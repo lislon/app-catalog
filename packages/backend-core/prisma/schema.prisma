@@ -109,6 +109,7 @@ model DbAppForCatalog {
   screenshotIds String[] @default([]) // Ordered array of DbAsset IDs
   /// [AppDeprecation] - Deprecation info with optional replacement slug
   deprecated    Json?
+  sources       String[] @default([]) // Array of source URLs (Confluence pages, docs, etc.)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

@@ -94,9 +94,31 @@ export function AppCatalogPage() {
     searchValue: deferredSearchValue,
   })
 
+  // Auto-open details when only 1 result
+  useEffect(() => {
+    if (filteredApps.length === 1 && filteredApps[0]) {
+      setSelectedAppSlug(filteredApps[0].slug)
+    }
+  }, [filteredApps, setSelectedAppSlug])
+
   const handleAppClick = (app: AppForCatalog) => {
     setSelectedAppSlug(app.slug)
   }
+
+  const handleClearFilters = () => {
+    setSearchValue('')
+    actions.clearAllFilters()
+    setSelectedAppSlug(undefined)
+  }
+
+  // Calculate total apps count (respecting showDeprecated setting)
+  const totalAppsCount = useMemo(() => {
+    let count = apps.length
+    if (!filterState.showDeprecated) {
+      count = apps.filter((app) => !app.deprecated).length
+    }
+    return count
+  }, [apps, filterState.showDeprecated])
 
   if (isLoadingApps) {
     return <div className="py-6 text-muted-foreground">Loading…</div>
@@ -157,6 +179,8 @@ export function AppCatalogPage() {
             groupingDefinition={groupingDefinition}
             onAppClick={handleAppClick}
             hasSearch={!!deferredSearchValue}
+            totalAppsCount={totalAppsCount}
+            onClearFilters={handleClearFilters}
           />
         )}
       </div>

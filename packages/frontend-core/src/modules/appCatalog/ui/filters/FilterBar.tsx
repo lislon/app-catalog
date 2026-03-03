@@ -1,8 +1,14 @@
 import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
+import { X } from 'lucide-react'
 import { useMemo } from 'react'
 import { Button } from '~/ui/button'
 import { Checkbox } from '~/ui/checkbox'
-import { Input } from '~/ui/input'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from '~/ui/input-group'
 import { Label } from '~/ui/label'
 import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
 import { FilterCombobox } from './FilterCombobox'
@@ -70,13 +76,26 @@ export function FilterBar({
   return (
     <div className="flex items-center gap-3 mb-4">
       {/* Search input */}
-      <Input
-        value={state.searchValue}
-        onChange={(e) => actions.setSearchValue(e.target.value)}
-        placeholder="Search apps by name, description, or tags…"
-        aria-label="Search apps"
-        className="max-w-sm"
-      />
+      <InputGroup className="max-w-sm">
+        <InputGroupInput
+          value={state.searchValue}
+          onChange={(e) => actions.setSearchValue(e.target.value)}
+          onFocus={(e) => e.target.select()}
+          placeholder="Search apps by name, description, or tags…"
+          aria-label="Search apps"
+        />
+        {state.searchValue && (
+          <InputGroupAddon align="inline-end">
+            <InputGroupButton
+              size="icon-xs"
+              onClick={() => actions.setSearchValue('')}
+              aria-label="Clear search"
+            >
+              <X />
+            </InputGroupButton>
+          </InputGroupAddon>
+        )}
+      </InputGroup>
 
       {/* Vertical divider */}
       <div className="h-8 w-px bg-border" />
