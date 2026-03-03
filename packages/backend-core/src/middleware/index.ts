@@ -41,3 +41,6 @@ export type {
 
 // Database manager (for advanced use cases)
 export { EhDatabaseManager } from './database'
+
+// HTML injection utilities
+export { injectCustomScripts } from './htmlInjection'
