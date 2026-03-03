@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useDeferredValue, useEffect, useState } from 'react'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { useAppCounts } from '../../hooks/useAppCounts'
@@ -8,13 +8,15 @@ import { FilterBar } from '../filters/FilterBar'
 /**
  * Header component that renders filter bar aligned to the right.
  * Calculates counts based on URL-synced search state from context.
+ * Uses deferred search value to avoid blocking the input.
  */
 export function SearchAndFilterHeader() {
   const { apps } = useAppCatalogContext()
   const { getTopApps } = useAppClickHistory()
   const { state } = useAppCatalogFilters()
 
-  const searchValue = state.searchValue
+  // Defer search value for count calculations
+  const searchValue = useDeferredValue(state.searchValue)
 
   const [topAppSlugs, setTopAppSlugs] = useState<Array<string>>([])
 
