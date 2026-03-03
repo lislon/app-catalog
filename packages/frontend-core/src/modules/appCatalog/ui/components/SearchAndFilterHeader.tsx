@@ -2,22 +2,19 @@ import { useEffect, useState } from 'react'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { useAppCounts } from '../../hooks/useAppCounts'
-import { useUrlSyncedState } from '../../hooks/useUrlSyncedState'
+import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
 import { FilterBar } from '../filters/FilterBar'
 
 /**
  * Header component that renders filter bar aligned to the right.
- * Calculates counts based on URL-synced search state.
+ * Calculates counts based on URL-synced search state from context.
  */
 export function SearchAndFilterHeader() {
   const { apps } = useAppCatalogContext()
   const { getTopApps } = useAppClickHistory()
+  const { state } = useAppCatalogFilters()
 
-  const [searchValue] = useUrlSyncedState<string>({
-    key: 'q',
-    defaultValue: '',
-    encode: (value) => value.trim() || undefined,
-  })
+  const searchValue = state.searchValue
 
   const [topAppSlugs, setTopAppSlugs] = useState<Array<string>>([])
 
