@@ -25,7 +25,7 @@ export function SearchAndFilterHeader() {
     void getTopApps(10).then(setTopAppSlugs)
   }, [getTopApps])
 
-  const { allCount, recentCount } = useAppCounts({
+  const { allCount, recentCount, deprecatedCount } = useAppCounts({
     apps,
     topAppSlugs,
     searchValue,
@@ -33,7 +33,12 @@ export function SearchAndFilterHeader() {
 
   return (
     <div className="flex items-center gap-3 ml-auto">
-      <FilterBar totalCount={allCount} recentCount={recentCount} />
+      <FilterBar
+        totalCount={allCount}
+        recentCount={recentCount}
+        deprecatedCount={deprecatedCount}
+        apps={apps}
+      />
     </div>
   )
 }
