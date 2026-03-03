@@ -84,6 +84,12 @@ export { syncAssets, type SyncAssetsConfig } from './modules/assets/syncAssets'
 // App Catalog Admin
 export { createAppCatalogAdminRouter } from './modules/appCatalogAdmin/appCatalogAdminRouter'
 
+// App Catalog utilities
+export {
+  checkAllLinks,
+  printLinkCheckReport,
+} from './modules/appCatalog/checkLinks'
+
 // Approval Methods
 export { createApprovalMethodRouter } from './modules/approvalMethod/approvalMethodRouter'
 export {
