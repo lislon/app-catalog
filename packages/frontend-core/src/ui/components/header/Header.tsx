@@ -53,7 +53,7 @@ export function Header({ middle }: HeaderProps) {
   }
 
   return (
-    <div className="flex items-center mb-4 justify-between gap-2">
+    <div className="flex items-center mb-4 gap-2">
       <div className="flex items-center gap-4">
         <Link to="/">
           <div className="flex items-center gap-2">
@@ -80,7 +80,7 @@ export function Header({ middle }: HeaderProps) {
           </div>
         </Link>
       </div>
-      {middle && <div className="sm:min-w-75">{middle}</div>}
+      {middle && <div className="flex-1">{middle}</div>}
       <div className="flex items-center gap-3">
         <ThemeSwitcher />
         {isLoading ? (

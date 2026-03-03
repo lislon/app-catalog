@@ -10,6 +10,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '~/ui/empty'
+import { Input } from '~/ui/input'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { useUrlSyncedState } from '../../hooks/useUrlSyncedState'
@@ -91,6 +92,15 @@ export function AppCatalogPage() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
+      <div className="pb-4 shrink-0">
+        <Input
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          placeholder="Search apps by name, description, or tags…"
+          aria-label="Search apps"
+        />
+      </div>
+
       <div className="flex-1 min-h-0">
         {filteredApps.length === 0 ? (
           <Empty>
