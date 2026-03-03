@@ -10,6 +10,7 @@ import {
 } from '@tanstack/react-table'
 import { AppWindow, ExternalLink, X } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
+import { useHotkeys } from 'react-hotkeys-hook'
 
 import { cn } from '~/lib/utils'
 import type {} from '~/types/table'
@@ -41,6 +42,10 @@ export interface AppCatalogGridProps {
   onAppClick?: (app: AppForCatalog) => void
   /** Whether search is active (affects group sorting) */
   hasSearch?: boolean
+  /** Total count of apps before filtering */
+  totalAppsCount?: number
+  /** Callback to clear all filters and search */
+  onClearFilters?: () => void
 }
 
 function getIconUrl(iconName: string): string {
@@ -131,14 +136,49 @@ function AppScreenshot({ app }: { app: AppForCatalog }) {
 function AppDetails({
   app,
   onAppClick,
+  onClosePanel,
 }: {
   app: AppForCatalog
   onAppClick?: (app: AppForCatalog) => void
+  onClosePanel: () => void
 }) {
   const [isGalleryOpen, setIsGalleryOpen] = React.useState(false)
   const [galleryInitialIndex, setGalleryInitialIndex] = React.useState(0)
   const { approvalMethods, apps } = useAppCatalogContext()
   const { recordClick } = useAppClickHistory()
+
+  // Enter: open screenshot gallery
+  useHotkeys(
+    'enter',
+    () => {
+      const tag = document.activeElement?.tagName
+      if (
+        tag === 'BUTTON' ||
+        tag === 'A' ||
+        tag === 'INPUT' ||
+        tag === 'SELECT' ||
+        tag === 'TEXTAREA'
+      )
+        return
+
+      if (app.screenshotIds && app.screenshotIds.length > 0) {
+        setGalleryInitialIndex(0)
+        setIsGalleryOpen(true)
+      }
+    },
+    { enabled: !isGalleryOpen },
+    [app, isGalleryOpen],
+  )
+
+  // Esc: close the details panel (only when gallery is NOT open)
+  useHotkeys(
+    'escape',
+    () => {
+      onClosePanel()
+    },
+    { enabled: !isGalleryOpen },
+    [isGalleryOpen, onClosePanel],
+  )
 
   const handleScreenshotClick = (index: number) => {
     setGalleryInitialIndex(index)
@@ -263,6 +303,29 @@ function AppDetails({
         {/* Access Request Section */}
         <AccessRequestSection app={app} approvalMethods={approvalMethods} />
 
+        {/* Links */}
+        {app.links && app.links.length > 0 && (
+          <div className="mt-4">
+            <h3 className="mb-1 text-xs font-medium text-muted-foreground">
+              Links
+            </h3>
+            <div className="space-y-0.5">
+              {app.links.map((link) => (
+                <a
+                  key={link.url}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary truncate"
+                >
+                  <ExternalLink className="size-3 shrink-0" />
+                  {link.title || link.url.replaceAll(/https?:\/\//g, '')}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Tags */}
         {app.tags && app.tags.length > 0 && (
           <div className="mt-6">
@@ -288,6 +351,28 @@ function AppDetails({
                 </Badge>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Sources */}
+        {app.sources && app.sources.length > 0 && (
+          <div className="mt-6">
+            <h3 className="mb-2 text-sm font-medium">Sources</h3>
+            <ol className="list-decimal list-inside space-y-1">
+              {app.sources.map((source, index) => (
+                <li key={index} className="text-xs text-muted-foreground">
+                  <a
+                    href={source}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-primary inline-flex items-center gap-1"
+                  >
+                    {source.replaceAll(/https?:\/\//g, '')}
+                    <ExternalLink className="size-3 shrink-0" />
+                  </a>
+                </li>
+              ))}
+            </ol>
           </div>
         )}
       </div>
@@ -380,6 +465,8 @@ export function AppCatalogGrid({
   groupingDefinition,
   onAppClick,
   hasSearch = false,
+  totalAppsCount,
+  onClearFilters,
 }: AppCatalogGridProps) {
   const selectedApp = selectedAppSlug
     ? apps.find((a) => a.slug === selectedAppSlug)
@@ -580,6 +667,27 @@ export function AppCatalogGrid({
                   })}
                 </React.Fragment>
               ))}
+
+              {/* Clear Filters Row */}
+              {totalAppsCount &&
+                totalAppsCount > apps.length &&
+                onClearFilters && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="px-4 py-8 text-center"
+                    >
+                      <Button
+                        variant="outline"
+                        onClick={onClearFilters}
+                        className="gap-2"
+                      >
+                        <X className="h-4 w-4" />
+                        Clear search to show {totalAppsCount} apps
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )}
             </TableBody>
           </Table>
         </div>
@@ -608,7 +716,11 @@ export function AppCatalogGrid({
                   >
                     <X className="h-4 w-4" />
                   </Button>
-                  <AppDetails app={selectedApp} onAppClick={onAppClick} />
+                  <AppDetails
+                    app={selectedApp}
+                    onAppClick={onAppClick}
+                    onClosePanel={handleClosePanel}
+                  />
                 </div>
               ) : null}
             </div>

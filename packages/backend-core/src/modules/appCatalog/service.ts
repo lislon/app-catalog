@@ -117,6 +117,7 @@ export async function getAppsFromPrisma(): Promise<Array<AppForCatalog>> {
     const tags = (row.tags as unknown as AppForCatalog['tags']) ?? []
     const screenshotIds =
       (row.screenshotIds as unknown as AppForCatalog['screenshotIds']) ?? []
+    const sources = (row.sources as unknown as Array<string> | null) ?? []
     const notes = row.notes == null ? undefined : row.notes
     const appUrl = row.appUrl == null ? undefined : row.appUrl
     const iconName = row.iconName == null ? undefined : row.iconName
@@ -137,6 +138,7 @@ export async function getAppsFromPrisma(): Promise<Array<AppForCatalog>> {
       appUrl,
       iconName,
       screenshotIds,
+      sources,
       deprecated,
     }
   })

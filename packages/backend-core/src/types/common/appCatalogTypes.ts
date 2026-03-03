@@ -28,6 +28,7 @@ export interface AppForCatalog {
   links?: Array<{ url: string; title?: string }>
   iconName?: string // Optional icon identifier for display
   screenshotIds?: Array<string>
+  sources?: Array<string> // Source URLs (Confluence pages, docs, etc.)
   deprecated?: {
     /** Type of deprecation: 'deprecated' (fully deprecated) or 'discouraged' (use alternatives). Defaults to 'deprecated'. */
     type?: 'deprecated' | 'discouraged'
