@@ -114,6 +114,7 @@ export {
 export {
   createEhMiddleware,
   EhDatabaseManager,
+  injectCustomScripts,
   type EhDatabaseConfig,
   type EhAuthConfig,
   type EhAdminChatConfig,
