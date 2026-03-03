@@ -436,44 +436,13 @@ export function AppCatalogGrid({
 
   return (
     <ResizablePanelGroup orientation="horizontal" className="h-full w-full">
-      {/* Left Panel - Details (only render when panel is open) */}
-      {isPanelOpen && (
-        <>
-          <ResizablePanel
-            defaultSize={40}
-            minSize={25}
-            className="overflow-hidden"
-          >
-            <div className="h-full overflow-y-auto border-r bg-background pr-4">
-              {selectedApp ? (
-                <div className="relative">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 right-2 z-10"
-                    onClick={handleClosePanel}
-                    aria-label="Close details panel"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                  <AppDetails app={selectedApp} onAppClick={onAppClick} />
-                </div>
-              ) : null}
-            </div>
-          </ResizablePanel>
-
-          {/* Resizable Handle */}
-          <ResizableHandle withHandle />
-        </>
-      )}
-
-      {/* Right Panel - Table */}
+      {/* Left Panel - Table */}
       <ResizablePanel
         defaultSize={isPanelOpen ? 60 : 100}
         minSize={30}
         className="overflow-hidden"
       >
-        <div className="h-full overflow-y-auto pl-2">
+        <div className="h-full overflow-y-auto pr-2">
           <Table>
             <TableHeader className="sticky top-0 border-b bg-background z-10">
               {table.getHeaderGroups().map((headerGroup) => (
@@ -563,6 +532,37 @@ export function AppCatalogGrid({
           </Table>
         </div>
       </ResizablePanel>
+
+      {/* Right Panel - Details (only render when panel is open) */}
+      {isPanelOpen && (
+        <>
+          {/* Resizable Handle */}
+          <ResizableHandle withHandle />
+
+          <ResizablePanel
+            defaultSize={40}
+            minSize={25}
+            className="overflow-hidden"
+          >
+            <div className="h-full overflow-y-auto border-l bg-background pl-4">
+              {selectedApp ? (
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 z-10"
+                    onClick={handleClosePanel}
+                    aria-label="Close details panel"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                  <AppDetails app={selectedApp} onAppClick={onAppClick} />
+                </div>
+              ) : null}
+            </div>
+          </ResizablePanel>
+        </>
+      )}
     </ResizablePanelGroup>
   )
 }
