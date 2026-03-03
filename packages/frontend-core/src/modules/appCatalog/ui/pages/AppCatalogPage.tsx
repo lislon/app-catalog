@@ -41,12 +41,10 @@ export function AppCatalogPage() {
   // State for top apps (loaded async)
   const [topAppSlugs, setTopAppSlugs] = useState<Array<string>>([])
 
-  // Load top apps when recent mode is enabled
+  // Load top apps on mount to calculate recent count
   useEffect(() => {
-    if (filterState.recentMode) {
-      void getTopApps(10).then(setTopAppSlugs)
-    }
-  }, [filterState.recentMode, getTopApps])
+    void getTopApps(10).then(setTopAppSlugs)
+  }, [getTopApps])
 
   const filteredApps = useMemo(() => {
     let result = apps
@@ -103,7 +101,10 @@ export function AppCatalogPage() {
             aria-label="Search apps"
           />
 
-          <FilterBar />
+          <FilterBar
+            totalCount={apps.length}
+            recentCount={topAppSlugs.length}
+          />
 
           <div className="text-sm text-muted-foreground p-1">
             {filteredApps.length} apps available
