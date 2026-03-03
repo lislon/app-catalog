@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Input } from '~/ui/input'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { useAppCounts } from '../../hooks/useAppCounts'
@@ -7,14 +6,14 @@ import { useUrlSyncedState } from '../../hooks/useUrlSyncedState'
 import { FilterBar } from '../filters/FilterBar'
 
 /**
- * Header component that renders search input and filter bar inline.
- * Manages its own URL-synced search state and calculates counts.
+ * Header component that renders filter bar aligned to the right.
+ * Calculates counts based on URL-synced search state.
  */
 export function SearchAndFilterHeader() {
   const { apps } = useAppCatalogContext()
   const { getTopApps } = useAppClickHistory()
 
-  const [searchValue, setSearchValue] = useUrlSyncedState<string>({
+  const [searchValue] = useUrlSyncedState<string>({
     key: 'q',
     defaultValue: '',
     encode: (value) => value.trim() || undefined,
@@ -34,14 +33,8 @@ export function SearchAndFilterHeader() {
   })
 
   return (
-    <div className="flex items-center gap-3 w-full">
-      <Input
-        value={searchValue}
-        onChange={(e) => setSearchValue(e.target.value)}
-        placeholder="Search apps..."
-        aria-label="Search apps"
-        className="max-w-sm"
-      />
+    <div className="flex items-center gap-3 ml-auto">
+      <span className="text-sm font-medium text-muted-foreground">Filter</span>
       <FilterBar totalCount={allCount} recentCount={recentCount} />
     </div>
   )
