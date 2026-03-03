@@ -34,7 +34,6 @@ export function SearchAndFilterHeader() {
 
   return (
     <div className="flex items-center gap-3 ml-auto">
-      <span className="text-sm font-medium text-muted-foreground">Filter</span>
       <FilterBar totalCount={allCount} recentCount={recentCount} />
     </div>
   )
