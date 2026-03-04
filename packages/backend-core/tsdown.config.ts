@@ -8,10 +8,7 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   minify: false,
-  external: [
-    '@prisma/client',
-    '@prisma/client/runtime/library',
-  ],
+  external: ['@prisma/client', '@prisma/client/runtime/library', 'better-auth'],
   publint: {
     strict: true,
   },
