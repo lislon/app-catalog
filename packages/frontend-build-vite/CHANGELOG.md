@@ -1,5 +1,11 @@
 # @igstack/app-catalog-frontend-build-vite
 
+## 0.1.1-alpha-20260304152616
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
 ## 0.1.1-alpha-20260304050203
 
 ### Patch Changes
