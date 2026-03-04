@@ -195,73 +195,43 @@ function AppDetails({
       <div className="flex h-full flex-col p-6">
         {/* Icon and Title */}
         <div className="border-b pb-6">
-          {app.appUrl ? (
-            <a
-              href={app.appUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => recordClick(app.slug)}
-              className="-mx-1 inline-flex items-center gap-4 rounded-lg px-1 py-1 hover:bg-accent/30 transition-all duration-200 group"
-            >
-              <AppIcon app={app} className="size-16" />
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-semibold">{app.displayName}</h2>
-                  {app.deprecated &&
-                    (() => {
-                      const deprecationType =
-                        app.deprecated.type || 'deprecated'
-                      return (
-                        <Badge
-                          variant={
-                            deprecationType === 'discouraged'
-                              ? 'secondary'
-                              : 'destructive'
-                          }
-                        >
-                          {deprecationType === 'discouraged'
-                            ? 'Discouraged'
-                            : 'Deprecated'}
-                        </Badge>
-                      )
-                    })()}
-                </div>
-                <div className="mt-2 text-base font-medium text-blue-600 dark:text-blue-400">
-                  <span className="group-hover:underline">
-                    {app.appUrl.replaceAll(/https?:\/\//g, '')}
-                  </span>
-                </div>
+          <div className="flex items-center gap-3">
+            <AppIcon app={app} className="size-16" />
+            <div className="-mx-3">
+              <div className="flex items-center gap-2 px-3">
+                <h2 className="text-2xl font-semibold">{app.displayName}</h2>
+                {app.deprecated &&
+                  (() => {
+                    const deprecationType = app.deprecated.type || 'deprecated'
+                    return (
+                      <Badge
+                        variant={
+                          deprecationType === 'discouraged'
+                            ? 'secondary'
+                            : 'destructive'
+                        }
+                      >
+                        {deprecationType === 'discouraged'
+                          ? 'Discouraged'
+                          : 'Deprecated'}
+                      </Badge>
+                    )
+                  })()}
               </div>
-              <ExternalLink className="size-8 ml-4 text-blue-600 dark:text-blue-400 opacity-40 group-hover:opacity-100 transition-all" />
-            </a>
-          ) : (
-            <div className="flex items-center gap-4">
-              <AppIcon app={app} className="size-16" />
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-2xl font-semibold">{app.displayName}</h2>
-                  {app.deprecated &&
-                    (() => {
-                      const deprecationType =
-                        app.deprecated.type || 'deprecated'
-                      return (
-                        <Badge
-                          variant={
-                            deprecationType === 'discouraged'
-                              ? 'secondary'
-                              : 'destructive'
-                          }
-                        >
-                          {deprecationType === 'discouraged'
-                            ? 'Discouraged'
-                            : 'Deprecated'}
-                        </Badge>
-                      )
-                    })()}
-                </div>
-              </div>
+              {app.appUrl && (
+                <a
+                  href={app.appUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => recordClick(app.slug)}
+                  className="mt-1 inline-flex items-center gap-1 rounded-md px-3 py-1 text-sm text-blue-600 hover:bg-accent/30 hover:underline dark:text-blue-400 transition-all group"
+                >
+                  {app.appUrl.replaceAll(/https?:\/\//g, '')}
+                  <ExternalLink className="size-3.5 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity" />
+                </a>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Deprecation/Discouraged Warning */}
