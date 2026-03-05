@@ -1,5 +1,30 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.3.0
+
+### Minor Changes
+
+- Remove admin functionality and fix Prisma type leaks from tRPC
+
+  **Backend changes:**
+  - Removed admin chat handler and database tools
+  - Removed approval method management (router and sync)
+  - Removed app catalog admin router and backup/restore endpoints
+  - Removed icon and screenshot tRPC routers (leaked Prisma types)
+  - TRPCRouter now only contains auth and appCatalog queries (plain types only)
+  - REST controllers remain for icons and screenshots
+
+  **Frontend changes:**
+  - Removed all admin routes and UI (admin chat, approval methods, app catalog admin)
+  - Removed icon management UI components
+  - Screenshots continue using REST endpoints (/api/screenshots/:id)
+
+  **Prisma 7 adapter:**
+  - Added @prisma/adapter-pg and @types/pg to catalog
+  - Rely on transitive pg dependency from adapter-pg
+
+## 0.2.1
+
 ## 0.2.0
 
 ## 0.1.1-alpha-20260304050203

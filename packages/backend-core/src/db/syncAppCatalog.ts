@@ -9,7 +9,7 @@ import { readFile, readdir, stat } from 'node:fs/promises'
 import { group } from 'radashi'
 import { upsertAsset } from '../modules/assets/upsertAsset'
 import type { ApprovalMethod } from '../types'
-import type { PrismaClient } from './prisma'
+import type { PrismaClient } from '../generated/prisma/client'
 
 export interface SyncAppCatalogResult {
   created: number

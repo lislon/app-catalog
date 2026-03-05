@@ -1,13 +1,12 @@
 import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
-import { AppWindowIcon, EditIcon, ExternalLinkIcon, XIcon } from 'lucide-react'
+import { AppWindowIcon, ExternalLinkIcon, XIcon } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
-import { useUser } from '~/modules/auth/AuthContext'
 import { Badge } from '~/ui/badge'
 import { Button } from '~/ui/button'
 import { ScrollArea } from '~/ui/scroll-area'
 import { Separator } from '~/ui/separator'
 import { useAppCatalogContext } from '~/modules/appCatalog'
-import { ExternalLink, Link } from '~/ui/link'
+import { ExternalLink } from '~/ui/link'
 import {
   Table,
   TableBody,
@@ -185,9 +184,6 @@ function AccessSection({ app }: { app: AppForCatalog }) {
 }
 
 export function AppDetailModal({ app, isOpen, onClose }: AppDetailModalProps) {
-  const user = useUser()
-  const isAuthenticated = !!user
-
   // Close on Escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -234,21 +230,6 @@ export function AppDetailModal({ app, isOpen, onClose }: AppDetailModalProps) {
             <XIcon className="size-5" />
             <span className="sr-only">Close</span>
           </Button>
-
-          {/* Edit Button (Authenticated users) */}
-          {isAuthenticated && app.slug && (
-            <Button
-              variant="default"
-              size="sm"
-              asChild
-              className="absolute top-6 right-[4.5rem] z-10"
-            >
-              <Link to="/admin/app-for-catalog/$id" params={{ id: app.slug }}>
-                <EditIcon className="size-4 mr-2" />
-                Edit
-              </Link>
-            </Button>
-          )}
 
           <div className="bg-background rounded-lg shadow-2xl border border-border p-8 space-y-8">
             {/* App Details Section */}

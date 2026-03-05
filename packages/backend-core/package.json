@@ -1,6 +1,6 @@
 {
   "name": "@igstack/app-catalog-backend-core",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Backend core library for App Catalog",
   "homepage": "https://github.com/lislon/app-catalog",
   "repository": {
@@ -27,7 +27,8 @@
   "files": [
     "dist",
     "src",
-    "prisma"
+    "prisma",
+    "prisma.config.ts"
   ],
   "scripts": {
     "build": "tsdown",
@@ -44,6 +45,7 @@
     "@igstack/app-catalog-shared-core": "workspace:*",
     "@igstack/app-catalog-table-sync": "workspace:*",
     "@kubernetes/client-node": "^1.2.0",
+    "@prisma/adapter-pg": "catalog:",
     "@prisma/client": "catalog:",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
@@ -70,6 +72,7 @@
     "@types/jsonwebtoken": "^9.0.9",
     "@types/multer": "catalog:",
     "@types/node": "catalog:",
+    "@types/pg": "catalog:",
     "esbuild": "catalog:",
     "prisma": "catalog:",
     "prisma-json-types-generator": "catalog:",

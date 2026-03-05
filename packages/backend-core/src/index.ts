@@ -39,20 +39,6 @@ export {
   type UserWithGroups,
 } from './modules/auth/authorizationUtils'
 
-// Admin
-export {
-  createAdminChatHandler,
-  tool,
-  type AdminChatHandlerOptions,
-} from './modules/admin/chat/createAdminChatHandler'
-
-export {
-  createDatabaseTools,
-  createPrismaDatabaseClient,
-  DEFAULT_ADMIN_SYSTEM_PROMPT,
-  type DatabaseClient,
-} from './modules/admin/chat/createDatabaseTools'
-
 // Icon management
 export {
   registerIconRestController,
@@ -77,25 +63,13 @@ export {
   type ScreenshotRestControllerConfig,
 } from './modules/assets/screenshotRestController'
 
-export { createScreenshotRouter } from './modules/assets/screenshotRouter'
-
 export { syncAssets, type SyncAssetsConfig } from './modules/assets/syncAssets'
-
-// App Catalog Admin
-export { createAppCatalogAdminRouter } from './modules/appCatalogAdmin/appCatalogAdminRouter'
 
 // App Catalog utilities
 export {
   checkAllLinks,
   printLinkCheckReport,
 } from './modules/appCatalog/checkLinks'
-
-// Approval Methods
-export { createApprovalMethodRouter } from './modules/approvalMethod/approvalMethodRouter'
-export {
-  syncApprovalMethods,
-  type ApprovalMethodSyncInput,
-} from './modules/approvalMethod/syncApprovalMethods'
 
 // Database utilities
 export {
@@ -116,9 +90,6 @@ export {
   type TableSyncParamsPrisma,
 } from './db'
 
-// Prisma types (re-export from generated client for external packages)
-export type { Prisma, PrismaClient } from './db/prisma'
-
 // Middleware (batteries-included backend setup)
 export {
   createEhMiddleware,
@@ -126,7 +97,6 @@ export {
   injectCustomScripts,
   type EhDatabaseConfig,
   type EhAuthConfig,
-  type EhAdminChatConfig,
   type EhFeatureToggles,
   type EhBackendProvider,
   type EhLifecycleHooks,

@@ -8,16 +8,7 @@ import type {
 import { registerIconRestController } from '../modules/icons/iconRestController'
 import { registerAssetRestController } from '../modules/assets/assetRestController'
 import { registerScreenshotRestController } from '../modules/assets/screenshotRestController'
-import { createAdminChatHandler } from '../modules/admin/chat/createAdminChatHandler'
 import { getAssetByName } from '../modules/icons/iconService'
-import {
-  exportAsset,
-  exportCatalog,
-  importAsset,
-  importCatalog,
-  listAssets,
-} from '../modules/appCatalogAdmin/catalogBackupController'
-import multer from 'multer'
 import { createMockSessionResponse } from '../modules/auth/devMockUserUtils'
 
 interface FeatureRegistration {
@@ -68,18 +59,6 @@ const FEATURES: Array<FeatureRegistration> = [
       // Use toNodeHandler to adapt better-auth for Express/Node.js
       const authHandler = toNodeHandler(ctx.auth)
       router.all(`${basePath}/auth/{*any}`, authHandler)
-    },
-  },
-  {
-    name: 'adminChat',
-    defaultEnabled: false, // Only enabled if adminChat config is provided
-    register: (router, options) => {
-      if (options.adminChat) {
-        router.post(
-          `${options.basePath}/admin/chat`,
-          createAdminChatHandler(options.adminChat),
-        )
-      }
     },
   },
   {
@@ -143,28 +122,11 @@ export function registerFeatures(
     basePath: `${basePath}/screenshots`,
   })
 
-  // Catalog backup/restore
-  const upload = multer({ storage: multer.memoryStorage() })
-  router.get(`${basePath}/catalog/backup/export`, exportCatalog)
-  router.post(`${basePath}/catalog/backup/import`, importCatalog)
-  router.get(`${basePath}/catalog/backup/assets`, listAssets)
-  router.get(`${basePath}/catalog/backup/assets/:name`, exportAsset)
-  router.post(
-    `${basePath}/catalog/backup/assets`,
-    upload.single('file'),
-    importAsset,
-  )
-
   // Optional toggleable features
   const toggles = options.features || {}
 
   for (const feature of FEATURES) {
     const isEnabled = toggles[feature.name] ?? feature.defaultEnabled
-
-    // Special case: adminChat is only enabled if config is provided
-    if (feature.name === 'adminChat' && !options.adminChat) {
-      continue
-    }
 
     if (isEnabled) {
       feature.register(router, options, context)

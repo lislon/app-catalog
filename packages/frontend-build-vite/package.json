@@ -1,6 +1,6 @@
 {
   "name": "@igstack/app-catalog-frontend-build-vite",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Vite build config for App Catalog frontend",
   "homepage": "https://github.com/lislon/app-catalog",
   "repository": {
