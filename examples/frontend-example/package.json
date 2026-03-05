@@ -14,8 +14,8 @@
     "test:unit": "vitest"
   },
   "dependencies": {
-    "@igstack/app-catalog-frontend-build-vite": "2.0.1-alpha-20260224192214",
-    "@igstack/app-catalog-frontend-core": "2.0.1-alpha-20260224192214",
+    "@igstack/app-catalog-frontend-build-vite": "workspace:*",
+    "@igstack/app-catalog-frontend-core": "workspace:*",
     "cross-env": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"
