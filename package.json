@@ -27,7 +27,7 @@
     "prettier": "prettier",
     "prettier:write": "pnpm run prettier --write",
     "prisma:generate": "pnpm --filter @igstack/app-catalog-backend-core prisma:generate",
-    "prisma:push": "pnpm --filter @igstack/app-catalog-backend-example exec prisma db push --force-reset --skip-generate --schema=../../packages/backend-core/prisma/schema.prisma",
+    "prisma:push": "pnpm --filter @igstack/app-catalog-backend-example exec prisma db push --force-reset --config=../../packages/backend-core/prisma.config.ts",
     "syncpack:fix": "syncpack fix-mismatches",
     "test:build": "publint --strict && attw --ignore-rules no-resolution --pack .",
     "test:ci": "nx run-many --targets=prisma:generate,test:eslint,test:unit,test:types,test:build,build",

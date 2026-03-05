@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '../db/prisma'
 import type { EhDatabaseConfig } from './types'
 import { setDbClient } from '../db/client'
 
@@ -34,13 +34,17 @@ export class EhDatabaseManager {
     if (!this.client) {
       const datasourceUrl = formatConnectionUrl(this.config)
 
+      // Prisma 7: Set database URL via environment variable
+      // The config file reads from AC_CORE_DATABASE_URL
+      process.env.AC_CORE_DATABASE_URL = datasourceUrl
+
       this.client = new PrismaClient({
-        datasourceUrl,
+        adapter: undefined,
         log:
           process.env.NODE_ENV === 'development'
             ? ['warn', 'error']
             : ['warn', 'error'],
-      })
+      } as any)
 
       // Bridge with existing backend-core getDbClient() usage
       setDbClient(this.client)
