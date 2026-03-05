@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from './prisma'
 
 let prismaClient: PrismaClient | null = null
 
@@ -8,7 +8,9 @@ let prismaClient: PrismaClient | null = null
  */
 export function getDbClient(): PrismaClient {
   if (!prismaClient) {
-    prismaClient = new PrismaClient()
+    prismaClient = new PrismaClient({
+      adapter: undefined,
+    } as any)
   }
   return prismaClient
 }

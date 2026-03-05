@@ -1,4 +1,4 @@
-import type { PrismaClient as CorePrismaClient } from '@prisma/client'
+import type { PrismaClient as CorePrismaClient } from '../../db/prisma'
 
 export interface ApprovalMethodSyncInput {
   slug: string

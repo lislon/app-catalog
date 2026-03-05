@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { Prisma } from '@prisma/client'
+import { Prisma } from '../../db/prisma'
 import { getDbClient } from '../../db'
 import { adminProcedure, publicProcedure, router } from '../../server/trpcSetup'
 import type {

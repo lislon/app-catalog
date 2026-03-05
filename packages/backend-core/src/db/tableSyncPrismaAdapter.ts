@@ -1,6 +1,5 @@
 import { tableSync } from '@igstack/app-catalog-table-sync'
-import type { Prisma, PrismaClient } from '@prisma/client'
-import type * as runtime from '@prisma/client/runtime/library'
+import type { Prisma, PrismaClient } from './prisma'
 import { mapValues, omit, pick } from 'radashi'
 
 export type ScalarKeys<TPrismaModelName extends Prisma.ModelName> =
@@ -36,7 +35,7 @@ export interface TableSyncParamsPrisma<
 }
 
 function getPrismaModelOperations<
-  TPrismaClient extends Omit<PrismaClient, runtime.ITXClientDenyList>,
+  TPrismaClient,
   TPrismaModelName extends Prisma.ModelName,
 >(prisma: TPrismaClient, prismaModelName: TPrismaModelName) {
   const key = (prismaModelName.slice(0, 1).toLowerCase() +
