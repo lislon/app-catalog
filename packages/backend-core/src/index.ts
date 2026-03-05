@@ -116,6 +116,9 @@ export {
   type TableSyncParamsPrisma,
 } from './db'
 
+// Prisma types (re-export from generated client for external packages)
+export type { Prisma, PrismaClient } from './db/prisma'
+
 // Middleware (batteries-included backend setup)
 export {
   createEhMiddleware,

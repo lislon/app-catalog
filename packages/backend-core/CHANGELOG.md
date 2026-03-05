@@ -1,14 +1,20 @@
 # @igstack/app-catalog-backend-core
 
-## 0.1.1-alpha-20260304152616
+## 0.2.0
+
+### Minor Changes
+
+- Add Prisma 7 adapter support with binary-free PostgreSQL driver
+  - Add @prisma/adapter-pg and pg driver dependencies
+  - Update database client initialization to use PrismaPg adapter
+  - Remove Prisma binary engine requirements
+  - Improve deployment footprint with smaller bundle size
 
 ### Patch Changes
 
-- Snapshot release from alpha branch
-
 - Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.1.1-alpha-20260304152616
-  - @igstack/app-catalog-table-sync@0.1.1-alpha-20260304152616
+  - @igstack/app-catalog-shared-core@0.2.0
+  - @igstack/app-catalog-table-sync@0.2.0
 
 ## 0.1.1-alpha-20260304050203
 
