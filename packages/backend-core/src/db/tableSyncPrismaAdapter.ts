@@ -1,5 +1,5 @@
 import { tableSync } from '@igstack/app-catalog-table-sync'
-import type { Prisma, PrismaClient } from './prisma'
+import type { Prisma, PrismaClient } from '../generated/prisma/client'
 import { mapValues, omit, pick } from 'radashi'
 
 export type ScalarKeys<TPrismaModelName extends Prisma.ModelName> =

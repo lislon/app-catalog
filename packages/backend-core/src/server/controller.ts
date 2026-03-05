@@ -1,12 +1,8 @@
 import { getAppCatalogData } from '../modules/appCatalog/service'
 import type { AppCatalogData } from '../types'
 
-import { createAppCatalogAdminRouter } from '../modules/appCatalogAdmin/appCatalogAdminRouter.js'
-import { createApprovalMethodRouter } from '../modules/approvalMethod/approvalMethodRouter.js'
-import { createScreenshotRouter } from '../modules/assets/screenshotRouter.js'
 import type { BetterAuth } from '../modules/auth/auth'
 import { createAuthRouter } from '../modules/auth/authRouter.js'
-import { createIconRouter } from '../modules/icons/iconRouter.js'
 import { publicProcedure, router, t } from './trpcSetup'
 
 /**
@@ -31,18 +27,6 @@ export function createTrpcRouter(auth?: BetterAuth) {
         }
       },
     ),
-
-    // Icon management routes
-    icon: createIconRouter(),
-
-    // Screenshot management routes
-    screenshot: createScreenshotRouter(),
-
-    // App catalog admin routes
-    appCatalogAdmin: createAppCatalogAdminRouter(),
-
-    // Approval method routes
-    approvalMethod: createApprovalMethodRouter(),
 
     // Auth routes (requires auth instance)
     auth: createAuthRouter(t, auth),

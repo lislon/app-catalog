@@ -9,34 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as LayoutRouteImport } from './routes/_layout'
-import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
-import { Route as AdminIconsRouteImport } from './routes/admin/icons'
-import { Route as AdminChatRouteImport } from './routes/admin/chat'
-import { Route as AdminApprovalMethodsRouteImport } from './routes/admin/approval-methods'
-import { Route as AdminAppForCatalogRouteImport } from './routes/admin/app-for-catalog'
 import { Route as LayoutLoginRouteImport } from './routes/_layout/login'
-import { Route as AdminApprovalMethodsIndexRouteImport } from './routes/admin/approval-methods/index'
-import { Route as AdminAppForCatalogIndexRouteImport } from './routes/admin/app-for-catalog/index'
-import { Route as AdminAppForCatalogIdRouteImport } from './routes/admin/app-for-catalog/$id'
 import { Route as LayoutCatalogAppsIndexRouteImport } from './routes/_layout/catalog.apps.index'
 
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminRoute,
 } as any)
 const LayoutIndexRoute = LayoutIndexRouteImport.update({
   id: '/',
@@ -48,46 +29,10 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminIconsRoute = AdminIconsRouteImport.update({
-  id: '/icons',
-  path: '/icons',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminChatRoute = AdminChatRouteImport.update({
-  id: '/chat',
-  path: '/chat',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminApprovalMethodsRoute = AdminApprovalMethodsRouteImport.update({
-  id: '/approval-methods',
-  path: '/approval-methods',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAppForCatalogRoute = AdminAppForCatalogRouteImport.update({
-  id: '/app-for-catalog',
-  path: '/app-for-catalog',
-  getParentRoute: () => AdminRoute,
-} as any)
 const LayoutLoginRoute = LayoutLoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => LayoutRoute,
-} as any)
-const AdminApprovalMethodsIndexRoute =
-  AdminApprovalMethodsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AdminApprovalMethodsRoute,
-  } as any)
-const AdminAppForCatalogIndexRoute = AdminAppForCatalogIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminAppForCatalogRoute,
-} as any)
-const AdminAppForCatalogIdRoute = AdminAppForCatalogIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AdminAppForCatalogRoute,
 } as any)
 const LayoutCatalogAppsIndexRoute = LayoutCatalogAppsIndexRouteImport.update({
   id: '/catalog/apps/',
@@ -97,122 +42,51 @@ const LayoutCatalogAppsIndexRoute = LayoutCatalogAppsIndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
-  '/admin': typeof AdminRouteWithChildren
   '/login': typeof LayoutLoginRoute
-  '/admin/app-for-catalog': typeof AdminAppForCatalogRouteWithChildren
-  '/admin/approval-methods': typeof AdminApprovalMethodsRouteWithChildren
-  '/admin/chat': typeof AdminChatRoute
-  '/admin/icons': typeof AdminIconsRoute
   '/auth/callback': typeof AuthCallbackRoute
-  '/admin/': typeof AdminIndexRoute
-  '/admin/app-for-catalog/$id': typeof AdminAppForCatalogIdRoute
-  '/admin/app-for-catalog/': typeof AdminAppForCatalogIndexRoute
-  '/admin/approval-methods/': typeof AdminApprovalMethodsIndexRoute
   '/catalog/apps/': typeof LayoutCatalogAppsIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LayoutLoginRoute
-  '/admin/chat': typeof AdminChatRoute
-  '/admin/icons': typeof AdminIconsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/': typeof LayoutIndexRoute
-  '/admin': typeof AdminIndexRoute
-  '/admin/app-for-catalog/$id': typeof AdminAppForCatalogIdRoute
-  '/admin/app-for-catalog': typeof AdminAppForCatalogIndexRoute
-  '/admin/approval-methods': typeof AdminApprovalMethodsIndexRoute
   '/catalog/apps': typeof LayoutCatalogAppsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_layout': typeof LayoutRouteWithChildren
-  '/admin': typeof AdminRouteWithChildren
   '/_layout/login': typeof LayoutLoginRoute
-  '/admin/app-for-catalog': typeof AdminAppForCatalogRouteWithChildren
-  '/admin/approval-methods': typeof AdminApprovalMethodsRouteWithChildren
-  '/admin/chat': typeof AdminChatRoute
-  '/admin/icons': typeof AdminIconsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_layout/': typeof LayoutIndexRoute
-  '/admin/': typeof AdminIndexRoute
-  '/admin/app-for-catalog/$id': typeof AdminAppForCatalogIdRoute
-  '/admin/app-for-catalog/': typeof AdminAppForCatalogIndexRoute
-  '/admin/approval-methods/': typeof AdminApprovalMethodsIndexRoute
   '/_layout/catalog/apps/': typeof LayoutCatalogAppsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/admin'
-    | '/login'
-    | '/admin/app-for-catalog'
-    | '/admin/approval-methods'
-    | '/admin/chat'
-    | '/admin/icons'
-    | '/auth/callback'
-    | '/admin/'
-    | '/admin/app-for-catalog/$id'
-    | '/admin/app-for-catalog/'
-    | '/admin/approval-methods/'
-    | '/catalog/apps/'
+  fullPaths: '/' | '/login' | '/auth/callback' | '/catalog/apps/'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/login'
-    | '/admin/chat'
-    | '/admin/icons'
-    | '/auth/callback'
-    | '/'
-    | '/admin'
-    | '/admin/app-for-catalog/$id'
-    | '/admin/app-for-catalog'
-    | '/admin/approval-methods'
-    | '/catalog/apps'
+  to: '/login' | '/auth/callback' | '/' | '/catalog/apps'
   id:
     | '__root__'
     | '/_layout'
-    | '/admin'
     | '/_layout/login'
-    | '/admin/app-for-catalog'
-    | '/admin/approval-methods'
-    | '/admin/chat'
-    | '/admin/icons'
     | '/auth/callback'
     | '/_layout/'
-    | '/admin/'
-    | '/admin/app-for-catalog/$id'
-    | '/admin/app-for-catalog/'
-    | '/admin/approval-methods/'
     | '/_layout/catalog/apps/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   LayoutRoute: typeof LayoutRouteWithChildren
-  AdminRoute: typeof AdminRouteWithChildren
   AuthCallbackRoute: typeof AuthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_layout': {
       id: '/_layout'
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof LayoutRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/admin/': {
-      id: '/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRoute
     }
     '/_layout/': {
       id: '/_layout/'
@@ -228,61 +102,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/icons': {
-      id: '/admin/icons'
-      path: '/icons'
-      fullPath: '/admin/icons'
-      preLoaderRoute: typeof AdminIconsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/chat': {
-      id: '/admin/chat'
-      path: '/chat'
-      fullPath: '/admin/chat'
-      preLoaderRoute: typeof AdminChatRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/approval-methods': {
-      id: '/admin/approval-methods'
-      path: '/approval-methods'
-      fullPath: '/admin/approval-methods'
-      preLoaderRoute: typeof AdminApprovalMethodsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/app-for-catalog': {
-      id: '/admin/app-for-catalog'
-      path: '/app-for-catalog'
-      fullPath: '/admin/app-for-catalog'
-      preLoaderRoute: typeof AdminAppForCatalogRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/_layout/login': {
       id: '/_layout/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LayoutLoginRouteImport
       parentRoute: typeof LayoutRoute
-    }
-    '/admin/approval-methods/': {
-      id: '/admin/approval-methods/'
-      path: '/'
-      fullPath: '/admin/approval-methods/'
-      preLoaderRoute: typeof AdminApprovalMethodsIndexRouteImport
-      parentRoute: typeof AdminApprovalMethodsRoute
-    }
-    '/admin/app-for-catalog/': {
-      id: '/admin/app-for-catalog/'
-      path: '/'
-      fullPath: '/admin/app-for-catalog/'
-      preLoaderRoute: typeof AdminAppForCatalogIndexRouteImport
-      parentRoute: typeof AdminAppForCatalogRoute
-    }
-    '/admin/app-for-catalog/$id': {
-      id: '/admin/app-for-catalog/$id'
-      path: '/$id'
-      fullPath: '/admin/app-for-catalog/$id'
-      preLoaderRoute: typeof AdminAppForCatalogIdRouteImport
-      parentRoute: typeof AdminAppForCatalogRoute
     }
     '/_layout/catalog/apps/': {
       id: '/_layout/catalog/apps/'
@@ -309,51 +134,8 @@ const LayoutRouteChildren: LayoutRouteChildren = {
 const LayoutRouteWithChildren =
   LayoutRoute._addFileChildren(LayoutRouteChildren)
 
-interface AdminAppForCatalogRouteChildren {
-  AdminAppForCatalogIdRoute: typeof AdminAppForCatalogIdRoute
-  AdminAppForCatalogIndexRoute: typeof AdminAppForCatalogIndexRoute
-}
-
-const AdminAppForCatalogRouteChildren: AdminAppForCatalogRouteChildren = {
-  AdminAppForCatalogIdRoute: AdminAppForCatalogIdRoute,
-  AdminAppForCatalogIndexRoute: AdminAppForCatalogIndexRoute,
-}
-
-const AdminAppForCatalogRouteWithChildren =
-  AdminAppForCatalogRoute._addFileChildren(AdminAppForCatalogRouteChildren)
-
-interface AdminApprovalMethodsRouteChildren {
-  AdminApprovalMethodsIndexRoute: typeof AdminApprovalMethodsIndexRoute
-}
-
-const AdminApprovalMethodsRouteChildren: AdminApprovalMethodsRouteChildren = {
-  AdminApprovalMethodsIndexRoute: AdminApprovalMethodsIndexRoute,
-}
-
-const AdminApprovalMethodsRouteWithChildren =
-  AdminApprovalMethodsRoute._addFileChildren(AdminApprovalMethodsRouteChildren)
-
-interface AdminRouteChildren {
-  AdminAppForCatalogRoute: typeof AdminAppForCatalogRouteWithChildren
-  AdminApprovalMethodsRoute: typeof AdminApprovalMethodsRouteWithChildren
-  AdminChatRoute: typeof AdminChatRoute
-  AdminIconsRoute: typeof AdminIconsRoute
-  AdminIndexRoute: typeof AdminIndexRoute
-}
-
-const AdminRouteChildren: AdminRouteChildren = {
-  AdminAppForCatalogRoute: AdminAppForCatalogRouteWithChildren,
-  AdminApprovalMethodsRoute: AdminApprovalMethodsRouteWithChildren,
-  AdminChatRoute: AdminChatRoute,
-  AdminIconsRoute: AdminIconsRoute,
-  AdminIndexRoute: AdminIndexRoute,
-}
-
-const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   LayoutRoute: LayoutRouteWithChildren,
-  AdminRoute: AdminRouteWithChildren,
   AuthCallbackRoute: AuthCallbackRoute,
 }
 export const routeTree = rootRouteImport

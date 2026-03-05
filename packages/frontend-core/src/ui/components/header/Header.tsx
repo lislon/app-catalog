@@ -1,5 +1,5 @@
-import { Link, useNavigate } from '@tanstack/react-router'
-import { LogOut, Settings } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
+import { LogOut } from 'lucide-react'
 import type React from 'react'
 import AppCatalogLogo from '~/assets/app-catalog.svg?react'
 import { ThemeSwitcher } from '~/components/ThemeSwitcher'
@@ -30,7 +30,6 @@ export function Header({ middle }: HeaderProps) {
   const isAuthenticated = useIsAuthenticated()
   const user = useUser()
   const { logout } = useAuthActions()
-  const navigate = useNavigate()
   const { open: openLoginModal } = useAuthModal()
   const { appVersion } = useAppCatalogContext()
 
@@ -40,10 +39,6 @@ export function Header({ middle }: HeaderProps) {
     } catch (error) {
       console.error('Logout failed:', error)
     }
-  }
-
-  const handleAdminClick = () => {
-    navigate({ to: '/admin' })
   }
 
   const handleLoginClick = () => {
@@ -134,11 +129,6 @@ export function Header({ middle }: HeaderProps) {
                   <p className="text-sm font-medium truncate">{user.name}</p>
                 </div>
               </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleAdminClick}>
-                <Settings className="h-4 w-4 mr-2" />
-                <span>Admin</span>
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />

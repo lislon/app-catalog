@@ -1,4 +1,4 @@
-import { PrismaClient } from '../db/prisma'
+import { PrismaClient } from '../generated/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
 import type { EhDatabaseConfig } from './types'
