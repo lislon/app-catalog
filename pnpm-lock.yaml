@@ -353,7 +353,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/backend-core
       '@igstack/app-catalog-shared-core':
-        specifier: 2.0.1-alpha-20260224192214
+        specifier: workspace:*
         version: link:../../packages/shared-core
       '@prisma/client':
         specifier: 'catalog:'
@@ -423,10 +423,10 @@ importers:
   examples/frontend-example:
     dependencies:
       '@igstack/app-catalog-frontend-build-vite':
-        specifier: 2.0.1-alpha-20260224192214
+        specifier: workspace:*
         version: link:../../packages/frontend-build-vite
       '@igstack/app-catalog-frontend-core':
-        specifier: 2.0.1-alpha-20260224192214
+        specifier: workspace:*
         version: link:../../packages/frontend-core
       cross-env:
         specifier: 'catalog:'
