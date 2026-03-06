@@ -65,9 +65,8 @@
     "@dnd-kit/sortable": "catalog:",
     "@dnd-kit/utilities": "catalog:",
     "@hookform/resolvers": "catalog:",
-    "@prisma/adapter-pg": "7.4.2",
     "dotenv-defaults": "catalog:",
-    "pg": "^8.20.0",
+    "pg": "catalog:",
     "react-hook-form": "catalog:",
     "zod": "catalog:"
   },

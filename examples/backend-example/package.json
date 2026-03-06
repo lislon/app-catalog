@@ -38,7 +38,7 @@
     "esbuild": "catalog:",
     "prisma": "catalog:",
     "prisma-json-types-generator": "catalog:",
-    "tsdown": "^0.15.7",
+    "tsdown": "catalog:",
     "tsup": "^8.5.0",
     "tsx": "catalog:",
     "typescript": "catalog:",
