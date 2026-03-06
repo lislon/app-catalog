@@ -14,7 +14,8 @@ export function getDbClient(): PrismaClient {
     const databaseUrl = process.env.AC_CORE_DATABASE_URL
     if (!databaseUrl) {
       throw new Error(
-        'AC_CORE_DATABASE_URL environment variable is required for PrismaClient initialization',
+        'PrismaClient not initialized. You must call createEhMiddleware() before using database functions, ' +
+          'or set AC_CORE_DATABASE_URL environment variable for standalone usage.',
       )
     }
 

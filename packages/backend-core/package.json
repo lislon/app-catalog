@@ -15,15 +15,11 @@
   "exports": {
     ".": {
       "my-custom-condition": "./src/index.ts",
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      }
+      "default": "./dist/index.mjs"
     },
     "./package.json": "./package.json"
   },
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "types": "./dist/index.d.mts",
   "files": [
     "dist",
     "src",
@@ -46,8 +42,6 @@
     "@igstack/app-catalog-shared-core": "workspace:*",
     "@igstack/app-catalog-table-sync": "workspace:*",
     "@kubernetes/client-node": "^1.2.0",
-    "@prisma/adapter-pg": "catalog:",
-    "@prisma/client": "catalog:",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
     "ai": "^6.0.37",
@@ -82,7 +76,18 @@
     "typescript": "catalog:",
     "vite-plugin-dts": "^4.5.4"
   },
+  "peerDependencies": {
+    "@prisma/adapter-pg": "catalog:",
+    "@prisma/client": "catalog:",
+    "pg": "catalog:"
+  },
   "engines": {
-    "node": ">=16"
+    "node": ">=24"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": "./dist/index.mjs",
+      "./package.json": "./package.json"
+    }
   }
 }
