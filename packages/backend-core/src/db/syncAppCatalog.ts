@@ -10,6 +10,7 @@ import { group } from 'radashi'
 import { upsertAsset } from '../modules/assets/upsertAsset'
 import type { ApprovalMethod } from '../types'
 import type { PrismaClient } from '../generated/prisma/client'
+import { naturalSort } from '../utils/naturalSort'
 
 export interface SyncAppCatalogResult {
   created: number
@@ -39,11 +40,7 @@ async function processAssetDirectory(
 ): Promise<Array<string>> {
   try {
     const files = await readdir(dirPath)
-    const collator = new Intl.Collator(undefined, {
-      numeric: true,
-      sensitivity: 'base',
-    })
-    const sortedFiles = files.sort((a, b) => collator.compare(a, b))
+    const sortedFiles = naturalSort(files)
     const assetIds: Array<string> = []
 
     for (let i = 0; i < sortedFiles.length; i++) {
