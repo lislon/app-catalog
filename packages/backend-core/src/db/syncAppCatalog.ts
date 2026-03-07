@@ -39,7 +39,11 @@ async function processAssetDirectory(
 ): Promise<Array<string>> {
   try {
     const files = await readdir(dirPath)
-    const sortedFiles = files.sort()
+    const collator = new Intl.Collator(undefined, {
+      numeric: true,
+      sensitivity: 'base',
+    })
+    const sortedFiles = files.sort((a, b) => collator.compare(a, b))
     const assetIds: Array<string> = []
 
     for (let i = 0; i < sortedFiles.length; i++) {
@@ -161,73 +165,6 @@ async function syncAssetsFromFileSystem(
       )
     }
   }
-  // private async syncScreenshots(apps: AppForCatalog[], screenshotsPath: string): Promise<void> {
-  //     const db = getDbClient();
-  //
-  //     for (const app of apps) {
-  //     const dirPath = join(screenshotsPath, `${app.slug}-screenshots`);
-  //
-  //     try {
-  //       const files = await readdir(dirPath);
-  //       const imageFiles = files.filter(f => /\.(png|jpg|jpeg|gif|webp)$/i.test(f)).sort();
-  //
-  //       if (imageFiles.length === 0) continue;
-  //
-  //       const screenshotIds: string[] = [];
-  //
-  //       for (const filename of imageFiles) {
-  //         const filePath = join(dirPath, filename);
-  //         const content = await readFile(filePath);
-  //         const buffer = Buffer.from(content);
-  //         const checksum = generateChecksum(buffer);
-  //         const { width, height } = await getImageDimensions(buffer);
-  //
-  //         const ext = filename.split('.').pop()?.toLowerCase();
-  //         const mimeType = {
-  //           png: 'image/png',
-  //           jpg: 'image/jpeg',
-  //           jpeg: 'image/jpeg',
-  //           gif: 'image/gif',
-  //           webp: 'image/webp',
-  //         }[ext || ''] || 'application/octet-stream';
-  //
-  //         const asset = await db.dbAsset.upsert({
-  //           where: { checksum },
-  //           create: {
-  //             name: `${app.slug}/${filename}`,
-  //             assetType: 'screenshot',
-  //             content: new Uint8Array(buffer),
-  //             checksum,
-  //             mimeType,
-  //             fileSize: buffer.length,
-  //             width,
-  //             height,
-  //           },
-  //           update: {
-  //             name: `${app.slug}/${filename}`,
-  //             content: new Uint8Array(buffer),
-  //             mimeType,
-  //             fileSize: buffer.length,
-  //             width,
-  //             height,
-  //           },
-  //         });
-  //
-  //         screenshotIds.push(asset.id);
-  //       }
-  //
-  //       await db.dbAppForCatalog.update({
-  //         where: { slug: app.slug },
-  //         data: { screenshotIds },
-  //       });
-  //
-  //       logger.info(`Synced ${screenshotIds.length} screenshots for ${app.slug}`);
-  //     } catch (error: any) {
-  //       if (error.code === 'ENOENT') continue; // Skip if directory doesn't exist
-  //       throw error;
-  //     }
-  //   }
-  // }
 }
 
 /**
