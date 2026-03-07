@@ -78,6 +78,7 @@ export function FilterBar({
       {/* Search input */}
       <InputGroup className="max-w-sm">
         <InputGroupInput
+          autoFocus
           value={state.searchValue}
           onChange={(e) => actions.setSearchValue(e.target.value)}
           onFocus={(e) => e.target.select()}

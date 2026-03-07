@@ -39,10 +39,11 @@ async function processAssetDirectory(
 ): Promise<Array<string>> {
   try {
     const files = await readdir(dirPath)
+    const sortedFiles = files.sort()
     const assetIds: Array<string> = []
 
-    for (let i = 0; i < files.length; i++) {
-      const fileName = files[i]
+    for (let i = 0; i < sortedFiles.length; i++) {
+      const fileName = sortedFiles[i]
       if (!fileName) continue
 
       const assetName =
