@@ -61,10 +61,6 @@ const eh = await createEhMiddleware({
     },
   },
 
-  features: {
-    legacyIconEndpoint: true, // Enable /static/icon/:icon
-  },
-
   hooks: {
     onRoutesRegistered: (router) => {
       // Legacy icon endpoint at /icon/:icon (for backwards compatibility)

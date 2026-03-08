@@ -89,8 +89,6 @@ export interface EhFeatureToggles {
   auth?: boolean
   /** Enable admin chat endpoint (default: true if adminChat config provided) */
   adminChat?: boolean
-  /** Enable legacy icon endpoint at /static/icon/:icon (default: false) */
-  legacyIconEndpoint?: boolean
 }
 
 /**

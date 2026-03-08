@@ -2,10 +2,6 @@ import { TRPCError, initTRPC } from '@trpc/server'
 import type { EhTrpcContext } from './ehTrpcContext'
 import { isAdmin } from '../modules/auth/authorizationUtils'
 
-/**
- * Initialization of tRPC backend
- * Should be done only once per backend!
- */
 export const t = initTRPC.context<EhTrpcContext>().create({
   errorFormatter({ error, shape }: { error: unknown; shape: unknown }) {
     // Log all tRPC errors to console

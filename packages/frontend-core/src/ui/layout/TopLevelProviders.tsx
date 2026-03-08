@@ -21,7 +21,7 @@ export interface MainLayoutProps {
   trpcClient: TRPCClient<TRPCRouter>
 }
 
-export function TopLevelProviders({ children }: MainLayoutProps) {
+export function TopLevelProviders({ children, queryClient }: MainLayoutProps) {
   // const { data, failureCount, failureReason } = useQueryBootstrapConfig()
   const [plugins] = useState(() => [
     // Future plugins can be added here
@@ -54,7 +54,10 @@ export function TopLevelProviders({ children }: MainLayoutProps) {
                   {children}
                   <LoginModal />
                   <TanStackRouterDevtools />
-                  <ReactQueryDevtools initialIsOpen={false} />
+                  <ReactQueryDevtools
+                    initialIsOpen={false}
+                    client={queryClient}
+                  />
                 </PluginManagerContextProvider>
               </GlobalConfigProvider>
             </Suspense>
