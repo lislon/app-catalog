@@ -26,24 +26,13 @@ export async function createAcMiddleware(
   dbManager.getClient()
 
   // Create auth instance
-  const auth = createAuth({
-    appName: options.auth.appName,
-    baseURL: options.auth.baseURL,
-    secret: options.auth.secret,
-    providers: options.auth.providers,
-    plugins: options.auth.plugins,
-    sessionExpiresIn: options.auth.sessionExpiresIn,
-    sessionUpdateAge: options.auth.sessionUpdateAge,
-  })
+  const auth = createAuth(options.auth.betterAuthOptions)
 
   // Create tRPC router
   const trpcRouter = createTrpcRouter(auth)
 
   // Normalize backend provider to async factory function
   const resolveBackend = createBackendResolver(options.backend)
-
-  // Get admin groups from config with default
-  const adminGroups = options.auth.adminGroups ?? ['env_hopper_ui_super_admins']
 
   // Create tRPC context factory
   const createContext = async ({
@@ -52,12 +41,12 @@ export async function createAcMiddleware(
     const companySpecificBackend = await resolveBackend()
 
     let user = null
-    let userGroups: Array<string> = []
+    let isAdmin = false
 
     // Check if dev mock user is configured
     if (options.auth.devMockUser) {
       user = createMockUserFromDevConfig(options.auth.devMockUser)
-      userGroups = options.auth.devMockUser.groups
+      isAdmin = true // dev mock always admin
     } else {
       // Extract user from session
       try {
@@ -66,31 +55,16 @@ export async function createAcMiddleware(
         })
         user = session?.user ?? null
 
-        // If user is authenticated and Okta is configured, decode groups from access token
-        if (user && options.auth.oktaGroupsClaim) {
+        // Compute isAdmin via callback
+        if (user && session && options.auth.isAdmin) {
           try {
-            // Get the current access token (auto-refreshes if expired)
-            // Note: better-auth requires providerId, but we use 'okta' as default
-            const tokenResult = await auth.api.getAccessToken({
-              body: {
-                providerId: 'okta',
-              },
-              headers: req.headers as HeadersInit,
-            })
-
-            if (tokenResult.accessToken) {
-              // Decode JWT to extract groups claim
-              const parts = tokenResult.accessToken.split('.')
-              if (parts.length === 3 && parts[1]) {
-                const payload = JSON.parse(
-                  Buffer.from(parts[1], 'base64').toString(),
-                )
-                const groups = payload[options.auth.oktaGroupsClaim]
-                userGroups = Array.isArray(groups) ? groups : []
-              }
-            }
+            isAdmin = !!(await options.auth.isAdmin(user, session.session, {
+              request: req,
+              auth,
+            }))
           } catch (error) {
-            console.error('[tRPC Context] Failed to get access token:', error)
+            console.error('[tRPC Context] isAdmin callback failed:', error)
+            isAdmin = false
           }
         }
       } catch (error) {
@@ -98,13 +72,10 @@ export async function createAcMiddleware(
       }
     }
 
-    // Attach groups to user object for authorization checks
-    const userWithGroups = user ? { ...user, groups: userGroups } : null
-
     return createAcTrpcContext({
       companySpecificBackend,
-      user: userWithGroups,
-      adminGroups,
+      user,
+      isAdmin,
     })
   }
 
@@ -120,10 +91,9 @@ export async function createAcMiddleware(
       const companySpecificBackend = await resolveBackend()
       return createAcTrpcContext({
         companySpecificBackend,
-        adminGroups,
       })
     },
-    authConfig: options.auth,
+    isAdmin: options.auth.isAdmin,
   }
 
   // Register tRPC middleware (if enabled)

@@ -35,8 +35,8 @@ const FEATURES: Array<FeatureRegistration> = [
         async (req, res): Promise<void> => {
           try {
             // Check if dev mock user is configured
-            if (ctx.authConfig.devMockUser) {
-              res.json(createMockSessionResponse(ctx.authConfig.devMockUser))
+            if (options.auth.devMockUser) {
+              res.json(createMockSessionResponse(options.auth.devMockUser))
               return
             }
 
@@ -44,7 +44,18 @@ const FEATURES: Array<FeatureRegistration> = [
               headers: req.headers as HeadersInit,
             })
             if (session) {
-              res.json(session)
+              let admin = false
+              if (ctx.isAdmin) {
+                try {
+                  admin = !!(await ctx.isAdmin(session.user, session.session, {
+                    request: req,
+                    auth: ctx.auth,
+                  }))
+                } catch {
+                  admin = false
+                }
+              }
+              res.json({ ...session, isAdmin: admin })
             } else {
               res.status(401).json({ error: 'Not authenticated' })
             }

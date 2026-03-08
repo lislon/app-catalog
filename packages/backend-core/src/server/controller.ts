@@ -11,12 +11,6 @@ import { publicProcedure, router, t } from './trpcSetup'
  */
 export function createTrpcRouter(auth?: BetterAuth) {
   return router({
-    authConfig: publicProcedure.query(async ({ ctx }) => {
-      return {
-        adminGroups: ctx.adminGroups,
-      }
-    }),
-
     appCatalog: publicProcedure.query(
       async ({ ctx }): Promise<AppCatalogData> => {
         const baseData = await getAppCatalogData()
