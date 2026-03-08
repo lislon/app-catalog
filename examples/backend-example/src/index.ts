@@ -11,7 +11,6 @@ import {
 import type { Express, Request, Response } from 'express'
 import type { AppCatalogCompanySpecificBackend } from '@igstack/app-catalog-backend-core'
 import {
-  getAdminGroups,
   getAuthPlugins,
   getAuthProviders,
   validateAuthConfig,
@@ -37,15 +36,19 @@ const eh = await createAcMiddleware({
   },
 
   auth: {
-    baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:4000',
-    secret:
-      process.env.BETTER_AUTH_SECRET ||
-      'dev-secret-change-in-production-minimum-32-chars!',
-    providers: getAuthProviders(),
-    plugins: getAuthPlugins(),
-    adminGroups: getAdminGroups(),
-    sessionExpiresIn: 60 * 60 * 24 * 30, // 30 days
-    sessionUpdateAge: 60 * 60 * 24, // Refresh after 1 day
+    betterAuthOptions: {
+      baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:4000',
+      secret:
+        process.env.BETTER_AUTH_SECRET ||
+        'dev-secret-change-in-production-minimum-32-chars!',
+      socialProviders: getAuthProviders(),
+      plugins: getAuthPlugins(),
+      emailAndPassword: { enabled: true },
+      session: {
+        expiresIn: 60 * 60 * 24 * 30, // 30 days
+        updateAge: 60 * 60 * 24, // Refresh after 1 day
+      },
+    },
   },
 
   backend: companySpecificBackend,
