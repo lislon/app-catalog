@@ -5,10 +5,10 @@ import { createBrowserHistory } from '@tanstack/react-router'
 import { createTRPCClient, httpBatchLink } from '@trpc/client'
 import { AcDb as DbClass } from './userDb/AcDb'
 import type { TRPCRouter } from '@igstack/app-catalog-backend-core'
-import type { EhPlugin } from './modules/pluginCore/types'
+import type { AcPlugin } from './modules/pluginCore/types'
 import { createQueryClient } from '~/api/infra/createQueryClient'
 import { App } from '~/App'
-import { createEhRouter } from '~/util/createEhRouter'
+import { createAcRouter } from '~/util/createAcRouter'
 import './index.css'
 
 // registerSW();
@@ -23,10 +23,10 @@ const trpcClient = createTRPCClient<TRPCRouter>({
 
 const db = new DbClass()
 const queryClient = createQueryClient({ trpcClient, db })
-const plugins: Array<EhPlugin> = [
+const plugins: Array<AcPlugin> = [
   // Future plugins can be added here
 ]
-const router = createEhRouter({
+const router = createAcRouter({
   history: createBrowserHistory(),
   context: {
     queryClient,

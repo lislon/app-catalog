@@ -1,17 +1,17 @@
-import type { EhDevMockUser } from '../../middleware/types'
+import type { AcDevMockUser } from '../../middleware/types'
 import type { User } from 'better-auth/types'
 
 /**
  * Extended User type with app-catalog specific fields
  */
-type EhUser = User & {
+type AcUser = User & {
   env_hopper_groups?: Array<string>
 }
 
 /**
  * Creates a complete User object from basic dev mock user details
  */
-export function createMockUserFromDevConfig(devUser: EhDevMockUser): EhUser {
+export function createMockUserFromDevConfig(devUser: AcDevMockUser): AcUser {
   return {
     id: devUser.id,
     email: devUser.email,
@@ -26,7 +26,7 @@ export function createMockUserFromDevConfig(devUser: EhDevMockUser): EhUser {
 /**
  * Creates a mock session response for /api/auth/session endpoint
  */
-export function createMockSessionResponse(devUser: EhDevMockUser) {
+export function createMockSessionResponse(devUser: AcDevMockUser) {
   return {
     user: {
       id: devUser.id,

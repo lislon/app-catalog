@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Package } from 'lucide-react'
-import type { EhAppIndexed } from '@igstack/app-catalog-backend-core'
+import type { AcAppIndexed } from '@igstack/app-catalog-backend-core'
 // import { useBootstrapConfig } from '~/modules/config/BootstrapConfigContext'
 
 interface AppIconProps {
-  app: EhAppIndexed
+  app: AcAppIndexed
   className?: string
 }
 

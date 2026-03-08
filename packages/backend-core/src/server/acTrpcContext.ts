@@ -1,23 +1,23 @@
 import type { AppCatalogCompanySpecificBackend } from '../types'
 import type { User } from 'better-auth/types'
 
-export interface EhTrpcContext {
+export interface AcTrpcContext {
   companySpecificBackend: AppCatalogCompanySpecificBackend
   user: User | null
   adminGroups: Array<string>
 }
 
-export interface EhTrpcContextOptions {
+export interface AcTrpcContextOptions {
   companySpecificBackend: AppCatalogCompanySpecificBackend
   user?: User | null
   adminGroups: Array<string>
 }
 
-export function createEhTrpcContext({
+export function createAcTrpcContext({
   companySpecificBackend,
   user = null,
   adminGroups,
-}: EhTrpcContextOptions): EhTrpcContext {
+}: AcTrpcContextOptions): AcTrpcContext {
   return {
     companySpecificBackend,
     user,

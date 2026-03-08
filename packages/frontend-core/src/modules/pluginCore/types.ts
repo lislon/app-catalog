@@ -4,7 +4,7 @@ export interface PluginAsyncData<T> {
   isLoaded: boolean
 }
 
-export interface EhPlugin {
+export interface AcPlugin {
   name: PluginName
 }
 export interface BaseAppAutoCompletableParent {

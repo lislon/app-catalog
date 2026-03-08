@@ -3,8 +3,8 @@ import express from 'express'
 import { openai } from '@ai-sdk/openai'
 import {
   DEFAULT_ADMIN_SYSTEM_PROMPT,
+  createAcMiddleware,
   createDatabaseTools,
-  createEhMiddleware,
   getAssetByName,
   staticControllerContract,
 } from '@igstack/app-catalog-backend-core'
@@ -29,7 +29,7 @@ const companySpecificBackend: AppCatalogCompanySpecificBackend = {
 }
 
 // Create the middleware with all configuration
-const eh = await createEhMiddleware({
+const eh = await createAcMiddleware({
   basePath: '/api',
 
   database: {

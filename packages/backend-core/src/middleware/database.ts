@@ -1,13 +1,13 @@
 import { PrismaClient } from '../generated/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
-import type { EhDatabaseConfig } from './types'
+import type { AcDatabaseConfig } from './types'
 import { setDbClient } from '../db/client'
 
 /**
  * Formats a database connection URL from structured config.
  */
-function formatConnectionUrl(config: EhDatabaseConfig): string {
+function formatConnectionUrl(config: AcDatabaseConfig): string {
   if ('url' in config) {
     return config.url
   }
@@ -20,12 +20,12 @@ function formatConnectionUrl(config: EhDatabaseConfig): string {
  * Internal database manager used by the middleware.
  * Handles connection URL formatting and lifecycle.
  */
-export class EhDatabaseManager {
+export class AcDatabaseManager {
   private client: PrismaClient | null = null
   private pool: pg.Pool | null = null
-  private config: EhDatabaseConfig
+  private config: AcDatabaseConfig
 
-  constructor(config: EhDatabaseConfig) {
+  constructor(config: AcDatabaseConfig) {
     this.config = config
   }
 

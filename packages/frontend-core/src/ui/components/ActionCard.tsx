@@ -1,9 +1,9 @@
-import type { EhAppIndexed } from '@igstack/app-catalog-backend-core'
+import type { AcAppIndexed } from '@igstack/app-catalog-backend-core'
 import { Button } from '~/ui/button'
 import { AppIcon } from './AppIcon'
 
 interface ActionCardProps {
-  app: EhAppIndexed
+  app: AcAppIndexed
   actionName: string
   onClick: () => void
   className?: string

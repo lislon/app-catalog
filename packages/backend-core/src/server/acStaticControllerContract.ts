@@ -1,11 +1,11 @@
-export interface EhStaticControllerContract {
-  methods: { 
+export interface AcStaticControllerContract {
+  methods: {
     getIcon: { method: string; url: string }
     getScreenshot: { method: string; url: string }
   }
 }
 
-export const staticControllerContract: EhStaticControllerContract = {
+export const staticControllerContract: AcStaticControllerContract = {
   methods: {
     getIcon: {
       method: 'get',

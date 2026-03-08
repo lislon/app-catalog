@@ -1,7 +1,7 @@
 import React from 'react'
 import { cn } from '~/lib/utils'
 
-export function EhBaseSelectorRoot({
+export function AcBaseSelectorRoot({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<'div'>) {

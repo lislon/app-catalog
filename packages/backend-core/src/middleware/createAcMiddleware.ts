@@ -1,27 +1,27 @@
 import express, { Router } from 'express'
 import * as trpcExpress from '@trpc/server/adapters/express'
 import type {
-  EhMiddlewareOptions,
-  EhMiddlewareResult,
+  AcMiddlewareOptions,
+  AcMiddlewareResult,
   MiddlewareContext,
 } from './types'
-import { EhDatabaseManager } from './database'
+import { AcDatabaseManager } from './database'
 import { createBackendResolver } from './backendResolver'
 import { registerFeatures } from './featureRegistry'
 import { createTrpcRouter } from '../server/controller'
-import { createEhTrpcContext } from '../server/ehTrpcContext'
+import { createAcTrpcContext } from '../server/acTrpcContext'
 import { createAuth } from '../modules/auth/auth'
 import { createMockUserFromDevConfig } from '../modules/auth/devMockUserUtils'
 
-export async function createEhMiddleware(
-  options: EhMiddlewareOptions,
-): Promise<EhMiddlewareResult> {
+export async function createAcMiddleware(
+  options: AcMiddlewareOptions,
+): Promise<AcMiddlewareResult> {
   // Normalize options with defaults
   const basePath = options.basePath ?? '/api'
   const normalizedOptions = { ...options, basePath }
 
   // Initialize database manager
-  const dbManager = new EhDatabaseManager(options.database)
+  const dbManager = new AcDatabaseManager(options.database)
   // Initialize the client (which also sets the global singleton)
   dbManager.getClient()
 
@@ -101,7 +101,7 @@ export async function createEhMiddleware(
     // Attach groups to user object for authorization checks
     const userWithGroups = user ? { ...user, groups: userGroups } : null
 
-    return createEhTrpcContext({
+    return createAcTrpcContext({
       companySpecificBackend,
       user: userWithGroups,
       adminGroups,
@@ -118,7 +118,7 @@ export async function createEhMiddleware(
     trpcRouter,
     createContext: async () => {
       const companySpecificBackend = await resolveBackend()
-      return createEhTrpcContext({
+      return createAcTrpcContext({
         companySpecificBackend,
         adminGroups,
       })

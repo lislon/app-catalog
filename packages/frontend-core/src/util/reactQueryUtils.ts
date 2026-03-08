@@ -1,10 +1,10 @@
 import type { TRPCRouter } from '@igstack/app-catalog-backend-core'
 import type { TRPCClient } from '@trpc/client'
-import type { EhReactQueryMeta } from '~/types/tanstackQuery'
+import type { AcReactQueryMeta } from '~/types/tanstackQuery'
 import type { AcDb } from '~/userDb/AcDb'
 
 export function getTrpcFromMeta(ctx: {
-  meta?: EhReactQueryMeta
+  meta?: AcReactQueryMeta
 }): TRPCClient<TRPCRouter> {
   if (!ctx.meta) {
     throw new Error('Missing TRPC client in context of react-query')
@@ -12,7 +12,7 @@ export function getTrpcFromMeta(ctx: {
   return ctx.meta.trpcClient
 }
 
-export function getDbFromMeta(ctx: { meta?: EhReactQueryMeta }): AcDb {
+export function getDbFromMeta(ctx: { meta?: AcReactQueryMeta }): AcDb {
   if (!ctx.meta) {
     throw new Error('Missing DB in context of react-query')
   }

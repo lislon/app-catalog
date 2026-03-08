@@ -1,5 +1,5 @@
 import type { AppCatalogCompanySpecificBackend } from '../types/backend/companySpecificBackend'
-import type { EhBackendProvider } from './types'
+import type { AcBackendProvider } from './types'
 
 /**
  * Type guard to check if an object implements AppCatalogCompanySpecificBackend.
@@ -18,7 +18,7 @@ function isBackendInstance(
  * - Async factory function that returns the backend
  */
 export function createBackendResolver(
-  provider: EhBackendProvider,
+  provider: AcBackendProvider,
 ): () => Promise<AppCatalogCompanySpecificBackend> {
   // If it's already an object with the required methods, wrap it
   if (isBackendInstance(provider)) {

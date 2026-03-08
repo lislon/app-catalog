@@ -1,13 +1,13 @@
-import type { EhMetaDictionary, Tag } from '../sharedTypes'
-import type { EhAppUiIndexed } from './ui/appUiTypes'
+import type { AcMetaDictionary, Tag } from '../sharedTypes'
+import type { AcAppUiIndexed } from './ui/appUiTypes'
 
-export interface EhAppIndexed {
+export interface AcAppIndexed {
   slug: string
   displayName: string
   abbr?: string
   aliases?: Array<string>
-  ui?: EhAppUiIndexed
+  ui?: AcAppUiIndexed
   tags?: Array<Tag>
   iconName?: string
-  meta?: EhMetaDictionary
+  meta?: AcMetaDictionary
 }

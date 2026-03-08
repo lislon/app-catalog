@@ -2,14 +2,14 @@
 
 export { createTrpcRouter } from './server/controller'
 export type { TRPCRouter } from './server/controller'
-export { createEhTrpcContext } from './server/ehTrpcContext'
+export { createAcTrpcContext } from './server/acTrpcContext'
 export type {
-  EhTrpcContext,
-  EhTrpcContextOptions,
-} from './server/ehTrpcContext'
+  AcTrpcContext,
+  AcTrpcContextOptions,
+} from './server/acTrpcContext'
 
-export { staticControllerContract } from './server/ehStaticControllerContract'
-export type { EhStaticControllerContract } from './server/ehStaticControllerContract'
+export { staticControllerContract } from './server/acStaticControllerContract'
+export type { AcStaticControllerContract } from './server/acStaticControllerContract'
 
 // ui-only
 
@@ -92,15 +92,15 @@ export {
 
 // Middleware (batteries-included backend setup)
 export {
-  createEhMiddleware,
-  EhDatabaseManager,
+  createAcMiddleware,
+  AcDatabaseManager,
   injectCustomScripts,
-  type EhDatabaseConfig,
-  type EhAuthConfig,
-  type EhFeatureToggles,
-  type EhBackendProvider,
-  type EhLifecycleHooks,
-  type EhMiddlewareOptions,
-  type EhMiddlewareResult,
+  type AcDatabaseConfig,
+  type AcAuthConfig,
+  type AcFeatureToggles,
+  type AcBackendProvider,
+  type AcLifecycleHooks,
+  type AcMiddlewareOptions,
+  type AcMiddlewareResult,
   type MiddlewareContext,
 } from './middleware'

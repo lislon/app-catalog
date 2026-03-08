@@ -3,10 +3,10 @@ import { createContext, use, useMemo } from 'react'
 import type { ReactNode } from 'react'
 import type { PartialRecord } from '~/types/utilityTypes'
 import type { PluginInterfaceForCore } from './makePluginManagerContext'
-import type { EhPlugin, PluginName } from './types'
+import type { AcPlugin, PluginName } from './types'
 
 export interface PluginManagerContextIface {
-  plugins: Array<EhPlugin>
+  plugins: Array<AcPlugin>
   interfaceForPlugins: PartialRecord<
     PluginName,
     PluginManagerInterfaceForPlugins
@@ -23,7 +23,7 @@ const PluginManagerContext = createContext<
 
 interface PluginManagerProviderProps {
   children: ReactNode
-  plugins: Array<EhPlugin>
+  plugins: Array<AcPlugin>
   pluginInterfaceForCore: PluginInterfaceForCore
 }
 

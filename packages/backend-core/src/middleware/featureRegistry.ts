@@ -1,8 +1,8 @@
 import type { Router } from 'express'
 import { toNodeHandler } from 'better-auth/node'
 import type {
-  EhFeatureToggles,
-  EhMiddlewareOptions,
+  AcFeatureToggles,
+  AcMiddlewareOptions,
   MiddlewareContext,
 } from './types'
 import { registerIconRestController } from '../modules/icons/iconRestController'
@@ -11,12 +11,12 @@ import { registerScreenshotRestController } from '../modules/assets/screenshotRe
 import { createMockSessionResponse } from '../modules/auth/devMockUserUtils'
 
 interface FeatureRegistration {
-  name: keyof EhFeatureToggles
+  name: keyof AcFeatureToggles
   defaultEnabled: boolean
   register: (
     router: Router,
-    options: Required<Pick<EhMiddlewareOptions, 'basePath'>> &
-      EhMiddlewareOptions,
+    options: Required<Pick<AcMiddlewareOptions, 'basePath'>> &
+      AcMiddlewareOptions,
     context: MiddlewareContext,
   ) => void
 }
@@ -67,8 +67,8 @@ const FEATURES: Array<FeatureRegistration> = [
  */
 export function registerFeatures(
   router: Router,
-  options: Required<Pick<EhMiddlewareOptions, 'basePath'>> &
-    EhMiddlewareOptions,
+  options: Required<Pick<AcMiddlewareOptions, 'basePath'>> &
+    AcMiddlewareOptions,
   context: MiddlewareContext,
 ): void {
   const basePath = options.basePath
