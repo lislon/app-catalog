@@ -19,25 +19,11 @@ export type { AppForCatalog } from './types/common/appCatalogTypes'
 export * from './types/index'
 
 // Auth
-export {
-  createAuth,
-  type AuthConfig,
-  type BetterAuth,
-} from './modules/auth/auth'
+export { createAuth, type BetterAuth } from './modules/auth/auth'
 
 export { registerAuthRoutes } from './modules/auth/registerAuthRoutes'
 
 export { createAuthRouter, type AuthRouter } from './modules/auth/authRouter'
-
-export {
-  getUserGroups,
-  isMemberOfAnyGroup,
-  isMemberOfAllGroups,
-  isAdmin,
-  requireAdmin,
-  requireGroups,
-  type UserWithGroups,
-} from './modules/auth/authorizationUtils'
 
 // Icon management
 export {

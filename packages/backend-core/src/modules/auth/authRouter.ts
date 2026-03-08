@@ -18,10 +18,10 @@ export function createAuthRouter(
 
   return router({
     getSession: publicProcedure.query(async ({ ctx }) => {
-      // User is now extracted in the tRPC context creation
       return {
         user: ctx.user ?? null,
         isAuthenticated: !!ctx.user,
+        isAdmin: ctx.isAdmin,
       }
     }),
     getProviders: publicProcedure.query(() => {
@@ -45,7 +45,7 @@ export function createAuthRouter(
       // Add OAuth providers from plugins (like Okta via genericOAuth)
       if (authOptions?.plugins) {
         const plugins = authOptions.plugins
-        plugins.forEach((plugin) => {
+        plugins.forEach((plugin: BetterAuthPlugin) => {
           const pluginWithConfig = plugin as BetterAuthPlugin & {
             options?: {
               config?: Array<{ providerId?: string }>

@@ -1,6 +1,7 @@
-import type { Router } from 'express'
+import type { Request, Router  } from 'express'
 import type { LanguageModel, Tool } from 'ai'
-import type { BetterAuthOptions, BetterAuthPlugin } from 'better-auth'
+import type { BetterAuthOptions } from 'better-auth'
+import type { Session, User } from 'better-auth/types'
 import type { AppCatalogCompanySpecificBackend } from '../types/backend/companySpecificBackend'
 import type { BetterAuth } from '../modules/auth/auth'
 import type { TRPCRouter } from '../server/controller'
@@ -23,6 +24,7 @@ export type AcDatabaseConfig =
 /**
  * Mock user configuration for development/testing.
  * When provided, bypasses authentication and injects this user into all requests.
+ * Dev mock user is always treated as admin.
  */
 export interface AcDevMockUser {
   /** User ID */
@@ -31,34 +33,22 @@ export interface AcDevMockUser {
   email: string
   /** User display name */
   name: string
-  /** User groups (for authorization) */
-  groups: Array<string>
 }
 
 /**
  * Auth configuration for Better Auth integration.
  */
 export interface AcAuthConfig {
-  /** Base URL for auth callbacks (e.g., 'http://localhost:4000') */
-  baseURL: string
-  /** Secret for signing sessions (min 32 chars in production) */
-  secret: string
-  /** OAuth providers configuration */
-  providers?: BetterAuthOptions['socialProviders']
-  /** Additional Better Auth plugins (e.g., Okta) */
-  plugins?: Array<BetterAuthPlugin>
-  /** Session expiration in seconds (default: 30 days) */
-  sessionExpiresIn?: number
-  /** Session refresh threshold in seconds (default: 1 day) */
-  sessionUpdateAge?: number
-  /** Application name shown in auth UI */
-  appName?: string
-  /** Development mock user - bypasses auth when provided */
+  /** Full better-auth options — deployment controls everything */
+  betterAuthOptions: BetterAuthOptions
+  /** Dev bypass */
   devMockUser?: AcDevMockUser
-  /** Admin group names for authorization (default: ['env_hopper_ui_super_admins']) */
-  adminGroups?: Array<string>
-  /** Okta groups claim name (e.g., 'env_hopper_ui_groups') - used to extract groups from access token JWT */
-  oktaGroupsClaim?: string
+  /** Deployment decides who is admin. If not provided, nobody is admin. */
+  isAdmin?: (
+    user: User,
+    session: Session,
+    ctx: { request: Request; auth: BetterAuth },
+  ) => boolean | Promise<boolean>
 }
 
 /**
@@ -205,5 +195,5 @@ export interface MiddlewareContext {
   createContext: () => Promise<{
     companySpecificBackend: AppCatalogCompanySpecificBackend
   }>
-  authConfig: AcAuthConfig
+  isAdmin?: AcAuthConfig['isAdmin']
 }

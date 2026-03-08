@@ -4,23 +4,19 @@ import type { User } from 'better-auth/types'
 export interface AcTrpcContext {
   companySpecificBackend: AppCatalogCompanySpecificBackend
   user: User | null
-  adminGroups: Array<string>
+  isAdmin: boolean
 }
 
 export interface AcTrpcContextOptions {
   companySpecificBackend: AppCatalogCompanySpecificBackend
   user?: User | null
-  adminGroups: Array<string>
+  isAdmin?: boolean
 }
 
 export function createAcTrpcContext({
   companySpecificBackend,
   user = null,
-  adminGroups,
+  isAdmin = false,
 }: AcTrpcContextOptions): AcTrpcContext {
-  return {
-    companySpecificBackend,
-    user,
-    adminGroups,
-  }
+  return { companySpecificBackend, user, isAdmin }
 }
