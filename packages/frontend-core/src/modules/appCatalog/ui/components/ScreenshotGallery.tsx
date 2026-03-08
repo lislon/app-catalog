@@ -4,7 +4,8 @@ import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
 
 import { Gallery } from '~/modules/gallery/Gallery'
 import type { GalleryImage } from '~/modules/gallery/Gallery'
-import { Dialog, DialogContent } from '~/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '~/ui/dialog'
+import { VisuallyHidden } from '~/ui/visually-hidden'
 
 export interface ScreenshotGalleryProps {
   app: AppForCatalog
@@ -44,6 +45,9 @@ export function ScreenshotGallery({
         className="h-[85vh] w-full max-w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-3rem)] md:max-w-[calc(100vw-4rem)] p-0 overflow-hidden"
         showCloseButton={true}
       >
+        <VisuallyHidden>
+          <DialogTitle>{title || `${app.displayName} screenshots`}</DialogTitle>
+        </VisuallyHidden>
         <Gallery images={images} initialIndex={initialIndex} title={title} />
       </DialogContent>
     </Dialog>

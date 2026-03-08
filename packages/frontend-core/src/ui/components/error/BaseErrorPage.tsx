@@ -3,6 +3,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import { MainLayout } from '~/ui/layout/MainLayout'
 import { TopLevelProvidersForErrors } from '~/ui/layout/TopLevelProvidersForErrors'
+import { useQueryClient } from '@tanstack/react-query'
 
 export interface BaseErrorPageProps {
   children: ReactNode
@@ -14,12 +15,13 @@ export interface BaseErrorPageProps {
  * Error pages should render their content as children of this component
  */
 export function BaseErrorPage({ children }: BaseErrorPageProps) {
+  const queryClient = useQueryClient()
   return (
     <TopLevelProvidersForErrors>
       <MainLayout>
         {children}
         <TanStackRouterDevtools />
-        <ReactQueryDevtools initialIsOpen={false} />
+        <ReactQueryDevtools initialIsOpen={false} client={queryClient} />
       </MainLayout>
     </TopLevelProvidersForErrors>
   )

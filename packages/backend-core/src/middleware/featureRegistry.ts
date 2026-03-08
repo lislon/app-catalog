@@ -8,7 +8,6 @@ import type {
 import { registerIconRestController } from '../modules/icons/iconRestController'
 import { registerAssetRestController } from '../modules/assets/assetRestController'
 import { registerScreenshotRestController } from '../modules/assets/screenshotRestController'
-import { getAssetByName } from '../modules/icons/iconService'
 import { createMockSessionResponse } from '../modules/auth/devMockUserUtils'
 
 interface FeatureRegistration {
@@ -59,37 +58,6 @@ const FEATURES: Array<FeatureRegistration> = [
       // Use toNodeHandler to adapt better-auth for Express/Node.js
       const authHandler = toNodeHandler(ctx.auth)
       router.all(`${basePath}/auth/{*any}`, authHandler)
-    },
-  },
-  {
-    name: 'legacyIconEndpoint',
-    defaultEnabled: false,
-    register: (router) => {
-      // Legacy endpoint at /static/icon/:icon for backwards compatibility
-      router.get('/static/icon/:icon', async (req, res) => {
-        const { icon } = req.params
-
-        if (!icon || !/^[a-z0-9-]+$/i.test(icon)) {
-          res.status(400).send('Invalid icon name')
-          return
-        }
-
-        try {
-          const dbIcon = await getAssetByName(icon)
-
-          if (!dbIcon) {
-            res.status(404).send('Icon not found')
-            return
-          }
-
-          res.setHeader('Content-Type', dbIcon.mimeType)
-          res.setHeader('Cache-Control', 'public, max-age=86400')
-          res.send(dbIcon.content)
-        } catch (error) {
-          console.error('Error fetching icon:', error)
-          res.status(404).send('Icon not found')
-        }
-      })
     },
   },
 ]
