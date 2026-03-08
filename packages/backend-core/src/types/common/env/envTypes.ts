@@ -1,7 +1,7 @@
-import type { EhMetaDictionary } from '../sharedTypes'
+import type { AcMetaDictionary } from '../sharedTypes'
 
-export interface EhEnvIndexed {
+export interface AcEnvIndexed {
   slug: string
   displayName: string
-  meta?: EhMetaDictionary
+  meta?: AcMetaDictionary
 }

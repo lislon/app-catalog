@@ -1,10 +1,10 @@
-import type { EhMetaDictionary } from '../common/sharedTypes'
+import type { AcMetaDictionary } from '../common/sharedTypes'
 
-export interface EhBackendDataSourceInputCommon {
-  meta?: EhMetaDictionary
+export interface AcBackendDataSourceInputCommon {
+  meta?: AcMetaDictionary
 }
 
-export interface EhBackendDataSourceInputDb {
+export interface AcBackendDataSourceInputDb {
   slug?: string
   type: 'db'
   url: string
@@ -12,7 +12,7 @@ export interface EhBackendDataSourceInputDb {
   password: string
 }
 
-export interface EhBackendDataSourceInputKafka {
+export interface AcBackendDataSourceInputKafka {
   slug?: string
   type: 'kafka'
   topics: {
@@ -21,5 +21,5 @@ export interface EhBackendDataSourceInputKafka {
   }
 }
 
-export type EhBackendDataSourceInput = EhBackendDataSourceInputCommon &
-  (EhBackendDataSourceInputDb | EhBackendDataSourceInputKafka)
+export type AcBackendDataSourceInput = AcBackendDataSourceInputCommon &
+  (AcBackendDataSourceInputDb | AcBackendDataSourceInputKafka)

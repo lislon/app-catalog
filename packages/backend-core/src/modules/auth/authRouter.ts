@@ -1,6 +1,6 @@
 import type { BetterAuthPlugin } from 'better-auth'
 import type { TRPCRootObject } from '@trpc/server'
-import type { EhTrpcContext } from '../../server/ehTrpcContext'
+import type { AcTrpcContext } from '../../server/acTrpcContext'
 import type { BetterAuth } from './auth'
 
 /**
@@ -10,7 +10,7 @@ import type { BetterAuth } from './auth'
  * @returns tRPC router with auth procedures
  */
 export function createAuthRouter(
-  t: TRPCRootObject<EhTrpcContext, {}, {}>,
+  t: TRPCRootObject<AcTrpcContext, {}, {}>,
   auth?: BetterAuth,
 ) {
   const router = t.router

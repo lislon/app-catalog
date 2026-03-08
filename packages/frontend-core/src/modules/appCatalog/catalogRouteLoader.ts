@@ -1,9 +1,9 @@
 import type { QueryFunctionContext } from '@tanstack/react-query'
-import type { EhRouterContext } from '~/types/types'
+import type { AcRouterContext } from '~/types/types'
 import { appCatalogFetcher } from '~/api/unsorted/appCatalogFetcher'
 
 export interface CatalogRouteLoaderCtx {
-  context: EhRouterContext
+  context: AcRouterContext
 }
 
 export async function catalogRouteLoader({

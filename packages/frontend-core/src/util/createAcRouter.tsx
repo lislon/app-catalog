@@ -1,8 +1,8 @@
 import { createRouter } from '@tanstack/react-router'
-import type { EhRouterInitParams } from '../types/types'
+import type { AcRouterInitParams } from '../types/types'
 import { routeTree } from '../routeTree.gen'
 
-export function createEhRouter({ context, history }: EhRouterInitParams) {
+export function createAcRouter({ context, history }: AcRouterInitParams) {
   return createRouter({
     routeTree,
     context,
@@ -17,6 +17,6 @@ export function createEhRouter({ context, history }: EhRouterInitParams) {
 
 declare module '@tanstack/react-router' {
   interface Register {
-    router: ReturnType<typeof createEhRouter>
+    router: ReturnType<typeof createAcRouter>
   }
 }

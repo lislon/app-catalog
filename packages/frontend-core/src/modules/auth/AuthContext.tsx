@@ -18,7 +18,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const STORAGE_KEY = 'eh_auth_user'
+const STORAGE_KEY = 'ac_auth_user'
 
 /**
  * Provider component for authentication state

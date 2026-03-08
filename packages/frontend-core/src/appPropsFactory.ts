@@ -3,9 +3,9 @@ import { createTRPCClient, httpBatchLink } from '@trpc/client'
 import { AcDb } from './userDb/AcDb'
 import type { TRPCRouter } from '@igstack/app-catalog-backend-core'
 import type { AppProps } from './App'
-import type { EhPlugin } from './modules/pluginCore/types'
+import type { AcPlugin } from './modules/pluginCore/types'
 import { createQueryClient } from './api/infra/createQueryClient'
-import { createEhRouter } from './util/createEhRouter'
+import { createAcRouter } from './util/createAcRouter'
 
 // registerSW();
 export function appPropsFactory(): AppProps {
@@ -19,10 +19,10 @@ export function appPropsFactory(): AppProps {
 
   const db = new AcDb()
   const queryClient = createQueryClient({ trpcClient, db })
-  const plugins: Array<EhPlugin> = [
+  const plugins: Array<AcPlugin> = [
     // Future plugins can be added here
   ]
-  const router = createEhRouter({
+  const router = createAcRouter({
     history: createBrowserHistory(),
     context: {
       queryClient,

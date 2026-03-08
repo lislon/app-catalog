@@ -1,8 +1,8 @@
 import { TRPCError, initTRPC } from '@trpc/server'
-import type { EhTrpcContext } from './ehTrpcContext'
+import type { AcTrpcContext } from './acTrpcContext'
 import { isAdmin } from '../modules/auth/authorizationUtils'
 
-export const t = initTRPC.context<EhTrpcContext>().create({
+export const t = initTRPC.context<AcTrpcContext>().create({
   errorFormatter({ error, shape }: { error: unknown; shape: unknown }) {
     // Log all tRPC errors to console
     console.error('[tRPC Error]', {
