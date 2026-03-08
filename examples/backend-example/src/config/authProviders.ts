@@ -79,19 +79,6 @@ export function getAuthPlugins(): Array<BetterAuthPlugin> {
 }
 
 /**
- * Get admin group names from environment variables
- * Default: ['env_hopper_ui_super_admins']
- */
-export function getAdminGroups(): Array<string> {
-  const adminGroups =
-    process.env.AUTH_ADMIN_GROUPS || 'env_hopper_ui_super_admins'
-  return adminGroups
-    .split(',')
-    .map((g) => g.trim())
-    .filter(Boolean)
-}
-
-/**
  * Validate required auth environment variables
  */
 export function validateAuthConfig(): void {
