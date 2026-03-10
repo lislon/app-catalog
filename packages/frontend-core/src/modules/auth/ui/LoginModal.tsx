@@ -17,16 +17,19 @@ export function LoginModal() {
   const { isOpen, close } = useAuthModal()
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) {
-        close()
-      }
-    }}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          close()
+        }
+      }}
+    >
       <DialogContent className="w-full max-w-md">
         <DialogHeader>
           <DialogTitle>Sign In</DialogTitle>
           <DialogDescription>
-            Choose your sign-in method to access EnvHopper
+            Choose your sign-in method to authorize in App Catalog
           </DialogDescription>
         </DialogHeader>
         <LoginPage onSuccess={close} />
