@@ -240,7 +240,18 @@ export async function syncAppCatalog(
       }
     })
 
-    // Flatten all sourceRefs into a single array for sync
+    // Sync apps first
+    const result = await sync.sync(dbApps)
+
+    // Resolve slug -> id for synced apps so SourceReference can reference by appId
+    const slugs = dbApps.map((a) => a.slug)
+    const appRows = await prisma.dbAppForCatalog.findMany({
+      where: { slug: { in: slugs } },
+      select: { slug: true, id: true },
+    })
+    const slugToId = Object.fromEntries(appRows.map((r) => [r.slug, r.id]))
+
+    // Build allSourceRefs with appId (slug already resolved to id)
     const allSourceRefs = apps.flatMap((app) => {
       const appSlug =
         app.slug ||
@@ -248,12 +259,18 @@ export async function syncAppCatalog(
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/^-+|-+$/g, '')
+      const appId = slugToId[appSlug]
+      if (!appId) {
+        throw new Error(
+          `App '${appSlug}' has no id after sync. Existing slugs: ${Object.keys(slugToId).join(', ')}`,
+        )
+      }
 
       return (app.sources ?? []).map((source) => {
         const url = typeof source === 'string' ? source : source.url
         const sourceSlug = parseSourceSlug(url)
         return {
-          appSlug,
+          appId,
           sourceSlug,
           url,
           parseDate: null,
@@ -262,9 +279,6 @@ export async function syncAppCatalog(
         }
       })
     })
-
-    // Sync apps first
-    const result = await sync.sync(dbApps)
 
     // Then sync all SourceReferences (with set semantics: old ones deleted, new ones created)
     await tableSyncPrisma({

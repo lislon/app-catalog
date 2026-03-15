@@ -1,67 +1,11 @@
 import { generateText, stepCountIs } from 'ai'
 import type { Tool } from 'ai'
-import { z } from 'zod'
 import { createMCPClient } from '@ai-sdk/mcp'
-import { PrismaClient } from '../../generated/prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
-import pg from 'pg'
 import type {
   AcDatabaseConfig,
   AcLighthouseKeeperConfig,
 } from '../../middleware/types.js'
 import { APP_CATALOG_AI_SYSTEM_PROMPT, createAppCatalogAITools } from './tools'
-
-// ============================================================================
-// Database Tools
-// ============================================================================
-
-function getDatabaseUrl(config: AcDatabaseConfig): string {
-  if ('url' in config) return config.url
-  const { host, port, database, username, password, schema } = config
-  const schemaParam = schema ? `?schema=${schema}` : ''
-  return `postgresql://${username}:${password}@${host}:${port}/${database}${schemaParam}`
-}
-
-function createDatabaseTools(databaseUrl: string): Record<string, Tool> {
-  // Prisma 7 with adapter
-  const pool = new pg.Pool({ connectionString: databaseUrl })
-  const adapter = new PrismaPg(pool)
-  const prisma = new PrismaClient({ adapter })
-
-  const queryDatabaseSchema = z.object({
-    sql: z.string().describe('The SELECT SQL query to execute'),
-  })
-
-  type QueryInput = z.infer<typeof queryDatabaseSchema>
-
-  const queryDatabase: Tool<QueryInput, unknown> = {
-    description:
-      'Execute SELECT query to read database data. Always use double quotes around table/column names (e.g., SELECT * FROM "App").',
-    inputSchema: queryDatabaseSchema,
-    execute: async ({ sql }: { sql: string }) => {
-      const normalizedSql = sql.trim().toUpperCase()
-      if (!normalizedSql.startsWith('SELECT')) {
-        return { error: 'Only SELECT queries allowed' }
-      }
-      try {
-        const results = await prisma.$queryRawUnsafe(sql)
-        return { success: true, data: results }
-      } catch (error) {
-        return {
-          error: error instanceof Error ? error.message : 'Query failed',
-        }
-      }
-    },
-  }
-
-  return {
-    queryDatabase,
-  }
-}
-
-// ============================================================================
-// Main Function
-// ============================================================================
 
 export async function runLighthouseKeeperDemo(
   config: AcLighthouseKeeperConfig,
@@ -72,15 +16,12 @@ export async function runLighthouseKeeperDemo(
 
   const systemPrompt = config.systemPrompt ?? APP_CATALOG_AI_SYSTEM_PROMPT
 
-  // Track MCP clients for cleanup
-  const mcpClients: Array<{ client: any; name: string }> = []
+  const mcpClients: Array<{
+    client: { close: () => Promise<void> }
+    name: string
+  }> = []
 
   try {
-    // Create database tools
-    // const databaseUrl = getDatabaseUrl(database)
-    // const dbTools = createDatabaseTools(databaseUrl)
-
-    // Connect to MCP servers and fetch tools
     const allTools: Record<string, Tool> = {
       ...createAppCatalogAITools(database),
     }

@@ -161,12 +161,12 @@ model SourceReference {
   id         Int             @id @default(autoincrement())
   sourceSlug String
   source     Source          @relation(fields: [sourceSlug], references: [slug], onDelete: Cascade)
-  appSlug    String
-  app        DbAppForCatalog @relation(fields: [appSlug], references: [slug], onDelete: Cascade)
+  appId      String
+  app        DbAppForCatalog @relation(fields: [appId], references: [id], onDelete: Cascade)
   url        String
   parseDate  DateTime?
   excerpts   String[]        @default([])
   userPrompt String?
 
-  @@unique([appSlug, url])
+  @@unique([appId, url])
 }
