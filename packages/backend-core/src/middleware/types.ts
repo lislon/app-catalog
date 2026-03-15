@@ -1,4 +1,4 @@
-import type { Request, Router  } from 'express'
+import type { Request, Router } from 'express'
 import type { LanguageModel, Tool } from 'ai'
 import type { BetterAuthOptions } from 'better-auth'
 import type { Session, User } from 'better-auth/types'
@@ -64,6 +64,27 @@ export interface AcAdminChatConfig {
   tools?: Record<string, Tool>
   /** Validation function called before each request */
   validateConfig?: () => void
+}
+
+/**
+ * MCP server configuration for Lighthouse Keeper.
+ */
+export interface AcMcpServerConfig {
+  name: string
+  url: string
+  headers?: Record<string, string>
+}
+
+/**
+ * Lighthouse Keeper (agentic AI debugging tool) configuration.
+ */
+export interface AcLighthouseKeeperConfig {
+  /** AI model instance from @ai-sdk/* packages */
+  model: LanguageModel
+  /** MCP servers to make available as tools */
+  mcpServers: Array<AcMcpServerConfig>
+  /** System prompt for the lighthouse keeper AI (optional; deployment can provide its own) */
+  systemPrompt?: string
 }
 
 /**

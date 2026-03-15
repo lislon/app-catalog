@@ -96,7 +96,11 @@ function formatStatus(status: number | null, error?: string): string {
 
 async function getAppsFromDb(): Promise<Array<AppForCatalog>> {
   const prisma = getDbClient()
-  const rows = await prisma.dbAppForCatalog.findMany()
+  const rows = await prisma.dbAppForCatalog.findMany({
+    include: {
+      sourceRefs: true,
+    },
+  })
 
   return rows.map((row) => {
     const accessRequest =
@@ -105,7 +109,11 @@ async function getAppsFromDb(): Promise<Array<AppForCatalog>> {
     const tags = (row.tags as unknown as AppForCatalog['tags']) ?? []
     const screenshotIds =
       (row.screenshotIds as unknown as AppForCatalog['screenshotIds']) ?? []
-    const sources = (row.sources as unknown as Array<string> | null) ?? []
+    const sources = row.sourceRefs.map((ref) => ({
+      sourceSlug: ref.sourceSlug,
+      url: ref.url,
+      parseDate: ref.parseDate ? ref.parseDate.toISOString() : null,
+    }))
     const notes = row.notes == null ? undefined : row.notes
     const appUrl = row.appUrl == null ? undefined : row.appUrl
     const iconName = row.iconName == null ? undefined : row.iconName
@@ -166,8 +174,9 @@ export async function checkAllLinks(options: CheckLinksOptions = {}): Promise<{
     // Check sources
     if (app.sources && app.sources.length > 0) {
       for (const source of app.sources) {
+        const url = typeof source === 'string' ? source : source.url
         checks.push({
-          url: source,
+          url,
           appSlug: app.slug,
           linkType: 'sources',
         })

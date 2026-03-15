@@ -1,5 +1,5 @@
 /**
- * UI settings passed from the app entry point (natera-specific configuration)
+ * UI settings passed from the app entry point.
  */
 export interface UiSettings {
   /** Filter pane configuration */
