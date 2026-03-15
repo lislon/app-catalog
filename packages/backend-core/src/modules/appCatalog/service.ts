@@ -1,4 +1,5 @@
 import { getDbClient } from '../../db/client'
+import type { Prisma } from '../../generated/prisma/client'
 import type {
   AppApprovalMethod,
   AppCatalogData,
@@ -12,6 +13,12 @@ import type {
   ServiceConfig,
 } from '../../types/common/approvalMethodTypes'
 import { omit } from 'radashi'
+import { parseSourceSlug } from '../../utils/parseSourceSlug'
+
+/** Prisma query result for DbAppForCatalog with sourceRefs included (used by rowToAppForCatalog) */
+type AppRowWithSourceRefs = Prisma.DbAppForCatalogGetPayload<{
+  include: { sourceRefs: true }
+}>
 
 function capitalize(word: string): string {
   if (!word) return word
@@ -104,52 +111,124 @@ export async function getApprovalMethodsFromPrisma(): Promise<
   })
 }
 
+function rowToAppForCatalog(row: AppRowWithSourceRefs): AppForCatalog {
+  const accessRequest =
+    row.accessRequest as unknown as AppForCatalog['accessRequest']
+  const teams = (row.teams as unknown as Array<string> | null) ?? []
+  const tags = (row.tags as unknown as AppForCatalog['tags']) ?? []
+  const screenshotIds =
+    (row.screenshotIds as unknown as AppForCatalog['screenshotIds']) ?? []
+  const sources = row.sourceRefs.map((ref) => ({
+    sourceSlug: ref.sourceSlug,
+    url: ref.url,
+    parseDate: ref.parseDate ? ref.parseDate.toISOString() : null,
+  }))
+  const notes = row.notes == null ? undefined : row.notes
+  const appUrl = row.appUrl == null ? undefined : row.appUrl
+  const iconName = row.iconName == null ? undefined : row.iconName
+  const deprecated =
+    row.deprecated == null
+      ? undefined
+      : (row.deprecated as unknown as AppForCatalog['deprecated'])
+
+  return {
+    id: row.id,
+    slug: row.slug,
+    displayName: row.displayName,
+    description: row.description,
+    accessRequest,
+    teams,
+    notes,
+    tags,
+    appUrl,
+    iconName,
+    screenshotIds,
+    sources,
+    deprecated,
+  }
+}
+
 export async function getAppsFromPrisma(): Promise<Array<AppForCatalog>> {
   const prisma = getDbClient()
 
-  // Fetch all apps
   const rows = await prisma.dbAppForCatalog.findMany({
     include: {
       sourceRefs: true,
     },
   })
 
-  return rows.map((row) => {
-    const accessRequest =
-      row.accessRequest as unknown as AppForCatalog['accessRequest']
-    const teams = (row.teams as unknown as Array<string> | null) ?? []
-    const tags = (row.tags as unknown as AppForCatalog['tags']) ?? []
-    const screenshotIds =
-      (row.screenshotIds as unknown as AppForCatalog['screenshotIds']) ?? []
-    const sources = row.sourceRefs.map((ref) => ({
-      sourceSlug: ref.sourceSlug,
-      url: ref.url,
-      parseDate: ref.parseDate ? ref.parseDate.toISOString() : null,
-    }))
-    const notes = row.notes == null ? undefined : row.notes
-    const appUrl = row.appUrl == null ? undefined : row.appUrl
-    const iconName = row.iconName == null ? undefined : row.iconName
-    const deprecated =
-      row.deprecated == null
-        ? undefined
-        : (row.deprecated as unknown as AppForCatalog['deprecated'])
+  return rows.map(rowToAppForCatalog)
+}
 
-    return {
-      id: row.id,
-      slug: row.slug,
-      displayName: row.displayName,
-      description: row.description,
-      accessRequest,
-      teams,
-      notes,
-      tags,
-      appUrl,
-      iconName,
-      screenshotIds,
-      sources,
-      deprecated,
-    }
+export interface UpdateAppInput {
+  id: string
+  data: {
+    displayName?: string
+    slug?: string
+    appUrl?: string
+    description?: string
+    sources?: Array<string>
+  }
+}
+
+export async function updateApp(input: UpdateAppInput): Promise<AppForCatalog> {
+  const prisma = getDbClient()
+  const { id, data } = input
+
+  const updatePayload: {
+    displayName?: string
+    slug?: string
+    appUrl?: string
+    description?: string
+  } = {}
+  if (data.displayName !== undefined)
+    updatePayload.displayName = data.displayName
+  if (data.slug !== undefined) updatePayload.slug = data.slug
+  if (data.appUrl !== undefined) updatePayload.appUrl = data.appUrl
+  if (data.description !== undefined)
+    updatePayload.description = data.description
+
+  const updated = await prisma.dbAppForCatalog.update({
+    where: { id },
+    data: updatePayload,
+    include: { sourceRefs: true },
   })
+
+  if (data.sources !== undefined) {
+    const urls = [...new Set(data.sources.map((u) => u.trim()).filter(Boolean))]
+    const uniqueSourceSlugs = [...new Set(urls.map(parseSourceSlug))]
+
+    for (const sourceSlug of uniqueSourceSlugs) {
+      await prisma.source.upsert({
+        where: { slug: sourceSlug },
+        create: { slug: sourceSlug },
+        update: {},
+      })
+    }
+
+    await prisma.sourceReference.deleteMany({
+      where: { appId: updated.id },
+    })
+
+    if (urls.length > 0) {
+      await prisma.sourceReference.createMany({
+        data: urls.map((url) => ({
+          appId: updated.id,
+          sourceSlug: parseSourceSlug(url),
+          url: url.trim(),
+        })),
+      })
+    }
+
+    const refetched = await prisma.dbAppForCatalog.findUnique({
+      where: { id },
+      include: { sourceRefs: true },
+    })
+    if (!refetched) throw new Error('App not found after update')
+    return rowToAppForCatalog(refetched)
+  }
+
+  return rowToAppForCatalog(updated)
 }
 
 export function deriveCategories(
