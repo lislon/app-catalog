@@ -26,7 +26,12 @@ export function AppCatalogTable({ apps }: AppCatalogTableProps) {
       {
         slug: 'name',
         header: 'App Name',
-        cell: ({ row }) => row.original.displayName,
+        cell: ({ row }) => (
+          <span className="font-medium">
+            {row.original.displayName}
+            {row.original.alias && ` (${row.original.alias})`}
+          </span>
+        ),
       },
       {
         slug: 'url',

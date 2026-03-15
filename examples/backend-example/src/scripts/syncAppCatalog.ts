@@ -11,9 +11,9 @@
 
 import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
 import {
-    connectDb,
-    disconnectDb,
-    syncAppCatalog,
+  connectDb,
+  disconnectDb,
+  syncAppCatalog,
 } from '@igstack/app-catalog-backend-core'
 import { config as loadEnv } from 'dotenv-defaults'
 
@@ -25,6 +25,7 @@ const sampleAppCatalog: Array<AppForCatalog> = [
     id: 'car-shop-sales',
     slug: 'car-shop-sales',
     displayName: 'Car Shop Sales',
+    alias: 'Sales',
     description: 'Sales management system for the car dealership',
     access: {
       type: 'ticketing',
@@ -39,6 +40,7 @@ const sampleAppCatalog: Array<AppForCatalog> = [
     id: 'billing-app',
     slug: 'billing-app',
     displayName: 'Billing App',
+    alias: 'Billing',
     description: 'Invoice and billing management application',
     access: {
       type: 'self-service',
@@ -53,6 +55,7 @@ const sampleAppCatalog: Array<AppForCatalog> = [
     id: 'pet-shop-app',
     slug: 'pet-shop-app',
     displayName: 'Pet Shop App',
+    alias: 'Pet Shop',
     description: 'Pet shop management and inventory system',
     access: {
       type: 'email',
@@ -73,6 +76,7 @@ const sampleAppCatalog: Array<AppForCatalog> = [
     id: 'monitoring-dashboard',
     slug: 'monitoring-dashboard',
     displayName: 'Monitoring Dashboard',
+    alias: 'Monitoring',
     description: 'System monitoring and alerting dashboard',
     access: {
       type: 'documentation',

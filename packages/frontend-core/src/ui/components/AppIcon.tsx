@@ -37,7 +37,7 @@ export function AppIcon({ app, className = 'w-4 h-4' }: AppIconProps) {
     return (
       <img
         src={iconSrc}
-        alt={`${app.displayName} icon`}
+        alt={`${app.abbr || app.displayName} icon`}
         className={className}
         onError={handleImageError}
       />
