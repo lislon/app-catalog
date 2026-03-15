@@ -13,6 +13,16 @@ import type { AppAccessRequest, ApprovalMethod } from './approvalMethodTypes'
 // ============================================================================
 
 /**
+ * Source reference with metadata (used in API responses)
+ * Note: parseDate is string (ISO-8601) when serialized from API, null when not yet parsed
+ */
+export interface SourceReference {
+  sourceSlug: string
+  url: string
+  parseDate: string | null
+}
+
+/**
  * Application entry in the catalog
  */
 export interface AppForCatalog {
@@ -28,7 +38,7 @@ export interface AppForCatalog {
   links?: Array<{ url: string; title?: string }>
   iconName?: string // Optional icon identifier for display
   screenshotIds?: Array<string>
-  sources?: Array<string> // Source URLs (Confluence pages, docs, etc.)
+  sources?: Array<string> | Array<SourceReference> // String URLs from config OR enriched objects from database
   deprecated?: {
     /** Type of deprecation: 'deprecated' (fully deprecated) or 'discouraged' (use alternatives). Defaults to 'deprecated'. */
     type?: 'deprecated' | 'discouraged'

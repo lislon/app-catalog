@@ -26,6 +26,15 @@ export const TABLE_SYNC_MAGAZINE = {
     prismaModelName: 'DbApprovalMethod',
     uniqColumns: ['slug'],
   },
+  Source: {
+    id: 'slug',
+    prismaModelName: 'Source',
+    uniqColumns: ['slug'],
+  },
+  SourceReference: {
+    prismaModelName: 'SourceReference',
+    uniqColumns: ['appSlug', 'url'],
+  },
 } as const satisfies TableSyncMagazineType
 
 export type TableSyncMagazine = typeof TABLE_SYNC_MAGAZINE

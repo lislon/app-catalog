@@ -11,6 +11,7 @@ import {
 import { AppWindow, ExternalLink, X } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { useHotkeys } from 'react-hotkeys-hook'
+import { formatDistanceToNow } from 'date-fns'
 
 import { cn } from '~/lib/utils'
 import type {} from '~/types/table'
@@ -361,19 +362,36 @@ function AppDetails({
           <div className="mt-6">
             <h3 className="mb-2 text-sm font-medium">Sources</h3>
             <ol className="list-decimal list-inside space-y-1">
-              {app.sources.map((source, index) => (
-                <li key={index} className="text-xs text-muted-foreground">
-                  <a
-                    href={source}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-primary inline-flex items-center gap-1"
-                  >
-                    {source.replaceAll(/https?:\/\//g, '')}
-                    <ExternalLink className="size-3 shrink-0" />
-                  </a>
-                </li>
-              ))}
+              {app.sources.map((source, index) => {
+                const url = typeof source === 'string' ? source : source.url
+                const parseDate =
+                  typeof source === 'string' ? null : source.parseDate
+                return (
+                  <li key={index} className="text-xs text-muted-foreground">
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-primary inline-flex items-center gap-1"
+                    >
+                      {url.replaceAll(/https?:\/\//g, '')}
+                      <ExternalLink className="size-3 shrink-0" />
+                    </a>
+                    {parseDate && (
+                      <span
+                        className="ml-2 text-muted-foreground/70"
+                        title={new Date(parseDate).toISOString()}
+                      >
+                        (Checked{' '}
+                        {formatDistanceToNow(new Date(parseDate), {
+                          addSuffix: true,
+                        })}
+                        )
+                      </span>
+                    )}
+                  </li>
+                )
+              })}
             </ol>
           </div>
         )}

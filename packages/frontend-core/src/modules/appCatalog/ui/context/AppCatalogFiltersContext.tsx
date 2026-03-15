@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { createContext, use, useMemo } from 'react'
+import { createContext, use, useMemo, useState } from 'react'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useUrlSyncedState } from '../../hooks/useUrlSyncedState'
 import {
@@ -100,11 +100,8 @@ export function AppCatalogFiltersProvider({
     encode: encodeFiltersParam,
   })
 
-  const [searchValue, setSearchValue] = useUrlSyncedState<string>({
-    key: 'q',
-    defaultValue: '',
-    encode: (value) => value.trim() || undefined,
-  })
+  // Search value is NOT synced to URL
+  const [searchValue, setSearchValue] = useState<string>('')
 
   const [showDeprecated, setShowDeprecated] = useUrlSyncedState({
     key: 'deprecated',

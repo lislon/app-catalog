@@ -25,13 +25,6 @@ export interface UseUrlSyncedStateOptions<T> {
  *
  * @example
  * ```tsx
- * // Simple string state
- * const [search, setSearch] = useUrlSyncedState({
- *   key: 'q',
- *   defaultValue: '',
- *   encode: (value) => value.trim() || undefined, // Remove param if empty
- * })
- *
  * // Boolean state
  * const [recentMode, setRecentMode] = useUrlSyncedState({
  *   key: 'recent',

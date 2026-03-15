@@ -38,15 +38,18 @@
     "test:unit:dev": "pnpm run test:unit --watch"
   },
   "dependencies": {
+    "@ai-sdk/mcp": "^1.0.25",
     "@better-auth/prisma-adapter": "^1.5.3",
     "@igstack/app-catalog-shared-core": "workspace:*",
     "@igstack/app-catalog-table-sync": "workspace:*",
     "@kubernetes/client-node": "^1.2.0",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
     "ai": "^6.0.37",
     "better-auth": "^1.4.18",
     "cors": "^2.8.5",
+    "dotenv": "^17.3.1",
     "dotenv-defaults": "catalog:",
     "express": "catalog:",
     "jsonwebtoken": "^9.0.2",

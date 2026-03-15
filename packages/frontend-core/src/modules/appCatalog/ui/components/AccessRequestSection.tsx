@@ -1,4 +1,7 @@
-import type { AppApprovalMethod, AppForCatalog } from '@igstack/app-catalog-backend-core'
+import type {
+  AppApprovalMethod,
+  AppForCatalog,
+} from '@igstack/app-catalog-backend-core'
 import { Bot, Check, Copy, ExternalLink, Settings, Users } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -243,14 +246,14 @@ export function AccessRequestSection({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[180px]">Role</TableHead>
+                  <TableHead className="whitespace-nowrap">Role</TableHead>
                   <TableHead>Description</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {accessRequest.roles.map((role, idx) => (
                   <TableRow key={`${role.displayName}-${idx}`}>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium whitespace-nowrap">
                       {role.displayName}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
