@@ -11,6 +11,7 @@ import { upsertAsset } from '../modules/assets/upsertAsset'
 import type { ApprovalMethod } from '../types'
 import type { PrismaClient } from '../generated/prisma/client'
 import { naturalSort } from '../utils/naturalSort'
+import { parseSourceSlug } from '../utils/parseSourceSlug'
 
 export interface SyncAppCatalogResult {
   created: number
@@ -194,7 +195,27 @@ export async function syncAppCatalog(
       ...TABLE_SYNC_MAGAZINE.DbAppTagDefinition,
     }).sync(tagsDefinitions)
 
-    // Transform AppForCatalog to DbAppForCatalog format
+    // Collect all unique source slugs for sync
+    const uniqueSourceSlugs = new Set<string>()
+    for (const app of apps) {
+      for (const source of app.sources ?? []) {
+        const url = typeof source === 'string' ? source : source.url
+        const sourceSlug = parseSourceSlug(url)
+        uniqueSourceSlugs.add(sourceSlug)
+      }
+    }
+
+    // Sync Source entries using tableSyncPrisma
+    const sources = Array.from(uniqueSourceSlugs).map((slug) => ({
+      slug,
+      userPrompt: null,
+    }))
+    await tableSyncPrisma({
+      prisma,
+      ...TABLE_SYNC_MAGAZINE.Source,
+    }).sync(sources)
+
+    // Transform AppForCatalog to DbAppForCatalog format (scalar fields only)
     const dbApps = apps.map((app) => {
       const slug =
         app.slug ||
@@ -215,12 +236,41 @@ export async function syncAppCatalog(
         links: app.links ?? null,
         iconName: app.iconName ?? null,
         screenshotIds: app.screenshotIds ?? [],
-        sources: app.sources ?? [],
         deprecated: app.deprecated ?? null,
       }
     })
 
+    // Flatten all sourceRefs into a single array for sync
+    const allSourceRefs = apps.flatMap((app) => {
+      const appSlug =
+        app.slug ||
+        app.displayName
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+
+      return (app.sources ?? []).map((source) => {
+        const url = typeof source === 'string' ? source : source.url
+        const sourceSlug = parseSourceSlug(url)
+        return {
+          appSlug,
+          sourceSlug,
+          url,
+          parseDate: null,
+          excerpts: [],
+          userPrompt: null,
+        }
+      })
+    })
+
+    // Sync apps first
     const result = await sync.sync(dbApps)
+
+    // Then sync all SourceReferences (with set semantics: old ones deleted, new ones created)
+    await tableSyncPrisma({
+      prisma,
+      ...TABLE_SYNC_MAGAZINE.SourceReference,
+    }).sync(allSourceRefs)
 
     // Get actual synced data to calculate stats
     const actual = result.getActual()

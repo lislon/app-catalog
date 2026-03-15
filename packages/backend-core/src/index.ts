@@ -90,3 +90,14 @@ export {
   type AcMiddlewareResult,
   type MiddlewareContext,
 } from './middleware'
+
+// Lighthouse Keeper (agentic AI debugging tool)
+export { runLighthouseKeeperDemo } from './modules/lighthouseKeeper/demo.js'
+export {
+  createAppCatalogAITools,
+  APP_CATALOG_AI_SYSTEM_PROMPT,
+} from './modules/lighthouseKeeper/tools.js'
+export type {
+  AcLighthouseKeeperConfig,
+  AcMcpServerConfig,
+} from './middleware/types.js'
