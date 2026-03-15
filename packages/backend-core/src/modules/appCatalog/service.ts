@@ -126,6 +126,7 @@ function rowToAppForCatalog(row: AppRowWithSourceRefs): AppForCatalog {
   const notes = row.notes == null ? undefined : row.notes
   const appUrl = row.appUrl == null ? undefined : row.appUrl
   const iconName = row.iconName == null ? undefined : row.iconName
+  const alias = row.alias == null ? undefined : row.alias
   const deprecated =
     row.deprecated == null
       ? undefined
@@ -135,6 +136,7 @@ function rowToAppForCatalog(row: AppRowWithSourceRefs): AppForCatalog {
     id: row.id,
     slug: row.slug,
     displayName: row.displayName,
+    alias,
     description: row.description,
     accessRequest,
     teams,
@@ -164,6 +166,7 @@ export interface UpdateAppInput {
   id: string
   data: {
     displayName?: string
+    alias?: string | null
     slug?: string
     appUrl?: string
     description?: string
@@ -177,12 +180,14 @@ export async function updateApp(input: UpdateAppInput): Promise<AppForCatalog> {
 
   const updatePayload: {
     displayName?: string
+    alias?: string | null
     slug?: string
     appUrl?: string
     description?: string
   } = {}
   if (data.displayName !== undefined)
     updatePayload.displayName = data.displayName
+  if (data.alias !== undefined) updatePayload.alias = data.alias
   if (data.slug !== undefined) updatePayload.slug = data.slug
   if (data.appUrl !== undefined) updatePayload.appUrl = data.appUrl
   if (data.description !== undefined)

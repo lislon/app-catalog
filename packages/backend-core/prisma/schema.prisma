@@ -94,6 +94,7 @@ model DbAppForCatalog {
   id            String            @id @default(cuid())
   slug          String            @unique // URL-friendly identifier for navigation
   displayName   String
+  alias         String? // Optional short display name
   description   String
   /// [AccessMethod]
   access        Json?

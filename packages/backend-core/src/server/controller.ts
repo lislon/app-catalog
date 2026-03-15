@@ -15,6 +15,7 @@ const updateAppInputSchema = z.object({
   data: z
     .object({
       displayName: z.string().optional(),
+      alias: z.string().max(20).nullable().optional(),
       slug: z.string().optional(),
       appUrl: z.string().optional(),
       description: z.string().optional(),

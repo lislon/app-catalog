@@ -29,6 +29,7 @@ export interface AppForCatalog {
   id: string
   slug: string
   displayName: string
+  alias?: string // Optional short display name
   description?: string
   teams?: Array<string>
   accessRequest?: AppAccessRequest

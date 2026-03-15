@@ -8,11 +8,9 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { AppWindow, ExternalLink, X } from 'lucide-react'
+import { AppWindow, ExternalLink, Plus, Trash2, X } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { useHotkeys } from 'react-hotkeys-hook'
-import { formatDistanceToNow } from 'date-fns'
-
 import { cn } from '~/lib/utils'
 import type {} from '~/types/table'
 import { Badge } from '~/ui/badge'
@@ -31,7 +29,10 @@ import {
   TableRow,
 } from '~/ui/table'
 import { AccessRequestSection } from '../components/AccessRequestSection'
+import { useUser } from '~/modules/auth'
+import { InlineEditableField } from '../components/InlineEditableField'
 import { ScreenshotGallery } from '../components/ScreenshotGallery'
+import { useUpdateApp } from '../../hooks/useUpdateApp'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation'
@@ -68,7 +69,7 @@ function AppIcon({
       <div className={cn('size-12 shrink-0', className)}>
         <img
           src={getIconUrl(app.iconName)}
-          alt={`${app.displayName} icon`}
+          alt={`${app.alias || app.displayName} icon`}
           className="size-12 rounded-lg object-contain"
           onError={() => setImageError(true)}
         />
@@ -113,7 +114,7 @@ function AppScreenshot({ app }: { app: AppForCatalog }) {
         {!imageError ? (
           <img
             src={screenshotImageUrl}
-            alt={`${app.displayName} screenshot`}
+            alt={`${app.alias || app.displayName} screenshot`}
             className="h-64 object-contain"
             onError={() => {
               setImageError(true)
@@ -147,6 +148,14 @@ function AppDetails({
   const [galleryInitialIndex, setGalleryInitialIndex] = React.useState(0)
   const { approvalMethods, apps } = useAppCatalogContext()
   const { recordClick } = useAppClickHistory()
+  const updateApp = useUpdateApp()
+  const [draftSource, setDraftSource] = React.useState<string | null>(null)
+  const { isAdmin } = useUser()
+
+  const sourceUrls: Array<string> =
+    app.sources?.map((s) => (typeof s === 'string' ? s : s.url)) ?? []
+  const displaySources =
+    draftSource !== null ? [...sourceUrls, draftSource] : sourceUrls
 
   // Enter: open screenshot gallery
   useHotkeys(
@@ -198,39 +207,80 @@ function AppDetails({
         <div className="border-b pb-6">
           <div className="flex items-center gap-3">
             <AppIcon app={app} className="size-16" />
-            <div className="-mx-3">
+            <div className="-mx-3 flex-1 min-w-0">
               <div className="flex items-center gap-2 px-3">
-                <h2 className="text-2xl font-semibold">{app.displayName}</h2>
-                {app.deprecated &&
-                  (() => {
-                    const deprecationType = app.deprecated.type || 'deprecated'
-                    return (
-                      <Badge
-                        variant={
-                          deprecationType === 'discouraged'
-                            ? 'secondary'
-                            : 'destructive'
-                        }
-                      >
-                        {deprecationType === 'discouraged'
-                          ? 'Discouraged'
-                          : 'Deprecated'}
-                      </Badge>
-                    )
-                  })()}
+                <InlineEditableField
+                  value={app.alias || app.displayName}
+                  onSave={(alias) =>
+                    updateApp.mutate({
+                      id: app.id,
+                      data: { alias: alias || null },
+                    })
+                  }
+                  placeholder={app.displayName}
+                  className="text-2xl font-semibold"
+                  viewClassName="min-w-0 text-2xl font-semibold"
+                />
+                {app.deprecated && (
+                  <Badge
+                    variant={
+                      app.deprecated.type === 'discouraged'
+                        ? 'secondary'
+                        : 'destructive'
+                    }
+                  >
+                    {app.deprecated.type === 'discouraged'
+                      ? 'Discouraged'
+                      : 'Deprecated'}
+                  </Badge>
+                )}
               </div>
-              {app.appUrl && (
-                <a
-                  href={app.appUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => recordClick(app.slug)}
-                  className="mt-1 inline-flex items-center gap-1 rounded-md px-3 py-1 text-sm text-blue-600 hover:bg-accent/30 hover:underline dark:text-blue-400 transition-all group"
-                >
-                  {app.appUrl.replaceAll(/https?:\/\//g, '')}
-                  <ExternalLink className="size-3.5 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity" />
-                </a>
+              {app.alias && (
+                <div className="mt-1 px-3">
+                  <span className="text-xs text-muted-foreground">
+                    Full name: {app.displayName}
+                  </span>
+                </div>
               )}
+              {isAdmin && (
+                <div className="mt-1 px-3">
+                  <span className="text-xs text-muted-foreground mr-2">
+                    Slug:
+                  </span>
+                  <InlineEditableField
+                    value={app.slug}
+                    onSave={(slug) =>
+                      updateApp.mutate({ id: app.id, data: { slug } })
+                    }
+                    className="text-sm"
+                  />
+                </div>
+              )}
+              <div className="mt-1 px-3">
+                <InlineEditableField
+                  value={app.appUrl ?? ''}
+                  onSave={(appUrl) =>
+                    updateApp.mutate({ id: app.id, data: { appUrl } })
+                  }
+                  placeholder="App URL"
+                  renderView={(url) =>
+                    url ? (
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => recordClick(app.slug)}
+                        className="inline-flex items-center gap-1 rounded-md py-1 text-sm text-blue-600 hover:bg-accent/30 hover:underline dark:text-blue-400 transition-all"
+                      >
+                        {url.replaceAll(/https?:\/\//g, '')}
+                        <ExternalLink className="size-3.5 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity" />
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )
+                  }
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -276,12 +326,18 @@ function AppDetails({
           })()}
 
         {/* Description */}
-        {app.description && (
-          <div className="mt-6">
-            <h3 className="mb-2 text-sm font-medium">Description</h3>
-            <p className="text-sm text-muted-foreground">{app.description}</p>
-          </div>
-        )}
+        <div className="mt-6">
+          <h3 className="mb-2 text-sm font-medium">Description</h3>
+          <InlineEditableField
+            value={app.description ?? ''}
+            onSave={(description) =>
+              updateApp.mutate({ id: app.id, data: { description } })
+            }
+            multiline
+            placeholder="Description"
+            className="min-h-[4rem] resize-y text-sm text-muted-foreground"
+          />
+        </div>
 
         {/* Screenshots - Clickable preview */}
         {app.screenshotIds && app.screenshotIds.length > 0 && (
@@ -358,43 +414,93 @@ function AppDetails({
         )}
 
         {/* Sources */}
-        {app.sources && app.sources.length > 0 && (
-          <div className="mt-6">
-            <h3 className="mb-2 text-sm font-medium">Sources</h3>
-            <ol className="list-decimal list-inside space-y-1">
-              {app.sources.map((source, index) => {
-                const url = typeof source === 'string' ? source : source.url
-                const parseDate =
-                  typeof source === 'string' ? null : source.parseDate
-                return (
-                  <li key={index} className="text-xs text-muted-foreground">
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-primary inline-flex items-center gap-1"
+        <div className="mt-6">
+          <h3 className="mb-2 text-sm font-medium">Sources</h3>
+          <ul className="space-y-2">
+            {displaySources.map((url, index) => {
+              const isDraft =
+                draftSource !== null && index === sourceUrls.length
+              return (
+                <li
+                  key={isDraft ? 'draft' : `${index}-${url}`}
+                  className="flex items-center gap-2 text-xs"
+                >
+                  <span className="text-muted-foreground shrink-0">
+                    {index + 1}.
+                  </span>
+                  <InlineEditableField
+                    value={url}
+                    initialEditMode={isDraft}
+                    onCancel={isDraft ? () => setDraftSource(null) : undefined}
+                    onSave={(newUrl) => {
+                      if (isDraft) {
+                        setDraftSource(null)
+                        if (newUrl) {
+                          updateApp.mutate({
+                            id: app.id,
+                            data: { sources: [...sourceUrls, newUrl] },
+                          })
+                        }
+                      } else {
+                        const next = [...sourceUrls]
+                        next[index] = newUrl
+                        updateApp.mutate({
+                          id: app.id,
+                          data: { sources: next.filter(Boolean) },
+                        })
+                      }
+                    }}
+                    placeholder="https://..."
+                    viewClassName="flex-1 min-w-0"
+                    renderView={(val) =>
+                      val ? (
+                        <a
+                          href={val}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-primary inline-flex items-center gap-1 truncate"
+                        >
+                          {val.replaceAll(/https?:\/\//g, '')}
+                          <ExternalLink className="size-3 shrink-0" />
+                        </a>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )
+                    }
+                  />
+                  {!isDraft && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Remove source"
+                      className="shrink-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => {
+                        const next = sourceUrls.filter((_, i) => i !== index)
+                        updateApp.mutate({
+                          id: app.id,
+                          data: { sources: next },
+                        })
+                      }}
                     >
-                      {url.replaceAll(/https?:\/\//g, '')}
-                      <ExternalLink className="size-3 shrink-0" />
-                    </a>
-                    {parseDate && (
-                      <span
-                        className="ml-2 text-muted-foreground/70"
-                        title={new Date(parseDate).toISOString()}
-                      >
-                        (Checked{' '}
-                        {formatDistanceToNow(new Date(parseDate), {
-                          addSuffix: true,
-                        })}
-                        )
-                      </span>
-                    )}
-                  </li>
-                )
-              })}
-            </ol>
-          </div>
-        )}
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="mt-2 gap-1 text-muted-foreground"
+            onClick={() => setDraftSource('')}
+          >
+            <Plus className="size-3.5" />
+            Add source
+          </Button>
+        </div>
       </div>
 
       {/* Screenshot Gallery Dialog */}
@@ -404,7 +510,7 @@ function AppDetails({
         open={isGalleryOpen}
         onOpenChange={setIsGalleryOpen}
         initialIndex={galleryInitialIndex}
-        title={`${app.displayName} - Screenshots`}
+        title={`${app.alias || app.displayName} - Screenshots`}
       />
     </>
   )
@@ -516,24 +622,33 @@ export function AppCatalogGrid({
         cell: ({ row }) => (
           <div className="flex items-center gap-3">
             <AppIcon app={row.original} className="size-6" />
-            <div className="flex items-center gap-2">
-              <span className="font-medium">
-                {row.original.displayName || 'Unnamed App'}
-              </span>
-              {row.original.deprecated &&
-                (() => {
-                  const deprecationType =
-                    row.original.deprecated.type || 'deprecated'
-                  return (
-                    <span className="text-[0.7rem] text-muted-foreground">
-                      (
-                      {deprecationType === 'discouraged'
-                        ? 'Discouraged'
-                        : 'Deprecated'}
-                      )
-                    </span>
-                  )
-                })()}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">
+                  {row.original.alias ||
+                    row.original.displayName ||
+                    'Unnamed App'}
+                </span>
+                {row.original.deprecated &&
+                  (() => {
+                    const deprecationType =
+                      row.original.deprecated.type || 'deprecated'
+                    return (
+                      <span className="text-[0.7rem] text-muted-foreground">
+                        (
+                        {deprecationType === 'discouraged'
+                          ? 'Discouraged'
+                          : 'Deprecated'}
+                        )
+                      </span>
+                    )
+                  })()}
+              </div>
+              {row.original.alias && (
+                <span className="text-xs text-muted-foreground">
+                  {row.original.displayName}
+                </span>
+              )}
             </div>
           </div>
         ),

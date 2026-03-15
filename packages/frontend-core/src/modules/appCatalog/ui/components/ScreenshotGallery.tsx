@@ -29,9 +29,9 @@ export function ScreenshotGallery({
     () =>
       screenshotIds.map((id) => ({
         url: `/api/screenshots/${id}`,
-        alt: `${app.displayName} screenshot`,
+        alt: `${app.alias || app.displayName} screenshot`,
       })),
-    [screenshotIds, app.displayName],
+    [screenshotIds, app.alias, app.displayName],
   )
 
   // Don't render if no screenshots
@@ -42,11 +42,14 @@ export function ScreenshotGallery({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        aria-describedby={undefined}
         className="h-[85vh] w-full max-w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-3rem)] md:max-w-[calc(100vw-4rem)] p-0 overflow-hidden"
         showCloseButton={true}
       >
         <VisuallyHidden>
-          <DialogTitle>{title || `${app.displayName} screenshots`}</DialogTitle>
+          <DialogTitle>
+            {title || `${app.alias || app.displayName} screenshots`}
+          </DialogTitle>
         </VisuallyHidden>
         <Gallery images={images} initialIndex={initialIndex} title={title} />
       </DialogContent>
