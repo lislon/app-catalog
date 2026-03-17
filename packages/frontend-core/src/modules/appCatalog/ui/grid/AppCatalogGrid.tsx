@@ -36,6 +36,7 @@ import { useUpdateApp } from '../../hooks/useUpdateApp'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation'
+import { highlightText } from '../../utils/searchApps'
 
 export interface AppCatalogGridProps {
   apps: Array<AppForCatalog>
@@ -44,6 +45,8 @@ export interface AppCatalogGridProps {
   onAppClick?: (app: AppForCatalog) => void
   /** Whether search is active (affects group sorting) */
   hasSearch?: boolean
+  /** Search query for highlighting matches */
+  searchQuery?: string
   /** Total count of apps before filtering */
   totalAppsCount?: number
   /** Callback to clear all filters and search */
@@ -52,6 +55,37 @@ export interface AppCatalogGridProps {
 
 function getIconUrl(iconName: string): string {
   return `/api/icons/${iconName}`
+}
+
+function HighlightedText({
+  text,
+  searchQuery,
+}: {
+  text: string
+  searchQuery?: string
+}) {
+  if (!searchQuery) {
+    return <>{text}</>
+  }
+
+  const segments = highlightText(text, searchQuery)
+
+  return (
+    <>
+      {segments.map((segment, index) =>
+        segment.highlight ? (
+          <mark
+            key={index}
+            className="bg-yellow-200 dark:bg-yellow-900/50 font-semibold"
+          >
+            {segment.text}
+          </mark>
+        ) : (
+          <React.Fragment key={index}>{segment.text}</React.Fragment>
+        ),
+      )}
+    </>
+  )
 }
 
 function AppIcon({
@@ -592,6 +626,7 @@ export function AppCatalogGrid({
   groupingDefinition,
   onAppClick,
   hasSearch = false,
+  searchQuery,
   totalAppsCount,
   onClearFilters,
 }: AppCatalogGridProps) {
@@ -626,9 +661,14 @@ export function AppCatalogGrid({
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="font-medium">
-                  {row.original.alias ||
-                    row.original.displayName ||
-                    'Unnamed App'}
+                  <HighlightedText
+                    text={
+                      row.original.alias ||
+                      row.original.displayName ||
+                      'Unnamed App'
+                    }
+                    searchQuery={searchQuery}
+                  />
                 </span>
                 {row.original.deprecated &&
                   (() => {
@@ -647,7 +687,10 @@ export function AppCatalogGrid({
               </div>
               {row.original.alias && (
                 <span className="text-xs text-muted-foreground">
-                  {row.original.displayName}
+                  <HighlightedText
+                    text={row.original.displayName}
+                    searchQuery={searchQuery}
+                  />
                 </span>
               )}
             </div>
@@ -662,12 +705,15 @@ export function AppCatalogGrid({
         header: 'Description',
         cell: ({ row }) => (
           <span className="text-sm text-muted-foreground line-clamp-2">
-            {row.original.description || '—'}
+            <HighlightedText
+              text={row.original.description || '—'}
+              searchQuery={searchQuery}
+            />
           </span>
         ),
       },
     ],
-    [],
+    [searchQuery],
   )
 
   // Create a single table instance with all apps

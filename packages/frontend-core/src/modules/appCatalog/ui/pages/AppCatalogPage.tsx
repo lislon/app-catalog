@@ -179,6 +179,7 @@ export function AppCatalogPage() {
             groupingDefinition={groupingDefinition}
             onAppClick={handleAppClick}
             hasSearch={!!deferredSearchValue}
+            searchQuery={deferredSearchValue}
             totalAppsCount={totalAppsCount}
             onClearFilters={handleClearFilters}
           />
