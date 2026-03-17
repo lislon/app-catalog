@@ -562,9 +562,10 @@ function groupApps(
   hasSearch?: boolean,
 ): Array<GroupedApps> {
   if (!groupingDef) {
-    const sortedApps = [...apps].sort((a, b) =>
-      a.displayName.localeCompare(b.displayName),
-    )
+    // When search is active, preserve relevance order; otherwise sort alphabetically
+    const sortedApps = hasSearch
+      ? [...apps]
+      : [...apps].sort((a, b) => a.displayName.localeCompare(b.displayName))
     return [{ groupName: 'All Apps', apps: sortedApps }]
   }
 
@@ -596,18 +597,18 @@ function groupApps(
 
   const result: Array<GroupedApps> = []
   for (const [groupName, appsInGroup] of grouped) {
-    // Sort apps alphabetically within each group
-    const sortedGroupApps = appsInGroup.sort((a, b) =>
-      a.displayName.localeCompare(b.displayName),
-    )
+    // When search is active, preserve relevance order; otherwise sort alphabetically
+    const sortedGroupApps = hasSearch
+      ? appsInGroup
+      : appsInGroup.sort((a, b) => a.displayName.localeCompare(b.displayName))
     result.push({ groupName, apps: sortedGroupApps })
   }
 
   if (ungrouped.length > 0) {
-    // Sort ungrouped apps alphabetically
-    const sortedUngrouped = ungrouped.sort((a, b) =>
-      a.displayName.localeCompare(b.displayName),
-    )
+    // When search is active, preserve relevance order; otherwise sort alphabetically
+    const sortedUngrouped = hasSearch
+      ? ungrouped
+      : ungrouped.sort((a, b) => a.displayName.localeCompare(b.displayName))
     result.push({ groupName: 'Other', apps: sortedUngrouped })
   }
 
