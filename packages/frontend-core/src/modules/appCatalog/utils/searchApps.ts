@@ -25,6 +25,7 @@ export interface SearchResult {
  * 8. Teams
  * 9. Description
  *
+ *
  * @param apps - Array of apps to search
  * @param searchQuery - Search query string
  * @returns Filtered and sorted array of apps with search results
@@ -48,28 +49,28 @@ export function searchApps(
       const tags = app.tags?.join(' ').toLowerCase() || ''
       const teams = app.teams?.join(' ').toLowerCase() || ''
 
-      // Check exact matches first
-      if (name === normalizedQuery) {
-        return { app, match: { field: 'displayName', type: 'exact' } }
-      }
+      // Check exact matches first - prioritize alias over displayName
       if (alias && alias === normalizedQuery) {
         return { app, match: { field: 'alias', type: 'exact' } }
       }
-
-      // Check prefix matches
-      if (name.startsWith(normalizedQuery)) {
-        return { app, match: { field: 'displayName', type: 'prefix' } }
+      if (name === normalizedQuery) {
+        return { app, match: { field: 'displayName', type: 'exact' } }
       }
+
+      // Check prefix matches - prioritize alias over displayName
       if (alias && alias.startsWith(normalizedQuery)) {
         return { app, match: { field: 'alias', type: 'prefix' } }
       }
-
-      // Check contains matches in name/alias
-      if (name.includes(normalizedQuery)) {
-        return { app, match: { field: 'displayName', type: 'contains' } }
+      if (name.startsWith(normalizedQuery)) {
+        return { app, match: { field: 'displayName', type: 'prefix' } }
       }
+
+      // Check contains matches in name/alias - prioritize alias over displayName
       if (alias && alias.includes(normalizedQuery)) {
         return { app, match: { field: 'alias', type: 'contains' } }
+      }
+      if (name.includes(normalizedQuery)) {
+        return { app, match: { field: 'displayName', type: 'contains' } }
       }
 
       // Check tags
