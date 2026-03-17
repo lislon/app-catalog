@@ -17,13 +17,15 @@ export interface SearchResult {
  * Priority order (alias has higher priority than displayName):
  * 1. Exact match in alias
  * 2. Exact match in displayName
- * 3. Prefix match in alias
- * 4. Prefix match in displayName
- * 5. Contains match in alias
- * 6. Contains match in displayName
- * 7. Tags
- * 8. Teams
- * 9. Description
+ * 3. Exact match in tags
+ * 4. Prefix match in alias
+ * 5. Prefix match in displayName
+ * 6. Prefix match in tags
+ * 7. Contains match in alias
+ * 8. Contains match in displayName
+ * 9. Contains match in tags
+ * 10. Teams
+ * 11. Description
  *
  *
  * @param apps - Array of apps to search
@@ -57,12 +59,24 @@ export function searchApps(
         return { app, match: { field: 'displayName', type: 'exact' } }
       }
 
+      // Check exact match in tags (any tag exactly matches query)
+      if (app.tags?.some((tag) => tag.toLowerCase() === normalizedQuery)) {
+        return { app, match: { field: 'tags', type: 'exact' } }
+      }
+
       // Check prefix matches - prioritize alias over displayName
       if (alias && alias.startsWith(normalizedQuery)) {
         return { app, match: { field: 'alias', type: 'prefix' } }
       }
       if (name.startsWith(normalizedQuery)) {
         return { app, match: { field: 'displayName', type: 'prefix' } }
+      }
+
+      // Check tags - prefix match (any tag starts with query)
+      if (
+        app.tags?.some((tag) => tag.toLowerCase().startsWith(normalizedQuery))
+      ) {
+        return { app, match: { field: 'tags', type: 'prefix' } }
       }
 
       // Check contains matches in name/alias - prioritize alias over displayName
@@ -73,7 +87,7 @@ export function searchApps(
         return { app, match: { field: 'displayName', type: 'contains' } }
       }
 
-      // Check tags
+      // Check tags - contains match
       if (tags.includes(normalizedQuery)) {
         return { app, match: { field: 'tags', type: 'contains' } }
       }
@@ -98,29 +112,35 @@ export function searchApps(
   scoredApps.forEach(({ app, match }) => {
     let score = 0
 
-    // Exact matches: 0-1 (alias has highest priority)
+    // Exact matches: 0-2 (alias, displayName, tags)
     if (match.type === 'exact') {
-      score = match.field === 'alias' ? 0 : 1
+      if (match.field === 'alias') score = 0
+      else if (match.field === 'displayName') score = 1
+      else if (match.field === 'tags') score = 2
+      else score = 999 // Should not happen
     }
-    // Prefix matches: 2-3 (alias before displayName)
+    // Prefix matches: 3-5 (alias, displayName, tags)
     else if (match.type === 'prefix') {
-      score = match.field === 'alias' ? 2 : 3
+      if (match.field === 'alias') score = 3
+      else if (match.field === 'displayName') score = 4
+      else if (match.field === 'tags') score = 5
+      else score = 999 // Should not happen
     }
-    // Contains in name/alias: 4-5 (alias before displayName)
+    // Contains in name/alias: 6-7 (alias before displayName)
     else if (match.field === 'displayName' || match.field === 'alias') {
-      score = match.field === 'alias' ? 4 : 5
+      score = match.field === 'alias' ? 6 : 7
     }
-    // Tags: 6
+    // Tags (contains): 8
     else if (match.field === 'tags') {
-      score = 6
-    }
-    // Teams: 7
-    else if (match.field === 'teams') {
-      score = 7
-    }
-    // Description: 8
-    else {
       score = 8
+    }
+    // Teams: 9
+    else if (match.field === 'teams') {
+      score = 9
+    }
+    // Description: 10
+    else {
+      score = 10
     }
 
     scoreMap.set(app.id, score)

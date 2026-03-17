@@ -76,7 +76,7 @@ function HighlightedText({
         segment.highlight ? (
           <mark
             key={index}
-            className="bg-yellow-200 dark:bg-yellow-900/50 font-semibold"
+            className="bg-yellow-300 dark:bg-yellow-600/60 font-semibold text-gray-900 dark:text-gray-100"
           >
             {segment.text}
           </mark>
@@ -244,18 +244,11 @@ function AppDetails({
             <AppIcon app={app} className="size-16" />
             <div className="-mx-3 flex-1 min-w-0">
               <div className="flex items-center gap-2 px-3">
-                <InlineEditableField
-                  value={app.alias || app.displayName}
-                  onSave={(alias) =>
-                    updateApp.mutate({
-                      id: app.id,
-                      data: { alias: alias || null },
-                    })
-                  }
-                  placeholder={app.displayName}
-                  className="text-2xl font-semibold"
-                  viewClassName="min-w-0 text-2xl font-semibold"
-                />
+                <div className="text-2xl font-semibold min-w-0">
+                  {app.alias
+                    ? `${app.displayName} (${app.alias})`
+                    : app.displayName}
+                </div>
                 {app.deprecated && (
                   <Badge
                     variant={
@@ -270,13 +263,6 @@ function AppDetails({
                   </Badge>
                 )}
               </div>
-              {app.alias && (
-                <div className="mt-1 px-3">
-                  <span className="text-xs text-muted-foreground">
-                    Full name: {app.displayName}
-                  </span>
-                </div>
-              )}
               {isAdmin && (
                 <div className="mt-1 px-3">
                   <span className="text-xs text-muted-foreground mr-2">
@@ -292,29 +278,44 @@ function AppDetails({
                 </div>
               )}
               <div className="mt-1 px-3">
-                <InlineEditableField
-                  value={app.appUrl ?? ''}
-                  onSave={(appUrl) =>
-                    updateApp.mutate({ id: app.id, data: { appUrl } })
-                  }
-                  placeholder="App URL"
-                  renderView={(url) =>
-                    url ? (
-                      <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => recordClick(app.slug)}
-                        className="inline-flex items-center gap-1 rounded-md py-1 text-sm text-blue-600 hover:bg-accent/30 hover:underline dark:text-blue-400 transition-all"
-                      >
-                        {url.replaceAll(/https?:\/\//g, '')}
-                        <ExternalLink className="size-3.5 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity" />
-                      </a>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )
-                  }
-                />
+                {isAdmin ? (
+                  <InlineEditableField
+                    value={app.appUrl ?? ''}
+                    onSave={(appUrl) =>
+                      updateApp.mutate({ id: app.id, data: { appUrl } })
+                    }
+                    placeholder="App URL"
+                    renderView={(url) =>
+                      url ? (
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => recordClick(app.slug)}
+                          className="inline-flex items-center gap-1 rounded-md py-1 text-sm text-blue-600 hover:bg-accent/30 hover:underline dark:text-blue-400 transition-all"
+                        >
+                          {url.replaceAll(/https?:\/\//g, '')}
+                          <ExternalLink className="size-3.5 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity" />
+                        </a>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )
+                    }
+                  />
+                ) : app.appUrl ? (
+                  <a
+                    href={app.appUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => recordClick(app.slug)}
+                    className="inline-flex items-center gap-1 rounded-md py-1 text-sm text-blue-600 hover:bg-accent/30 hover:underline dark:text-blue-400 transition-all"
+                  >
+                    {app.appUrl.replaceAll(/https?:\/\//g, '')}
+                    <ExternalLink className="size-3.5 shrink-0 opacity-40 transition-opacity" />
+                  </a>
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
               </div>
             </div>
           </div>
@@ -363,15 +364,21 @@ function AppDetails({
         {/* Description */}
         <div className="mt-6">
           <h3 className="mb-2 text-sm font-medium">Description</h3>
-          <InlineEditableField
-            value={app.description ?? ''}
-            onSave={(description) =>
-              updateApp.mutate({ id: app.id, data: { description } })
-            }
-            multiline
-            placeholder="Description"
-            className="min-h-[4rem] resize-y text-sm text-muted-foreground"
-          />
+          {isAdmin ? (
+            <InlineEditableField
+              value={app.description ?? ''}
+              onSave={(description) =>
+                updateApp.mutate({ id: app.id, data: { description } })
+              }
+              multiline
+              placeholder="Description"
+              className="min-h-[4rem] resize-y text-sm text-muted-foreground"
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              {app.description || '—'}
+            </p>
+          )}
         </div>
 
         {/* Screenshots - Clickable preview */}
@@ -451,90 +458,121 @@ function AppDetails({
         {/* Sources */}
         <div className="mt-6">
           <h3 className="mb-2 text-sm font-medium">Sources</h3>
-          <ul className="space-y-2">
-            {displaySources.map((url, index) => {
-              const isDraft =
-                draftSource !== null && index === sourceUrls.length
-              return (
-                <li
-                  key={isDraft ? 'draft' : `${index}-${url}`}
-                  className="flex items-center gap-2 text-xs"
-                >
+          {isAdmin ? (
+            <>
+              <ul className="space-y-2">
+                {displaySources.map((url, index) => {
+                  const isDraft =
+                    draftSource !== null && index === sourceUrls.length
+                  return (
+                    <li
+                      key={isDraft ? 'draft' : `${index}-${url}`}
+                      className="flex items-center gap-2 text-xs"
+                    >
+                      <span className="text-muted-foreground shrink-0">
+                        {index + 1}.
+                      </span>
+                      <InlineEditableField
+                        value={url}
+                        initialEditMode={isDraft}
+                        onCancel={
+                          isDraft ? () => setDraftSource(null) : undefined
+                        }
+                        onSave={(newUrl) => {
+                          if (isDraft) {
+                            setDraftSource(null)
+                            if (newUrl) {
+                              updateApp.mutate({
+                                id: app.id,
+                                data: { sources: [...sourceUrls, newUrl] },
+                              })
+                            }
+                          } else {
+                            const next = [...sourceUrls]
+                            next[index] = newUrl
+                            updateApp.mutate({
+                              id: app.id,
+                              data: { sources: next.filter(Boolean) },
+                            })
+                          }
+                        }}
+                        placeholder="https://..."
+                        viewClassName="flex-1 min-w-0"
+                        renderView={(val) =>
+                          val ? (
+                            <a
+                              href={val}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:text-primary inline-flex items-center gap-1 truncate"
+                            >
+                              {val.replaceAll(/https?:\/\//g, '')}
+                              <ExternalLink className="size-3 shrink-0" />
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )
+                        }
+                      />
+                      {!isDraft && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label="Remove source"
+                          className="shrink-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => {
+                            const next = sourceUrls.filter(
+                              (_, i) => i !== index,
+                            )
+                            updateApp.mutate({
+                              id: app.id,
+                              data: { sources: next },
+                            })
+                          }}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="mt-2 gap-1 text-muted-foreground"
+                onClick={() => setDraftSource('')}
+              >
+                <Plus className="size-3.5" />
+                Add source
+              </Button>
+            </>
+          ) : (
+            <ul className="space-y-2">
+              {sourceUrls.map((url, index) => (
+                <li key={index} className="flex items-center gap-2 text-xs">
                   <span className="text-muted-foreground shrink-0">
                     {index + 1}.
                   </span>
-                  <InlineEditableField
-                    value={url}
-                    initialEditMode={isDraft}
-                    onCancel={isDraft ? () => setDraftSource(null) : undefined}
-                    onSave={(newUrl) => {
-                      if (isDraft) {
-                        setDraftSource(null)
-                        if (newUrl) {
-                          updateApp.mutate({
-                            id: app.id,
-                            data: { sources: [...sourceUrls, newUrl] },
-                          })
-                        }
-                      } else {
-                        const next = [...sourceUrls]
-                        next[index] = newUrl
-                        updateApp.mutate({
-                          id: app.id,
-                          data: { sources: next.filter(Boolean) },
-                        })
-                      }
-                    }}
-                    placeholder="https://..."
-                    viewClassName="flex-1 min-w-0"
-                    renderView={(val) =>
-                      val ? (
-                        <a
-                          href={val}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:text-primary inline-flex items-center gap-1 truncate"
-                        >
-                          {val.replaceAll(/https?:\/\//g, '')}
-                          <ExternalLink className="size-3 shrink-0" />
-                        </a>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )
-                    }
-                  />
-                  {!isDraft && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="Remove source"
-                      className="shrink-0 text-muted-foreground hover:text-destructive"
-                      onClick={() => {
-                        const next = sourceUrls.filter((_, i) => i !== index)
-                        updateApp.mutate({
-                          id: app.id,
-                          data: { sources: next },
-                        })
-                      }}
+                  {url ? (
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-primary inline-flex items-center gap-1 truncate"
                     >
-                      <Trash2 className="size-3.5" />
-                    </Button>
+                      {url.replaceAll(/https?:\/\//g, '')}
+                      <ExternalLink className="size-3 shrink-0" />
+                    </a>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
                   )}
                 </li>
-              )
-            })}
-          </ul>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="mt-2 gap-1 text-muted-foreground"
-            onClick={() => setDraftSource('')}
-          >
-            <Plus className="size-3.5" />
-            Add source
-          </Button>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
 
@@ -561,11 +599,16 @@ function groupApps(
   groupingDef?: GroupingTagDefinition,
   hasSearch?: boolean,
 ): Array<GroupedApps> {
+  // When search is active, skip grouping and preserve relevance order
+  if (hasSearch) {
+    return [{ groupName: 'All Apps', apps: [...apps] }]
+  }
+
   if (!groupingDef) {
-    // When search is active, preserve relevance order; otherwise sort alphabetically
-    const sortedApps = hasSearch
-      ? [...apps]
-      : [...apps].sort((a, b) => a.displayName.localeCompare(b.displayName))
+    // No grouping definition - sort alphabetically
+    const sortedApps = [...apps].sort((a, b) =>
+      a.displayName.localeCompare(b.displayName),
+    )
     return [{ groupName: 'All Apps', apps: sortedApps }]
   }
 
@@ -597,26 +640,23 @@ function groupApps(
 
   const result: Array<GroupedApps> = []
   for (const [groupName, appsInGroup] of grouped) {
-    // When search is active, preserve relevance order; otherwise sort alphabetically
-    const sortedGroupApps = hasSearch
-      ? appsInGroup
-      : appsInGroup.sort((a, b) => a.displayName.localeCompare(b.displayName))
+    // Sort alphabetically within each group
+    const sortedGroupApps = appsInGroup.sort((a, b) =>
+      a.displayName.localeCompare(b.displayName),
+    )
     result.push({ groupName, apps: sortedGroupApps })
   }
 
   if (ungrouped.length > 0) {
-    // When search is active, preserve relevance order; otherwise sort alphabetically
-    const sortedUngrouped = hasSearch
-      ? ungrouped
-      : ungrouped.sort((a, b) => a.displayName.localeCompare(b.displayName))
+    // Sort alphabetically
+    const sortedUngrouped = ungrouped.sort((a, b) =>
+      a.displayName.localeCompare(b.displayName),
+    )
     result.push({ groupName: 'Other', apps: sortedUngrouped })
   }
 
-  // Sort groups: when no search, sort by app count descending
-  // When search is active, keep the order based on app relevance
-  if (!hasSearch) {
-    result.sort((a, b) => b.apps.length - a.apps.length)
-  }
+  // Sort groups by app count descending
+  result.sort((a, b) => b.apps.length - a.apps.length)
 
   return result
 }
