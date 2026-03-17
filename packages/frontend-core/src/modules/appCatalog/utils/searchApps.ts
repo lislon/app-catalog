@@ -14,13 +14,16 @@ export interface SearchResult {
 
 /**
  * Search and sort apps by relevance with highlighting support.
- * Priority order:
- * 1. Exact matches in displayName or alias
- * 2. Prefix matches in displayName or alias
- * 3. Contains matches in displayName or alias
- * 4. Tags
- * 5. Teams
- * 6. Description
+ * Priority order (alias has higher priority than displayName):
+ * 1. Exact match in alias
+ * 2. Exact match in displayName
+ * 3. Prefix match in alias
+ * 4. Prefix match in displayName
+ * 5. Contains match in alias
+ * 6. Contains match in displayName
+ * 7. Tags
+ * 8. Teams
+ * 9. Description
  *
  * @param apps - Array of apps to search
  * @param searchQuery - Search query string
@@ -94,17 +97,17 @@ export function searchApps(
   scoredApps.forEach(({ app, match }) => {
     let score = 0
 
-    // Exact matches: 0-1
+    // Exact matches: 0-1 (alias has highest priority)
     if (match.type === 'exact') {
-      score = match.field === 'displayName' ? 0 : 1
+      score = match.field === 'alias' ? 0 : 1
     }
-    // Prefix matches: 2-3
+    // Prefix matches: 2-3 (alias before displayName)
     else if (match.type === 'prefix') {
-      score = match.field === 'displayName' ? 2 : 3
+      score = match.field === 'alias' ? 2 : 3
     }
-    // Contains in name/alias: 4-5
+    // Contains in name/alias: 4-5 (alias before displayName)
     else if (match.field === 'displayName' || match.field === 'alias') {
-      score = match.field === 'displayName' ? 4 : 5
+      score = match.field === 'alias' ? 4 : 5
     }
     // Tags: 6
     else if (match.field === 'tags') {
