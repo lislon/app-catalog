@@ -150,7 +150,8 @@ function AppDetails({
   const { recordClick } = useAppClickHistory()
   const updateApp = useUpdateApp()
   const [draftSource, setDraftSource] = React.useState<string | null>(null)
-  const { isAdmin } = useUser()
+  const user = useUser()
+  const isAdmin = user?.isAdmin ?? false
 
   const sourceUrls: Array<string> =
     app.sources?.map((s) => (typeof s === 'string' ? s : s.url)) ?? []
