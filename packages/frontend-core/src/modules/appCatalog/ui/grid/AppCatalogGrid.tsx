@@ -294,7 +294,7 @@ function AppDetails({
                           onClick={() => recordClick(app.slug)}
                           className="inline-flex items-center gap-1 rounded-md py-1 text-sm text-blue-600 hover:bg-accent/30 hover:underline dark:text-blue-400 transition-all"
                         >
-                          {url.replaceAll(/https?:\/\//g, '')}
+                          {url.replace(/https?:\/\//g, '')}
                           <ExternalLink className="size-3.5 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity" />
                         </a>
                       ) : (
@@ -310,7 +310,7 @@ function AppDetails({
                     onClick={() => recordClick(app.slug)}
                     className="inline-flex items-center gap-1 rounded-md py-1 text-sm text-blue-600 hover:bg-accent/30 hover:underline dark:text-blue-400 transition-all"
                   >
-                    {app.appUrl.replaceAll(/https?:\/\//g, '')}
+                    {app.appUrl.replace(/https?:\/\//g, '')}
                     <ExternalLink className="size-3.5 shrink-0 opacity-40 transition-opacity" />
                   </a>
                 ) : (
@@ -420,7 +420,7 @@ function AppDetails({
                   className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary truncate"
                 >
                   <ExternalLink className="size-3 shrink-0" />
-                  {link.title || link.url.replaceAll(/https?:\/\//g, '')}
+                  {link.title || link.url.replace(/https?:\/\//g, '')}
                 </a>
               ))}
             </div>
@@ -506,7 +506,7 @@ function AppDetails({
                               rel="noopener noreferrer"
                               className="hover:text-primary inline-flex items-center gap-1 truncate"
                             >
-                              {val.replaceAll(/https?:\/\//g, '')}
+                              {val.replace(/https?:\/\//g, '')}
                               <ExternalLink className="size-3 shrink-0" />
                             </a>
                           ) : (
@@ -563,7 +563,7 @@ function AppDetails({
                       rel="noopener noreferrer"
                       className="hover:text-primary inline-flex items-center gap-1 truncate"
                     >
-                      {url.replaceAll(/https?:\/\//g, '')}
+                      {url.replace(/https?:\/\//g, '')}
                       <ExternalLink className="size-3 shrink-0" />
                     </a>
                   ) : (
