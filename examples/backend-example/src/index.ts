@@ -6,6 +6,7 @@ import {
   createAcMiddleware,
   createDatabaseTools,
   getAssetByName,
+  getVersionInfo,
   staticControllerContract,
 } from '@igstack/app-catalog-backend-core'
 import type { Express, Request, Response } from 'express'
@@ -22,9 +23,9 @@ loadEnv()
 validateAuthConfig()
 
 // Company-specific backend implementation
-// Optional: implement getApps() to provide app catalog data
 const companySpecificBackend: AppCatalogCompanySpecificBackend = {
-  // Example: async getApps() { return [...] }
+  // Automatically gets version info from BUILD_PIPELINE_ID/URL and package.json
+  getVersionInfo: () => getVersionInfo(),
 }
 
 // Create the middleware with all configuration

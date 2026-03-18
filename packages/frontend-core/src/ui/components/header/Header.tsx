@@ -55,22 +55,40 @@ export function Header({ middle }: HeaderProps) {
             <AppCatalogLogo className="h-16 w-16" />
             <div className="flex flex-col">
               <span className="text-lg font-bold">App Catalog</span>
-              {appCatalogContextMaybe?.appVersion &&
-                (appCatalogContextMaybe.appVersion.url ? (
-                  <a
-                    href={appCatalogContextMaybe.appVersion.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-primary hover:text-primary/80 transition-colors font-medium py-0.5"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {appCatalogContextMaybe.appVersion.displayName}
-                  </a>
-                ) : (
-                  <span className="text-xs text-muted-foreground py-0.5">
-                    {appCatalogContextMaybe.appVersion.displayName}
-                  </span>
-                ))}
+              {appCatalogContextMaybe?.versions && (
+                <div className="flex flex-col gap-0.5">
+                  {appCatalogContextMaybe.versions.backend &&
+                    (appCatalogContextMaybe.versions.backend.url ? (
+                      <a
+                        href={appCatalogContextMaybe.versions.backend.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:text-primary/80 transition-colors font-medium"
+                        onClick={(e) => e.stopPropagation()}
+                        title="Backend Version"
+                      >
+                        BE:{' '}
+                        {appCatalogContextMaybe.versions.backend.displayName}
+                      </a>
+                    ) : (
+                      <span
+                        className="text-xs text-muted-foreground"
+                        title="Backend Version"
+                      >
+                        BE:{' '}
+                        {appCatalogContextMaybe.versions.backend.displayName}
+                      </span>
+                    ))}
+                  {appCatalogContextMaybe.versions.frontend && (
+                    <span
+                      className="text-xs text-muted-foreground"
+                      title="Frontend Version"
+                    >
+                      FE: {appCatalogContextMaybe.versions.frontend.displayName}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </Link>

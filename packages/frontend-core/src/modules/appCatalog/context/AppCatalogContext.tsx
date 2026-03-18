@@ -8,12 +8,22 @@ import type { ReactNode } from 'react'
 import { createContext, use, useEffect, useMemo } from 'react'
 import { ApiQueryMagazineAppCatalog } from '~/modules/appCatalog'
 
+export interface VersionInfo {
+  displayName: string
+  url?: string
+}
+
+export interface AppVersionInfo {
+  backend?: VersionInfo
+  frontend?: VersionInfo
+}
+
 export interface AppCatalogContextIface {
   apps: Array<AppForCatalog>
   isLoadingApps: boolean
   tagsDefinitions: Array<GroupingTagDefinition>
   approvalMethods: Array<AppApprovalMethod>
-  appVersion?: { displayName: string; url?: string }
+  versions?: AppVersionInfo
 }
 
 export const AppCatalogContext = createContext<
@@ -35,25 +45,25 @@ export function AppCatalogProvider({ children }: AppCatalogProviderProps) {
       isLoadingApps,
       tagsDefinitions: data?.tagsDefinitions ?? [],
       approvalMethods: data?.approvalMethods ?? [],
-      appVersion: data?.appVersion,
+      versions: data?.versions,
     }),
     [
       data?.approvalMethods,
       data?.apps,
       data?.tagsDefinitions,
-      data?.appVersion,
+      data?.versions,
       isLoadingApps,
     ],
   )
 
-  // Update document title based on app version
+  // Update document title based on backend version
   useEffect(() => {
-    if (data?.appVersion?.displayName === 'local') {
+    if (data?.versions?.backend?.displayName === 'local') {
       document.title = 'Local'
     } else {
       document.title = 'App Catalog'
     }
-  }, [data?.appVersion?.displayName])
+  }, [data?.versions?.backend?.displayName])
 
   return <AppCatalogContext value={contextValue}>{children}</AppCatalogContext>
 }

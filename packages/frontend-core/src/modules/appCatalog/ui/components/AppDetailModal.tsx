@@ -77,7 +77,7 @@ function ScreenshotPreview({ app }: { app: AppForCatalog }) {
     <>
       <div className="space-y-4">
         {screenshotIds.map((screenshotId, index) => {
-          const screenshotUrl = `/api/screenshots/${screenshotId}`
+          const screenshotUrl = `/api/screenshots/${screenshotId}?size=600`
           const hasError = imageErrors.has(screenshotId)
 
           if (hasError) {
@@ -184,10 +184,10 @@ function AccessSection({ app }: { app: AppForCatalog }) {
 }
 
 export function AppDetailModal({ app, isOpen, onClose }: AppDetailModalProps) {
-  // Close on Escape key
+  // Close on Escape key — but only if no inner layer (gallery) is handling it
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && !e.defaultPrevented) {
         onClose()
       }
     }

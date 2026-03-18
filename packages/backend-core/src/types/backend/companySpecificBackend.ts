@@ -1,7 +1,21 @@
+export interface VersionInfo {
+  displayName: string
+  url?: string
+}
+
+export interface AppVersionInfo {
+  backend?: VersionInfo
+  frontend?: VersionInfo
+}
+
 export interface AppCatalogCompanySpecificBackend {
   /**
-   * Optional method to provide app version information (e.g., pipeline ID, build number)
-   * @returns Version object with displayName and optional URL, or undefined if not available
+   * Optional method to provide version information for both backend and frontend
+   * Can be async to support fetching version info from external sources (e.g., GitLab API)
+   * @returns Version info object with optional backend and frontend details, or undefined
    */
-  getAppVersion?: () => { displayName: string; url?: string } | undefined
+  getVersionInfo?: () =>
+    | Promise<AppVersionInfo | undefined>
+    | AppVersionInfo
+    | undefined
 }
