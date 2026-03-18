@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 
 import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
 
@@ -24,6 +24,9 @@ export function ScreenshotGallery({
   onOpenChange,
   title,
 }: ScreenshotGalleryProps) {
+  // Track whether Gallery is in fullscreen — if so, block Radix from closing on Escape
+  const isFullscreenRef = useRef(false)
+
   // Transform screenshot IDs to full URLs
   const images: Array<GalleryImage> = useMemo(
     () =>
@@ -45,13 +48,27 @@ export function ScreenshotGallery({
         aria-describedby={undefined}
         className="h-[85vh] w-full max-w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-3rem)] md:max-w-[calc(100vw-4rem)] p-0 overflow-hidden"
         showCloseButton={true}
+        onEscapeKeyDown={(e) => {
+          // If Gallery is in fullscreen, its capture listener already handled Escape.
+          // Prevent Radix from also closing the dialog on the same event.
+          if (isFullscreenRef.current) {
+            e.preventDefault()
+          }
+        }}
       >
         <VisuallyHidden>
           <DialogTitle>
             {title || `${app.alias || app.displayName} screenshots`}
           </DialogTitle>
         </VisuallyHidden>
-        <Gallery images={images} initialIndex={initialIndex} title={title} />
+        <Gallery
+          images={images}
+          initialIndex={initialIndex}
+          title={title}
+          onFullscreenChange={(fs) => {
+            isFullscreenRef.current = fs
+          }}
+        />
       </DialogContent>
     </Dialog>
   )

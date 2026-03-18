@@ -51,7 +51,7 @@ All gaps are targeted fixes to existing code. The feature is already implemented
     - Simulate Escape keydown event
     - Assert `isFullscreen` becomes false and event propagation was stopped
     - _Requirements: 6.3, 6.5, 6.7_
-  - [ ]\* 3.3 Write integration test for full dismissal chain
+  - [x]\* 3.3 Write integration test for full dismissal chain
     - Render `AppDetailModal` with `ScreenshotGallery` open in fullscreen
     - Simulate three Escape key presses
     - Assert: first exits fullscreen, second closes gallery dialog, third closes app modal
