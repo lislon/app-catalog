@@ -17,6 +17,7 @@ export interface GalleryProps {
   images: Array<GalleryImage>
   initialIndex?: number
   onIndexChange?: (index: number) => void
+  onFullscreenChange?: (isFullscreen: boolean) => void
   className?: string
   title?: string
 }
@@ -25,6 +26,7 @@ export function Gallery({
   images,
   initialIndex = 0,
   onIndexChange,
+  onFullscreenChange,
   className,
   title,
 }: GalleryProps) {
@@ -44,6 +46,17 @@ export function Gallery({
   useEffect(() => {
     setImageStates(Object.fromEntries(images.map((_, i) => [i, 'loading'])))
   }, [images])
+
+  // Stabilize onFullscreenChange callback with ref
+  const onFullscreenChangeRef = useRef(onFullscreenChange)
+  useEffect(() => {
+    onFullscreenChangeRef.current = onFullscreenChange
+  }, [onFullscreenChange])
+
+  const setFullscreen = useCallback((value: boolean) => {
+    setIsFullscreen(value)
+    onFullscreenChangeRef.current?.(value)
+  }, [])
 
   // Stabilize onIndexChange callback with ref
   const onIndexChangeRef = useRef(onIndexChange)
@@ -118,7 +131,7 @@ export function Gallery({
       if (e.key === 'Escape') {
         e.stopPropagation()
         e.preventDefault()
-        setIsFullscreen(false)
+        setFullscreen(false)
       }
     }
 
@@ -221,7 +234,7 @@ export function Gallery({
         <Button
           variant="outline"
           size="icon"
-          onClick={() => setIsFullscreen(false)}
+          onClick={() => setFullscreen(false)}
           className="absolute top-4 right-4 z-10"
           aria-label="Exit fullscreen"
         >
@@ -277,7 +290,7 @@ export function Gallery({
                           if (index !== currentIndex) {
                             emblaApi?.scrollTo(index)
                           } else {
-                            setIsFullscreen(true)
+                            setFullscreen(true)
                           }
                         }}
                         onLoad={() => handleImageLoad(index)}
