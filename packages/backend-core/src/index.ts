@@ -101,3 +101,10 @@ export type {
   AcLighthouseKeeperConfig,
   AcMcpServerConfig,
 } from './middleware/types.js'
+
+// Version utilities
+export {
+  getBuildPipelineId,
+  getFrontendPackageVersion,
+  getVersionInfo,
+} from './utils/versionUtils'

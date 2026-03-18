@@ -35,10 +35,11 @@ export function createTrpcRouter(auth?: BetterAuth) {
     appCatalog: router({
       query: publicProcedure.query(async ({ ctx }): Promise<AppCatalogData> => {
         const baseData = await getAppCatalogData()
-        const appVersion = ctx.companySpecificBackend.getAppVersion?.()
+        const versions = await ctx.companySpecificBackend.getVersionInfo?.()
+
         return {
           ...baseData,
-          ...(appVersion && { appVersion }),
+          ...(versions && { versions }),
         }
       }),
       updateApp: publicProcedure

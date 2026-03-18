@@ -78,9 +78,19 @@ export interface GroupingTagValue {
   description: string
 }
 
+export interface VersionInfo {
+  displayName: string
+  url?: string
+}
+
+export interface AppVersionInfo {
+  backend?: VersionInfo
+  frontend?: VersionInfo
+}
+
 export interface AppCatalogData {
   apps: Array<AppForCatalog>
   tagsDefinitions: Array<GroupingTagDefinition>
   approvalMethods: Array<AppApprovalMethod>
-  appVersion?: { displayName: string; url?: string }
+  versions?: AppVersionInfo
 }

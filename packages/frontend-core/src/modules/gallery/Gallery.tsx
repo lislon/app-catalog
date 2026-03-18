@@ -28,7 +28,10 @@ export function Gallery({
   className,
   title,
 }: GalleryProps) {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: 'center' })
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: false,
+    align: 'center',
+  })
   const [currentIndex, setCurrentIndex] = useState(
     clamp(initialIndex, 0, images.length - 1),
   )
@@ -107,17 +110,23 @@ export function Gallery({
     },
     [scrollNext, images.length],
   )
-  useHotkeys(
-    'escape',
-    (e) => {
-      if (isFullscreen) {
+  // Intercept Escape in fullscreen — must stopPropagation before Radix Dialog sees it
+  useEffect(() => {
+    if (!isFullscreen) return
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation()
         e.preventDefault()
         setIsFullscreen(false)
       }
-    },
-    { enabled: isFullscreen, enableOnFormTags: false, preventDefault: true },
-    [isFullscreen],
-  )
+    }
+
+    document.addEventListener('keydown', handleEscape, true)
+    return () => {
+      document.removeEventListener('keydown', handleEscape, true)
+    }
+  }, [isFullscreen])
 
   // Mouse wheel navigation with debouncing
   useEffect(() => {
@@ -267,6 +276,8 @@ export function Gallery({
                         onClick={() => {
                           if (index !== currentIndex) {
                             emblaApi?.scrollTo(index)
+                          } else {
+                            setIsFullscreen(true)
                           }
                         }}
                         onLoad={() => handleImageLoad(index)}

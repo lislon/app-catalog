@@ -11,7 +11,7 @@ export interface ScreenshotRestControllerConfig {
 
 /**
  * Registers REST endpoints for screenshot retrieval
- * 
+ *
  * Endpoints:
  * - GET {basePath}/app/:appId - Get all screenshots for an app
  * - GET {basePath}/:id - Get screenshot binary by ID
@@ -24,90 +24,100 @@ export function registerScreenshotRestController(
   const { basePath } = config
 
   // Get all screenshots for an app
-  router.get(`${basePath}/app/:appSlug`, async (req: Request, res: Response) => {
-    try {
-      const { appSlug } = req.params
+  router.get(
+    `${basePath}/app/:appSlug`,
+    async (req: Request, res: Response) => {
+      try {
+        const { appSlug } = req.params
 
-      const prisma = getDbClient()
-      
-      // Find app by slug
-      const app = await prisma.dbAppForCatalog.findUnique({
-        where: { slug: appSlug },
-        select: { screenshotIds: true },
-      })
+        const prisma = getDbClient()
 
-      if (!app) {
-        res.status(404).json({ error: 'App not found' })
-        return
+        // Find app by slug
+        const app = await prisma.dbAppForCatalog.findUnique({
+          where: { slug: appSlug },
+          select: { screenshotIds: true },
+        })
+
+        if (!app) {
+          res.status(404).json({ error: 'App not found' })
+          return
+        }
+
+        // Fetch all screenshots for the app, then sort by screenshotIds order
+        const results = await prisma.dbAsset.findMany({
+          where: {
+            id: { in: app.screenshotIds },
+            assetType: 'screenshot',
+          },
+          select: {
+            id: true,
+            name: true,
+            mimeType: true,
+            fileSize: true,
+            width: true,
+            height: true,
+            createdAt: true,
+          },
+        })
+
+        const screenshots = app.screenshotIds
+          .map((id) => results.find((r) => r.id === id))
+          .filter((r) => r !== undefined)
+
+        res.json(screenshots)
+      } catch (error) {
+        console.error('Error fetching app screenshots:', error)
+        res.status(500).json({ error: 'Failed to fetch screenshots' })
       }
-
-      // Fetch all screenshots for the app
-      const screenshots = await prisma.dbAsset.findMany({
-        where: {
-          id: { in: app.screenshotIds },
-          assetType: 'screenshot',
-        },
-        select: {
-          id: true,
-          name: true,
-          mimeType: true,
-          fileSize: true,
-          width: true,
-          height: true,
-          createdAt: true,
-        },
-      })
-
-      res.json(screenshots)
-    } catch (error) {
-      console.error('Error fetching app screenshots:', error)
-      res.status(500).json({ error: 'Failed to fetch screenshots' })
-    }
-  })
+    },
+  )
 
   // Get first screenshot for an app (convenience endpoint)
-  router.get(`${basePath}/app/:appSlug/first`, async (req: Request, res: Response) => {
-    try {
-      const { appSlug } = req.params
+  router.get(
+    `${basePath}/app/:appSlug/first`,
+    async (req: Request, res: Response) => {
+      try {
+        const { appSlug } = req.params
 
-      const prisma = getDbClient()
-      
-      // Find app by slug
-      const app = await prisma.dbAppForCatalog.findUnique({
-        where: { slug: appSlug },
-        select: { screenshotIds: true },
-      })
+        const prisma = getDbClient()
 
-      if (!app || app.screenshotIds.length === 0) {
-        res.status(404).json({ error: 'No screenshots found' })
-        return
+        // Find app by slug
+        const app = await prisma.dbAppForCatalog.findUnique({
+          where: { slug: appSlug },
+          select: { screenshotIds: true },
+        })
+
+        if (!app || app.screenshotIds.length === 0) {
+          res.status(404).json({ error: 'No screenshots found' })
+          return
+        }
+
+        // Fetch first screenshot
+        const screenshot = await prisma.dbAsset.findUnique({
+          where: { id: app.screenshotIds[0] },
+          select: {
+            id: true,
+            name: true,
+            mimeType: true,
+            fileSize: true,
+            width: true,
+            height: true,
+            createdAt: true,
+          },
+        })
+
+        if (!screenshot) {
+          res.status(404).json({ error: 'Screenshot not found' })
+          return
+        }
+
+        res.json(screenshot)
+      } catch (error) {
+        console.error('Error fetching first screenshot:', error)
+        res.status(500).json({ error: 'Failed to fetch screenshot' })
       }
-
-      // Fetch first screenshot
-      const screenshot = await prisma.dbAsset.findUnique({
-        where: { id: app.screenshotIds[0] },
-        select: {
-          id: true,
-          name: true,
-          mimeType: true,
-          fileSize: true,
-          width: true,
-          height: true,
-          createdAt: true,
-        },
-      })
-
-      if (!screenshot) {
-        res.status(404).json({ error: 'Screenshot not found' })
-        return
-      }
-
-      res.json(screenshot)
-    } catch (error) {
-      console.error('Error fetching first screenshot:', error)
-      res.status(500).json({ error: 'Failed to fetch screenshot' })
-    }
-  })
+    },
+  )
 
   // Get screenshot binary by ID
   router.get(`${basePath}/:id`, async (req: Request, res: Response) => {
@@ -150,7 +160,10 @@ export function registerScreenshotRestController(
 
       // Set appropriate headers
       res.setHeader('Content-Type', screenshot.mimeType)
-      res.setHeader('Content-Disposition', `inline; filename="${screenshot.name}"`)
+      res.setHeader(
+        'Content-Disposition',
+        `inline; filename="${screenshot.name}"`,
+      )
       res.setHeader('Cache-Control', 'public, max-age=86400') // Cache for 1 day
 
       // Send binary content
@@ -162,34 +175,37 @@ export function registerScreenshotRestController(
   })
 
   // Get screenshot metadata only (no binary content)
-  router.get(`${basePath}/:id/metadata`, async (req: Request, res: Response) => {
-    try {
-      const { id } = req.params
+  router.get(
+    `${basePath}/:id/metadata`,
+    async (req: Request, res: Response) => {
+      try {
+        const { id } = req.params
 
-      const prisma = getDbClient()
-      const screenshot = await prisma.dbAsset.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          name: true,
-          mimeType: true,
-          fileSize: true,
-          width: true,
-          height: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      })
+        const prisma = getDbClient()
+        const screenshot = await prisma.dbAsset.findUnique({
+          where: { id },
+          select: {
+            id: true,
+            name: true,
+            mimeType: true,
+            fileSize: true,
+            width: true,
+            height: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        })
 
-      if (!screenshot) {
-        res.status(404).json({ error: 'Screenshot not found' })
-        return
+        if (!screenshot) {
+          res.status(404).json({ error: 'Screenshot not found' })
+          return
+        }
+
+        res.json(screenshot)
+      } catch (error) {
+        console.error('Error fetching screenshot metadata:', error)
+        res.status(500).json({ error: 'Failed to fetch screenshot metadata' })
       }
-
-      res.json(screenshot)
-    } catch (error) {
-      console.error('Error fetching screenshot metadata:', error)
-      res.status(500).json({ error: 'Failed to fetch screenshot metadata' })
-    }
-  })
+    },
+  )
 }
