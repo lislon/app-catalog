@@ -253,7 +253,7 @@ export function AppDetailModal({ app, isOpen, onClose }: AppDetailModalProps) {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
                     >
-                      {app.appUrl.replaceAll(/^https?:\/\//g, '')}
+                      {app.appUrl.replace(/^https?:\/\//g, '')}
                       <ExternalLinkIcon className="size-4" />
                     </a>
                   )}
