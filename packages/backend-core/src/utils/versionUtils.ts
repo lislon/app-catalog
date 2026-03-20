@@ -1,4 +1,4 @@
-import type { AppVersionInfo } from '../types/backend/companySpecificBackend'
+import type { AppVersionInfo } from '../types/common/appCatalogTypes.js'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 
@@ -29,7 +29,11 @@ function makeApp(): AppForCatalog {
 }
 
 function pressEscape() {
-  fireEvent.keyDown(document, { key: 'Escape', bubbles: true, cancelable: true })
+  fireEvent.keyDown(document, {
+    key: 'Escape',
+    bubbles: true,
+    cancelable: true,
+  })
 }
 
 describe('Escape key — layered dismissal chain (integration)', () => {
@@ -47,9 +51,11 @@ describe('Escape key — layered dismissal chain (integration)', () => {
     expect(screen.getByText('Test App')).toBeInTheDocument()
 
     // Step 1: Open the gallery by clicking a thumbnail
-    const thumbnail = screen.getAllByRole('button', { name: /screenshot 1/i })[0]
+    const thumbnail = screen.getAllByRole('button', {
+      name: /screenshot 1/i,
+    })[0]
     await act(async () => {
-      fireEvent.click(thumbnail)
+      fireEvent.click(thumbnail!)
     })
 
     // Gallery dialog should now be open (Radix renders into a portal)
@@ -59,15 +65,19 @@ describe('Escape key — layered dismissal chain (integration)', () => {
 
     // Step 2: Enter fullscreen by clicking the first active gallery image
     // Gallery images have alt "Test App screenshot" (without index number)
-    const galleryImgs = document.querySelectorAll('[role="dialog"] img[alt="Test App screenshot"]')
+    const galleryImgs = document.querySelectorAll(
+      '[role="dialog"] img[alt="Test App screenshot"]',
+    )
     expect(galleryImgs.length).toBeGreaterThan(0)
     await act(async () => {
-      fireEvent.click(galleryImgs[0])
+      fireEvent.click(galleryImgs[0]!)
     })
 
     // Fullscreen overlay should be visible
     await waitFor(() => {
-      expect(document.querySelector('[aria-label="Fullscreen view"]')).toBeInTheDocument()
+      expect(
+        document.querySelector('[aria-label="Fullscreen view"]'),
+      ).toBeInTheDocument()
     })
 
     // --- First Escape: exits fullscreen, gallery stays open, app card stays open ---
@@ -76,7 +86,9 @@ describe('Escape key — layered dismissal chain (integration)', () => {
     })
 
     await waitFor(() => {
-      expect(document.querySelector('[aria-label="Fullscreen view"]')).not.toBeInTheDocument()
+      expect(
+        document.querySelector('[aria-label="Fullscreen view"]'),
+      ).not.toBeInTheDocument()
     })
     // Gallery dialog still present
     expect(document.querySelector('[role="dialog"]')).toBeInTheDocument()

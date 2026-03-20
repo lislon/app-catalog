@@ -1,12 +1,4 @@
-export interface VersionInfo {
-  displayName: string
-  url?: string
-}
-
-export interface AppVersionInfo {
-  backend?: VersionInfo
-  frontend?: VersionInfo
-}
+import type { AppVersionInfo } from '../common/appCatalogTypes.js'
 
 export interface AppCatalogCompanySpecificBackend {
   /**

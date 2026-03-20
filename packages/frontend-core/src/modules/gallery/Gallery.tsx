@@ -139,7 +139,7 @@ export function Gallery({
     return () => {
       document.removeEventListener('keydown', handleEscape, true)
     }
-  }, [isFullscreen])
+  }, [isFullscreen, setFullscreen])
 
   // Mouse wheel navigation with debouncing
   useEffect(() => {
