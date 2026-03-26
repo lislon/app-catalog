@@ -9,6 +9,7 @@
     "clean": "premove ./dist ./coverage ./dist-ts",
     "compile": "tsc --build",
     "dev": "vite",
+    "fix": "prettier --write ./src && eslint --fix ./src",
     "start": "node dist/index.js",
     "test:eslint": "eslint ./src",
     "test:unit": "vitest"

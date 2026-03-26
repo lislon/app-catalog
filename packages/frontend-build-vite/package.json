@@ -33,7 +33,9 @@
     "build:lenient": "vite build --mode lenient",
     "clean": "premove ./dist ./coverage ./dist-ts",
     "compile": "tsc --build",
-    "test:eslint": "eslint ./src"
+    "fix": "prettier --write ./src && eslint --fix ./src",
+    "test:eslint": "eslint ./src",
+    "test:types": "tsc --noEmit"
   },
   "dependencies": {
     "@tailwindcss/vite": "catalog:",

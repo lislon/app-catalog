@@ -33,7 +33,9 @@
     "clean": "premove ./dist ./coverage ./dist-ts",
     "compile": "tsc --build",
     "dev": "tsx watch src/index.ts",
+    "fix": "prettier --write ./src && eslint --fix ./src",
     "test:eslint": "eslint ./src",
+    "test:types": "tsc --noEmit",
     "test:unit": "echo \"skipped\"",
     "test:unit:dev": "echo \"skipped\""
   },
