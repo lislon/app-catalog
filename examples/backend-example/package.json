@@ -11,6 +11,7 @@
     "db:reset": "prisma db push --force-reset --schema=../../packages/backend-core/prisma/schema.prisma && pnpm run db:sync",
     "db:sync": "tsx src/local/sync.ts",
     "dev": "tsx watch --conditions=my-custom-condition src/index.ts",
+    "fix": "prettier --write ./src && eslint --fix ./src",
     "prisma:generate": "prisma generate --schema=../../packages/backend-core/prisma/schema.prisma",
     "prisma:push": "prisma db push --schema=../../packages/backend-core/prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema=../../packages/backend-core/prisma/schema.prisma",

@@ -32,8 +32,10 @@
     "clean": "premove ./dist ./coverage ./dist-ts",
     "compile": "tsc --build",
     "dev": "tsx watch src/index.ts",
+    "fix": "prettier --write ./src && eslint --fix ./src",
     "prisma:generate": "prisma generate",
     "test:eslint": "eslint ./src",
+    "test:types": "tsc --noEmit",
     "test:unit": "vitest",
     "test:unit:dev": "pnpm run test:unit --watch"
   },

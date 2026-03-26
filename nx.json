@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
-  "defaultBase": "main",
+  "defaultBase": "origin/main",
   "parallel": 2,
   "namedInputs": {
     "sharedGlobals": [
@@ -35,6 +35,10 @@
       "dependsOn": ["prisma:generate"],
       "inputs": ["default", "^production"],
       "outputs": ["{projectRoot}/dist-ts"]
+    },
+    "fix": {
+      "dependsOn": ["^compile"],
+      "inputs": ["default", "^production", "{workspaceRoot}/eslint.config.js"]
     },
     "test:eslint": {
       "cache": true,

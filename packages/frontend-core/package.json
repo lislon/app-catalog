@@ -45,8 +45,10 @@
     "compile": "tsc --build && tsc-alias",
     "dev": "vite",
     "dev:watch": "vite build --mode lenient --watch",
+    "fix": "prettier --write ./src && eslint --fix ./src",
     "test": "pnpm run test:unit",
     "test:eslint": "eslint ./src",
+    "test:types": "tsc --noEmit",
     "test:unit": "vitest --run",
     "test:unit:dev": "vitest",
     "typecheck:watch": "tsc --build --watch"
