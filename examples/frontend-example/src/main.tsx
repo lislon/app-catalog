@@ -1,12 +1,11 @@
 import { StrictMode } from 'react'
 import ReactDOM from 'react-dom/client'
-import '@igstack/app-catalog-frontend-core/src/index.css'
-import './index.css'
 import { App, appPropsFactory } from '@igstack/app-catalog-frontend-core'
+import type { UiSettings } from '@igstack/app-catalog-frontend-core'
+import './index.css'
 
-// Render the app
-
-const props = appPropsFactory()
+const uiSettings: UiSettings = {}
+const props = { ...appPropsFactory(), uiSettings }
 
 const rootElement = document.getElementById('root')!
 if (!rootElement.innerHTML) {

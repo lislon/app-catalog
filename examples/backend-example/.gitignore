@@ -1,3 +1,4 @@
 .env
-.env.local
 src/generated
+dev.db
+dev.db-journal

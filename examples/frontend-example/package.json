@@ -17,6 +17,9 @@
   "dependencies": {
     "@igstack/app-catalog-frontend-build-vite": "2.0.1-alpha-20260224192214",
     "@igstack/app-catalog-frontend-core": "2.0.1-alpha-20260224192214",
+    "@tanstack/react-query": "catalog:",
+    "@trpc/client": "catalog:",
+    "@trpc/tanstack-react-query": "catalog:",
     "cross-env": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"

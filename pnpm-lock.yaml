@@ -34,7 +34,7 @@ catalogs:
       specifier: ^5.80.6
       version: 5.90.14
     '@tanstack/react-query':
-      specifier: ^5.80.3
+      specifier: ^5.90.12
       version: 5.90.12
     '@tanstack/react-query-devtools':
       specifier: ^5.91.1
@@ -64,13 +64,13 @@ catalogs:
       specifier: ^16.2.0
       version: 16.3.1
     '@trpc/client':
-      specifier: ^11.4.2
+      specifier: ^11.8.1
       version: 11.8.1
     '@trpc/server':
       specifier: ^11.4.2
       version: 11.8.1
     '@trpc/tanstack-react-query':
-      specifier: ^11.4.2
+      specifier: ^11.8.1
       version: 11.8.1
     '@types/dotenv-defaults':
       specifier: ^2.0.4
@@ -428,6 +428,15 @@ importers:
       '@igstack/app-catalog-frontend-core':
         specifier: 2.0.1-alpha-20260224192214
         version: link:../../packages/frontend-core
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.90.12(react@19.1.2)
+      '@trpc/client':
+        specifier: 'catalog:'
+        version: 11.8.1(@trpc/server@11.8.1(typescript@5.9.3))(typescript@5.9.3)
+      '@trpc/tanstack-react-query':
+        specifier: 'catalog:'
+        version: 11.8.1(@tanstack/react-query@5.90.12(react@19.1.2))(@trpc/client@11.8.1(@trpc/server@11.8.1(typescript@5.9.3))(typescript@5.9.3))(@trpc/server@11.8.1(typescript@5.9.3))(react-dom@19.1.2(react@19.1.2))(react@19.1.2)(typescript@5.9.3)
       cross-env:
         specifier: 'catalog:'
         version: 7.0.3
@@ -15262,7 +15271,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 2.0.0
-      vitest: 3.2.2(@types/debug@4.1.12)(@types/node@24.10.4)(@vitest/ui@3.2.2)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.30.2)(msw@2.12.4(@types/node@24.10.4)(typescript@5.9.3))(sass-embedded@1.97.1)(sass@1.97.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
+      vitest: 3.2.2(@types/debug@4.1.12)(@types/node@25.0.3)(@vitest/ui@3.2.2)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.30.2)(msw@2.12.4(@types/node@25.0.3)(typescript@5.9.3))(sass-embedded@1.97.1)(sass@1.97.1)(terser@5.44.1)(tsx@4.21.0)(yaml@2.8.2)
 
   '@vitest/utils@3.2.2':
     dependencies:
