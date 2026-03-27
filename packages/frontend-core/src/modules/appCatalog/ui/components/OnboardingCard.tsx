@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowUp, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { Button } from '~/ui/button'
 import { Card } from '~/ui/card'
@@ -21,13 +21,15 @@ export function OnboardingCard({
   title = 'Welcome to App Catalog',
   description = 'Browse and discover applications available to you. Click on any app to view details, screenshots, and request access if needed.',
 }: OnboardingCardProps = {}) {
-  const [isDismissed, setIsDismissed] = useState(true) // Default to dismissed during hydration
-
-  useEffect(() => {
-    // Check localStorage after mount
-    const dismissed = localStorage.getItem(STORAGE_KEY)
-    setIsDismissed(dismissed === 'true')
-  }, [])
+  // Initialize from localStorage to avoid hydration flash
+  const [isDismissed, setIsDismissed] = useState(() => {
+    // Check localStorage on mount
+    if (typeof window !== 'undefined') {
+      const dismissed = localStorage.getItem(STORAGE_KEY)
+      return dismissed === 'true'
+    }
+    return true // Default to dismissed during SSR
+  })
 
   const handleDismiss = () => {
     localStorage.setItem(STORAGE_KEY, 'true')
