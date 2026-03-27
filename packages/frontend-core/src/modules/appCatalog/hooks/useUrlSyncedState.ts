@@ -52,23 +52,19 @@ export function useUrlSyncedState<T>({
   const router = useRouter()
   const search = useSearch({ strict: false })
 
-  // Local state (source of truth)
-  const [state, setState] = useState<T>(defaultValue)
-
   // Track whether we've initialized from URL
   const isInitializedRef = useRef(false)
 
-  // Initialize from URL on mount (once only)
-  useEffect(() => {
-    if (!isInitializedRef.current) {
-      const urlValue = (search as Record<string, unknown>)[key]
-      if (urlValue !== undefined) {
-        const decodedValue = decode ? decode(String(urlValue)) : (urlValue as T)
-        setState(decodedValue)
-      }
+  // Initialize state from URL on mount (once only)
+  const [state, setState] = useState<T>(() => {
+    const urlValue = (search as Record<string, unknown>)[key]
+    if (urlValue !== undefined) {
+      const decodedValue = decode ? decode(String(urlValue)) : (urlValue as T)
       isInitializedRef.current = true
+      return decodedValue
     }
-  }, [search, key, decode])
+    return defaultValue
+  })
 
   // Sync state to URL (async side effect)
   useEffect(() => {

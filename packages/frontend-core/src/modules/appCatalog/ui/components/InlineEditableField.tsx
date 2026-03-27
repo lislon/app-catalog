@@ -32,12 +32,14 @@ export function InlineEditableField({
   onCancel,
 }: InlineEditableFieldProps) {
   const [isEditing, setIsEditing] = React.useState(initialEditMode)
-  const [editValue, setEditValue] = React.useState(value)
+  // Track local edit state separately from prop
+  const [localEditValue, setLocalEditValue] = React.useState<string | null>(
+    null,
+  )
   const inputRef = React.useRef<HTMLInputElement | HTMLTextAreaElement>(null)
 
-  React.useEffect(() => {
-    setEditValue(value)
-  }, [value])
+  // Use localEditValue if set, otherwise use value prop
+  const editValue = localEditValue ?? value
 
   React.useEffect(() => {
     if (isEditing) {
@@ -53,11 +55,12 @@ export function InlineEditableField({
     } else if (trimmed === '' && onCancel) {
       onCancel()
     }
+    setLocalEditValue(null)
     setIsEditing(false)
   }
 
   const handleCancel = () => {
-    setEditValue(value)
+    setLocalEditValue(null)
     setIsEditing(false)
     inputRef.current?.blur()
     onCancel?.()
@@ -81,7 +84,7 @@ export function InlineEditableField({
       value: editValue,
       onChange: (
         e: React.ChangeEvent<HTMLInputElement & HTMLTextAreaElement>,
-      ) => setEditValue(e.target.value),
+      ) => setLocalEditValue(e.target.value),
       onBlur: handleSave,
       onKeyDown: handleKeyDown,
       placeholder,

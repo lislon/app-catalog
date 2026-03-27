@@ -34,7 +34,7 @@
     "clean": "premove ./dist ./coverage ./dist-ts",
     "compile": "tsc --build",
     "fix": "prettier --write ./src && eslint --fix ./src",
-    "test:eslint": "eslint ./src",
+    "test:eslint": "eslint ./src --max-warnings=0",
     "test:types": "tsc --noEmit"
   },
   "dependencies": {

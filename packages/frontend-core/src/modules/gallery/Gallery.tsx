@@ -34,7 +34,8 @@ export function Gallery({
     loop: false,
     align: 'center',
   })
-  const [currentIndex, setCurrentIndex] = useState(
+  // Use lazy initialization for clamp() call
+  const [currentIndex, setCurrentIndex] = useState(() =>
     clamp(initialIndex, 0, images.length - 1),
   )
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -72,7 +73,7 @@ export function Gallery({
     if (emblaApi) emblaApi.scrollNext()
   }, [emblaApi])
 
-  // Sync current index with embla
+  // Sync current index with embla using event handler
   const onSelect = useCallback(() => {
     if (!emblaApi) return
     const index = emblaApi.selectedScrollSnap()
@@ -80,9 +81,14 @@ export function Gallery({
     onIndexChangeRef.current?.(index)
   }, [emblaApi])
 
+  // Subscribe to embla select events and initialize
   useEffect(() => {
     if (!emblaApi) return
+
+    // Initialize current index
     onSelect()
+
+    // Subscribe to future changes
     emblaApi.on('select', onSelect)
     return () => {
       emblaApi.off('select', onSelect)

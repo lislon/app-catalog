@@ -47,7 +47,7 @@
     "dev:watch": "vite build --mode lenient --watch",
     "fix": "prettier --write ./src && eslint --fix ./src",
     "test": "pnpm run test:unit",
-    "test:eslint": "eslint ./src",
+    "test:eslint": "eslint ./src --max-warnings=0",
     "test:types": "tsc --noEmit",
     "test:unit": "vitest --run",
     "test:unit:dev": "vitest",

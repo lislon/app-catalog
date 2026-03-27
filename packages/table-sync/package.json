@@ -34,7 +34,7 @@
     "compile": "tsc --build",
     "dev": "tsx watch src/index.ts",
     "fix": "prettier --write ./src && eslint --fix ./src",
-    "test:eslint": "eslint ./src",
+    "test:eslint": "eslint ./src --max-warnings=0",
     "test:types": "tsc --noEmit",
     "test:unit": "echo \"skipped\"",
     "test:unit:dev": "echo \"skipped\""

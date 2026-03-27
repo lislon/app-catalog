@@ -2,7 +2,9 @@ import { createContext, use } from 'react'
 import type { ReactNode } from 'react'
 import type { UiSettings } from '~/types/uiSettings'
 
-const UiSettingsContextInner = createContext<UiSettings | undefined>(undefined)
+const UiSettingsInternalContext = createContext<UiSettings | undefined>(
+  undefined,
+)
 
 interface UiSettingsContextProps {
   children: ReactNode
@@ -11,11 +13,13 @@ interface UiSettingsContextProps {
 
 export function UiSettingsContext({ children, value }: UiSettingsContextProps) {
   return (
-    <UiSettingsContextInner value={value}>{children}</UiSettingsContextInner>
+    <UiSettingsInternalContext value={value}>
+      {children}
+    </UiSettingsInternalContext>
   )
 }
 
 export function useUiSettings(): UiSettings {
-  const context = use(UiSettingsContextInner)
+  const context = use(UiSettingsInternalContext)
   return context ?? {}
 }

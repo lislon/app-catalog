@@ -9,7 +9,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table'
 import { AppWindow, ExternalLink, Plus, Trash2, X } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { cn } from '~/lib/utils'
 import type {} from '~/types/table'
@@ -350,6 +350,7 @@ function AppDetails({
                 </p>
                 {replacementApp && (
                   <button
+                    type="button"
                     onClick={() => onAppClick?.(replacementApp)}
                     className="text-sm font-medium text-primary hover:underline inline-flex items-center gap-1"
                   >
@@ -765,13 +766,16 @@ export function AppCatalogGrid({
     getRowId: (row) => row.id,
   })
 
-  // Panel visibility state - default to closed
-  const [isPanelOpen, setIsPanelOpen] = useState(false)
+  // Panel visibility state - derive from selectedApp and explicit close
+  const [hasUserClosed, setHasUserClosed] = useState(false)
 
-  // Open panel when app is selected
-  useEffect(() => {
+  // Auto-open when app is selected, unless user explicitly closed
+  const isPanelOpen = selectedApp !== null && !hasUserClosed
+
+  // Reset close flag when selectedApp changes
+  React.useEffect(() => {
     if (selectedApp) {
-      setIsPanelOpen(true)
+      setHasUserClosed(false)
     }
   }, [selectedApp])
 
@@ -793,7 +797,7 @@ export function AppCatalogGrid({
   }
 
   const handleClosePanel = () => {
-    setIsPanelOpen(false)
+    setHasUserClosed(true)
   }
 
   return (

@@ -28,6 +28,10 @@ const config = [
       '@typescript-eslint/no-unsafe-function-type': 'off',
       '@typescript-eslint/require-await': 'off',
       'no-case-declarations': 'off',
+      // Standard React pattern - calling setState in useEffect with proper dependencies
+      '@eslint-react/hooks-extra/no-direct-set-state-in-use-effect': 'off',
+      // React 19 context provider pattern - Radix UI requires .Provider for now
+      '@eslint-react/no-context-provider': 'off',
     },
   },
   {
