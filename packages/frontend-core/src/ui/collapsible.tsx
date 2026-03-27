@@ -42,4 +42,3 @@ function CollapsibleContent({
 }
 
 export { Collapsible, CollapsibleContent, CollapsibleTrigger }
-

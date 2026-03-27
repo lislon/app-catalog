@@ -1,10 +1,10 @@
 import { ThemeProvider } from '~/components/theme-provider'
 import {
-    Empty,
-    EmptyDescription,
-    EmptyHeader,
-    EmptyMedia,
-    EmptyTitle,
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
 } from '~/ui/empty'
 import { Spinner } from '~/ui/spinner'
 import { MainLayout } from './MainLayout'
