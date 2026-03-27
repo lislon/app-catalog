@@ -36,7 +36,11 @@ const config = defineConfig(() => {
       },
     },
 
-    plugins: [tailwindcss(), ...(cfg.plugins as PluginOption[]), tsconfigPaths()],
+    plugins: [
+      tailwindcss(),
+      ...(cfg.plugins as PluginOption[]),
+      tsconfigPaths(),
+    ],
     test: {
       name: packageJson.name,
       dir: './src/__tests__',

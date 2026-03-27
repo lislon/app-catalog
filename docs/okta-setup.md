@@ -22,18 +22,22 @@ This guide explains how to configure Okta OIDC (OpenID Connect) with EnvHopper t
 Fill in the following details:
 
 **General Settings:**
+
 - **App name**: EnvHopper (or your app name)
 - **App logo**: Optional
 
 **Sign-in redirect URIs:**
+
 - `http://localhost:4001/api/auth/callback/okta` (for local development)
 - `https://your-domain.com/api/auth/callback/okta` (for production)
 
 **Sign-out redirect URIs:**
+
 - `http://localhost:4001` (development)
 - `https://your-domain.com` (production)
 
 **Allowed grant types:**
+
 - ✅ Authorization Code
 - ✅ Refresh Token
 - ✅ Implicit (if using implicit flow)
@@ -64,6 +68,7 @@ AUTH_OKTA_ISSUER=https://my-org.okta.com
 To allow **any user** in your Okta organization:
 
 ### Option A: Assign Everyone (Recommended for internal apps)
+
 1. In your app settings, go to **Assignments** tab
 2. Click **Assign** > **Assign to Groups**
 3. Select the group (e.g., "Everyone" or your main group)
@@ -72,7 +77,9 @@ To allow **any user** in your Okta organization:
 Users in that group can now log in.
 
 ### Option B: Allow Unauthenticated Access
+
 For public apps, configure in your Okta app:
+
 1. Go to **General** settings
 2. Under **Client Credentials**, ensure the client type allows your use case
 3. Set up any necessary authorization policies
@@ -80,6 +87,7 @@ For public apps, configure in your Okta app:
 ## Step 6: Test the Integration
 
 1. Start your backend:
+
 ```bash
 cd examples/backend-example
 pnpm run dev
@@ -120,12 +128,8 @@ import { useAuthActions } from '~/modules/auth'
 
 function LoginComponent() {
   const { socialLogin } = useAuthActions()
-  
-  return (
-    <button onClick={() => socialLogin('okta')}>
-      Login with Okta
-    </button>
-  )
+
+  return <button onClick={() => socialLogin('okta')}>Login with Okta</button>
 }
 ```
 
@@ -133,24 +137,26 @@ function LoginComponent() {
 
 When a user logs in via Okta, the following information is captured:
 
-| Okta Claim | EnvHopper Field | Notes |
-|-----------|-----------------|-------|
-| `sub` | User ID | Unique identifier |
-| `email` | Email | May be verified depending on Okta config |
-| `name` | Name | Full name from Okta profile |
-| `picture` | Image | Profile picture URL |
+| Okta Claim | EnvHopper Field | Notes                                    |
+| ---------- | --------------- | ---------------------------------------- |
+| `sub`      | User ID         | Unique identifier                        |
+| `email`    | Email           | May be verified depending on Okta config |
+| `name`     | Name            | Full name from Okta profile              |
+| `picture`  | Image           | Profile picture URL                      |
 
 ## Okta User Permissions
 
 To manage which users can access your app:
 
 ### In Okta:
+
 1. Go to **Users** in Admin Dashboard
 2. Each user can be assigned to groups
 3. Assign users/groups to your EnvHopper application
 4. Users not assigned won't get an error, but won't be in your org's access list
 
 ### In EnvHopper:
+
 You can add role-based access control based on user information:
 
 ```tsx
@@ -163,18 +169,22 @@ if (user?.email?.endsWith('@mycompany.com')) {
 ## Troubleshooting
 
 **Issue: "Invalid client" error**
+
 - Verify Client ID and Client Secret are correct
 - Check that credentials haven't been regenerated (old ones won't work)
 
 **Issue: Redirect URI mismatch**
+
 - Ensure the callback URL in Okta matches exactly: `http://localhost:4001/api/auth/callback/okta`
 - Include the full path, including `/api/auth/callback/okta`
 
 **Issue: User not found after login**
+
 - Verify the user is assigned to the application in Okta
 - Check that assignment propagation has completed (may take a moment)
 
 **Issue: CORS or "origin not allowed" error**
+
 - Verify `BETTER_AUTH_URL` matches your frontend URL
 - Ensure Okta app's redirect URIs include your current URL
 
@@ -189,6 +199,7 @@ When deploying to production:
 5. Enable `useSecureCookies: true` in production (already configured)
 
 Example production `.env`:
+
 ```env
 AUTH_OKTA_CLIENT_ID=prod_client_id
 AUTH_OKTA_CLIENT_SECRET=prod_secret

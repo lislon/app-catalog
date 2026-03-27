@@ -15,10 +15,10 @@ export interface UpsertIconInput {
  */
 export async function upsertIcon(input: UpsertIconInput) {
   const prisma = getDbClient()
-  
+
   const checksum = generateChecksum(input.content)
   const { width, height } = await getImageDimensions(input.content)
-  
+
   return prisma.dbAsset.upsert({
     where: { name: input.name },
     update: {
@@ -61,7 +61,7 @@ export async function upsertIcons(icons: Array<UpsertIconInput>) {
  */
 export async function getAssetByName(name: string) {
   const prisma = getDbClient()
-  
+
   return prisma.dbAsset.findUnique({
     where: { name },
     select: {

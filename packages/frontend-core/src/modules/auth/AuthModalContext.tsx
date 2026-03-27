@@ -19,19 +19,20 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false)
   const [redirectUrl, setRedirectUrl] = useState('/')
 
-  const value = useMemo<AuthModalContextType>(() => ({
-    isOpen,
-    redirectUrl,
-    open: (url?: string) => {
-      setRedirectUrl(url || '/')
-      setIsOpen(true)
-    },
-    close: () => setIsOpen(false),
-  }), [isOpen, redirectUrl])
-
-  return (
-    <AuthModalContext value={value}>{children}</AuthModalContext>
+  const value = useMemo<AuthModalContextType>(
+    () => ({
+      isOpen,
+      redirectUrl,
+      open: (url?: string) => {
+        setRedirectUrl(url || '/')
+        setIsOpen(true)
+      },
+      close: () => setIsOpen(false),
+    }),
+    [isOpen, redirectUrl],
   )
+
+  return <AuthModalContext value={value}>{children}</AuthModalContext>
 }
 
 /**
@@ -41,9 +42,7 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
 export function useAuthModal() {
   const context = use(AuthModalContext)
   if (!context) {
-    throw new Error(
-      'useAuthModal must be used within AuthModalProvider',
-    )
+    throw new Error('useAuthModal must be used within AuthModalProvider')
   }
   return context
 }

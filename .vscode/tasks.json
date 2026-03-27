@@ -61,8 +61,7 @@
         "cwd": "${workspaceFolder}/packages/frontend-core"
       },
       "problemMatcher": []
-    }
-    ,
+    },
     {
       "label": "build:backend-example",
       "type": "shell",

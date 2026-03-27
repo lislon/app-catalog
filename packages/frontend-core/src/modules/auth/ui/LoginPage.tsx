@@ -23,7 +23,7 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
     try {
       // Close modal before redirect to OAuth
       onSuccess?.()
-      
+
       await authClient.signIn.social({
         provider,
         callbackURL: redirectUrl,

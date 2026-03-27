@@ -48,7 +48,6 @@ export function watchExternalSource(
   return {
     name: `watch-external-source:${name}`,
     configureServer(server: ViteDevServer) {
-       
       import('chokidar').then(({ watch }) => {
         watcher = watch(srcPath, {
           ignoreInitial: true,

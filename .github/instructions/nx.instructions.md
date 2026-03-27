@@ -10,8 +10,8 @@ You have access to the Nx MCP server and the tools it provides. Use them. Follow
 
 # General Guidelines
 
-- Always run nx commands with pnpm prefix (e.g., `pnpm nx run`, `pnpm nx show`). - 
-When answering questions, use the nx_workspace tool first to gain an understanding of the workspace architecture
+- Always run nx commands with pnpm prefix (e.g., `pnpm nx run`, `pnpm nx show`). -
+  When answering questions, use the nx_workspace tool first to gain an understanding of the workspace architecture
 - For questions around nx configuration, best practices or if you're unsure, use the nx_docs tool to get relevant, up-to-date docs!! Always use this instead of assuming things about nx configuration
 - If the user needs help with an Nx configuration or project graph error, use the 'nx_workspace' tool to get any errors
 - To help answer questions about the workspace structure or simply help with demonstrating how tasks depend on each other, use the 'nx_visualize_graph' tool
