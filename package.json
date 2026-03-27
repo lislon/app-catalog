@@ -25,8 +25,6 @@
     "preinstall": "node -e \"if(process.env.CI == 'true') {console.info('Skipping preinstall...')} else {process.exit(1)}\" || npx -y only-allow pnpm",
     "kill-all": "node examples/backend-example/kill-all.js",
     "prepare": "husky",
-    "prettier": "prettier",
-    "prettier:write": "pnpm run prettier --write",
     "prisma:generate": "pnpm --filter @igstack/app-catalog-backend-core prisma:generate",
     "prisma:push": "pnpm --filter @igstack/app-catalog-backend-example exec prisma db push --force-reset --config=../../packages/backend-core/prisma.config.ts",
     "syncpack:fix": "syncpack fix-mismatches",
