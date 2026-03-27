@@ -1,26 +1,21 @@
 import { config as loadEnv } from 'dotenv-defaults'
 import express from 'express'
-import { openai } from '@ai-sdk/openai'
 import {
-  DEFAULT_ADMIN_SYSTEM_PROMPT,
   createAcMiddleware,
-  createDatabaseTools,
   getAssetByName,
   getVersionInfo,
   staticControllerContract,
+  syncAppCatalog,
 } from '@igstack/app-catalog-backend-core'
 import type { Express, Request, Response } from 'express'
 import type { AppCatalogCompanySpecificBackend } from '@igstack/app-catalog-backend-core'
 import {
-  getAuthPlugins,
-  getAuthProviders,
-  validateAuthConfig,
-} from './config/authProviders.js'
+  mockAppCatalog,
+  mockApprovalMethods,
+  mockTagDefinitions,
+} from './data/mockData.js'
 
 loadEnv()
-
-// Validate auth configuration
-validateAuthConfig()
 
 // Company-specific backend implementation
 const companySpecificBackend: AppCatalogCompanySpecificBackend = {
@@ -38,12 +33,10 @@ const eh = await createAcMiddleware({
 
   auth: {
     betterAuthOptions: {
-      baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:4000',
+      baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:4001',
       secret:
         process.env.BETTER_AUTH_SECRET ||
         'dev-secret-change-in-production-minimum-32-chars!',
-      socialProviders: getAuthProviders(),
-      plugins: getAuthPlugins(),
       emailAndPassword: { enabled: true },
       session: {
         expiresIn: 60 * 60 * 24 * 30, // 30 days
@@ -53,17 +46,6 @@ const eh = await createAcMiddleware({
   },
 
   backend: companySpecificBackend,
-
-  adminChat: {
-    model: openai.chat('gpt-4o-mini'),
-    systemPrompt: DEFAULT_ADMIN_SYSTEM_PROMPT,
-    tools: createDatabaseTools(),
-    validateConfig: () => {
-      if (!process.env['OPENAI_API_KEY']) {
-        throw new Error('OPENAI_API_KEY environment variable is not configured')
-      }
-    },
-  },
 
   hooks: {
     onRoutesRegistered: (router) => {
@@ -112,10 +94,25 @@ const app = express()
 // Mount the middleware
 app.use(eh.router)
 
-// Connect and start
+// Connect to database
 await eh.connect()
+
 const port = process.env.PORT || 4001
-app.listen(port)
-console.log(`Example app-catalog listening on port ${port}`)
+const server = app.listen(port, async () => {
+  console.log(`Example app-catalog listening on port ${port}`)
+
+  // Sync mock data after server is fully running
+  console.log('Syncing mock data to database...')
+  try {
+    await syncAppCatalog(
+      mockAppCatalog,
+      mockTagDefinitions,
+      mockApprovalMethods,
+    )
+    console.log(`✓ Synced ${mockAppCatalog.length} apps to database`)
+  } catch (error) {
+    console.error('Failed to sync app catalog:', error)
+  }
+})
 
 export const viteNodeApp: Express = app

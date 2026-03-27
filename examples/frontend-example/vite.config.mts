@@ -17,9 +17,32 @@ const config = defineConfig(() => {
     root: __dirname,
     cacheDir: '../../node_modules/.vite/apps/frontend',
 
+    server: {
+      ...cfg.server,
+      port: 4000,
+      proxy: {
+        '/api': {
+          target: 'http://localhost:4001',
+          changeOrigin: true,
+        },
+      },
+      // Watch external source for HMR (core library development)
+      watch: {
+        ignored: ['!**/node_modules/@igstack/app-catalog-frontend-core/**'],
+      },
+    },
+
     resolve: {
+      ...cfg.resolve,
       conditions: ['my-custom-condition'],
+      // Resolve to source files for HMR in development
       alias: {
+        '@igstack/app-catalog-frontend-core': fileURLToPath(
+          new URL('../../packages/frontend-core/src/index.tsx', import.meta.url),
+        ),
+        '@igstack/app-catalog-shared-core': fileURLToPath(
+          new URL('../../packages/shared-core/src/index.ts', import.meta.url),
+        ),
         '~': fileURLToPath(
           new URL('../../packages/frontend-core/src', import.meta.url),
         ),
