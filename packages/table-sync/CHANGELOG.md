@@ -1,5 +1,11 @@
 # @igstack/app-catalog-table-sync
 
+## 0.3.1-alpha-20260328155123
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
 ## 0.3.1-alpha-20260328001855
 
 ### Patch Changes
