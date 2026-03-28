@@ -17,17 +17,22 @@ All infrastructure lives under `packages/frontend-core/src/__tests__/integration
 - `mock-backend/magazines.ts` — magazine definitions and `ConfigurerContext` type
 - `harness/given.tsx` — the `given()` harness
 
-## How Tests Work
+## Configuration Layers (from broadest to most specific)
+
+1. **`given(magazine)`** — entry point, renders real `<App />`, returns `{ ui, backend }`
+2. **Magazine** — high-level preset (e.g., `magazine.full()`, `magazine.single()`). Sets up a realistic baseline.
+3. **Magazine features** — toggle business-level scenarios within a magazine (e.g., `prepopulateCache`, `dismissOnboarding`). Controlled by feature flags passed to the magazine factory.
+4. **`backendCfg`** — individual entity configurators: `withApp()`, `withTag()`, `withApprovalMethod()`, `withUser()`. Fine-grained control over mock DB contents.
+5. **`browserStateCfg`** — browser local state: `withOfflineData()`, `dismissOnboarding()`, `withLocalStorageItem()`. Simulates returning users, cached data.
+6. **`networkCfg.overrideConfig()`** — network-level overrides. Replaces specific MSW handlers to simulate errors, latency, malformed responses. Most specific layer — use for error scenarios.
+
+Each magazine accepts an optional post-configurer for layers 4–6:
 
 ```
-given(magazine) → renders real <App /> with mock backend → returns { ui, backend }
+given(magazine.single(({ networkCfg }) => {
+  networkCfg.overrideConfig((catalog) => catalog.replace([...], handler))
+}))
 ```
-
-A **magazine** configures three things via `ConfigurerContext`:
-
-- `backendCfg` — mock DB data (apps, tags, approval methods, user)
-- `browserStateCfg` — IndexedDB cache, localStorage (returning user simulation)
-- `networkCfg` — network override callbacks (error simulation)
 
 ## Writing a Test
 
