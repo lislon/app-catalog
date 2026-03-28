@@ -111,8 +111,6 @@ export function createCachingFetcher<T>({
       },
       ctx,
     )
-    console.log('no cache, sync from network ', queryKey, newLocal)
-
     return newLocal
   }
 }

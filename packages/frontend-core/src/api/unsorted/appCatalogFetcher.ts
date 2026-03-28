@@ -25,8 +25,8 @@ export function appCatalogFetcher({
   return createCachingFetcher<AppCatalogData>({
     cacheKey: dbCacheDbKeys.AppCatalog,
     networkFetchFn: trpcClient
-      ? () => trpcClient.appCatalog.query.query()
-      : (ctx) => getTrpcFromMeta(ctx).appCatalog.query.query(),
+      ? () => trpcClient.appCatalog.getData.query()
+      : (ctx) => getTrpcFromMeta(ctx).appCatalog.getData.query(),
     getDbTable: db
       ? () => db.appCatalog
       : (ctx) => getDbFromMeta(ctx).appCatalog,

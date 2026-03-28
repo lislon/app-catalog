@@ -23,6 +23,9 @@ export async function catalogRouteLoader({
     signal: new AbortController().signal,
   }
 
-  // Call the query function to pre-populate cache
-  await queryFn(ctx)
+  // Call the query function and populate React Query cache
+  const data = await queryFn(ctx)
+  if (data) {
+    context.queryClient.setQueryData(['appCatalog'], data)
+  }
 }
