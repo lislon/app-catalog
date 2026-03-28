@@ -64,6 +64,8 @@ export type ApprovalMethodConfig =
 export type ApprovalMethod = {
   slug: string
   displayName: string
+  /** Old/migrated URLs that map to this approval method (e.g., jira.natera.com → natera.atlassian.net) */
+  deprecatedAliases?: string[]
   createdAt?: Date
   updatedAt?: Date
 } & (
