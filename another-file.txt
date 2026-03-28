@@ -1,0 +1,2 @@
+Testing with empty IG_STACK_BAN_WORDS="".
+Contains natera, lims, secret.
