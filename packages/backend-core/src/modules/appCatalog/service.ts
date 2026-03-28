@@ -132,6 +132,9 @@ function rowToAppForCatalog(row: AppRowWithSourceRefs): AppForCatalog {
       ? undefined
       : (row.deprecated as unknown as AppForCatalog['deprecated'])
   const aiPrompt = row.aiPrompt == null ? undefined : row.aiPrompt
+  const urlIssues = (row.urlIssues as unknown as string[] | null)?.length
+    ? (row.urlIssues as unknown as string[])
+    : undefined
 
   return {
     id: row.id,
@@ -149,6 +152,7 @@ function rowToAppForCatalog(row: AppRowWithSourceRefs): AppForCatalog {
     sources,
     deprecated,
     aiPrompt,
+    urlIssues,
   }
 }
 
