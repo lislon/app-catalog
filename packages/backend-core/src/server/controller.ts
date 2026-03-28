@@ -33,15 +33,17 @@ const updateAppInputSchema = z.object({
 export function createTrpcRouter(auth?: BetterAuth) {
   return router({
     appCatalog: router({
-      query: publicProcedure.query(async ({ ctx }): Promise<AppCatalogData> => {
-        const baseData = await getAppCatalogData()
-        const versions = await ctx.companySpecificBackend.getVersionInfo?.()
+      getData: publicProcedure.query(
+        async ({ ctx }): Promise<AppCatalogData> => {
+          const baseData = await getAppCatalogData()
+          const versions = await ctx.companySpecificBackend.getVersionInfo?.()
 
-        return {
-          ...baseData,
-          ...(versions && { versions }),
-        }
-      }),
+          return {
+            ...baseData,
+            ...(versions && { versions }),
+          }
+        },
+      ),
       updateApp: publicProcedure
         .input(updateAppInputSchema)
         .mutation(async ({ input }): Promise<AppForCatalog> => {

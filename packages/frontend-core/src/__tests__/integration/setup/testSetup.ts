@@ -1,3 +1,25 @@
+import 'fake-indexeddb/auto'
+import { afterEach, vi } from 'vitest'
+import { cleanup } from '@testing-library/react'
+import { cleanupTestResources } from '../harness/given'
+import React from 'react'
+
+// Mock SVG React component imports (vite-plugin-svgr ?react suffix)
+vi.mock('~/assets/app-catalog.svg?react', () => ({
+  default: (props: React.SVGProps<SVGSVGElement>) =>
+    React.createElement('svg', { 'data-testid': 'svg-mock', ...props }),
+}))
+
+// Mock scrollIntoView — not implemented in jsdom
+Element.prototype.scrollIntoView = vi.fn()
+
+// Clean up after each test
+afterEach(async () => {
+  cleanup()
+  await cleanupTestResources()
+  localStorage.clear()
+})
+
 // Mock window.matchMedia — required by embla-carousel in jsdom environment
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
