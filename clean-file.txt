@@ -1,0 +1,3 @@
+This is a clean file for testing.
+No sensitive information here.
+Just normal content.
