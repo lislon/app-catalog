@@ -1,4 +1,5 @@
 import 'fake-indexeddb/auto'
+import './polyfillLocalStorage'
 import { afterEach, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import { cleanupTestResources } from '../harness/given'
