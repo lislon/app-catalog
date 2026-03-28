@@ -48,6 +48,8 @@ export interface AppForCatalog {
     /** Deprecation message */
     comment: string
   }
+  /** Agent-facing prompt guiding how to maintain this app's data */
+  aiPrompt?: string
 }
 
 // Derived catalog data returned by backend

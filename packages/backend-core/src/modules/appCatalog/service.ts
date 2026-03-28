@@ -131,6 +131,7 @@ function rowToAppForCatalog(row: AppRowWithSourceRefs): AppForCatalog {
     row.deprecated == null
       ? undefined
       : (row.deprecated as unknown as AppForCatalog['deprecated'])
+  const aiPrompt = row.aiPrompt == null ? undefined : row.aiPrompt
 
   return {
     id: row.id,
@@ -147,6 +148,7 @@ function rowToAppForCatalog(row: AppRowWithSourceRefs): AppForCatalog {
     screenshotIds,
     sources,
     deprecated,
+    aiPrompt,
   }
 }
 
@@ -171,6 +173,7 @@ export interface UpdateAppInput {
     appUrl?: string
     description?: string
     sources?: string[]
+    aiPrompt?: string | null
   }
 }
 
@@ -184,6 +187,7 @@ export async function updateApp(input: UpdateAppInput): Promise<AppForCatalog> {
     slug?: string
     appUrl?: string
     description?: string
+    aiPrompt?: string | null
   } = {}
   if (data.displayName !== undefined)
     updatePayload.displayName = data.displayName
@@ -192,6 +196,7 @@ export async function updateApp(input: UpdateAppInput): Promise<AppForCatalog> {
   if (data.appUrl !== undefined) updatePayload.appUrl = data.appUrl
   if (data.description !== undefined)
     updatePayload.description = data.description
+  if (data.aiPrompt !== undefined) updatePayload.aiPrompt = data.aiPrompt
 
   const updated = await prisma.dbAppForCatalog.update({
     where: { id },

@@ -238,6 +238,7 @@ export async function syncAppCatalog(
         iconName: app.iconName ?? null,
         screenshotIds: app.screenshotIds ?? [],
         deprecated: app.deprecated ?? null,
+        aiPrompt: app.aiPrompt ?? null,
       }
     })
 
