@@ -111,6 +111,7 @@ model DbAppForCatalog {
   /// [AppDeprecation] - Deprecation info with optional replacement slug
   deprecated    Json?
   aiPrompt      String?
+  urlIssues     String[]          @default([])
   sourceRefs    SourceReference[]
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt

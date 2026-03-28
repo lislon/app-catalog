@@ -50,6 +50,8 @@ export interface AppForCatalog {
   }
   /** Agent-facing prompt guiding how to maintain this app's data */
   aiPrompt?: string
+  /** URL health issues detected by automated scanning */
+  urlIssues?: string[]
 }
 
 // Derived catalog data returned by backend
