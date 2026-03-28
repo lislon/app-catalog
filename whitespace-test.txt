@@ -1,0 +1,2 @@
+Testing with spaces in ban list.
+Contains test word.
