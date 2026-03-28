@@ -9,6 +9,9 @@ export function makeNetworkReplyWithCatalog(
 
   catalog.add(SharedNetwork.appCatalogQuery(service))
   catalog.add(SharedNetwork.authGetSession(service))
+  catalog.add(SharedNetwork.authGetProviders())
+  catalog.add(SharedNetwork.authSignOut())
+  catalog.add(SharedNetwork.authDevLogout())
   catalog.add(SharedNetwork.screenshotBinary())
   catalog.add(SharedNetwork.iconBinary())
 

@@ -14,8 +14,14 @@ import {
   mockApprovalMethods,
   mockTagDefinitions,
 } from './data/mockData.js'
+import {
+  getAuthPlugins,
+  getAuthProviders,
+  validateAuthConfig,
+} from './config/authProviders.js'
 
 loadEnv()
+validateAuthConfig()
 
 // Company-specific backend implementation
 const companySpecificBackend: AppCatalogCompanySpecificBackend = {
@@ -38,11 +44,17 @@ const eh = await createAcMiddleware({
         process.env.BETTER_AUTH_SECRET ||
         'dev-secret-change-in-production-minimum-32-chars!',
       emailAndPassword: { enabled: true },
+      socialProviders: getAuthProviders(),
+      plugins: getAuthPlugins(),
       session: {
         expiresIn: 60 * 60 * 24 * 30, // 30 days
         updateAge: 60 * 60 * 24, // Refresh after 1 day
       },
     },
+    devMockUser:
+      process.env.NODE_ENV !== 'production'
+        ? { id: 'dev-user', email: 'dev@example.com', name: 'Dev User' }
+        : undefined,
   },
 
   backend: companySpecificBackend,

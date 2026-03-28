@@ -12,7 +12,7 @@ export class MockService {
     return this.db.getAppCatalogData()
   }
 
-  getSessionResponse(): object {
+  getSessionResponse(): object | null {
     return this.userContext.getSessionResponse()
   }
 }

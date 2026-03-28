@@ -21,9 +21,9 @@ export class MockUserContext {
     return this.user
   }
 
-  getSessionResponse(): object {
+  getSessionResponse(): object | null {
     if (!this.user.isAuthenticated) {
-      return {}
+      return null
     }
     return {
       user: {

@@ -88,7 +88,7 @@
     "ai": "^6.0.37",
     "autoprefixer": "^10.4.21",
     "autosuggest-highlight": "^3.3.4",
-    "better-auth": "^1.4.15",
+    "better-auth": "catalog:",
     "class-variance-authority": "^0.7.1",
     "classnames": "^2.5.1",
     "clsx": "^2.1.1",
