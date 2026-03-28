@@ -110,6 +110,7 @@ model DbAppForCatalog {
   screenshotIds String[]          @default([]) // Ordered array of DbAsset IDs
   /// [AppDeprecation] - Deprecation info with optional replacement slug
   deprecated    Json?
+  aiPrompt      String?
   sourceRefs    SourceReference[]
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt

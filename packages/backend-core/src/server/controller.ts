@@ -20,6 +20,7 @@ const updateAppInputSchema = z.object({
       appUrl: z.string().optional(),
       description: z.string().optional(),
       sources: z.array(z.string()).optional(),
+      aiPrompt: z.string().nullable().optional(),
     })
     .refine((d) => Object.keys(d).length > 0, {
       message: 'At least one field required',
