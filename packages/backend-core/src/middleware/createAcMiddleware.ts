@@ -29,7 +29,9 @@ export async function createAcMiddleware(
   const auth = createAuth(options.auth.betterAuthOptions)
 
   // Create tRPC router
-  const trpcRouter = createTrpcRouter(auth)
+  const trpcRouter = createTrpcRouter(auth, {
+    devLoginEnabled: !!options.auth.devMockUser,
+  })
 
   // Normalize backend provider to async factory function
   const resolveBackend = createBackendResolver(options.backend)
@@ -43,12 +45,13 @@ export async function createAcMiddleware(
     let user = null
     let isAdmin = false
 
-    // Check if dev mock user is configured
-    if (options.auth.devMockUser) {
+    // Check for dev mock session cookie (set by POST /api/auth/dev-login)
+    const devCookie = req.headers.cookie?.includes('ac-dev-session=1')
+    if (options.auth.devMockUser && devCookie) {
       user = createMockUserFromDevConfig(options.auth.devMockUser)
       isAdmin = true // dev mock always admin
     } else {
-      // Extract user from session
+      // Extract user from real session
       try {
         const session = await auth.api.getSession({
           headers: req.headers as HeadersInit,

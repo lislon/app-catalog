@@ -10,6 +10,17 @@ import { registerAssetRestController } from '../modules/assets/assetRestControll
 import { registerScreenshotRestController } from '../modules/assets/screenshotRestController'
 import { createMockSessionResponse } from '../modules/auth/devMockUserUtils'
 
+/** Parse a single cookie value from the Cookie header */
+function getCookie(
+  req: { headers: { cookie?: string } },
+  name: string,
+): string | undefined {
+  const cookies = req.headers.cookie ?? ''
+  if (!cookies) return undefined
+  const match = cookies.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`))
+  return match?.[1] !== undefined ? decodeURIComponent(match[1]) : undefined
+}
+
 interface FeatureRegistration {
   name: keyof AcFeatureToggles
   defaultEnabled: boolean
@@ -29,13 +40,19 @@ const FEATURES: FeatureRegistration[] = [
     register: (router, options, ctx) => {
       const basePath = options.basePath
 
+      // Dev mock cookie name — used by dev-login and session endpoints
+      const DEV_SESSION_COOKIE = 'ac-dev-session'
+
       // Explicit session endpoint handler
       router.get(
         `${basePath}/auth/session`,
         async (req, res): Promise<void> => {
           try {
-            // Check if dev mock user is configured
-            if (options.auth.devMockUser) {
+            // Check for dev mock session cookie (set by dev-login endpoint)
+            if (
+              options.auth.devMockUser &&
+              getCookie(req, DEV_SESSION_COOKIE) === '1'
+            ) {
               res.json(createMockSessionResponse(options.auth.devMockUser))
               return
             }
@@ -65,6 +82,27 @@ const FEATURES: FeatureRegistration[] = [
           }
         },
       )
+
+      // Dev login/logout endpoints (only when devMockUser is configured)
+      if (options.auth.devMockUser) {
+        const devMockUser = options.auth.devMockUser
+
+        router.post(`${basePath}/auth/dev-login`, (_req, res) => {
+          const mockSession = createMockSessionResponse(devMockUser)
+          res.cookie(DEV_SESSION_COOKIE, '1', {
+            httpOnly: true,
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+          })
+          res.json(mockSession)
+        })
+
+        router.post(`${basePath}/auth/dev-logout`, (_req, res) => {
+          res.clearCookie(DEV_SESSION_COOKIE, { path: '/' })
+          res.json({ ok: true })
+        })
+      }
 
       // Use toNodeHandler to adapt better-auth for Express/Node.js
       const authHandler = toNodeHandler(ctx.auth)

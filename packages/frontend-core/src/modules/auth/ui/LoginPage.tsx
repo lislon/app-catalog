@@ -4,6 +4,7 @@ import { useTRPC } from '~/api/infra/trpc'
 import { Button } from '~/ui/button'
 import { authClient } from '../authClient'
 import { useAuthModal } from '../AuthModalContext'
+import { useAuthActions } from '../useAuthActions'
 
 interface LoginPageProps {
   onSuccess?: () => void
@@ -12,6 +13,7 @@ interface LoginPageProps {
 export function LoginPage({ onSuccess }: LoginPageProps) {
   const [error, setError] = useState<string | null>(null)
   const { redirectUrl } = useAuthModal()
+  const { devLogin } = useAuthActions()
 
   const trpc = useTRPC()
   const { data: providersData } = useQuery(
@@ -55,6 +57,20 @@ export function LoginPage({ onSuccess }: LoginPageProps) {
               Sign in with {provider}
             </Button>
           ))}
+        </div>
+      )}
+      {providersData?.devLoginEnabled && (
+        <div className="pt-2 border-t">
+          <Button
+            variant="outline"
+            onClick={async () => {
+              onSuccess?.()
+              await devLogin()
+            }}
+            className="w-full border-amber-500/50 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
+          >
+            DEV Quick Login
+          </Button>
         </div>
       )}
     </div>

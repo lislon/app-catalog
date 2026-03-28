@@ -12,6 +12,7 @@ import type { BetterAuth } from './auth'
 export function createAuthRouter(
   t: TRPCRootObject<AcTrpcContext, {}, {}>,
   auth?: BetterAuth,
+  options?: { devLoginEnabled?: boolean },
 ) {
   const router = t.router
   const publicProcedure = t.procedure
@@ -67,7 +68,7 @@ export function createAuthRouter(
         })
       }
 
-      return { providers }
+      return { providers, devLoginEnabled: options?.devLoginEnabled ?? false }
     }),
   })
 }

@@ -30,7 +30,10 @@ const updateAppInputSchema = z.object({
  * Create the main tRPC router with optional auth instance
  * @param auth - Optional Better Auth instance for auth-related queries
  */
-export function createTrpcRouter(auth?: BetterAuth) {
+export function createTrpcRouter(
+  auth?: BetterAuth,
+  options?: { devLoginEnabled?: boolean },
+) {
   return router({
     appCatalog: router({
       getData: publicProcedure.query(
@@ -52,7 +55,7 @@ export function createTrpcRouter(auth?: BetterAuth) {
     }),
 
     // Auth routes (requires auth instance)
-    auth: createAuthRouter(t, auth),
+    auth: createAuthRouter(t, auth, options),
   })
 }
 

@@ -1,7 +1,9 @@
 import { Link } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
 import { LogOut } from 'lucide-react'
 import React, { use } from 'react'
 import AppCatalogLogo from '~/assets/app-catalog.svg?react'
+import { useTRPC } from '~/api/infra/trpc'
 import { ThemeSwitcher } from '~/components/ThemeSwitcher'
 import { AppCatalogContext } from '~/modules/appCatalog/context/AppCatalogContext'
 import {
@@ -29,9 +31,13 @@ export function Header({ middle }: HeaderProps) {
   const { isLoading } = useAuth()
   const isAuthenticated = useIsAuthenticated()
   const user = useUser()
-  const { logout } = useAuthActions()
+  const { logout, devLogin } = useAuthActions()
   const { open: openLoginModal } = useAuthModal()
   const appCatalogContextMaybe = use(AppCatalogContext)
+  const trpc = useTRPC()
+  const { data: providersData } = useQuery(
+    trpc.auth.getProviders.queryOptions(),
+  )
 
   const handleLogout = async () => {
     try {
@@ -99,13 +105,24 @@ export function Header({ middle }: HeaderProps) {
         {isLoading ? (
           <Skeleton className="w-8 h-8 rounded-full" />
         ) : !isAuthenticated ? (
-          <button
-            type="button"
-            onClick={handleLoginClick}
-            className="text-sm font-medium text-muted-foreground hover:text-foreground cursor-pointer"
-          >
-            Login
-          </button>
+          <div className="flex items-center gap-2">
+            {providersData?.devLoginEnabled && (
+              <button
+                type="button"
+                onClick={devLogin}
+                className="text-xs font-medium px-2 py-1 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30 border border-amber-500/30 cursor-pointer"
+              >
+                DEV Login
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleLoginClick}
+              className="text-sm font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              Login
+            </button>
+          </div>
         ) : user?.name ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

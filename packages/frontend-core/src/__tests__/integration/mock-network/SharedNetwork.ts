@@ -32,7 +32,46 @@ export const SharedNetwork = {
     return {
       scopeKey: ['auth-session'],
       handler: http.get(/\/api\/auth\/session/, () => {
-        return HttpResponse.json(service.getSessionResponse())
+        const session = service.getSessionResponse()
+        if (!session) {
+          return HttpResponse.json(
+            { error: 'Not authenticated' },
+            { status: 401 },
+          )
+        }
+        return HttpResponse.json(session)
+      }),
+    }
+  },
+
+  authGetProviders(overrides?: {
+    devLoginEnabled?: boolean
+  }): NetworkInterceptor {
+    return {
+      scopeKey: ['auth-providers'],
+      handler: trpcMsw.auth.getProviders.query(() => {
+        return {
+          providers: [] as string[],
+          devLoginEnabled: overrides?.devLoginEnabled ?? false,
+        }
+      }),
+    }
+  },
+
+  authSignOut(): NetworkInterceptor {
+    return {
+      scopeKey: ['auth-sign-out'],
+      handler: http.post(/\/api\/auth\/sign-out/, () => {
+        return HttpResponse.json({ ok: true })
+      }),
+    }
+  },
+
+  authDevLogout(): NetworkInterceptor {
+    return {
+      scopeKey: ['auth-dev-logout'],
+      handler: http.post(/\/api\/auth\/dev-logout/, () => {
+        return HttpResponse.json({ ok: true })
       }),
     }
   },
