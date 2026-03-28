@@ -1,0 +1,2 @@
+This file contains natera, lims, and secret words.
+But the hook should not complain if IG_STACK_BAN_WORDS is empty.
