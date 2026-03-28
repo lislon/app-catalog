@@ -1,12 +1,20 @@
 import { frontendViteConfig } from '@igstack/app-catalog-frontend-build-vite'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath, URL } from 'node:url'
+import path from 'node:path'
 import type { PluginOption } from 'vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
+import { loadEnv } from 'vite'
 import { defineConfig } from 'vitest/config'
 import packageJson from './package.json'
 
-const config = defineConfig(() => {
+const config = defineConfig(({ mode }) => {
+  const backendEnvPath = path.resolve(import.meta.dirname, '../backend-example')
+  const env = { ...process.env, ...loadEnv(mode, backendEnvPath), ...loadEnv(mode, import.meta.dirname) }
+
+  const frontendPort = Number.parseInt(env.DEV_FRONTEND_PORT || '9500', 10)
+  const backendPort = Number.parseInt(env.PORT || '4500', 10)
+
   const cfg = frontendViteConfig({
     appRoot: import.meta.dirname,
     pwa: {},
@@ -19,10 +27,11 @@ const config = defineConfig(() => {
 
     server: {
       ...cfg.server,
-      port: 4000,
+      port: frontendPort,
+      strictPort: true,
       proxy: {
         '/api': {
-          target: 'http://localhost:4001',
+          target: `http://localhost:${backendPort}`,
           changeOrigin: true,
         },
       },
