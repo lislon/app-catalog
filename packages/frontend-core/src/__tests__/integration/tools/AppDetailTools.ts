@@ -5,7 +5,7 @@ export interface AppVisibleData {
   title: string
   description: string | null
   url: string | null
-  tags: Array<string>
+  tags: string[]
   screenshots: { count: number }
   deprecation: { type: string; comment: string } | null
 }
@@ -35,7 +35,7 @@ export class AppDetailTools {
 
     // Tags
     const tagsHeading = this.findHeading(panel, 'Tags')
-    const tags: Array<string> = []
+    const tags: string[] = []
     if (tagsHeading) {
       const container = tagsHeading.nextElementSibling
       if (container) {

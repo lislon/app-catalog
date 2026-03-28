@@ -9,7 +9,7 @@
  * @param items - Array of strings to sort
  * @returns Sorted array (new array, does not mutate original)
  */
-export function naturalSort(items: Array<string>): Array<string> {
+export function naturalSort(items: string[]): string[] {
   const collator = new Intl.Collator(undefined, {
     numeric: true,
     sensitivity: 'base',

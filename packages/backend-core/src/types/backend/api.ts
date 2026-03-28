@@ -10,40 +10,40 @@ import type {
 import type { AcBackendDataSourceInput } from './dataSources'
 
 export interface AcBackendVersionsRequestParams {
-  envNames: Array<string>
-  appNames: Array<string>
+  envNames: string[]
+  appNames: string[]
 }
 
 export interface AcBackendVersionsReturn {
-  envIds: Array<string>
-  appIds: Array<string>
+  envIds: string[]
+  appIds: string[]
 }
 
 export interface AcBackendPageInput extends AcAppPageIndexed {
   slug: string
   title?: string
   url: string
-  credentialsRefs?: Array<string>
+  credentialsRefs?: string[]
 }
 
 export interface AcBackendAppUIBaseInput {
-  credentials?: Array<AcBackendCredentialInput>
+  credentials?: AcBackendCredentialInput[]
   defaults?: AcBackendUiDefaultsInput
 }
 
 export interface AcBackendAppUIInput
   extends AcBackendAppUIBaseInput, AcAppUiIndexed {
-  pages: Array<AcBackendPageInput>
+  pages: AcBackendPageInput[]
 }
 
 export interface AcBackendTagsDescriptionDataIndexed {
-  descriptions: Array<AcBackendTagDescriptionDataIndexed>
+  descriptions: AcBackendTagDescriptionDataIndexed[]
 }
 
 export interface AcBackendTagDescriptionDataIndexed {
   tagKey: string
   displayName?: string
-  fixedTagValues?: Array<AcBackendTagFixedTagValue>
+  fixedTagValues?: AcBackendTagFixedTagValue[]
 }
 
 export interface AcBackendTagFixedTagValue {
@@ -53,7 +53,7 @@ export interface AcBackendTagFixedTagValue {
 
 export interface AcBackendAppInput extends AcAppIndexed {
   ui?: AcBackendAppUIInput
-  dataSources?: Array<AcBackendDataSourceInput>
+  dataSources?: AcBackendDataSourceInput[]
 }
 
 export interface AcContextIndexed {
@@ -63,7 +63,7 @@ export interface AcContextIndexed {
    * The value is shared across envs (By default: false)
    */
   isSharedAcrossEnvs?: boolean
-  defaultFixedValues?: Array<string>
+  defaultFixedValues?: string[]
 }
 export type AcBackendAppDto = AcAppIndexed
 

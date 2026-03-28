@@ -33,9 +33,9 @@ export interface SearchResult {
  * @returns Filtered and sorted array of apps with search results
  */
 export function searchApps(
-  apps: Array<AppForCatalog>,
+  apps: AppForCatalog[],
   searchQuery: string,
-): Array<AppForCatalog> {
+): AppForCatalog[] {
   const normalizedQuery = searchQuery.trim().toLowerCase()
 
   if (normalizedQuery === '') {
@@ -170,7 +170,7 @@ export function searchApps(
 export function highlightText(
   text: string,
   query: string,
-): Array<{ text: string; highlight: boolean }> {
+): { text: string; highlight: boolean }[] {
   if (!query.trim()) {
     return [{ text, highlight: false }]
   }
@@ -183,7 +183,7 @@ export function highlightText(
     return [{ text, highlight: false }]
   }
 
-  const segments: Array<{ text: string; highlight: boolean }> = []
+  const segments: { text: string; highlight: boolean }[] = []
 
   // Text before match
   if (index > 0) {

@@ -16,10 +16,10 @@ export async function runLighthouseKeeperDemo(
 
   const systemPrompt = config.systemPrompt ?? APP_CATALOG_AI_SYSTEM_PROMPT
 
-  const mcpClients: Array<{
+  const mcpClients: {
     client: { close: () => Promise<void> }
     name: string
-  }> = []
+  }[] = []
 
   try {
     const allTools: Record<string, Tool> = {

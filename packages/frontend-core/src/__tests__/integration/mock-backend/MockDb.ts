@@ -6,15 +6,15 @@ import type {
 } from '@igstack/app-catalog-backend-core'
 
 export class MockDb {
-  apps: Array<AppForCatalog> = []
-  tagsDefinitions: Array<GroupingTagDefinition> = []
-  approvalMethods: Array<AppApprovalMethod> = []
+  apps: AppForCatalog[] = []
+  tagsDefinitions: GroupingTagDefinition[] = []
+  approvalMethods: AppApprovalMethod[] = []
 
   upsertApp(app: AppForCatalog): void {
     this.apps = [...this.apps.filter((a) => a.id !== app.id), app]
   }
 
-  getApps(): Array<AppForCatalog> {
+  getApps(): AppForCatalog[] {
     return this.apps
   }
 
@@ -28,11 +28,11 @@ export class MockDb {
     return app
   }
 
-  setTagDefinitions(defs: Array<GroupingTagDefinition>): void {
+  setTagDefinitions(defs: GroupingTagDefinition[]): void {
     this.tagsDefinitions = defs
   }
 
-  setApprovalMethods(methods: Array<AppApprovalMethod>): void {
+  setApprovalMethods(methods: AppApprovalMethod[]): void {
     this.approvalMethods = methods
   }
 

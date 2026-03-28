@@ -19,8 +19,8 @@ export type NullToUndefined<T> = T extends null
   ? undefined
   : T extends Primitive | Function | Date | RegExp
     ? T
-    : T extends Array<infer U>
-      ? Array<NullToUndefined<U>>
+    : T extends (infer U)[]
+      ? NullToUndefined<U>[]
       : T extends Map<infer K, infer V>
         ? Map<K, NullToUndefined<V>>
         : T extends Set<infer U>
@@ -33,8 +33,8 @@ export type UndefinedToNull<T> = T extends undefined
   ? null
   : T extends Primitive | Function | Date | RegExp
     ? T
-    : T extends Array<infer U>
-      ? Array<UndefinedToNull<U>>
+    : T extends (infer U)[]
+      ? UndefinedToNull<U>[]
       : T extends Map<infer K, infer V>
         ? Map<K, UndefinedToNull<V>>
         : T extends Set<infer U>

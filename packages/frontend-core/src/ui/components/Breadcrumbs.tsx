@@ -33,7 +33,7 @@ export function Breadcrumbs() {
   const matches = useMatches()
 
   // Build breadcrumb trail from route matches
-  const breadcrumbs: Array<{ title: string; href?: string }> = []
+  const breadcrumbs: { title: string; href?: string }[] = []
 
   // Always add home
   breadcrumbs.push({ title: 'Home', href: '/' })

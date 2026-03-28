@@ -14,7 +14,7 @@ export interface GalleryImage {
 }
 
 export interface GalleryProps {
-  images: Array<GalleryImage>
+  images: GalleryImage[]
   initialIndex?: number
   onIndexChange?: (index: number) => void
   onFullscreenChange?: (isFullscreen: boolean) => void

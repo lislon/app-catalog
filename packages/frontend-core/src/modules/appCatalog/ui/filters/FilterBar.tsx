@@ -21,7 +21,7 @@ interface FilterBarProps {
   /** Number of deprecated apps (total) */
   deprecatedCount: number
   /** All apps for counting filter options */
-  apps: Array<AppForCatalog>
+  apps: AppForCatalog[]
 }
 
 /**

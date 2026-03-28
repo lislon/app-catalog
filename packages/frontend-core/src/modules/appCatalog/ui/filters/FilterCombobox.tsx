@@ -19,7 +19,7 @@ interface FilterComboboxProps {
   /** Display label for the filter */
   label: string
   /** Available options */
-  options: Array<TagOption>
+  options: TagOption[]
   /** Currently selected value */
   value: string | undefined
   /** Counts for each option value */

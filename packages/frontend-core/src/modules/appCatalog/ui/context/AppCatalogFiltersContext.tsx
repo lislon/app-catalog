@@ -26,7 +26,7 @@ export interface TagOption {
  */
 export interface FilterData {
   /** Available tag options grouped by prefix */
-  availableTagsByPrefix: Record<string, Array<TagOption>>
+  availableTagsByPrefix: Record<string, TagOption[]>
   /** Whether any filters are currently active */
   hasActiveFilters: boolean
 }
@@ -36,7 +36,7 @@ export interface FilterData {
  */
 export interface AppCatalogFiltersState {
   /** Tag prefixes that can be filtered (from uiSettings) */
-  filterableTagPrefixes: Array<string>
+  filterableTagPrefixes: string[]
   /** Whether "My Recent" mode is active */
   recentMode: boolean
   /** Active tag filters (prefix -> value) */
@@ -76,7 +76,7 @@ const AppCatalogFiltersContext = createContext<
 interface AppCatalogFiltersProviderProps {
   children: ReactNode
   /** Tag prefixes that can be filtered (from uiSettings) */
-  filterableTagPrefixes: Array<string>
+  filterableTagPrefixes: string[]
 }
 
 export function AppCatalogFiltersProvider({
@@ -112,7 +112,7 @@ export function AppCatalogFiltersProvider({
 
   // Compute available tags by prefix
   const availableTagsByPrefix = useMemo(() => {
-    const result: Record<string, Array<TagOption>> = {}
+    const result: Record<string, TagOption[]> = {}
 
     filterableTagPrefixes.forEach((prefix) => {
       const definition = tagsDefinitions.find((def) => def.prefix === prefix)

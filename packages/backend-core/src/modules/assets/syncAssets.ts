@@ -152,10 +152,7 @@ async function syncScreenshotsFromDirectory(
     const files = readdirSync(screenshotsDir)
 
     // Group screenshots by app ID
-    const screenshotsByApp = new Map<
-      string,
-      Array<{ path: string; ext: string }>
-    >()
+    const screenshotsByApp = new Map<string, { path: string; ext: string }[]>()
 
     for (const file of files) {
       // Parse filename: <app-id>_screenshot_<no>.<ext>

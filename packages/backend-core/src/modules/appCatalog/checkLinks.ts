@@ -94,7 +94,7 @@ function formatStatus(status: number | null, error?: string): string {
   return `${status}`
 }
 
-async function getAppsFromDb(): Promise<Array<AppForCatalog>> {
+async function getAppsFromDb(): Promise<AppForCatalog[]> {
   const prisma = getDbClient()
   const rows = await prisma.dbAppForCatalog.findMany({
     include: {
@@ -105,7 +105,7 @@ async function getAppsFromDb(): Promise<Array<AppForCatalog>> {
   return rows.map((row) => {
     const accessRequest =
       row.accessRequest as unknown as AppForCatalog['accessRequest']
-    const teams = (row.teams as unknown as Array<string> | null) ?? []
+    const teams = (row.teams as unknown as string[] | null) ?? []
     const tags = (row.tags as unknown as AppForCatalog['tags']) ?? []
     const screenshotIds =
       (row.screenshotIds as unknown as AppForCatalog['screenshotIds']) ?? []
@@ -148,7 +148,7 @@ export async function checkAllLinks(options: CheckLinksOptions = {}): Promise<{
   working: number
   broken: number
   redirects: number
-  checks: Array<LinkCheck>
+  checks: LinkCheck[]
 }> {
   const {
     maxConcurrent = 10,
@@ -158,7 +158,7 @@ export async function checkAllLinks(options: CheckLinksOptions = {}): Promise<{
   } = options
 
   const apps = await getAppsFromDb()
-  const checks: Array<Omit<LinkCheck, 'status' | 'error'>> = []
+  const checks: Omit<LinkCheck, 'status' | 'error'>[] = []
 
   // Collect all links
   for (const app of apps) {
@@ -196,7 +196,7 @@ export async function checkAllLinks(options: CheckLinksOptions = {}): Promise<{
   }
 
   // Check all links with concurrency control
-  const results: Array<LinkCheck> = []
+  const results: LinkCheck[] = []
   const queue = [...checks]
   const inProgress = new Set<Promise<void>>()
 
@@ -261,7 +261,7 @@ export function printLinkCheckReport(report: {
   working: number
   broken: number
   redirects: number
-  checks: Array<LinkCheck>
+  checks: LinkCheck[]
 }): void {
   console.log('📊 Results:\n')
   console.log(`✅ Working links: ${report.working}`)

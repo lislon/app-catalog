@@ -31,7 +31,7 @@ export interface ServiceConfig {
  * Person/Team type config - for human approvers
  */
 export interface PersonTeamConfig {
-  reachOutContacts?: Array<ReachOutContact>
+  reachOutContacts?: ReachOutContact[]
 }
 
 /**
@@ -123,9 +123,9 @@ export interface AppAccessRequest {
   postApprovalInstructions?: string
 
   // Lists
-  roles?: Array<AppRole>
-  approvers?: Array<ApproverContact>
-  urls?: Array<ApprovalUrl>
+  roles?: AppRole[]
+  approvers?: ApproverContact[]
+  urls?: ApprovalUrl[]
 
   // Type-specific (Person/Team only)
   whoToReachOut?: string // markdown

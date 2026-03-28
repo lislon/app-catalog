@@ -1,9 +1,9 @@
 import type { ColumnDef } from '@tanstack/react-table'
 
 export interface EditableListFieldProps<T> {
-  value: Array<T>
-  onChange: (value: Array<T>) => void
-  columns: Array<ColumnDef<T>>
+  value: T[]
+  onChange: (value: T[]) => void
+  columns: ColumnDef<T>[]
   renderForm: (props: {
     item: T | null
     onSave: (item: T) => void

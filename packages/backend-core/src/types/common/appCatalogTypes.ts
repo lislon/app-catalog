@@ -31,15 +31,15 @@ export interface AppForCatalog {
   displayName: string
   alias?: string // Optional short display name
   description?: string
-  teams?: Array<string>
+  teams?: string[]
   accessRequest?: AppAccessRequest
   notes?: string
-  tags?: Array<string>
+  tags?: string[]
   appUrl?: string
-  links?: Array<{ url: string; title?: string }>
+  links?: { url: string; title?: string }[]
   iconName?: string // Optional icon identifier for display
-  screenshotIds?: Array<string>
-  sources?: Array<string> | Array<SourceReference> // String URLs from config OR enriched objects from database
+  screenshotIds?: string[]
+  sources?: string[] | SourceReference[] // String URLs from config OR enriched objects from database
   deprecated?: {
     /** Type of deprecation: 'deprecated' (fully deprecated) or 'discouraged' (use alternatives). Defaults to 'deprecated'. */
     type?: 'deprecated' | 'discouraged'
@@ -60,7 +60,7 @@ export interface GroupingTagDefinition {
   prefix: string
   displayName: string
   description: string
-  values: Array<GroupingTagValue>
+  values: GroupingTagValue[]
 }
 
 type DistributiveOmit<T, TKey extends keyof any> = T extends any
@@ -89,8 +89,8 @@ export interface AppVersionInfo {
 }
 
 export interface AppCatalogData {
-  apps: Array<AppForCatalog>
-  tagsDefinitions: Array<GroupingTagDefinition>
-  approvalMethods: Array<AppApprovalMethod>
+  apps: AppForCatalog[]
+  tagsDefinitions: GroupingTagDefinition[]
+  approvalMethods: AppApprovalMethod[]
   versions?: AppVersionInfo
 }

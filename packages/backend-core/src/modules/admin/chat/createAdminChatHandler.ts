@@ -31,7 +31,7 @@ interface TextPart {
 interface UIMessageInput {
   role: 'user' | 'assistant' | 'system'
   content?: string
-  parts?: Array<TextPart | { type: string }>
+  parts?: (TextPart | { type: string })[]
 }
 
 interface CoreMessage {
@@ -39,9 +39,7 @@ interface CoreMessage {
   content: string
 }
 
-function convertToCoreMessages(
-  messages: Array<UIMessageInput>,
-): Array<CoreMessage> {
+function convertToCoreMessages(messages: UIMessageInput[]): CoreMessage[] {
   return messages.map((msg) => {
     if (msg.content) {
       return { role: msg.role, content: msg.content }
@@ -90,7 +88,7 @@ export function createAdminChatHandler(options: AdminChatHandlerOptions) {
         validateConfig()
       }
 
-      const { messages } = req.body as { messages: Array<UIMessageInput> }
+      const { messages } = req.body as { messages: UIMessageInput[] }
       const coreMessages = convertToCoreMessages(messages)
 
       console.log(

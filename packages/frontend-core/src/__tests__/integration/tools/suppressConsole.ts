@@ -1,7 +1,7 @@
 import { afterEach } from 'vitest'
 
-const globalPatterns: Array<RegExp> = []
-let testPatterns: Array<RegExp> = []
+const globalPatterns: RegExp[] = []
+let testPatterns: RegExp[] = []
 
 const originals = {
   log: console.log.bind(console),
@@ -10,7 +10,7 @@ const originals = {
   debug: console.debug.bind(console),
 }
 
-function isSuppressed(args: Array<unknown>): boolean {
+function isSuppressed(args: unknown[]): boolean {
   const all = [...globalPatterns, ...testPatterns]
   if (all.length === 0) return false
   const text = args.map(String).join(' ')
@@ -25,7 +25,7 @@ function installOnce() {
 
   for (const method of ['log', 'warn', 'error', 'debug'] as const) {
     const original = originals[method]
-    console[method] = (...args: Array<unknown>) => {
+    console[method] = (...args: unknown[]) => {
       if (!isSuppressed(args)) original(...args)
     }
   }
@@ -44,7 +44,7 @@ function installOnce() {
  *   suppressConsole(/Failed to fetch/)
  *   suppressConsole([/Failed to fetch/, /error boundary/])
  */
-export function suppressConsole(patterns: RegExp | Array<RegExp>): void {
+export function suppressConsole(patterns: RegExp | RegExp[]): void {
   installOnce()
   const arr = Array.isArray(patterns) ? patterns : [patterns]
   testPatterns.push(...arr)
@@ -59,7 +59,7 @@ export function suppressConsole(patterns: RegExp | Array<RegExp>): void {
  *   suppressConsoleGlobal(/Background sync failed/)
  *   suppressConsoleGlobal([/Background sync/, /some other noise/])
  */
-export function suppressConsoleGlobal(patterns: RegExp | Array<RegExp>): void {
+export function suppressConsoleGlobal(patterns: RegExp | RegExp[]): void {
   installOnce()
   const arr = Array.isArray(patterns) ? patterns : [patterns]
   globalPatterns.push(...arr)

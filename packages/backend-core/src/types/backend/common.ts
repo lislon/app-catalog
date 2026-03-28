@@ -1,5 +1,5 @@
 export interface AcBackendUiDefaultsInput {
-  credentialsRefs: Array<string>
+  credentialsRefs: string[]
 }
 
 export interface AcBackendCredentialInput {

@@ -16,8 +16,8 @@ export interface AcBackendDataSourceInputKafka {
   slug?: string
   type: 'kafka'
   topics: {
-    consumer?: Array<string>
-    producer?: Array<string>
+    consumer?: string[]
+    producer?: string[]
   }
 }
 

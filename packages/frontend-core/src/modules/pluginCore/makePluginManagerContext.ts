@@ -5,7 +5,7 @@ export interface PluginInterfaceForCore {
 }
 
 export function makePluginInterfaceForCore(
-  _plugins: Array<AcPlugin>,
+  _plugins: AcPlugin[],
 ): PluginInterfaceForCore {
   return {
     // Future plugin interface methods can be added here

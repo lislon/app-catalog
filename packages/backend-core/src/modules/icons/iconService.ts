@@ -46,8 +46,8 @@ export async function upsertIcon(input: UpsertIconInput) {
  * Upsert multiple icons to the database.
  * This is more efficient than calling upsertIcon multiple times.
  */
-export async function upsertIcons(icons: Array<UpsertIconInput>) {
-  const results: Array<Awaited<ReturnType<typeof upsertIcon>>> = []
+export async function upsertIcons(icons: UpsertIconInput[]) {
+  const results: Awaited<ReturnType<typeof upsertIcon>>[] = []
   for (const icon of icons) {
     const result = await upsertIcon(icon)
     results.push(result)

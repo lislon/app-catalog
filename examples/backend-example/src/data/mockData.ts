@@ -8,7 +8,7 @@ import type {
 // TAG DEFINITIONS
 // ============================================================================
 
-export const mockTagDefinitions: Array<GroupingTagDefinition> = [
+export const mockTagDefinitions: GroupingTagDefinition[] = [
   {
     prefix: 'category',
     displayName: 'Category',
@@ -104,7 +104,7 @@ export const mockTagDefinitions: Array<GroupingTagDefinition> = [
 // APPROVAL METHODS
 // ============================================================================
 
-export const mockApprovalMethods: Array<ApprovalMethod> = [
+export const mockApprovalMethods: ApprovalMethod[] = [
   {
     slug: 'it-helpdesk',
     type: 'service',
@@ -158,7 +158,7 @@ export const mockApprovalMethods: Array<ApprovalMethod> = [
 // APPLICATION CATALOG
 // ============================================================================
 
-export const mockAppCatalog: Array<AppForCatalog> = [
+export const mockAppCatalog: AppForCatalog[] = [
   // COMMUNICATION & COLLABORATION
   {
     id: 'slack',

@@ -41,7 +41,7 @@ export function AppCatalogPage() {
   const deferredSearchValue = useDeferredValue(searchValue)
 
   // State for top apps (loaded async)
-  const [topAppSlugs, setTopAppSlugs] = useState<Array<string>>([])
+  const [topAppSlugs, setTopAppSlugs] = useState<string[]>([])
 
   // Load top apps on mount to calculate recent count
   useEffect(() => {

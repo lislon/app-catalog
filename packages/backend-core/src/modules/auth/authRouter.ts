@@ -26,7 +26,7 @@ export function createAuthRouter(
     }),
     getProviders: publicProcedure.query(() => {
       // Return configured social providers and OAuth providers from plugins
-      const providers: Array<string> = []
+      const providers: string[] = []
       const authOptions = auth?.options
 
       // Add built-in social providers (github, google, etc.)
@@ -48,7 +48,7 @@ export function createAuthRouter(
         plugins.forEach((plugin: BetterAuthPlugin) => {
           const pluginWithConfig = plugin as BetterAuthPlugin & {
             options?: {
-              config?: Array<{ providerId?: string }>
+              config?: { providerId?: string }[]
             }
           }
           if (

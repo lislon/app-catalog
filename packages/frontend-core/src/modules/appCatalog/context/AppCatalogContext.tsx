@@ -19,10 +19,10 @@ export interface AppVersionInfo {
 }
 
 export interface AppCatalogContextIface {
-  apps: Array<AppForCatalog>
+  apps: AppForCatalog[]
   isLoadingApps: boolean
-  tagsDefinitions: Array<GroupingTagDefinition>
-  approvalMethods: Array<AppApprovalMethod>
+  tagsDefinitions: GroupingTagDefinition[]
+  approvalMethods: AppApprovalMethod[]
   versions?: AppVersionInfo
 }
 

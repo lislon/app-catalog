@@ -44,7 +44,7 @@ export class CatalogTools {
    * Parse the catalog table into structured data.
    * Skips group header rows (colspan rows).
    */
-  getTableData(): Array<TableRow> {
+  getTableData(): TableRow[] {
     const table = screen.queryByRole('table')
     if (!table) {
       // Check if there's a global error — throw with details for debugging
@@ -61,7 +61,7 @@ export class CatalogTools {
     }
 
     const rows = within(table).getAllByRole('row')
-    const result: Array<TableRow> = []
+    const result: TableRow[] = []
 
     for (const row of rows) {
       const cells = within(row).queryAllByRole('cell')

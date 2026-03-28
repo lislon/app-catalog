@@ -19,7 +19,7 @@ export function appPropsFactory(): AppProps {
 
   const db = new AcDb()
   const queryClient = createQueryClient({ trpcClient, db })
-  const plugins: Array<AcPlugin> = [
+  const plugins: AcPlugin[] = [
     // Future plugins can be added here
   ]
   const router = createAcRouter({

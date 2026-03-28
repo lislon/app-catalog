@@ -27,7 +27,7 @@ const COPY_FEEDBACK_DURATION = 2000
 
 interface AccessRequestSectionProps {
   app: AppForCatalog
-  approvalMethods: Array<AppApprovalMethod>
+  approvalMethods: AppApprovalMethod[]
 }
 
 // Component for rendering markdown links with security attributes

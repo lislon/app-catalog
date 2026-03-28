@@ -39,7 +39,7 @@ import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation'
 import { highlightText } from '../../utils/searchApps'
 
 export interface AppCatalogGridProps {
-  apps: Array<AppForCatalog>
+  apps: AppForCatalog[]
   selectedAppSlug?: string
   groupingDefinition?: GroupingTagDefinition
   onAppClick?: (app: AppForCatalog) => void
@@ -187,7 +187,7 @@ function AppDetails({
   const user = useUser()
   const isAdmin = user?.isAdmin ?? false
 
-  const sourceUrls: Array<string> =
+  const sourceUrls: string[] =
     app.sources?.map((s) => (typeof s === 'string' ? s : s.url)) ?? []
   const displaySources =
     draftSource !== null ? [...sourceUrls, draftSource] : sourceUrls
@@ -592,14 +592,14 @@ function AppDetails({
 
 interface GroupedApps {
   groupName: string
-  apps: Array<AppForCatalog>
+  apps: AppForCatalog[]
 }
 
 function groupApps(
-  apps: Array<AppForCatalog>,
+  apps: AppForCatalog[],
   groupingDef?: GroupingTagDefinition,
   hasSearch?: boolean,
-): Array<GroupedApps> {
+): GroupedApps[] {
   // When search is active, skip grouping and preserve relevance order
   if (hasSearch) {
     return [{ groupName: 'All Apps', apps: [...apps] }]
@@ -613,8 +613,8 @@ function groupApps(
     return [{ groupName: 'All Apps', apps: sortedApps }]
   }
 
-  const grouped = new Map<string, Array<AppForCatalog>>()
-  const ungrouped: Array<AppForCatalog> = []
+  const grouped = new Map<string, AppForCatalog[]>()
+  const ungrouped: AppForCatalog[] = []
 
   for (const app of apps) {
     const matchingTag = app.tags?.find((tag) =>
@@ -639,7 +639,7 @@ function groupApps(
     }
   }
 
-  const result: Array<GroupedApps> = []
+  const result: GroupedApps[] = []
   for (const [groupName, appsInGroup] of grouped) {
     // Sort alphabetically within each group
     const sortedGroupApps = appsInGroup.sort((a, b) =>
@@ -692,7 +692,7 @@ export function AppCatalogGrid({
   })
 
   // Define columns
-  const columns = React.useMemo<Array<ColumnDef<AppForCatalog>>>(
+  const columns = React.useMemo<ColumnDef<AppForCatalog>[]>(
     () => [
       {
         id: 'application',

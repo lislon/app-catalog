@@ -2,7 +2,7 @@ import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
 import React from 'react'
 
 export interface UseKeyboardNavigationProps {
-  apps: Array<AppForCatalog>
+  apps: AppForCatalog[]
   selectedAppSlug?: string
   onAppClick?: (app: AppForCatalog) => void
 }

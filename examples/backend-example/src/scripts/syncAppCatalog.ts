@@ -20,7 +20,7 @@ import { config as loadEnv } from 'dotenv-defaults'
 loadEnv()
 
 // Sample app catalog data for fallback
-const sampleAppCatalog: Array<AppForCatalog> = [
+const sampleAppCatalog: AppForCatalog[] = [
   {
     id: 'car-shop-sales',
     slug: 'car-shop-sales',
@@ -90,7 +90,7 @@ const sampleAppCatalog: Array<AppForCatalog> = [
   },
 ]
 
-async function loadAppCatalog(): Promise<Array<AppForCatalog>> {
+async function loadAppCatalog(): Promise<AppForCatalog[]> {
   try {
     const { appCatalog } = await import('../local/appCatalog.js')
     console.log('Loaded app catalog from local/appCatalog.ts')

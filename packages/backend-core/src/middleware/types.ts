@@ -82,7 +82,7 @@ export interface AcLighthouseKeeperConfig {
   /** AI model instance from @ai-sdk/* packages */
   model: LanguageModel
   /** MCP servers to make available as tools */
-  mcpServers: Array<AcMcpServerConfig>
+  mcpServers: AcMcpServerConfig[]
   /** System prompt for the lighthouse keeper AI (optional; deployment can provide its own) */
   systemPrompt?: string
 }
@@ -170,7 +170,7 @@ export interface AcMiddlewareOptions {
    * @example
    * customScripts: ['/assets-static/analytics/analytics.js']
    */
-  customScripts?: Array<string>
+  customScripts?: string[]
 }
 
 /**
