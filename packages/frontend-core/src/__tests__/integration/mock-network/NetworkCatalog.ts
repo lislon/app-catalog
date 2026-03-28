@@ -1,18 +1,18 @@
 import type { RequestHandler } from 'msw'
 
 export interface NetworkInterceptor {
-  scopeKey: Array<string>
+  scopeKey: string[]
   handler: RequestHandler
 }
 
 export class NetworkCatalog {
-  private interceptors: Array<NetworkInterceptor> = []
+  private interceptors: NetworkInterceptor[] = []
 
   add(interceptor: NetworkInterceptor): void {
     this.interceptors.push(interceptor)
   }
 
-  replace(scopeKey: Array<string>, handler: RequestHandler): void {
+  replace(scopeKey: string[], handler: RequestHandler): void {
     // Remove existing interceptor with matching key, add new one
     this.interceptors = this.interceptors.filter(
       (i) => !this.keysMatch(i.scopeKey, scopeKey),
@@ -20,11 +20,11 @@ export class NetworkCatalog {
     this.interceptors.push({ scopeKey, handler })
   }
 
-  getHandlers(): Array<RequestHandler> {
+  getHandlers(): RequestHandler[] {
     return this.interceptors.map((i) => i.handler)
   }
 
-  private keysMatch(existing: Array<string>, search: Array<string>): boolean {
+  private keysMatch(existing: string[], search: string[]): boolean {
     return search.every((k) => existing.includes(k))
   }
 }

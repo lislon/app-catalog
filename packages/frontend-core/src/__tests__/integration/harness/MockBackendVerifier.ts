@@ -4,7 +4,7 @@ import type { MockDb } from '../mock-backend/MockDb'
 export class MockBackendVerifier {
   constructor(readonly db: MockDb) {}
 
-  apps(): Array<AppForCatalog> {
+  apps(): AppForCatalog[] {
     return this.db.getApps()
   }
 

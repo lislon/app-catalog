@@ -4,8 +4,8 @@ import type { ObjectKeys, ScalarKeys } from './tableSyncPrismaAdapter'
 interface CommonSyncTableInfo<TPrismaModelName extends Prisma.ModelName> {
   prismaModelName: TPrismaModelName
   id?: ScalarKeys<TPrismaModelName>
-  uniqColumns: Array<ScalarKeys<TPrismaModelName>>
-  relationColumns?: Array<ObjectKeys<TPrismaModelName>>
+  uniqColumns: ScalarKeys<TPrismaModelName>[]
+  relationColumns?: ObjectKeys<TPrismaModelName>[]
 }
 
 type TableSyncMagazineType = Partial<{

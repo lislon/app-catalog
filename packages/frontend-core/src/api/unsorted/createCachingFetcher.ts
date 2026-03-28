@@ -43,7 +43,7 @@ export interface CachingFetcherParams<T> {
   cacheKey: string
   networkFetchFn: (ctx: QueryFunctionContext) => Promise<T>
   getDbTable: (ctx: QueryFunctionContext) => Table<T>
-  queryKey: ReadonlyArray<unknown>
+  queryKey: readonly unknown[]
 }
 
 /**
@@ -127,7 +127,7 @@ async function syncFromNetwork<T>(
     getDbTable: (ctx: QueryFunctionContext) => Table<T>
     cacheKey: string
     queryClient: QueryClient
-    queryKey: ReadonlyArray<unknown>
+    queryKey: readonly unknown[]
   },
   ctx: QueryFunctionContext,
 ): Promise<T> {

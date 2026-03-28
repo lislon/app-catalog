@@ -22,8 +22,8 @@ export type GetOperationFns<TModel extends Prisma.ModelName> = {
 export interface TableSyncParamsPrisma<
   TPrismaClient extends PrismaClient,
   TPrismaModelName extends Prisma.ModelName,
-  TUniqColumns extends ReadonlyArray<ScalarKeys<TPrismaModelName>>,
-  TRelationColumns extends ReadonlyArray<ObjectKeys<TPrismaModelName>>,
+  TUniqColumns extends readonly ScalarKeys<TPrismaModelName>[],
+  TRelationColumns extends readonly ObjectKeys<TPrismaModelName>[],
 > {
   id?: ScalarKeys<TPrismaModelName>
   prisma: TPrismaClient
@@ -51,8 +51,8 @@ export type MakeTFromPrismaModel<TPrismaModelName extends Prisma.ModelName> =
 export function tableSyncPrisma<
   TPrismaClient extends PrismaClient,
   TPrismaModelName extends Prisma.ModelName,
-  TUniqColumns extends ReadonlyArray<ScalarKeys<TPrismaModelName>>,
-  TRelationColumns extends ReadonlyArray<ObjectKeys<TPrismaModelName>>,
+  TUniqColumns extends readonly ScalarKeys<TPrismaModelName>[],
+  TRelationColumns extends readonly ObjectKeys<TPrismaModelName>[],
   TId extends ScalarKeys<TPrismaModelName> = ScalarKeys<TPrismaModelName>,
 >(
   params: TableSyncParamsPrisma<
@@ -82,14 +82,14 @@ export function tableSyncPrisma<
             where: whereGlobal,
           }
         : {}
-      return (await prismOperations.findMany(findManyArgs)) as Array<
-        MakeTFromPrismaModel<TPrismaModelName>
-      >
+      return (await prismOperations.findMany(
+        findManyArgs,
+      )) as MakeTFromPrismaModel<TPrismaModelName>[]
     },
     writeAll: async (createData, update, deleteIds) => {
       const prismaUniqKey = params.uniqColumns.join('_')
       const relationColumnList =
-        params.relationColumns ?? ([] as Array<ObjectKeys<TPrismaModelName>>)
+        params.relationColumns ?? ([] as ObjectKeys<TPrismaModelName>[])
 
       return prisma.$transaction(async (tx) => {
         const txOps = getPrismaModelOperations(tx, prismaModelName)
@@ -147,7 +147,7 @@ export function tableSyncPrisma<
         // Check for duplicates in the data to be created
         if (createDataMapped.length > 0) {
           const uniqKeysInCreate = new Set<string>()
-          const duplicateKeys: Array<string> = []
+          const duplicateKeys: string[] = []
 
           for (const data of createDataMapped) {
             const keyParts = params.uniqColumns.map((col) => {
@@ -176,7 +176,7 @@ export function tableSyncPrisma<
           }
         }
 
-        const results: Array<MakeTFromPrismaModel<TPrismaModelName>> = []
+        const results: MakeTFromPrismaModel<TPrismaModelName>[] = []
 
         if (relationColumnList.length === 0) {
           // @ts-expect-error This is too difficult for me to come up with right types

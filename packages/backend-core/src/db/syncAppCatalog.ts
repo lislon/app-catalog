@@ -21,7 +21,7 @@ export interface SyncAppCatalogResult {
 }
 
 interface AssetSyncResult {
-  screenshotIds: Array<string>
+  screenshotIds: string[]
   iconName: string | null
 }
 
@@ -38,11 +38,11 @@ async function processAssetDirectory(
   appSlug: string,
   assetType: 'screenshot' | 'icon',
   prisma: PrismaClient,
-): Promise<Array<string>> {
+): Promise<string[]> {
   try {
     const files = await readdir(dirPath)
     const sortedFiles = naturalSort(files)
-    const assetIds: Array<string> = []
+    const assetIds: string[] = []
 
     for (let i = 0; i < sortedFiles.length; i++) {
       const fileName = sortedFiles[i]
@@ -103,7 +103,7 @@ async function syncAppAssets(
 }
 
 async function syncAssetsFromFileSystem(
-  apps: Array<AppForCatalog>,
+  apps: AppForCatalog[],
   allAppsAssetsPath: string,
 ) {
   const appDirectories = await readdir(allAppsAssetsPath)
@@ -138,7 +138,7 @@ async function syncAssetsFromFileSystem(
       )
 
       const updateData: {
-        screenshotIds?: Array<string>
+        screenshotIds?: string[]
         iconName?: string | null
       } = {}
 
@@ -172,9 +172,9 @@ async function syncAssetsFromFileSystem(
  * Note: Call connectDb() before and disconnectDb() after if running in a script.
  */
 export async function syncAppCatalog(
-  apps: Array<AppForCatalog>,
-  tagsDefinitions: Array<GroupingTagDefinition>,
-  approvalMethods: Array<ApprovalMethod>,
+  apps: AppForCatalog[],
+  tagsDefinitions: GroupingTagDefinition[],
+  approvalMethods: ApprovalMethod[],
   sreenshotsPath?: string,
 ): Promise<SyncAppCatalogResult> {
   try {

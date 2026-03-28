@@ -18,7 +18,7 @@ export function SearchAndFilterHeader() {
   // Defer search value for count calculations
   const searchValue = useDeferredValue(state.searchValue)
 
-  const [topAppSlugs, setTopAppSlugs] = useState<Array<string>>([])
+  const [topAppSlugs, setTopAppSlugs] = useState<string[]>([])
 
   // Load top apps on mount
   useEffect(() => {

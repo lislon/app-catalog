@@ -23,7 +23,7 @@ const trpcClient = createTRPCClient<TRPCRouter>({
 
 const db = new DbClass()
 const queryClient = createQueryClient({ trpcClient, db })
-const plugins: Array<AcPlugin> = [
+const plugins: AcPlugin[] = [
   // Future plugins can be added here
 ]
 const router = createAcRouter({

@@ -22,7 +22,7 @@ interface FeatureRegistration {
 }
 
 // Optional features that can be toggled
-const FEATURES: Array<FeatureRegistration> = [
+const FEATURES: FeatureRegistration[] = [
   {
     name: 'auth',
     defaultEnabled: true,

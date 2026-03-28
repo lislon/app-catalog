@@ -17,11 +17,11 @@ import {
 import { getAppUrl } from './appCatalogUtils'
 
 export interface AppCatalogTableProps {
-  apps: Array<AppForCatalog>
+  apps: AppForCatalog[]
 }
 
 export function AppCatalogTable({ apps }: AppCatalogTableProps) {
-  const columns = useMemo<Array<ColumnDef<AppForCatalog>>>(
+  const columns = useMemo<ColumnDef<AppForCatalog>[]>(
     () => [
       {
         slug: 'name',

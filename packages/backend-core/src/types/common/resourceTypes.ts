@@ -4,5 +4,5 @@
 export interface AcResourceIndexed {
   slug: string
   displayName: string
-  defaultFixedValues?: Array<string>
+  defaultFixedValues?: string[]
 }

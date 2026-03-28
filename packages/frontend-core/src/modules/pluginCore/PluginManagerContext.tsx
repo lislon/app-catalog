@@ -6,7 +6,7 @@ import type { PluginInterfaceForCore } from './makePluginManagerContext'
 import type { AcPlugin, PluginName } from './types'
 
 export interface PluginManagerContextIface {
-  plugins: Array<AcPlugin>
+  plugins: AcPlugin[]
   interfaceForPlugins: PartialRecord<
     PluginName,
     PluginManagerInterfaceForPlugins
@@ -23,7 +23,7 @@ const PluginManagerContext = createContext<
 
 interface PluginManagerProviderProps {
   children: ReactNode
-  plugins: Array<AcPlugin>
+  plugins: AcPlugin[]
   pluginInterfaceForCore: PluginInterfaceForCore
 }
 

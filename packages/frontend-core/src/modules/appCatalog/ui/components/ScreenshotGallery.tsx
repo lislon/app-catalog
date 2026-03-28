@@ -9,7 +9,7 @@ import { VisuallyHidden } from '~/ui/visually-hidden'
 
 export interface ScreenshotGalleryProps {
   app: AppForCatalog
-  screenshotIds: Array<string>
+  screenshotIds: string[]
   initialIndex?: number
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -28,7 +28,7 @@ export function ScreenshotGallery({
   const isFullscreenRef = useRef(false)
 
   // Transform screenshot IDs to full URLs
-  const images: Array<GalleryImage> = useMemo(
+  const images: GalleryImage[] = useMemo(
     () =>
       screenshotIds.map((id) => ({
         url: `/api/screenshots/${id}`,

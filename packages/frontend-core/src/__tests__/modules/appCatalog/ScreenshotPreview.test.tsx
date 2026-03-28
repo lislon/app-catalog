@@ -24,7 +24,7 @@ function renderWithContext(app: AppForCatalog) {
   )
 }
 
-function makeApp(screenshotIds: Array<string>): AppForCatalog {
+function makeApp(screenshotIds: string[]): AppForCatalog {
   return {
     id: 'app-1',
     slug: 'test-app',

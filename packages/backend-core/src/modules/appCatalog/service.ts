@@ -26,7 +26,7 @@ function capitalize(word: string): string {
 }
 
 export async function getGroupingTagDefinitionsFromPrisma(): Promise<
-  Array<GroupingTagDefinition>
+  GroupingTagDefinition[]
 > {
   const prisma = getDbClient()
 
@@ -42,7 +42,7 @@ export async function getGroupingTagDefinitionsFromPrisma(): Promise<
   const tagCounts = new Map<string, Map<string, number>>()
 
   for (const app of apps) {
-    const tags = (app.tags as unknown as Array<string> | null) ?? []
+    const tags = (app.tags as unknown as string[] | null) ?? []
     for (const tag of tags) {
       const [prefix, value] = tag.split(':')
       if (prefix && value) {
@@ -75,7 +75,7 @@ export async function getGroupingTagDefinitionsFromPrisma(): Promise<
 }
 
 export async function getApprovalMethodsFromPrisma(): Promise<
-  Array<AppApprovalMethod>
+  AppApprovalMethod[]
 > {
   const prisma = getDbClient()
 
@@ -114,7 +114,7 @@ export async function getApprovalMethodsFromPrisma(): Promise<
 function rowToAppForCatalog(row: AppRowWithSourceRefs): AppForCatalog {
   const accessRequest =
     row.accessRequest as unknown as AppForCatalog['accessRequest']
-  const teams = (row.teams as unknown as Array<string> | null) ?? []
+  const teams = (row.teams as unknown as string[] | null) ?? []
   const tags = (row.tags as unknown as AppForCatalog['tags']) ?? []
   const screenshotIds =
     (row.screenshotIds as unknown as AppForCatalog['screenshotIds']) ?? []
@@ -150,7 +150,7 @@ function rowToAppForCatalog(row: AppRowWithSourceRefs): AppForCatalog {
   }
 }
 
-export async function getAppsFromPrisma(): Promise<Array<AppForCatalog>> {
+export async function getAppsFromPrisma(): Promise<AppForCatalog[]> {
   const prisma = getDbClient()
 
   const rows = await prisma.dbAppForCatalog.findMany({
@@ -170,7 +170,7 @@ export interface UpdateAppInput {
     slug?: string
     appUrl?: string
     description?: string
-    sources?: Array<string>
+    sources?: string[]
   }
 }
 
@@ -236,9 +236,7 @@ export async function updateApp(input: UpdateAppInput): Promise<AppForCatalog> {
   return rowToAppForCatalog(updated)
 }
 
-export function deriveCategories(
-  apps: Array<AppForCatalog>,
-): Array<AppCategory> {
+export function deriveCategories(apps: AppForCatalog[]): AppCategory[] {
   const tagSet = new Set<string>()
   for (const app of apps) {
     for (const tag of app.tags ?? []) {
@@ -246,7 +244,7 @@ export function deriveCategories(
       if (normalized) tagSet.add(normalized)
     }
   }
-  const categories: Array<AppCategory> = [{ id: 'all', name: 'All' }]
+  const categories: AppCategory[] = [{ id: 'all', name: 'All' }]
   for (const tag of Array.from(tagSet).sort()) {
     categories.push({ id: tag, name: capitalize(tag) })
   }
@@ -254,7 +252,7 @@ export function deriveCategories(
 }
 
 export async function getAppCatalogData(
-  getAppsOptional?: () => Promise<Array<AppForCatalog>>,
+  getAppsOptional?: () => Promise<AppForCatalog[]>,
 ): Promise<AppCatalogData> {
   const apps = getAppsOptional
     ? await getAppsOptional()

@@ -6,7 +6,7 @@ import type {
 export interface PluginPageUrlAutoCompletableParent extends BaseAppAutoCompletableParent {
   type: 'pageUrlParent'
   displayName: string
-  aliases?: Array<string>
+  aliases?: string[]
 }
 
 export interface PluginPageUrlAutocompleteItem extends BaseAutoCompletableItem {

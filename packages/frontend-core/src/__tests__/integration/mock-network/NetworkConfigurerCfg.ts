@@ -11,14 +11,14 @@ export type NetworkOverrideFn = (
  * Does not execute anything — `given()` applies overrides after building the default catalog.
  */
 export class NetworkConfigurerCfg {
-  private _overrides: Array<NetworkOverrideFn> = []
+  private _overrides: NetworkOverrideFn[] = []
 
   /** Register a callback to modify the network catalog after default handlers are set up */
   overrideConfig(fn: NetworkOverrideFn): void {
     this._overrides.push(fn)
   }
 
-  get overrides(): Array<NetworkOverrideFn> {
+  get overrides(): NetworkOverrideFn[] {
     return this._overrides
   }
 }

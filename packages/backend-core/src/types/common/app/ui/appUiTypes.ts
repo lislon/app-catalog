@@ -4,9 +4,9 @@ export interface AcAppPageIndexed {
   slug: string
   displayName: string
   url: string
-  tags?: Array<Tag>
+  tags?: Tag[]
 }
 
 export interface AcAppUiIndexed {
-  pages: Array<AcAppPageIndexed>
+  pages: AcAppPageIndexed[]
 }

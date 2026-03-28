@@ -5,7 +5,7 @@ import '@testing-library/jest-dom/vitest'
 import { Gallery } from '~/modules/gallery/Gallery'
 import type { GalleryImage } from '~/modules/gallery/Gallery'
 
-const images: Array<GalleryImage> = [
+const images: GalleryImage[] = [
   { url: '/api/screenshots/img-1', alt: 'Screenshot 1' },
   { url: '/api/screenshots/img-2', alt: 'Screenshot 2' },
 ]

@@ -21,7 +21,7 @@ export type AutocompleteProps<TItemValue> = Omit<
    * The items to be displayed in the list.
    * Can be either a flat array of items or an array of groups with items.
    */
-  items?: ReadonlyArray<TItemValue>
+  items?: readonly TItemValue[]
 }
 
 const AutocompleteAnchorContext = createContext<{

@@ -5,9 +5,9 @@ export interface AcAppIndexed {
   slug: string
   displayName: string
   abbr?: string
-  aliases?: Array<string>
+  aliases?: string[]
   ui?: AcAppUiIndexed
-  tags?: Array<Tag>
+  tags?: Tag[]
   iconName?: string
   meta?: AcMetaDictionary
 }

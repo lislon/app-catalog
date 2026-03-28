@@ -24,6 +24,7 @@ const config = [
       cspell: pluginCspell,
     },
     rules: {
+      '@typescript-eslint/array-type': ['error', { default: 'array' }],
       '@typescript-eslint/no-empty-function': 'off',
       '@typescript-eslint/no-unsafe-function-type': 'off',
       '@typescript-eslint/require-await': 'off',

@@ -31,10 +31,10 @@ export type ApprovalType = 'none' | 'service' | 'person' | 'other' | 'unknown'
 /**
  * Approval type options for UI display
  */
-export const APPROVAL_TYPES: ReadonlyArray<{
+export const APPROVAL_TYPES: readonly {
   value: ApprovalType
   label: string
-}> = [
+}[] = [
   { value: 'none', label: 'None' },
   { value: 'service', label: 'Service' },
   { value: 'person', label: 'Person' },
@@ -47,10 +47,10 @@ export const APPROVAL_TYPES: ReadonlyArray<{
  */
 export interface BaseApprovalMethod {
   comment?: string
-  roles?: Array<AppRole>
+  roles?: AppRole[]
   approvalPolicy?: string
   postApprovalInstructions?: string
-  seeMoreUrls?: Array<string>
+  seeMoreUrls?: string[]
 }
 
 /**
@@ -152,13 +152,13 @@ export interface AppForCatalog {
   displayName: string
   description?: string
   approvalMethod?: ApprovalMethod
-  teams?: Array<string> // Teams that use this app
+  teams?: string[] // Teams that use this app
   notes?: string
-  tags?: Array<string>
+  tags?: string[]
   appUrl?: string
-  links?: Array<{ url: string; title?: string }>
+  links?: { url: string; title?: string }[]
   iconName?: string
-  screenshotIds?: Array<string>
+  screenshotIds?: string[]
 }
 
 // Derived catalog data returned by backend
@@ -168,6 +168,6 @@ export interface AppCategory {
 }
 
 export interface AppCatalogData {
-  apps: Array<AppForCatalog>
-  categories: Array<AppCategory>
+  apps: AppForCatalog[]
+  categories: AppCategory[]
 }

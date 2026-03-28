@@ -67,7 +67,7 @@ export function useAppClickHistory() {
    * @returns Array of app slugs sorted by click count (descending)
    */
   const getTopApps = useCallback(
-    async (limit: number = 10): Promise<Array<string>> => {
+    async (limit: number = 10): Promise<string[]> => {
       const allHistory = await db.appClickHistory.toArray()
 
       // Count clicks per app

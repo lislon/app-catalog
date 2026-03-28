@@ -85,12 +85,12 @@ export function watchExternalSource(
 
           if (modules && modules.size > 0) {
             // Module is tracked - try true HMR
-            const updates: Array<{
+            const updates: {
               type: 'js-update' | 'css-update'
               path: string
               acceptedPath: string
               timestamp: number
-            }> = []
+            }[] = []
 
             for (const mod of modules) {
               server.moduleGraph.invalidateModule(mod)
@@ -171,6 +171,6 @@ export function createSourceAliases(
  *
  * @param paths - Array of absolute paths to allow
  */
-export function createFsAllowPaths(paths: Array<string>): Array<string> {
+export function createFsAllowPaths(paths: string[]): string[] {
   return paths
 }

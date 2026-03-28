@@ -4,8 +4,8 @@ import { searchApps } from '../utils/searchApps'
 import { useAppCatalogFilters } from '../ui/context/AppCatalogFiltersContext'
 
 interface UseAppCountsOptions {
-  apps: Array<AppForCatalog>
-  topAppSlugs: Array<string>
+  apps: AppForCatalog[]
+  topAppSlugs: string[]
   searchValue: string
 }
 

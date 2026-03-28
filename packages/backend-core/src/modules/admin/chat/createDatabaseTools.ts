@@ -8,15 +8,15 @@ import { getDbClient } from '../../../db'
  */
 export interface DatabaseClient {
   /** Execute a SELECT query and return results */
-  query: <T = unknown>(sql: string) => Promise<Array<T>>
+  query: <T = unknown>(sql: string) => Promise<T[]>
   /** Execute an INSERT/UPDATE/DELETE and return affected row count */
   execute: (sql: string) => Promise<{ affectedRows: number }>
   /** Get list of tables in the database */
-  getTables: () => Promise<Array<string>>
+  getTables: () => Promise<string[]>
   /** Get columns for a specific table */
   getColumns: (
     tableName: string,
-  ) => Promise<Array<{ name: string; type: string; nullable: boolean }>>
+  ) => Promise<{ name: string; type: string; nullable: boolean }[]>
 }
 
 /**
@@ -27,8 +27,8 @@ export function createPrismaDatabaseClient(prisma: {
   $executeRawUnsafe: (sql: string) => Promise<number>
 }): DatabaseClient {
   return {
-    query: async <T = unknown>(sql: string): Promise<Array<T>> => {
-      const result = await prisma.$queryRawUnsafe<Array<T>>(sql)
+    query: async <T = unknown>(sql: string): Promise<T[]> => {
+      const result = await prisma.$queryRawUnsafe<T[]>(sql)
       return result
     },
     execute: async (sql: string) => {
@@ -36,18 +36,18 @@ export function createPrismaDatabaseClient(prisma: {
       return { affectedRows }
     },
     getTables: async () => {
-      const tables = await prisma.$queryRawUnsafe<Array<{ tablename: string }>>(
+      const tables = await prisma.$queryRawUnsafe<{ tablename: string }[]>(
         `SELECT tablename FROM pg_tables WHERE schemaname = 'public'`,
       )
       return tables.map((t) => t.tablename)
     },
     getColumns: async (tableName: string) => {
       const columns = await prisma.$queryRawUnsafe<
-        Array<{
+        {
           column_name: string
           data_type: string
           is_nullable: string
-        }>
+        }[]
       >(
         `SELECT column_name, data_type, is_nullable
          FROM information_schema.columns

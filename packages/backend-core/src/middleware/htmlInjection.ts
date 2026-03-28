@@ -10,7 +10,7 @@
  */
 export function injectCustomScripts(
   html: string,
-  scriptUrls: Array<string>,
+  scriptUrls: string[],
 ): string {
   if (scriptUrls.length === 0) {
     return html

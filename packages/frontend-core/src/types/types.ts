@@ -17,7 +17,7 @@ export interface AcRouterContext {
   queryClient: QueryClient
   trpcClient: TRPCClient<TRPCRouter>
   db: AcDb
-  plugins: Array<AcPlugin>
+  plugins: AcPlugin[]
   boostrapHealth: EnvHopperHealthStateBootstrapPart
   meta?: {
     breadcrumb?: BreadcrumbMeta
