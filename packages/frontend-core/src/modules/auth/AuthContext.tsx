@@ -47,7 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Fetch session from backend
     async function fetchSession() {
       try {
-        const response = await fetch('/api/auth/session', {
+        const baseUrl =
+          typeof window !== 'undefined' ? window.location.origin : ''
+        const response = await fetch(`${baseUrl}/api/auth/session`, {
           credentials: 'include',
           signal: abortController.signal,
         })
