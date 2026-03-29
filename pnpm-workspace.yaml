@@ -37,7 +37,7 @@ catalog:
   '@typescript-eslint/eslint-plugin': ^8.42.0
   '@typescript-eslint/parser': ^8.42.0
   '@vitejs/plugin-react': ^4.3.4
-  '@vitest/ui': 3.2.2
+  '@vitest/ui': ^4.1.2
   cross-env: ^7.0.3
   dotenv-defaults: 5.0.2
   esbuild: ^0.25.5
@@ -67,7 +67,7 @@ catalog:
   vite-plugin-static-copy: ^3.1.4
   vite-plugin-svgr: ^4.2.0
   vite-tsconfig-paths: ^5.1.4
-  vitest: 3.2.2
+  vitest: ^4.1.2
   zod: ^4.3.5
 
 linkWorkspacePackages: true
