@@ -30,31 +30,9 @@ describe('Auth Integration', () => {
       }),
     )
 
-    // Direct fetch to verify MSW session handler works
-    const sessionRes = await fetch('http://localhost:3000/api/auth/session')
-    const sessionData = await sessionRes.json()
-    expect(sessionData).toEqual(
-      expect.objectContaining({
-        user: expect.objectContaining({ name: 'Alice Admin' }),
-      }),
-    )
-
-    // Now check the UI renders the avatar
-    await waitFor(
-      () => {
-        const authArea = document.querySelector('.ml-auto')
-        const avatarBtn = screen.queryByTestId('user-avatar-button')
-        if (!avatarBtn) {
-          // Diagnostic: show what the auth area contains
-          throw new Error(
-            `Avatar not found. Auth area HTML: ${authArea?.innerHTML?.substring(0, 500) || 'NOT FOUND'}. ` +
-              `localStorage: ${localStorage.getItem('ac_auth_user')?.substring(0, 100) || 'null'}`,
-          )
-        }
-        expect(avatarBtn).toBeInTheDocument()
-      },
-      { timeout: 5000 },
-    )
+    await waitFor(() => {
+      expect(screen.getByTestId('user-avatar-button')).toBeInTheDocument()
+    })
   })
 
   it('authenticated non-admin user sees user avatar', async () => {
