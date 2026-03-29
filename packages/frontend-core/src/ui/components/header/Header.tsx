@@ -123,47 +123,49 @@ export function Header({ middle }: HeaderProps) {
               Login
             </button>
           </div>
-        ) : user?.name ? (
+        ) : (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
                 className="w-8 h-8 rounded-full p-0 hover:bg-accent hover:text-accent-foreground cursor-pointer"
-                aria-label={`User menu for ${user.name}`}
+                aria-label={`User menu for ${user?.name || 'User'}`}
                 data-testid="user-avatar-button"
               >
-                {user.image ? (
+                {user?.image ? (
                   <img
                     src={user.image}
-                    alt={user.name}
+                    alt={user.name || 'User'}
                     className="w-full h-full rounded-full object-cover"
                   />
                 ) : (
                   <div className="flex items-center justify-center w-full h-full rounded-full bg-primary text-primary-foreground text-xs font-semibold">
-                    {user.name.charAt(0).toUpperCase()}
+                    {(user?.name || user?.email || '?').charAt(0).toUpperCase()}
                   </div>
                 )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <div className="px-2 py-3 flex items-center gap-3">
-                {user.image ? (
+                {user?.image ? (
                   <img
                     src={user.image}
-                    alt={user.name}
+                    alt={user.name || 'User'}
                     className="w-10 h-10 rounded-full object-cover shrink-0"
                   />
                 ) : (
                   <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground text-sm font-semibold shrink-0">
-                    {user.name.charAt(0).toUpperCase()}
+                    {(user?.name || user?.email || '?').charAt(0).toUpperCase()}
                   </div>
                 )}
                 <div className="flex flex-col min-w-0">
                   <p className="text-xs text-muted-foreground truncate">
-                    @{user.email?.split('@')[0] || 'user'}
+                    @{user?.email?.split('@')[0] || 'user'}
                   </p>
-                  <p className="text-sm font-medium truncate">{user.name}</p>
+                  <p className="text-sm font-medium truncate">
+                    {user?.name || 'User'}
+                  </p>
                 </div>
               </div>
               <DropdownMenuSeparator />
@@ -173,7 +175,7 @@ export function Header({ middle }: HeaderProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        ) : null}
+        )}
       </div>
     </div>
   )
