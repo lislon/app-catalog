@@ -126,7 +126,10 @@ function rowToAppForCatalog(row: AppRowWithSourceRefs): AppForCatalog {
   const notes = row.notes == null ? undefined : row.notes
   const appUrl = row.appUrl == null ? undefined : row.appUrl
   const iconName = row.iconName == null ? undefined : row.iconName
-  const alias = row.alias == null ? undefined : row.alias
+  const abbreviation = row.abbreviation == null ? undefined : row.abbreviation
+  const nicknames = (row.nicknames as unknown as string[] | null)?.length
+    ? (row.nicknames as unknown as string[])
+    : undefined
   const deprecated =
     row.deprecated == null
       ? undefined
@@ -140,7 +143,8 @@ function rowToAppForCatalog(row: AppRowWithSourceRefs): AppForCatalog {
     id: row.id,
     slug: row.slug,
     displayName: row.displayName,
-    alias,
+    abbreviation,
+    nicknames,
     description: row.description,
     accessRequest,
     teams,
@@ -172,7 +176,7 @@ export interface UpdateAppInput {
   id: string
   data: {
     displayName?: string
-    alias?: string | null
+    abbreviation?: string | null
     slug?: string
     appUrl?: string
     description?: string
@@ -187,7 +191,7 @@ export async function updateApp(input: UpdateAppInput): Promise<AppForCatalog> {
 
   const updatePayload: {
     displayName?: string
-    alias?: string | null
+    abbreviation?: string | null
     slug?: string
     appUrl?: string
     description?: string
@@ -195,7 +199,8 @@ export async function updateApp(input: UpdateAppInput): Promise<AppForCatalog> {
   } = {}
   if (data.displayName !== undefined)
     updatePayload.displayName = data.displayName
-  if (data.alias !== undefined) updatePayload.alias = data.alias
+  if (data.abbreviation !== undefined)
+    updatePayload.abbreviation = data.abbreviation
   if (data.slug !== undefined) updatePayload.slug = data.slug
   if (data.appUrl !== undefined) updatePayload.appUrl = data.appUrl
   if (data.description !== undefined)

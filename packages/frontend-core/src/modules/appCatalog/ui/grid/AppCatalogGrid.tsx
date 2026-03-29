@@ -103,7 +103,7 @@ function AppIcon({
       <div className={cn('size-12 shrink-0', className)}>
         <img
           src={getIconUrl(app.iconName)}
-          alt={`${app.alias || app.displayName} icon`}
+          alt={`${app.abbreviation || app.displayName} icon`}
           className="size-12 rounded-lg object-contain"
           onError={() => setImageError(true)}
         />
@@ -148,7 +148,7 @@ function AppScreenshot({ app }: { app: AppForCatalog }) {
         {!imageError ? (
           <img
             src={screenshotImageUrl}
-            alt={`${app.alias || app.displayName} screenshot`}
+            alt={`${app.abbreviation || app.displayName} screenshot`}
             className="h-64 object-contain"
             onError={() => {
               setImageError(true)
@@ -245,8 +245,8 @@ function AppDetails({
             <div className="-mx-3 flex-1 min-w-0">
               <div className="flex items-center gap-2 px-3">
                 <div className="text-2xl font-semibold min-w-0">
-                  {app.alias
-                    ? `${app.displayName} (${app.alias})`
+                  {app.abbreviation
+                    ? `${app.displayName} (${app.abbreviation})`
                     : app.displayName}
                 </div>
                 {app.deprecated && (
@@ -584,7 +584,7 @@ function AppDetails({
         open={isGalleryOpen}
         onOpenChange={setIsGalleryOpen}
         initialIndex={galleryInitialIndex}
-        title={`${app.alias || app.displayName} - Screenshots`}
+        title={`${app.abbreviation || app.displayName} - Screenshots`}
       />
     </>
   )
@@ -705,7 +705,7 @@ export function AppCatalogGrid({
                 <span className="font-medium">
                   <HighlightedText
                     text={
-                      row.original.alias ||
+                      row.original.abbreviation ||
                       row.original.displayName ||
                       'Unnamed App'
                     }
@@ -727,7 +727,7 @@ export function AppCatalogGrid({
                     )
                   })()}
               </div>
-              {row.original.alias && (
+              {row.original.abbreviation && (
                 <span className="text-xs text-muted-foreground">
                   <HighlightedText
                     text={row.original.displayName}

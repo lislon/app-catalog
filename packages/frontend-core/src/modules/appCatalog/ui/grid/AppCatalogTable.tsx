@@ -29,7 +29,7 @@ export function AppCatalogTable({ apps }: AppCatalogTableProps) {
         cell: ({ row }) => (
           <span className="font-medium">
             {row.original.displayName}
-            {row.original.alias && ` (${row.original.alias})`}
+            {row.original.abbreviation && ` (${row.original.abbreviation})`}
           </span>
         ),
       },

@@ -164,7 +164,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     id: 'slack',
     slug: 'slack',
     displayName: 'Slack',
-    alias: 'Team Chat',
+    abbreviation: 'Team Chat',
     description:
       'Team messaging platform for real-time communication, file sharing, and integrations with other business tools. Organize conversations into channels, send direct messages, and integrate with hundreds of apps.',
     teams: ['All Employees'],
@@ -205,7 +205,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     id: 'confluence',
     slug: 'confluence',
     displayName: 'Confluence',
-    alias: 'Wiki',
+    abbreviation: 'Wiki',
     description:
       'Team documentation and collaboration platform. Create, organize, and share documentation, project plans, meeting notes, and knowledge base articles in a searchable wiki format.',
     teams: ['Engineering', 'Product', 'Marketing'],
@@ -421,7 +421,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     id: 'workday',
     slug: 'workday',
     displayName: 'Workday',
-    alias: 'HR System',
+    abbreviation: 'HR System',
     description:
       'Enterprise HR management and payroll system. Manage employee records, compensation, benefits, time off, performance reviews, and organizational structure.',
     teams: ['All Employees'],
@@ -453,7 +453,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     id: 'greenhouse',
     slug: 'greenhouse',
     displayName: 'Greenhouse',
-    alias: 'ATS',
+    abbreviation: 'ATS',
     description:
       'Applicant tracking system for recruiting and hiring. Manage job postings, track candidates through hiring pipeline, schedule interviews, and collect feedback.',
     teams: ['Recruiting', 'Hiring Managers'],
@@ -497,7 +497,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     id: 'salesforce',
     slug: 'salesforce',
     displayName: 'Salesforce',
-    alias: 'CRM',
+    abbreviation: 'CRM',
     description:
       'Customer relationship management platform. Manage leads, opportunities, accounts, contacts, and sales pipelines. Automate workflows and generate sales forecasts.',
     teams: ['Sales', 'Customer Success', 'Marketing'],
@@ -570,7 +570,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     id: 'netsuite',
     slug: 'netsuite',
     displayName: 'NetSuite',
-    alias: 'ERP',
+    abbreviation: 'ERP',
     description:
       'Financial management and ERP system. Manage accounting, financial reporting, budgeting, procurement, inventory, and order management.',
     teams: ['Finance', 'Accounting', 'Operations'],
@@ -629,7 +629,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     id: 'okta',
     slug: 'okta',
     displayName: 'Okta',
-    alias: 'SSO',
+    abbreviation: 'SSO',
     description:
       'Identity and access management platform. Single sign-on (SSO) for all applications, multi-factor authentication (MFA), user provisioning, and access policies.',
     teams: ['All Employees'],
@@ -646,7 +646,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     id: 'aws-console',
     slug: 'aws-console',
     displayName: 'AWS Console',
-    alias: 'AWS',
+    abbreviation: 'AWS',
     description:
       'Amazon Web Services cloud infrastructure management console. Manage compute, storage, databases, networking, and other cloud resources.',
     teams: ['Engineering', 'DevOps', 'SRE'],
@@ -677,7 +677,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     id: 'google-workspace',
     slug: 'google-workspace',
     displayName: 'Google Workspace',
-    alias: 'Gmail',
+    abbreviation: 'Gmail',
     description:
       'Email and productivity suite. Includes Gmail, Google Drive, Calendar, Docs, Sheets, Slides, and Meet. Collaborate on documents in real-time.',
     teams: ['All Employees'],

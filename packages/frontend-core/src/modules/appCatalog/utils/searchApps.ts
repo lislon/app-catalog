@@ -2,7 +2,14 @@ import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
 
 export interface SearchMatch {
   /** Field where the match occurred */
-  field: 'displayName' | 'alias' | 'slug' | 'tags' | 'teams' | 'description'
+  field:
+    | 'displayName'
+    | 'abbreviation'
+    | 'nicknames'
+    | 'slug'
+    | 'tags'
+    | 'teams'
+    | 'description'
   /** Type of match */
   type: 'exact' | 'prefix' | 'contains'
 }
@@ -14,19 +21,21 @@ export interface SearchResult {
 
 /**
  * Search and sort apps by relevance with highlighting support.
- * Priority order (alias has higher priority than displayName):
- * 1. Exact match in alias
- * 2. Exact match in displayName
- * 3. Exact match in tags
- * 4. Prefix match in alias
- * 5. Prefix match in displayName
- * 6. Prefix match in tags
- * 7. Contains match in alias
- * 8. Contains match in displayName
- * 9. Contains match in tags
- * 10. Teams
- * 11. Description
- *
+ * Priority order:
+ * 0. Exact match in abbreviation
+ * 1. Exact match in displayName
+ * 2. Exact match in nickname
+ * 3. Prefix match in abbreviation
+ * 4. Prefix match in displayName
+ * 5. Prefix match in nickname
+ * 6. Exact match in tags
+ * 7. Prefix match in tags
+ * 8. Contains match in abbreviation
+ * 9. Contains match in displayName
+ * 10. Contains match in nickname
+ * 11. Contains match in tags
+ * 12. Teams
+ * 13. Description
  *
  * @param apps - Array of apps to search
  * @param searchQuery - Search query string
@@ -46,30 +55,37 @@ export function searchApps(
   const scoredApps = apps
     .map((app): SearchResult | null => {
       const name = app.displayName.toLowerCase()
-      const alias = app.alias?.toLowerCase() || ''
+      const abbreviation = app.abbreviation?.toLowerCase() || ''
+      const nicknames = app.nicknames?.map((n) => n.toLowerCase()) || []
       const description = app.description?.toLowerCase() || ''
       const tags = app.tags?.join(' ').toLowerCase() || ''
       const teams = app.teams?.join(' ').toLowerCase() || ''
 
-      // Check exact matches first - prioritize alias over displayName
-      if (alias && alias === normalizedQuery) {
-        return { app, match: { field: 'alias', type: 'exact' } }
+      // Check exact matches first - prioritize abbreviation over displayName
+      if (abbreviation && abbreviation === normalizedQuery) {
+        return { app, match: { field: 'abbreviation', type: 'exact' } }
       }
       if (name === normalizedQuery) {
         return { app, match: { field: 'displayName', type: 'exact' } }
+      }
+      if (nicknames.some((n) => n === normalizedQuery)) {
+        return { app, match: { field: 'nicknames', type: 'exact' } }
+      }
+
+      // Check prefix matches
+      if (abbreviation && abbreviation.startsWith(normalizedQuery)) {
+        return { app, match: { field: 'abbreviation', type: 'prefix' } }
+      }
+      if (name.startsWith(normalizedQuery)) {
+        return { app, match: { field: 'displayName', type: 'prefix' } }
+      }
+      if (nicknames.some((n) => n.startsWith(normalizedQuery))) {
+        return { app, match: { field: 'nicknames', type: 'prefix' } }
       }
 
       // Check exact match in tags (any tag exactly matches query)
       if (app.tags?.some((tag) => tag.toLowerCase() === normalizedQuery)) {
         return { app, match: { field: 'tags', type: 'exact' } }
-      }
-
-      // Check prefix matches - prioritize alias over displayName
-      if (alias && alias.startsWith(normalizedQuery)) {
-        return { app, match: { field: 'alias', type: 'prefix' } }
-      }
-      if (name.startsWith(normalizedQuery)) {
-        return { app, match: { field: 'displayName', type: 'prefix' } }
       }
 
       // Check tags - prefix match (any tag starts with query)
@@ -79,12 +95,15 @@ export function searchApps(
         return { app, match: { field: 'tags', type: 'prefix' } }
       }
 
-      // Check contains matches in name/alias - prioritize alias over displayName
-      if (alias && alias.includes(normalizedQuery)) {
-        return { app, match: { field: 'alias', type: 'contains' } }
+      // Check contains matches - prioritize abbreviation over displayName
+      if (abbreviation && abbreviation.includes(normalizedQuery)) {
+        return { app, match: { field: 'abbreviation', type: 'contains' } }
       }
       if (name.includes(normalizedQuery)) {
         return { app, match: { field: 'displayName', type: 'contains' } }
+      }
+      if (nicknames.some((n) => n.includes(normalizedQuery))) {
+        return { app, match: { field: 'nicknames', type: 'contains' } }
       }
 
       // Check tags - contains match
@@ -112,35 +131,30 @@ export function searchApps(
   scoredApps.forEach(({ app, match }) => {
     let score = 0
 
-    // Exact matches: 0-2 (alias, displayName, tags)
+    // Exact matches: 0-2 (abbreviation, displayName, nicknames)
     if (match.type === 'exact') {
-      if (match.field === 'alias') score = 0
+      if (match.field === 'abbreviation') score = 0
       else if (match.field === 'displayName') score = 1
-      else if (match.field === 'tags') score = 2
-      else score = 999 // Should not happen
+      else if (match.field === 'nicknames') score = 2
+      else if (match.field === 'tags') score = 6
+      else score = 999
     }
-    // Prefix matches: 3-5 (alias, displayName, tags)
+    // Prefix matches: 3-5 (abbreviation, displayName, nicknames), 7 (tags)
     else if (match.type === 'prefix') {
-      if (match.field === 'alias') score = 3
+      if (match.field === 'abbreviation') score = 3
       else if (match.field === 'displayName') score = 4
-      else if (match.field === 'tags') score = 5
-      else score = 999 // Should not happen
+      else if (match.field === 'nicknames') score = 5
+      else if (match.field === 'tags') score = 7
+      else score = 999
     }
-    // Contains in name/alias: 6-7 (alias before displayName)
-    else if (match.field === 'displayName' || match.field === 'alias') {
-      score = match.field === 'alias' ? 6 : 7
-    }
-    // Tags (contains): 8
-    else if (match.field === 'tags') {
-      score = 8
-    }
-    // Teams: 9
-    else if (match.field === 'teams') {
-      score = 9
-    }
-    // Description: 10
+    // Contains matches
     else {
-      score = 10
+      if (match.field === 'abbreviation') score = 8
+      else if (match.field === 'displayName') score = 9
+      else if (match.field === 'nicknames') score = 10
+      else if (match.field === 'tags') score = 11
+      else if (match.field === 'teams') score = 12
+      else score = 13 // description
     }
 
     scoreMap.set(app.id, score)

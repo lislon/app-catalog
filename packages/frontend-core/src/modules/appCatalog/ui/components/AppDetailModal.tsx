@@ -35,7 +35,7 @@ function AppIcon({ app }: { app: AppForCatalog }) {
     return (
       <img
         src={getIconUrl(app.iconName)}
-        alt={`${app.alias || app.displayName} icon`}
+        alt={`${app.abbreviation || app.displayName} icon`}
         className="size-16 rounded-lg object-contain"
         onError={() => setImageError(true)}
       />
@@ -100,7 +100,7 @@ function ScreenshotPreview({ app }: { app: AppForCatalog }) {
             >
               <img
                 src={screenshotUrl}
-                alt={`${app.alias || app.displayName} screenshot ${index + 1}`}
+                alt={`${app.abbreviation || app.displayName} screenshot ${index + 1}`}
                 className="h-auto object-contain max-h-[600px]"
                 onError={() => handleImageError(screenshotId)}
               />
@@ -115,7 +115,7 @@ function ScreenshotPreview({ app }: { app: AppForCatalog }) {
         initialIndex={initialIndex}
         open={galleryOpen}
         onOpenChange={setGalleryOpen}
-        title={`${app.alias || app.displayName} - Screenshots`}
+        title={`${app.abbreviation || app.displayName} - Screenshots`}
       />
     </>
   )
@@ -239,9 +239,9 @@ export function AppDetailModal({ app, isOpen, onClose }: AppDetailModalProps) {
                 <AppIcon app={app} />
                 <div className="flex-1 space-y-2">
                   <h2 className="text-3xl font-bold">
-                    {app.alias || app.displayName}
+                    {app.abbreviation || app.displayName}
                   </h2>
-                  {app.alias && (
+                  {app.abbreviation && (
                     <p className="text-sm text-muted-foreground">
                       {app.displayName}
                     </p>

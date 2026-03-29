@@ -29,7 +29,8 @@ export interface AppForCatalog {
   id: string
   slug: string
   displayName: string
-  alias?: string // Optional short display name
+  abbreviation?: string // Optional short abbreviation (e.g. K8s, ECR, LV)
+  nicknames?: string[] // Alternative names / AKA
   description?: string
   teams?: string[]
   accessRequest?: AppAccessRequest

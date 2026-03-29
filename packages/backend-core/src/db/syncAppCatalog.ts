@@ -227,7 +227,8 @@ export async function syncAppCatalog(
       return {
         slug,
         displayName: app.displayName,
-        alias: app.alias ?? null,
+        abbreviation: app.abbreviation ?? null,
+        nicknames: app.nicknames ?? [],
         description: app.description,
         teams: app.teams ?? [],
         accessRequest: app.accessRequest ?? null,
