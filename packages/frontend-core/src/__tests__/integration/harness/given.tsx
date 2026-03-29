@@ -22,8 +22,8 @@ import { NetworkConfigurerCfg } from '../mock-network/NetworkConfigurerCfg'
 import type { ConfigurerContext, Magazine } from '../mock-backend/magazines'
 import { makeNetworkReplyWithCatalog } from '../mock-network/makeNetworkReplyWithCatalog'
 import { MockBackendVerifier } from './MockBackendVerifier'
-import {  getGlobalError } from '../tools/ErrorTools'
-import type {GlobalError} from '../tools/ErrorTools';
+import { getGlobalError } from '../tools/ErrorTools'
+import type { GlobalError } from '../tools/ErrorTools'
 import { browserState } from '../tools/BrowserState'
 import { CatalogTools } from '../tools/CatalogTools'
 import { AppDetailTools } from '../tools/AppDetailTools'
@@ -136,6 +136,20 @@ export async function given(magazine: Magazine): Promise<GivenResult> {
       boostrapHealth: {},
     },
   })
+
+  // 7b. Seed auth user in localStorage for optimistic rendering
+  //     (mirrors real-app behavior where localStorage caches the user after first login)
+  const sessionResponse = service.getSessionResponse()
+  if (
+    sessionResponse &&
+    typeof sessionResponse === 'object' &&
+    'user' in sessionResponse
+  ) {
+    localStorage.setItem(
+      'ac_auth_user',
+      JSON.stringify((sessionResponse as { user: unknown }).user),
+    )
+  }
 
   // 8. Render
   render(
