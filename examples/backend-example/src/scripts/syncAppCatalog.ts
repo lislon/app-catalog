@@ -25,7 +25,7 @@ const sampleAppCatalog: AppForCatalog[] = [
     id: 'car-shop-sales',
     slug: 'car-shop-sales',
     displayName: 'Car Shop Sales',
-    alias: 'Sales',
+    abbreviation: 'Sales',
     description: 'Sales management system for the car dealership',
     access: {
       type: 'ticketing',
@@ -40,7 +40,7 @@ const sampleAppCatalog: AppForCatalog[] = [
     id: 'billing-app',
     slug: 'billing-app',
     displayName: 'Billing App',
-    alias: 'Billing',
+    abbreviation: 'Billing',
     description: 'Invoice and billing management application',
     access: {
       type: 'self-service',
@@ -55,7 +55,7 @@ const sampleAppCatalog: AppForCatalog[] = [
     id: 'pet-shop-app',
     slug: 'pet-shop-app',
     displayName: 'Pet Shop App',
-    alias: 'Pet Shop',
+    abbreviation: 'Pet Shop',
     description: 'Pet shop management and inventory system',
     access: {
       type: 'email',
@@ -76,7 +76,7 @@ const sampleAppCatalog: AppForCatalog[] = [
     id: 'monitoring-dashboard',
     slug: 'monitoring-dashboard',
     displayName: 'Monitoring Dashboard',
-    alias: 'Monitoring',
+    abbreviation: 'Monitoring',
     description: 'System monitoring and alerting dashboard',
     access: {
       type: 'documentation',

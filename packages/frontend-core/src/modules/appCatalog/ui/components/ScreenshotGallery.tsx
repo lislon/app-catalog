@@ -32,9 +32,9 @@ export function ScreenshotGallery({
     () =>
       screenshotIds.map((id) => ({
         url: `/api/screenshots/${id}`,
-        alt: `${app.alias || app.displayName} screenshot`,
+        alt: `${app.abbreviation || app.displayName} screenshot`,
       })),
-    [screenshotIds, app.alias, app.displayName],
+    [screenshotIds, app.abbreviation, app.displayName],
   )
 
   // Don't render if no screenshots
@@ -58,7 +58,7 @@ export function ScreenshotGallery({
       >
         <VisuallyHidden>
           <DialogTitle>
-            {title || `${app.alias || app.displayName} screenshots`}
+            {title || `${app.abbreviation || app.displayName} screenshots`}
           </DialogTitle>
         </VisuallyHidden>
         <Gallery

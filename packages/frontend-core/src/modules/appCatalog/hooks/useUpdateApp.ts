@@ -6,7 +6,7 @@ export interface UpdateAppVariables {
   id: string
   data: {
     displayName?: string
-    alias?: string | null
+    abbreviation?: string | null
     slug?: string
     appUrl?: string
     description?: string
