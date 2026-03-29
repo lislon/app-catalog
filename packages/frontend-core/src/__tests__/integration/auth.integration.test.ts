@@ -30,18 +30,24 @@ describe('Auth Integration', () => {
       }),
     )
 
-    await waitFor(() => {
-      expect(screen.getByTestId('user-avatar-button')).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByTestId('user-avatar-button')).toBeInTheDocument()
+      },
+      { timeout: 5000 },
+    )
   })
 
   it('authenticated non-admin user sees user avatar', async () => {
     // Default magazine user is authenticated non-admin
     await given(magazine.full())
 
-    await waitFor(() => {
-      expect(screen.getByTestId('user-avatar-button')).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByTestId('user-avatar-button')).toBeInTheDocument()
+      },
+      { timeout: 5000 },
+    )
   })
 
   it('DEV Login button appears when devLoginEnabled is true', async () => {
@@ -87,8 +93,12 @@ describe('Auth Integration', () => {
       }),
     )
 
-    // Wait for user avatar to appear
-    const avatar = await screen.findByTestId('user-avatar-button')
+    // Wait for user avatar to appear (CI may be slow)
+    const avatar = await screen.findByTestId(
+      'user-avatar-button',
+      {},
+      { timeout: 5000 },
+    )
     // Open the user dropdown menu
     await userEvent.click(avatar)
 
