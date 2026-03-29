@@ -130,6 +130,7 @@ export function Header({ middle }: HeaderProps) {
                 variant="ghost"
                 size="sm"
                 className="w-8 h-8 rounded-full p-0 hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                aria-label={`User menu for ${user.name}`}
               >
                 {user.image ? (
                   <img

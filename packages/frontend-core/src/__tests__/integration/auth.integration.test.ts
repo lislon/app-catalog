@@ -31,7 +31,9 @@ describe('Auth Integration', () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByText('A')).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: /User menu for Alice Admin/ }),
+      ).toBeInTheDocument()
     })
   })
 
@@ -40,7 +42,9 @@ describe('Auth Integration', () => {
     await given(magazine.full())
 
     await waitFor(() => {
-      expect(screen.getByText('T')).toBeInTheDocument() // "Test User" → "T"
+      expect(
+        screen.getByRole('button', { name: /User menu for Test User/ }),
+      ).toBeInTheDocument()
     })
   })
 
@@ -88,7 +92,9 @@ describe('Auth Integration', () => {
     )
 
     // Wait for user avatar to appear
-    const avatar = await screen.findByText('T')
+    const avatar = await screen.findByRole('button', {
+      name: /User menu for Test User/,
+    })
     // Open the user dropdown menu
     await userEvent.click(avatar)
 
