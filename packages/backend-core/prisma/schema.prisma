@@ -79,13 +79,14 @@ enum ApprovalMethodType {
 }
 
 model DbApprovalMethod {
-  slug        String             @id
-  type        ApprovalMethodType
-  displayName String
+  slug              String             @id
+  type              ApprovalMethodType
+  displayName       String
   /// [ApprovalMethodConfig] - Type-specific configuration
-  config      Json?
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  config            Json?
+  deprecatedAliases String[]           @default([]) // Old URLs that should redirect to this method
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
   @@unique([type, displayName])
 }
@@ -94,7 +95,8 @@ model DbAppForCatalog {
   id            String            @id @default(cuid())
   slug          String            @unique // URL-friendly identifier for navigation
   displayName   String
-  alias         String? // Optional short display name
+  abbreviation  String? // Optional short abbreviation (e.g. K8s, ECR, LV)
+  nicknames     String[]          @default([]) // Alternative names / AKA
   description   String
   /// [AccessMethod]
   access        Json?
