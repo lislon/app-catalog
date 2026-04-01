@@ -53,3 +53,7 @@ vite.config.*.timestamp*
 tsconfig.tsbuildinfo
 .claude/settings.local.json
 
+# Playwright
+test-results/
+playwright-report/
+
