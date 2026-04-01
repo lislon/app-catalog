@@ -29,7 +29,9 @@ function PwaWrapper({ children }: { children: React.ReactNode }) {
   }, [])
 
   return (
-    <PwaAutoUpdateProvider handle={handle}>{children}</PwaAutoUpdateProvider>
+    <PwaAutoUpdateProvider handle={handle} options={{ debug: true }}>
+      {children}
+    </PwaAutoUpdateProvider>
   )
 }
 
