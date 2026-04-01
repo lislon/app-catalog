@@ -1,22 +1,14 @@
 import type {
   AppApprovalMethod,
   AppForCatalog,
+  AppVersionInfo,
   GroupingTagDefinition,
 } from '@igstack/app-catalog-backend-core'
 import { useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { createContext, use, useEffect, useMemo } from 'react'
 import { ApiQueryMagazineAppCatalog } from '~/modules/appCatalog'
-
-export interface VersionInfo {
-  displayName: string
-  url?: string
-}
-
-export interface AppVersionInfo {
-  backend?: VersionInfo
-  frontend?: VersionInfo
-}
+import { useUiSettings } from '~/context/UiSettingsContext'
 
 export interface AppCatalogContextIface {
   apps: AppForCatalog[]
@@ -38,6 +30,7 @@ export function AppCatalogProvider({ children }: AppCatalogProviderProps) {
   const { data, isLoading: isLoadingApps } = useQuery(
     ApiQueryMagazineAppCatalog.getAppCatalog(),
   )
+  const uiSettings = useUiSettings()
 
   const contextValue = useMemo<AppCatalogContextIface>(
     () => ({
@@ -45,13 +38,24 @@ export function AppCatalogProvider({ children }: AppCatalogProviderProps) {
       isLoadingApps,
       tagsDefinitions: data?.tagsDefinitions ?? [],
       approvalMethods: data?.approvalMethods ?? [],
-      versions: data?.versions,
+      versions: {
+        ...data?.versions,
+        ...(uiSettings.frontendBuildId && {
+          frontend: {
+            displayName:
+              uiSettings.frontendBuildId === 'local'
+                ? 'local'
+                : `#${uiSettings.frontendBuildId}`,
+          },
+        }),
+      },
     }),
     [
       data?.approvalMethods,
       data?.apps,
       data?.tagsDefinitions,
       data?.versions,
+      uiSettings.frontendBuildId,
       isLoadingApps,
     ],
   )

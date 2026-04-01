@@ -1,3 +1,7 @@
+import type {
+  AppVersionInfo,
+  VersionInfo,
+} from '@igstack/app-catalog-backend-core'
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { LogOut } from 'lucide-react'
@@ -22,6 +26,61 @@ import {
   DropdownMenuTrigger,
 } from '~/ui/dropdown-menu'
 import { Skeleton } from '~/ui/skeleton'
+
+function VersionItem({
+  label,
+  version,
+}: {
+  label: string
+  version: VersionInfo
+}) {
+  if (version.url) {
+    return (
+      <a
+        href={version.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-xs text-primary hover:text-primary/80 transition-colors font-medium"
+        onClick={(e) => e.stopPropagation()}
+        title={label}
+      >
+        {label}: {version.displayName}
+      </a>
+    )
+  }
+  return (
+    <span className="text-xs text-muted-foreground" title={label}>
+      {label}: {version.displayName}
+    </span>
+  )
+}
+
+function VersionDisplay({ versions }: { versions: AppVersionInfo }) {
+  const isLocal =
+    versions.backend?.displayName === 'local' && !versions.coreVersion
+
+  if (isLocal) {
+    return (
+      <span className="text-xs text-muted-foreground" title="Local">
+        local
+      </span>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      {versions.backend && (
+        <VersionItem label="Pipeline" version={versions.backend} />
+      )}
+      {versions.coreVersion && (
+        <VersionItem label="Core" version={versions.coreVersion} />
+      )}
+      {versions.frontend && (
+        <VersionItem label="FE" version={versions.frontend} />
+      )}
+    </div>
+  )
+}
 
 export interface HeaderProps {
   middle?: React.ReactNode
@@ -62,38 +121,7 @@ export function Header({ middle }: HeaderProps) {
             <div className="flex flex-col">
               <span className="text-lg font-bold">App Catalog</span>
               {appCatalogContextMaybe?.versions && (
-                <div className="flex flex-col gap-0.5">
-                  {appCatalogContextMaybe.versions.backend &&
-                    (appCatalogContextMaybe.versions.backend.url ? (
-                      <a
-                        href={appCatalogContextMaybe.versions.backend.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-primary hover:text-primary/80 transition-colors font-medium"
-                        onClick={(e) => e.stopPropagation()}
-                        title="Backend Version"
-                      >
-                        BE:{' '}
-                        {appCatalogContextMaybe.versions.backend.displayName}
-                      </a>
-                    ) : (
-                      <span
-                        className="text-xs text-muted-foreground"
-                        title="Backend Version"
-                      >
-                        BE:{' '}
-                        {appCatalogContextMaybe.versions.backend.displayName}
-                      </span>
-                    ))}
-                  {appCatalogContextMaybe.versions.frontend && (
-                    <span
-                      className="text-xs text-muted-foreground"
-                      title="Frontend Version"
-                    >
-                      FE: {appCatalogContextMaybe.versions.frontend.displayName}
-                    </span>
-                  )}
-                </div>
+                <VersionDisplay versions={appCatalogContextMaybe.versions} />
               )}
             </div>
           </div>

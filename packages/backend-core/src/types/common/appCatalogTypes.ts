@@ -91,6 +91,7 @@ export interface VersionInfo {
 export interface AppVersionInfo {
   backend?: VersionInfo
   frontend?: VersionInfo
+  coreVersion?: VersionInfo
 }
 
 export interface AppCatalogData {
