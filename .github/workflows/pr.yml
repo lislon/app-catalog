@@ -26,6 +26,8 @@ jobs:
         uses: nrwl/nx-set-shas@v4.1.2
         with:
           main-branch-name: main
+      - name: Generate Prisma files for backend-core
+        run: pnpm run prisma:generate
       - name: Run Checks
         run: pnpm run test:pr --parallel=3
   e2e:
