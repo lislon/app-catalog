@@ -38,6 +38,8 @@ jobs:
           fetch-depth: 0
       - name: Setup Tools
         uses: tanstack/config/.github/setup@main
+      - name: Build Dependencies
+        run: pnpm run build:all
       - name: Install Playwright Chromium
         run: pnpm --filter=@igstack/app-catalog-frontend-example exec playwright install chromium
       - name: Run E2E Tests
