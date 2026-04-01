@@ -11,6 +11,7 @@
     "dev": "vite",
     "e2e": "playwright test --project=chromium",
     "fix": "prettier --write ./src && eslint --fix ./src",
+    "preview": "vite preview",
     "start": "node dist/index.js",
     "test:eslint": "eslint ./src",
     "test:unit": "vitest"
