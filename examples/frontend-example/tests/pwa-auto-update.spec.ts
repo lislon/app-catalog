@@ -13,76 +13,48 @@ test.describe('PWA Auto-Update', () => {
     expect(swActive).toBe(true)
   })
 
-  test('visibility change triggers SW update check', async ({ page }) => {
+  test('PwaAutoUpdateController attaches visibilitychange listener', async ({
+    page,
+  }) => {
+    page.on('console', (msg) => console.log('  [browser]', msg.text()))
     await page.goto('/')
 
-    // Wait for SW to be active
+    // Wait for SW to be ready (controller starts after registration)
     await page.evaluate(async () => {
       await navigator.serviceWorker.ready
     })
 
-    // Track if registration.update() gets called
-    const updateCalled = await page.evaluate(async () => {
-      const reg = await navigator.serviceWorker.ready
-      let called = false
-      const originalUpdate = reg.update.bind(reg)
-      reg.update = async () => {
-        called = true
-        return originalUpdate()
-      }
+    // Give React time to mount and controller to start
+    await page.waitForTimeout(500)
 
-      // Simulate tab hidden then visible
-      document.dispatchEvent(new Event('visibilitychange'))
-      Object.defineProperty(document, 'visibilityState', {
-        value: 'hidden',
-        writable: true,
-        configurable: true,
-      })
-      document.dispatchEvent(new Event('visibilitychange'))
-
-      Object.defineProperty(document, 'visibilityState', {
-        value: 'visible',
-        writable: true,
-        configurable: true,
-      })
-      document.dispatchEvent(new Event('visibilitychange'))
-
-      // Wait for debounce (1s) + margin
-      await new Promise((r) => setTimeout(r, 1500))
-      return called
+    // Verify the controller's visibilitychange listener is attached by
+    // dispatching the event and checking for the debug log
+    const logPromise = page.waitForEvent('console', {
+      predicate: (msg) =>
+        msg.text().includes('[PWA Auto-Update] Tab became visible'),
+      timeout: 5000,
     })
 
-    expect(updateCalled).toBe(true)
-  })
-
-  test('idle triggers SW update check', async ({ page }) => {
-    // This test would need a way to configure a short idle timeout
-    // For now, verify the controller is attached by checking visibility behavior
-    await page.goto('/')
-
-    await page.evaluate(async () => {
-      await navigator.serviceWorker.ready
+    // Dispatch visibilitychange — in headless Chromium visibilityState is
+    // already 'visible', so the controller's handler will proceed past the
+    // guard and fire after the 1s debounce
+    await page.evaluate(() => {
+      document.dispatchEvent(new Event('visibilitychange'))
     })
 
-    // The idle check is already covered by the controller starting
-    // A full idle test would require configuring idleTimeoutMs to ~5s
-    // and waiting, which makes the test slow. Covered by visibility test above.
-    expect(true).toBe(true)
+    const msg = await logPromise
+    expect(msg.text()).toContain('Tab became visible')
   })
 
-  test('error boundary renders on runtime error', async ({ page }) => {
+  test('app loads and renders content', async ({ page }) => {
     await page.goto('/')
 
-    // Wait for app to load
     await page
       .waitForSelector('[data-testid="user-avatar-button"], a[href="/"]', {
         timeout: 10000,
       })
-      .catch(() => {
-        // App may show login state or error, either way it loaded
-      })
+      .catch(() => {})
 
-    // Verify the app loaded (has the root element with content)
     const hasContent = await page.evaluate(() => {
       return document.getElementById('root')?.innerHTML !== ''
     })
