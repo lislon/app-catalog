@@ -9,9 +9,9 @@
     "clean": "premove ./dist ./coverage ./dist-ts",
     "compile": "tsc --build",
     "dev": "vite",
+    "e2e": "playwright test --project=chromium",
     "fix": "prettier --write ./src && eslint --fix ./src",
     "start": "node dist/index.js",
-    "test:e2e": "playwright test --project=chromium",
     "test:eslint": "eslint ./src",
     "test:unit": "vitest"
   },

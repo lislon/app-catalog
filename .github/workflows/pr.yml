@@ -39,9 +39,9 @@ jobs:
       - name: Setup Tools
         uses: tanstack/config/.github/setup@main
       - name: Install Playwright Chromium
-        run: npx playwright install chromium
+        run: pnpm --filter=@igstack/app-catalog-frontend-example exec playwright install chromium
       - name: Run E2E Tests
-        run: pnpm run test:e2e --filter=@igstack/app-catalog-frontend-example
+        run: pnpm --filter=@igstack/app-catalog-frontend-example run e2e
   preview:
     name: Preview
     runs-on: ubuntu-latest
