@@ -1,6 +1,6 @@
 import type { ErrorComponentProps } from '@tanstack/react-router'
 import { BugIcon, RefreshCcwIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '~/ui/button'
 import {
   Empty,
@@ -11,12 +11,25 @@ import {
   EmptyTitle,
 } from '~/ui/empty'
 import { useDb } from '~/userDb/DbContext'
+import { usePwaAutoUpdate } from '~/modules/pwa'
 import { isDexieError, isDexieMigrationError } from '~/util/error-utils'
 import { BaseErrorPage } from './BaseErrorPage'
 
 export function Treatment({ error, reset }: ErrorComponentProps) {
   const db = useDb()
+  const pwaAutoUpdate = usePwaAutoUpdate()
   const [isResetting, setIsResetting] = useState(false)
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState(false)
+
+  useEffect(() => {
+    if (!isDexieError(error) && pwaAutoUpdate) {
+      setIsCheckingUpdate(true)
+      pwaAutoUpdate.triggerUpdateOnError()
+      const timer = setTimeout(() => setIsCheckingUpdate(false), 2000)
+      return () => clearTimeout(timer)
+    }
+    return undefined
+  }, [error, pwaAutoUpdate])
 
   async function dexieResetDb() {
     setIsResetting(true)
@@ -54,6 +67,15 @@ export function Treatment({ error, reset }: ErrorComponentProps) {
         <RefreshCcwIcon className={isResetting ? 'animate-spin' : ''} />
         {buttonText}
       </Button>
+    )
+  }
+
+  if (isCheckingUpdate) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <RefreshCcwIcon className="h-4 w-4 animate-spin" />
+        Checking for updates...
+      </div>
     )
   }
 
