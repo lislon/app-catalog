@@ -59,6 +59,7 @@ jobs:
       - name: Build Packages
         run: pnpm run build:all
       - name: Publish Previews
+        continue-on-error: true
         run: pnpx pkg-pr-new publish --pnpm --compact './packages/*' --template './examples/*/*'
       - name: Determine commit SHA
         id: determine-sha
