@@ -107,7 +107,7 @@ async function main() {
 
     await connectDb()
     const catalog = await loadAppCatalog()
-    const result = await syncAppCatalog(catalog)
+    const result = await syncAppCatalog(catalog, [], [])
 
     console.log(`Sync complete! Total apps in catalog: ${result.total}`)
   } catch (error) {

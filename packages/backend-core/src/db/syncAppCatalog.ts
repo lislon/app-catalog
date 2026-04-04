@@ -8,7 +8,7 @@ import { tableSyncPrisma } from './tableSyncPrismaAdapter'
 import { readFile, readdir, stat } from 'node:fs/promises'
 import { group } from 'radashi'
 import { upsertAsset } from '../modules/assets/upsertAsset'
-import type { ApprovalMethod } from '../types'
+import type { ApprovalMethod, Group, Person, SubResource } from '../types'
 import type { PrismaClient } from '../generated/prisma/client'
 import { naturalSort } from '../utils/naturalSort'
 import { parseSourceSlug } from '../utils/parseSourceSlug'
@@ -166,6 +166,15 @@ async function syncAssetsFromFileSystem(
 }
 
 /**
+ * Optional data to sync alongside the core app catalog.
+ */
+export interface SyncAppCatalogOptions {
+  persons?: Person[]
+  groups?: Group[]
+  subResources?: SubResource[]
+}
+
+/**
  * Syncs app catalog data to the database using table sync.
  * This will create new apps, update existing ones, and delete any that are no longer in the input.
  *
@@ -176,9 +185,49 @@ export async function syncAppCatalog(
   tagsDefinitions: GroupingTagDefinition[],
   approvalMethods: ApprovalMethod[],
   sreenshotsPath?: string,
+  options?: SyncAppCatalogOptions,
 ): Promise<SyncAppCatalogResult> {
   try {
     const prisma = getDbClient()
+
+    // Sync Persons first (groups depend on persons via memberships)
+    if (options?.persons) {
+      const dbPersons = options.persons.map((p) => ({
+        slug: p.slug,
+        firstName: p.firstName,
+        lastName: p.lastName,
+        email: p.email ?? null,
+      }))
+      await tableSyncPrisma({
+        prisma,
+        ...TABLE_SYNC_MAGAZINE.DbPerson,
+      }).sync(dbPersons)
+    }
+
+    // Sync Groups (without memberships first)
+    if (options?.groups) {
+      const dbGroups = options.groups.map((g) => ({
+        slug: g.slug,
+        displayName: g.displayName ?? null,
+        email: g.email ?? null,
+      }))
+      await tableSyncPrisma({
+        prisma,
+        ...TABLE_SYNC_MAGAZINE.DbGroup,
+      }).sync(dbGroups)
+
+      // Now sync GroupMemberships
+      const allMemberships = options.groups.flatMap((g) =>
+        g.memberSlugs.map((personSlug) => ({
+          groupSlug: g.slug,
+          personSlug,
+        })),
+      )
+      await tableSyncPrisma({
+        prisma,
+        ...TABLE_SYNC_MAGAZINE.DbGroupMembership,
+      }).sync(allMemberships)
+    }
 
     await tableSyncPrisma({
       prisma,
@@ -241,6 +290,7 @@ export async function syncAppCatalog(
         deprecated: app.deprecated ?? null,
         aiPrompt: app.aiPrompt ?? null,
         urlIssues: app.urlIssues ?? [],
+        tiers: app.tiers ?? null,
       }
     })
 
@@ -289,6 +339,28 @@ export async function syncAppCatalog(
       prisma,
       ...TABLE_SYNC_MAGAZINE.SourceReference,
     }).sync(allSourceRefs)
+
+    // Sync SubResources (after apps, since they reference appSlug)
+    if (options?.subResources) {
+      const dbSubResources = options.subResources.map((sr) => ({
+        slug: sr.slug,
+        displayName: sr.displayName,
+        description: sr.description ?? null,
+        appSlug: sr.appSlug,
+        familySlug: sr.familySlug ?? null,
+        tierSlug: sr.tierSlug ?? null,
+        aliases: sr.aliases,
+        ownerPersonSlug: sr.ownerPersonSlug ?? null,
+        accessMaintainerGroupSlugs: sr.accessMaintainerGroupSlugs,
+        accessRequest: sr.accessRequest ?? null,
+        accessComments: sr.accessComments ?? null,
+        extra: sr.extra ?? null,
+      }))
+      await tableSyncPrisma({
+        prisma,
+        ...TABLE_SYNC_MAGAZINE.DbSubResource,
+      }).sync(dbSubResources)
+    }
 
     // Get actual synced data to calculate stats
     const actual = result.getActual()

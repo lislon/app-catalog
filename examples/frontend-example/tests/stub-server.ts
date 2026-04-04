@@ -9,6 +9,9 @@ const stubData = {
   apps: [],
   tagsDefinitions: [],
   approvalMethods: [],
+  persons: [],
+  groups: [],
+  subResources: [],
   versions: {
     backend: { displayName: 'stub' },
     frontend: { displayName: 'e2e-test' },

@@ -3,12 +3,14 @@ import type {
   AppCatalogData,
   AppForCatalog,
   GroupingTagDefinition,
+  SubResource,
 } from '@igstack/app-catalog-backend-core'
 
 export class MockDb {
   apps: AppForCatalog[] = []
   tagsDefinitions: GroupingTagDefinition[] = []
   approvalMethods: AppApprovalMethod[] = []
+  subResources: SubResource[] = []
 
   upsertApp(app: AppForCatalog): void {
     this.apps = [...this.apps.filter((a) => a.id !== app.id), app]
@@ -36,11 +38,21 @@ export class MockDb {
     this.approvalMethods = methods
   }
 
+  addSubResource(sr: SubResource): void {
+    this.subResources = [
+      ...this.subResources.filter((s) => s.slug !== sr.slug),
+      sr,
+    ]
+  }
+
   getAppCatalogData(): AppCatalogData {
     return {
       apps: this.apps,
       tagsDefinitions: this.tagsDefinitions,
       approvalMethods: this.approvalMethods,
+      persons: [],
+      groups: [],
+      subResources: this.subResources,
     }
   }
 }

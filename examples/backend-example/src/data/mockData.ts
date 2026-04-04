@@ -1,7 +1,10 @@
 import type {
   AppForCatalog,
   ApprovalMethod,
+  Group,
   GroupingTagDefinition,
+  Person,
+  SubResource,
 } from '@igstack/app-catalog-backend-core'
 
 // ============================================================================
@@ -116,16 +119,9 @@ export const mockApprovalMethods: ApprovalMethod[] = [
   },
   {
     slug: 'manager-approval',
-    type: 'personTeam',
+    type: 'custom',
     displayName: 'Manager Approval',
-    config: {
-      reachOutContacts: [
-        {
-          displayName: 'Your Manager',
-          contact: 'manager@example.com',
-        },
-      ],
-    },
+    config: {},
   },
   {
     slug: 'self-service',
@@ -135,16 +131,9 @@ export const mockApprovalMethods: ApprovalMethod[] = [
   },
   {
     slug: 'security-team',
-    type: 'personTeam',
+    type: 'custom',
     displayName: 'Security Team',
-    config: {
-      reachOutContacts: [
-        {
-          displayName: 'Security Team',
-          contact: 'security@example.com',
-        },
-      ],
-    },
+    config: {},
   },
   {
     slug: 'auto-provisioned',
@@ -175,7 +164,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     ],
     appUrl: 'https://yourcompany.slack.com',
     accessRequest: {
-      approvalMethodId: 'auto-provisioned',
+      approvalMethodSlug: 'auto-provisioned',
       requestPrompt: 'Slack is auto-provisioned for all employees',
       comments:
         'Contact IT if you need additional permissions or private channels.',
@@ -196,7 +185,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     ],
     appUrl: 'https://zoom.us',
     accessRequest: {
-      approvalMethodId: 'auto-provisioned',
+      approvalMethodSlug: 'auto-provisioned',
       requestPrompt: 'Zoom is auto-provisioned for all employees',
     },
     sources: ['https://support.zoom.us'],
@@ -212,7 +201,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     tags: ['category:operations', 'universality:common', 'origin:external'],
     appUrl: 'https://yourcompany.atlassian.net/wiki',
     accessRequest: {
-      approvalMethodId: 'it-helpdesk',
+      approvalMethodSlug: 'it-helpdesk',
       requestPrompt: 'Can I get access to Confluence',
       roles: [
         {
@@ -237,7 +226,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     tags: ['category:development', 'universality:common', 'origin:external'],
     appUrl: 'https://github.com/yourcompany',
     accessRequest: {
-      approvalMethodId: 'manager-approval',
+      approvalMethodSlug: 'manager-approval',
       requestPrompt: 'Can I get access to GitHub',
       roles: [
         { displayName: 'Read', description: 'Clone and view repositories' },
@@ -264,7 +253,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     tags: ['category:development', 'universality:common', 'origin:external'],
     appUrl: 'https://yourcompany.atlassian.net/jira',
     accessRequest: {
-      approvalMethodId: 'it-helpdesk',
+      approvalMethodSlug: 'it-helpdesk',
       requestPrompt: 'Can I get access to Jira',
       roles: [
         { displayName: 'Viewer', description: 'View issues and boards' },
@@ -291,7 +280,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     ],
     appUrl: 'https://app.datadoghq.com',
     accessRequest: {
-      approvalMethodId: 'security-team',
+      approvalMethodSlug: 'security-team',
       requestPrompt: 'Can I get access to DataDog',
       roles: [
         {
@@ -322,7 +311,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     ],
     appUrl: 'https://yourcompany.pagerduty.com',
     accessRequest: {
-      approvalMethodId: 'manager-approval',
+      approvalMethodSlug: 'manager-approval',
       requestPrompt: 'Can I get access to PagerDuty',
       comments: 'Required for on-call engineers. Manager approval needed.',
     },
@@ -338,7 +327,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     tags: ['category:development', 'universality:common', 'origin:external'],
     appUrl: 'https://www.postman.com',
     accessRequest: {
-      approvalMethodId: 'self-service',
+      approvalMethodSlug: 'self-service',
       requestPrompt: 'Sign up for Postman and join the company workspace',
     },
     sources: ['https://learning.postman.com'],
@@ -355,7 +344,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     tags: ['category:data-analytics', 'universality:common', 'origin:external'],
     appUrl: 'https://tableau.yourcompany.com',
     accessRequest: {
-      approvalMethodId: 'it-helpdesk',
+      approvalMethodSlug: 'it-helpdesk',
       requestPrompt: 'Can I get access to Tableau',
       roles: [
         { displayName: 'Viewer', description: 'View published dashboards' },
@@ -378,7 +367,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     tags: ['category:data-analytics', 'universality:common', 'origin:external'],
     appUrl: 'https://looker.yourcompany.com',
     accessRequest: {
-      approvalMethodId: 'manager-approval',
+      approvalMethodSlug: 'manager-approval',
       requestPrompt: 'Can I get access to Looker',
       comments: 'Manager approval required due to access to sensitive data.',
     },
@@ -398,7 +387,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     ],
     appUrl: 'https://app.snowflake.com',
     accessRequest: {
-      approvalMethodId: 'security-team',
+      approvalMethodSlug: 'security-team',
       requestPrompt: 'Can I get access to Snowflake',
       roles: [
         {
@@ -428,7 +417,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     tags: ['category:hr', 'universality:everyone', 'origin:external'],
     appUrl: 'https://workday.yourcompany.com',
     accessRequest: {
-      approvalMethodId: 'auto-provisioned',
+      approvalMethodSlug: 'auto-provisioned',
       requestPrompt: 'Workday is auto-provisioned for all employees',
       comments: 'All employees have self-service access to their own records.',
     },
@@ -444,7 +433,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     tags: ['category:hr', 'universality:everyone', 'origin:external'],
     appUrl: 'https://yourcompany.bamboohr.com',
     accessRequest: {
-      approvalMethodId: 'auto-provisioned',
+      approvalMethodSlug: 'auto-provisioned',
       requestPrompt: 'BambooHR is auto-provisioned for all employees',
     },
     sources: ['https://help.bamboohr.com'],
@@ -460,7 +449,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     tags: ['category:hr', 'universality:common', 'origin:external'],
     appUrl: 'https://app.greenhouse.io',
     accessRequest: {
-      approvalMethodId: 'it-helpdesk',
+      approvalMethodSlug: 'it-helpdesk',
       requestPrompt: 'Can I get access to Greenhouse',
       roles: [
         {
@@ -486,7 +475,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     tags: ['category:finance', 'universality:everyone', 'origin:external'],
     appUrl: 'https://www.expensify.com',
     accessRequest: {
-      approvalMethodId: 'auto-provisioned',
+      approvalMethodSlug: 'auto-provisioned',
       requestPrompt: 'Expensify is auto-provisioned for all employees',
     },
     sources: ['https://help.expensify.com'],
@@ -508,7 +497,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     ],
     appUrl: 'https://yourcompany.salesforce.com',
     accessRequest: {
-      approvalMethodId: 'manager-approval',
+      approvalMethodSlug: 'manager-approval',
       requestPrompt: 'Can I get access to Salesforce',
       roles: [
         { displayName: 'Read Only', description: 'View records only' },
@@ -539,7 +528,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     ],
     appUrl: 'https://app.hubspot.com',
     accessRequest: {
-      approvalMethodId: 'it-helpdesk',
+      approvalMethodSlug: 'it-helpdesk',
       requestPrompt: 'Can I get access to HubSpot',
     },
     sources: ['https://knowledge.hubspot.com'],
@@ -558,7 +547,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     ],
     appUrl: 'https://app.gong.io',
     accessRequest: {
-      approvalMethodId: 'manager-approval',
+      approvalMethodSlug: 'manager-approval',
       requestPrompt: 'Can I get access to Gong',
       comments: 'Sales manager approval required.',
     },
@@ -577,7 +566,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     tags: ['category:finance', 'universality:specialized', 'origin:external'],
     appUrl: 'https://system.netsuite.com',
     accessRequest: {
-      approvalMethodId: 'security-team',
+      approvalMethodSlug: 'security-team',
       requestPrompt: 'Can I get access to NetSuite',
       roles: [
         { displayName: 'Viewer', description: 'Read-only access to reports' },
@@ -598,7 +587,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     tags: ['category:finance', 'universality:specialized', 'origin:external'],
     appUrl: 'https://app.bill.com',
     accessRequest: {
-      approvalMethodId: 'manager-approval',
+      approvalMethodSlug: 'manager-approval',
       requestPrompt: 'Can I get access to Bill.com',
       comments: 'Finance manager approval required.',
     },
@@ -614,7 +603,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     tags: ['category:finance', 'universality:common', 'origin:external'],
     appUrl: 'https://app.docusign.com',
     accessRequest: {
-      approvalMethodId: 'it-helpdesk',
+      approvalMethodSlug: 'it-helpdesk',
       requestPrompt: 'Can I get access to DocuSign',
       roles: [
         { displayName: 'Sender', description: 'Send documents for signature' },
@@ -636,11 +625,31 @@ export const mockAppCatalog: AppForCatalog[] = [
     tags: ['category:security', 'universality:everyone', 'origin:external'],
     appUrl: 'https://yourcompany.okta.com',
     accessRequest: {
-      approvalMethodId: 'auto-provisioned',
+      approvalMethodSlug: 'auto-provisioned',
       requestPrompt: 'Okta is auto-provisioned for all employees',
       comments: 'All employees receive Okta credentials on their first day.',
     },
     sources: ['https://help.okta.com'],
+    tiers: [
+      {
+        tierSlug: 'prod',
+        displayName: 'Okta Production',
+        appUrl: 'https://yourcompany.okta.com',
+        accessRequest: {
+          approvalMethodSlug: 'auto-provisioned',
+        },
+      },
+      {
+        tierSlug: 'dev',
+        displayName: 'Okta Preview',
+        description: 'Testing environment for Okta',
+        appUrl: 'https://yourcompany.oktapreview.com',
+        accessRequest: {
+          approvalMethodSlug: 'security-team',
+          comments: 'Admin access to preview requires security team approval',
+        },
+      },
+    ],
   },
   {
     id: 'aws-console',
@@ -653,7 +662,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     tags: ['category:security', 'universality:specialized', 'origin:external'],
     appUrl: 'https://console.aws.amazon.com',
     accessRequest: {
-      approvalMethodId: 'security-team',
+      approvalMethodSlug: 'security-team',
       requestPrompt: 'Can I get access to AWS Console',
       roles: [
         {
@@ -684,7 +693,7 @@ export const mockAppCatalog: AppForCatalog[] = [
     tags: ['category:operations', 'universality:everyone', 'origin:external'],
     appUrl: 'https://workspace.google.com',
     accessRequest: {
-      approvalMethodId: 'auto-provisioned',
+      approvalMethodSlug: 'auto-provisioned',
       requestPrompt: 'Google Workspace is auto-provisioned for all employees',
     },
     sources: ['https://support.google.com/a'],
@@ -699,10 +708,96 @@ export const mockAppCatalog: AppForCatalog[] = [
     tags: ['category:operations', 'universality:common', 'origin:external'],
     appUrl: 'https://notion.so',
     accessRequest: {
-      approvalMethodId: 'self-service',
+      approvalMethodSlug: 'self-service',
       requestPrompt:
         'Sign up with your work email and request to join the workspace',
     },
     sources: ['https://www.notion.so/help'],
+  },
+]
+
+// ============================================================================
+// PERSONS
+// ============================================================================
+
+export const mockPersons: Person[] = [
+  {
+    slug: 'jsmith@example.com',
+    firstName: 'John',
+    lastName: 'Smith',
+    email: 'jsmith@example.com',
+  },
+  {
+    slug: 'ajones@example.com',
+    firstName: 'Alice',
+    lastName: 'Jones',
+    email: 'ajones@example.com',
+  },
+  {
+    slug: 'bwilson@example.com',
+    firstName: 'Bob',
+    lastName: 'Wilson',
+    email: 'bwilson@example.com',
+  },
+]
+
+// ============================================================================
+// GROUPS
+// ============================================================================
+
+export const mockGroups: Group[] = [
+  {
+    slug: 'cloud-team',
+    displayName: 'Cloud Infrastructure Team',
+    email: 'cloud-team@example.com',
+    memberSlugs: ['jsmith@example.com', 'ajones@example.com'],
+  },
+  {
+    slug: 'data-team',
+    displayName: 'Data Engineering Team',
+    memberSlugs: ['bwilson@example.com'],
+  },
+]
+
+// ============================================================================
+// SUB-RESOURCES (AWS accounts)
+// ============================================================================
+
+export const mockSubResources: SubResource[] = [
+  {
+    slug: 'aws-prod-main',
+    displayName: 'company-prod-main',
+    description: 'Main production AWS account',
+    appSlug: 'aws-console',
+    familySlug: 'company-main',
+    tierSlug: 'prod',
+    aliases: ['123456789012'],
+    ownerPersonSlug: 'jsmith@example.com',
+    accessMaintainerGroupSlugs: ['cloud-team'],
+    extra: { orgUnit: 'Engineering', accounting: 'OpEx' },
+  },
+  {
+    slug: 'aws-dev-main',
+    displayName: 'company-dev-main',
+    description: 'Main development AWS account',
+    appSlug: 'aws-console',
+    familySlug: 'company-main',
+    tierSlug: 'dev',
+    aliases: ['987654321098'],
+    ownerPersonSlug: 'jsmith@example.com',
+    accessMaintainerGroupSlugs: ['cloud-team'],
+    extra: { orgUnit: 'Engineering', accounting: 'RnD' },
+  },
+  {
+    slug: 'aws-data-analytics-prod',
+    displayName: 'company-data-analytics-prod',
+    description: 'Data analytics production account',
+    appSlug: 'aws-console',
+    familySlug: 'company-data-analytics',
+    tierSlug: 'prod',
+    aliases: ['111222333444'],
+    ownerPersonSlug: 'bwilson@example.com',
+    accessMaintainerGroupSlugs: ['data-team'],
+    extra: { orgUnit: 'Data', accounting: 'OpEx' },
   },
 ]

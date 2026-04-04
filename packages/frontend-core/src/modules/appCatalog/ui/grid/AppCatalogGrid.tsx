@@ -37,6 +37,9 @@ import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation'
 import { highlightText } from '../../utils/searchApps'
+import { TierVariantsSection } from '../components/TierVariantsSection'
+import { SubResourcesSection } from '../components/SubResourcesSection'
+import { getSubResourcesForApp } from '../../utils/resolveHelpers'
 
 export interface AppCatalogGridProps {
   apps: AppForCatalog[]
@@ -166,6 +169,29 @@ function AppScreenshot({ app }: { app: AppForCatalog }) {
         )}
       </div>
     </div>
+  )
+}
+
+function TiersAndSubResourcesPanel({ app }: { app: AppForCatalog }) {
+  const { subResources } = useAppCatalogContext()
+  const appSubResources = React.useMemo(
+    () => getSubResourcesForApp(subResources ?? [], app.slug),
+    [subResources, app.slug],
+  )
+
+  return (
+    <>
+      {app.tiers && app.tiers.length > 0 && (
+        <div className="mt-6">
+          <TierVariantsSection tiers={app.tiers} />
+        </div>
+      )}
+      {appSubResources.length > 0 && (
+        <div className="mt-6">
+          <SubResourcesSection subResources={appSubResources} />
+        </div>
+      )}
+    </>
   )
 }
 
@@ -404,6 +430,9 @@ function AppDetails({
 
         {/* Access Request Section */}
         <AccessRequestSection app={app} approvalMethods={approvalMethods} />
+
+        {/* Tier Variants and Sub-Resources */}
+        <TiersAndSubResourcesPanel app={app} />
 
         {/* Links */}
         {app.links && app.links.length > 0 && (
@@ -691,6 +720,33 @@ export function AppCatalogGrid({
     onAppClick,
   })
 
+  // Build a map of appSlug -> matched sub-resource displayName for search annotation
+  const { subResources: allSubResources } = useAppCatalogContext()
+  const matchedSubResourceMap = React.useMemo(() => {
+    const map = new Map<string, string>()
+    if (!searchQuery?.trim() || !allSubResources?.length) return map
+    const queryTerms = searchQuery
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean)
+    const allTermsMatch = (text: string): boolean =>
+      queryTerms.every((term) => text.includes(term))
+
+    for (const sr of allSubResources) {
+      if (map.has(sr.appSlug)) continue
+      const nameMatch = allTermsMatch(sr.displayName.toLowerCase())
+      const aliasMatch = sr.aliases.some((a) => allTermsMatch(a.toLowerCase()))
+      const descMatch = sr.description
+        ? allTermsMatch(sr.description.toLowerCase())
+        : false
+      if (nameMatch || aliasMatch || descMatch) {
+        map.set(sr.appSlug, sr.displayName)
+      }
+    }
+    return map
+  }, [searchQuery, allSubResources])
+
   // Define columns
   const columns = React.useMemo<ColumnDef<AppForCatalog>[]>(
     () => [
@@ -746,16 +802,24 @@ export function AppCatalogGrid({
         id: 'description',
         header: 'Description',
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground line-clamp-2">
-            <HighlightedText
-              text={row.original.description || '—'}
-              searchQuery={searchQuery}
-            />
-          </span>
+          <div>
+            <span className="text-sm text-muted-foreground line-clamp-2">
+              <HighlightedText
+                text={row.original.description || '—'}
+                searchQuery={searchQuery}
+              />
+            </span>
+            {matchedSubResourceMap.get(row.original.slug) && (
+              <div className="text-xs text-primary mt-0.5">
+                Matched sub-resource:{' '}
+                {matchedSubResourceMap.get(row.original.slug)}
+              </div>
+            )}
+          </div>
         ),
       },
     ],
-    [searchQuery],
+    [searchQuery, matchedSubResourceMap],
   )
 
   // Create a single table instance with all apps

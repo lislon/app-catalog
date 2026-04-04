@@ -2,6 +2,7 @@ import type {
   AppApprovalMethod,
   AppForCatalog,
   GroupingTagDefinition,
+  SubResource,
 } from '@igstack/app-catalog-backend-core'
 import type { MockDb } from './MockDb'
 import type { MockUserContext, UserConfig } from './MockUserContext'
@@ -63,6 +64,20 @@ export class MockBackendConfigurer {
     } as AppApprovalMethod
     this.db.setApprovalMethods([...this.db.approvalMethods, method])
     return method
+  }
+
+  withSubResource(
+    overrides: Partial<SubResource> & { appSlug: string },
+  ): SubResource {
+    const sr: SubResource = {
+      slug: overrides.slug ?? `sr-${nextId()}`,
+      displayName: overrides.displayName ?? `Sub Resource ${counter}`,
+      aliases: overrides.aliases ?? [],
+      accessMaintainerGroupSlugs: overrides.accessMaintainerGroupSlugs ?? [],
+      ...overrides,
+    }
+    this.db.addSubResource(sr)
+    return sr
   }
 
   withUser(overrides: Partial<UserConfig>): void {

@@ -21,7 +21,8 @@ import { FilterBar } from '../filters/FilterBar'
 import { AppCatalogGrid } from '../grid/AppCatalogGrid'
 
 export function AppCatalogPage() {
-  const { apps, isLoadingApps, tagsDefinitions } = useAppCatalogContext()
+  const { apps, isLoadingApps, tagsDefinitions, subResources } =
+    useAppCatalogContext()
   const { state: filterState, actions } = useAppCatalogFilters()
   const { getTopApps } = useAppClickHistory()
 
@@ -75,7 +76,7 @@ export function AppCatalogPage() {
     }
 
     // Step 3: Apply search (using deferred value)
-    result = searchApps(result, deferredSearchValue)
+    result = searchApps(result, deferredSearchValue, subResources)
 
     return result
   }, [
@@ -85,6 +86,7 @@ export function AppCatalogPage() {
     filterState.tagFilters,
     filterState.showDeprecated,
     topAppSlugs,
+    subResources,
   ])
 
   // Calculate counts for FilterBar

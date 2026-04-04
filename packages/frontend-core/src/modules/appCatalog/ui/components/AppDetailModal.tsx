@@ -1,6 +1,6 @@
 import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
 import { AppWindowIcon, ExternalLinkIcon, XIcon } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Badge } from '~/ui/badge'
 import { Button } from '~/ui/button'
 import { ScrollArea } from '~/ui/scroll-area'
@@ -17,6 +17,9 @@ import {
   TableRow,
 } from '~/ui/table'
 import { ScreenshotGallery } from './ScreenshotGallery'
+import { TierVariantsSection } from './TierVariantsSection'
+import { SubResourcesSection } from './SubResourcesSection'
+import { getSubResourcesForApp } from '~/modules/appCatalog/utils/resolveHelpers'
 
 export interface AppDetailModalProps {
   app: AppForCatalog
@@ -129,7 +132,7 @@ function AccessSection({ app }: { app: AppForCatalog }) {
   }
 
   const approvalMethod = approvalMethods.find(
-    (m) => accessRequest.approvalMethodId === m.slug,
+    (m) => accessRequest.approvalMethodSlug === m.slug,
   )
   if (approvalMethod?.type !== 'service') {
     return 'not service'
@@ -180,6 +183,25 @@ function AccessSection({ app }: { app: AppForCatalog }) {
 
       <pre>{JSON.stringify(accessRequest, null, 2)}</pre>
     </div>
+  )
+}
+
+function TiersAndSubResources({ app }: { app: AppForCatalog }) {
+  const { subResources } = useAppCatalogContext()
+  const appSubResources = useMemo(
+    () => getSubResourcesForApp(subResources ?? [], app.slug),
+    [subResources, app.slug],
+  )
+
+  return (
+    <>
+      {app.tiers && app.tiers.length > 0 && (
+        <TierVariantsSection tiers={app.tiers} />
+      )}
+      {appSubResources.length > 0 && (
+        <SubResourcesSection subResources={appSubResources} />
+      )}
+    </>
   )
 }
 
@@ -271,8 +293,8 @@ export function AppDetailModal({ app, isOpen, onClose }: AppDetailModalProps) {
               {/* Access Section */}
               <AccessSection app={app} />
 
-              {/* Approval Details Section - TODO: Update to use new approval system */}
-              {/* {app.accessRequest && <AccessRequestSection accessRequest={app.accessRequest} />} */}
+              {/* Tier Variants and Sub-Resources */}
+              <TiersAndSubResources app={app} />
 
               {/* Tags */}
               {app.tags && app.tags.length > 0 && (

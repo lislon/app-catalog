@@ -76,6 +76,39 @@ enum ApprovalMethodType {
   service
   personTeam
   custom
+  noAccessRequired
+  unknown
+}
+
+// ========== Person & Group Models ==========
+
+model DbPerson {
+  slug        String               @id // email or synthetic
+  firstName   String
+  lastName    String
+  email       String?              @unique
+  memberships DbGroupMembership[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+}
+
+model DbGroup {
+  slug        String               @id
+  displayName String?
+  email       String?              // team alias
+  memberships DbGroupMembership[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+}
+
+model DbGroupMembership {
+  id         Int      @id @default(autoincrement())
+  groupSlug  String
+  group      DbGroup  @relation(fields: [groupSlug], references: [slug], onDelete: Cascade)
+  personSlug String
+  person     DbPerson @relation(fields: [personSlug], references: [slug], onDelete: Cascade)
+
+  @@unique([groupSlug, personSlug])
 }
 
 model DbApprovalMethod {
@@ -114,13 +147,39 @@ model DbAppForCatalog {
   deprecated    Json?
   aiPrompt      String?
   urlIssues     String[]          @default([])
+  /// [AppTierVariant[]]
+  tiers         Json?
   sourceRefs    SourceReference[]
+  subResources  DbSubResource[]
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
   @@index([displayName])
   @@index([slug])
   @@index([tags])
+}
+
+model DbSubResource {
+  id                         String          @id @default(cuid())
+  slug                       String          @unique
+  displayName                String
+  description                String?
+  appSlug                    String
+  app                        DbAppForCatalog @relation(fields: [appSlug], references: [slug], onDelete: Cascade)
+  familySlug                 String?           // groups tier variants visually
+  tierSlug                   String?
+  aliases                    String[]        @default([])
+  ownerPersonSlug            String?
+  accessMaintainerGroupSlugs String[]        @default([])
+  /// [AppAccessRequest]
+  accessRequest              Json?
+  accessComments             String?
+  /// [SubResourceExtra]
+  extra                      Json?
+  createdAt                  DateTime        @default(now())
+  updatedAt                  DateTime        @updatedAt
+
+  @@index([appSlug])
 }
 
 model DbAppTagDefinition {

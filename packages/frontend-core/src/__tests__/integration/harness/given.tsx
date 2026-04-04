@@ -165,7 +165,7 @@ export async function given(magazine: Magazine): Promise<GivenResult> {
   await waitFor(
     () => {
       const hasAlert = screen.queryByRole('alert')
-      const hasTable = screen.queryByRole('table')
+      const hasTable = screen.queryAllByRole('table').length > 0
       const hasSearchbox = screen.queryByLabelText('Search apps')
       const hasTanstackError = document.body.textContent.includes(
         'Something went wrong',

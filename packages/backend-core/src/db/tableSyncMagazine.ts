@@ -13,6 +13,20 @@ type TableSyncMagazineType = Partial<{
 }>
 
 export const TABLE_SYNC_MAGAZINE = {
+  DbPerson: {
+    id: 'slug',
+    prismaModelName: 'DbPerson',
+    uniqColumns: ['slug'],
+  },
+  DbGroup: {
+    id: 'slug',
+    prismaModelName: 'DbGroup',
+    uniqColumns: ['slug'],
+  },
+  DbGroupMembership: {
+    prismaModelName: 'DbGroupMembership',
+    uniqColumns: ['groupSlug', 'personSlug'],
+  },
   DbAppForCatalog: {
     prismaModelName: 'DbAppForCatalog',
     uniqColumns: ['slug'],
@@ -29,6 +43,10 @@ export const TABLE_SYNC_MAGAZINE = {
   Source: {
     id: 'slug',
     prismaModelName: 'Source',
+    uniqColumns: ['slug'],
+  },
+  DbSubResource: {
+    prismaModelName: 'DbSubResource',
     uniqColumns: ['slug'],
   },
   SourceReference: {

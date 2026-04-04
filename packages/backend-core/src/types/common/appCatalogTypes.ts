@@ -7,6 +7,24 @@
  */
 
 import type { AppAccessRequest, ApprovalMethod } from './approvalMethodTypes'
+import type { Group, Person } from './personGroupTypes'
+import type { SubResource } from './subResourceTypes'
+
+// ============================================================================
+// APP TIER VARIANT
+// ============================================================================
+
+/**
+ * A tier variant of an app (e.g., prod/dev environments).
+ * Each tier can have its own URL and access process.
+ */
+export interface AppTierVariant {
+  tierSlug: string
+  displayName?: string
+  description?: string
+  appUrl?: string
+  accessRequest?: AppAccessRequest
+}
 
 // ============================================================================
 // APP CATALOG TYPES
@@ -53,6 +71,8 @@ export interface AppForCatalog {
   aiPrompt?: string
   /** URL health issues detected by automated scanning */
   urlIssues?: string[]
+  /** Optional tier variants (e.g., prod/dev) with per-tier URLs and access */
+  tiers?: AppTierVariant[]
 }
 
 // Derived catalog data returned by backend
@@ -98,5 +118,8 @@ export interface AppCatalogData {
   apps: AppForCatalog[]
   tagsDefinitions: GroupingTagDefinition[]
   approvalMethods: AppApprovalMethod[]
+  persons: Person[]
+  groups: Group[]
+  subResources: SubResource[]
   versions?: AppVersionInfo
 }

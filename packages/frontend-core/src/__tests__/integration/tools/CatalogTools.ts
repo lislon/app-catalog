@@ -14,7 +14,8 @@ export class CatalogTools {
    * Throws with list of visible apps if name not found.
    */
   async openApp(name: string): Promise<void> {
-    const table = screen.getByRole('table')
+    const table = this.getCatalogTable()
+    if (!table) throw new Error('No catalog table found')
     const rows = within(table).getAllByRole('row')
 
     for (const row of rows) {
@@ -45,7 +46,7 @@ export class CatalogTools {
    * Skips group header rows (colspan rows).
    */
   getTableData(): TableRow[] {
-    const table = screen.queryByRole('table')
+    const table = this.getCatalogTable()
     if (!table) {
       // Check if there's a global error — throw with details for debugging
       const bodyText = document.body.textContent
@@ -92,5 +93,14 @@ export class CatalogTools {
    */
   isOnboardingVisible(): boolean {
     return !!screen.queryByText('Welcome to App Catalog')
+  }
+
+  /**
+   * Get the main catalog table (first table on page, skipping sub-resource tables in detail panel).
+   */
+  private getCatalogTable(): HTMLElement | null {
+    const tables = screen.queryAllByRole('table')
+    // The catalog table is the first table; sub-resource tables appear later in the detail panel
+    return tables[0] ?? null
   }
 }
