@@ -20,6 +20,59 @@ async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+function classifyNetworkError(err: unknown): string {
+  // Node's fetch wraps the real error in error.cause
+  const cause =
+    err instanceof Error && 'cause' in err && err.cause instanceof Error
+      ? err.cause
+      : null
+
+  const hasCode = (obj: unknown): obj is { code: string } =>
+    obj != null && typeof obj === 'object' && 'code' in obj
+
+  const code =
+    (hasCode(cause) ? cause.code : null) ?? (hasCode(err) ? err.code : null)
+  const causeMsg = cause?.message ?? ''
+  const topMsg = err instanceof Error ? err.message : String(err)
+
+  if (code) {
+    switch (code) {
+      case 'ENOTFOUND':
+      case 'EAI_AGAIN':
+        return `DNS resolution failed (${code})`
+      case 'ECONNREFUSED':
+        return `Connection refused (${code})`
+      case 'ETIMEDOUT':
+      case 'ECONNRESET':
+        return `Connection timeout (${code})`
+      case 'ENETUNREACH':
+      case 'EHOSTUNREACH':
+        return `Network unreachable (${code})`
+      case 'UNABLE_TO_VERIFY_LEAF_SIGNATURE':
+        return `SSL certificate error: unable to verify certificate (${code})`
+      case 'CERT_HAS_EXPIRED':
+        return `SSL certificate error: certificate expired (${code})`
+      case 'ERR_TLS_CERT_ALTNAME_INVALID':
+        return `SSL certificate error: hostname mismatch (${code})`
+      case 'DEPTH_ZERO_SELF_SIGNED_CERT':
+      case 'SELF_SIGNED_CERT_IN_CHAIN':
+        return `SSL certificate error: self-signed certificate (${code})`
+      default:
+        if (code.startsWith('ERR_TLS') || code.startsWith('CERT'))
+          return `SSL/TLS error (${code}): ${causeMsg || topMsg}`
+        return `Network error (${code}): ${causeMsg || topMsg}`
+    }
+  }
+
+  const msg = causeMsg || topMsg
+  if (/certificate/i.test(msg) || /SSL|TLS/i.test(msg))
+    return `SSL/TLS error: ${msg}`
+  if (/abort|timeout/i.test(msg)) return `Request timeout: ${msg}`
+  if (/dns|resolve/i.test(msg)) return `DNS error: ${msg}`
+
+  return causeMsg || topMsg
+}
+
 async function checkUrlWithRetry(
   url: string,
   options: {
@@ -38,15 +91,15 @@ async function checkUrlWithRetry(
       })
       return { status: response.status }
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error)
+      const errorMessage = classifyNetworkError(error)
       lastError = errorMessage
 
-      // Check if it's a retryable error (timeout or fetch failed)
+      // Check if it's a retryable error (timeout or transient network issues)
       const isRetryable =
-        errorMessage.includes('aborted') ||
         errorMessage.includes('timeout') ||
-        errorMessage.includes('fetch failed')
+        errorMessage.includes('ECONNRESET') ||
+        errorMessage.includes('ETIMEDOUT') ||
+        errorMessage.includes('EAI_AGAIN')
 
       if (isRetryable && attempt < options.maxRetries) {
         // Exponential backoff: 1s, 2s, 4s
