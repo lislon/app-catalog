@@ -2,22 +2,19 @@
  * Approval Method Types
  *
  * Global approval method templates that apps can link to.
- * Each method has a type (service, personTeam, custom) with type-specific config.
+ * Each method has a type (service, custom, noAccessRequired, unknown) with type-specific config.
  */
 
 // ============================================================================
 // APPROVAL METHOD TYPES (Global Templates)
 // ============================================================================
 
-export type ApprovalMethodType = 'service' | 'personTeam' | 'custom'
-
-/**
- * Contact for reaching out (not necessarily the approver)
- */
-export interface ReachOutContact {
-  displayName: string
-  contact: string // email, slack handle, etc.
-}
+export type ApprovalMethodType =
+  | 'service'
+  | 'personTeam'
+  | 'custom'
+  | 'noAccessRequired'
+  | 'unknown'
 
 /**
  * Service type config - for bots, ticketing systems, self-service portals
@@ -28,10 +25,11 @@ export interface ServiceConfig {
 }
 
 /**
- * Person/Team type config - for human approvers
+ * PersonTeam type config - for person/group-based approval
  */
 export interface PersonTeamConfig {
-  reachOutContacts?: ReachOutContact[]
+  personSlugs?: string[] // Person references
+  groupSlugs?: string[] // Group references
 }
 
 /**
@@ -52,19 +50,10 @@ export type ApprovalMethodConfig =
 /**
  * Approval Method - stored in DbApprovalMethod
  */
-// export interface ApprovalMethod {
-//   slug: string
-//   type: ApprovalMethodType
-//   displayName: string
-//   config?: ApprovalMethodConfig
-//   createdAt?: Date
-//   updatedAt?: Date
-// }
-
 export type ApprovalMethod = {
   slug: string
   displayName: string
-  /** Old/migrated URLs that map to this approval method (e.g., jira.natera.com → natera.atlassian.net) */
+  /** Old/migrated URLs that map to this approval method (e.g., jira.natera.com -> natera.atlassian.net) */
   deprecatedAliases?: string[]
   createdAt?: Date
   updatedAt?: Date
@@ -79,6 +68,14 @@ export type ApprovalMethod = {
     }
   | {
       type: 'custom'
+      config: CustomConfig
+    }
+  | {
+      type: 'noAccessRequired'
+      config: CustomConfig
+    }
+  | {
+      type: 'unknown'
       config: CustomConfig
     }
 )
@@ -97,14 +94,6 @@ export interface AppRole {
 }
 
 /**
- * Approver contact (person who approves, may differ from reach-out contact)
- */
-export interface ApproverContact {
-  displayName: string
-  contact?: string
-}
-
-/**
  * URL link with optional label
  */
 export interface ApprovalUrl {
@@ -117,7 +106,7 @@ export interface ApprovalUrl {
  * All comment/text-like strings are markdown
  */
 export interface AppAccessRequest {
-  approvalMethodId: string // FK to DbApprovalMethod
+  approvalMethodSlug: string // FK to DbApprovalMethod
 
   // Common fields (all types) - markdown text
   comments?: string
@@ -126,11 +115,8 @@ export interface AppAccessRequest {
 
   // Lists
   roles?: AppRole[]
-  approvers?: ApproverContact[]
+  approverPersonSlugs?: string[] // slugs referencing Person entities
   urls?: ApprovalUrl[]
-
-  // Type-specific (Person/Team only)
-  whoToReachOut?: string // markdown
 }
 
 // ============================================================================

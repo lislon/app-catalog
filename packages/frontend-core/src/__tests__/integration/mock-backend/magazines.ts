@@ -40,13 +40,9 @@ function fullMagazine(
     })
     const managerApproval = backendCfg.withApprovalMethod({
       slug: 'manager-approval',
-      type: 'personTeam',
+      type: 'custom',
       displayName: 'Manager Approval',
-      config: {
-        reachOutContacts: [
-          { displayName: 'IT Team', contact: 'it-team@example.com' },
-        ],
-      },
+      config: {},
     })
     backendCfg.withApprovalMethod({
       slug: 'self-service',
@@ -93,7 +89,7 @@ function fullMagazine(
       screenshotIds: ['ss-jira-1', 'ss-jira-2', 'ss-jira-3'],
       appUrl: 'https://jira.example.com',
       accessRequest: {
-        approvalMethodId: helpdesk.slug,
+        approvalMethodSlug: helpdesk.slug,
         comments: 'Submit a ticket',
       },
     })
@@ -144,7 +140,7 @@ function fullMagazine(
       tags: ['category:internal', 'team:platform'],
       screenshotIds: ['ss-portal-1'],
       accessRequest: {
-        approvalMethodId: managerApproval.slug,
+        approvalMethodSlug: managerApproval.slug,
         comments: 'Requires manager approval',
       },
     })
@@ -205,7 +201,7 @@ function singleMagazine(postConfigure?: Magazine): Magazine {
       screenshotIds: ['screenshot-jira-1', 'screenshot-jira-2'],
       appUrl: 'https://jira.example.com',
       accessRequest: {
-        approvalMethodId: method.slug,
+        approvalMethodSlug: method.slug,
         comments: 'Submit a ticket to IT',
       },
     })

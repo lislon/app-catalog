@@ -74,7 +74,10 @@ const FEATURES: FeatureRegistration[] = [
               }
               res.json({ ...session, isAdmin: admin })
             } else {
-              res.status(401).json({ error: 'Not authenticated' })
+              // Return 200 with null session instead of 401 to avoid
+              // browser "Failed to load resource" console errors.
+              // The frontend checks for session.user to determine auth state.
+              res.json({ session: null, user: null, isAuthenticated: false })
             }
           } catch (error) {
             console.error('[Auth Session Error]', error)

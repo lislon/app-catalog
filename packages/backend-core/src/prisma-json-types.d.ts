@@ -28,6 +28,12 @@ declare global {
 
     // AppRole used within accessRequest
     type AppRole = import('./types/index').AppRole
+
+    // DbAppForCatalog.tiers - Tier variants (prod/dev)
+    type AppTierVariant = import('./types/index').AppTierVariant
+
+    // DbSubResource.extra - Arbitrary extra data
+    type SubResourceExtra = Record<string, unknown>
   }
 }
 

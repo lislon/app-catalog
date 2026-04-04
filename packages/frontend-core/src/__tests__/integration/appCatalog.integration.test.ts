@@ -52,7 +52,7 @@ describe('App Catalog Integration', () => {
           description: 'A test application',
           screenshotIds: ['screenshot-1'],
           accessRequest: {
-            approvalMethodId: approvalMethod.slug,
+            approvalMethodSlug: approvalMethod.slug,
             comments: 'Submit a ticket',
           },
         })
@@ -111,6 +111,45 @@ describe('App Catalog Integration', () => {
     const error = ui.globalError()
     expect(error.message).toBeTruthy()
     expect(error.element).toBeInTheDocument()
+  })
+
+  // Test: Sub-resources visible in side panel
+  it('shows sub-resources table in detail panel when app has sub-resources', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        const app = backendCfg.withApp({
+          slug: 'aws-console',
+          displayName: 'AWS Console',
+          description: 'Cloud management console',
+        })
+        backendCfg.withSubResource({
+          appSlug: app.slug,
+          displayName: 'acct-prod',
+          tierSlug: 'prod',
+          ownerPersonSlug: 'jsmith',
+        })
+        backendCfg.withSubResource({
+          appSlug: app.slug,
+          displayName: 'acct-dev',
+          tierSlug: 'dev',
+          ownerPersonSlug: 'jdoe',
+        })
+        backendCfg.withSubResource({
+          appSlug: app.slug,
+          displayName: 'acct-staging',
+          tierSlug: 'staging',
+        })
+      }),
+    )
+
+    await ui.catalog.openApp('AWS Console')
+    const subResources = ui.app.getSubResources()
+    expect(subResources).not.toBeNull()
+    expect(subResources!.total).toBe(3)
+    expect(subResources!.visible).toBe(3)
+    expect(subResources!.names).toContain('acct-prod')
+    expect(subResources!.names).toContain('acct-dev')
+    expect(subResources!.names).toContain('acct-staging')
   })
 
   // Test 4: Malformed Response — HTML Instead of JSON

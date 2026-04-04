@@ -82,6 +82,37 @@ export class AppDetailTools {
     }
   }
 
+  /**
+   * Get the sub-resources section data from the detail panel.
+   * Returns null if no sub-resources section is visible.
+   */
+  getSubResources(): {
+    total: number
+    visible: number
+    names: string[]
+  } | null {
+    const panel = this.getPanel()
+    const heading = Array.from(panel.querySelectorAll('div')).find((el) =>
+      el.textContent.match(/Sub-Resources \(\d+ of \d+\)/),
+    )
+    if (!heading) return null
+
+    const match = heading.textContent.match(/Sub-Resources \((\d+) of (\d+)\)/)
+    const visible = match?.[1] ? parseInt(match[1], 10) : 0
+    const total = match?.[2] ? parseInt(match[2], 10) : 0
+
+    const names: string[] = []
+    const rows = panel.querySelectorAll('table tbody tr')
+    rows.forEach((row) => {
+      const nameCell = row.querySelector('td .font-medium')
+      if (nameCell?.textContent) {
+        names.push(nameCell.textContent.trim())
+      }
+    })
+
+    return { total, visible, names }
+  }
+
   screenshots = {
     /**
      * Click the screenshot preview to open the gallery modal.

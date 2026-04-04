@@ -14,6 +14,9 @@ const minimalContext: AppCatalogContextIface = {
   isLoadingApps: false,
   tagsDefinitions: [],
   approvalMethods: [],
+  persons: [],
+  groups: [],
+  subResources: [],
 }
 
 function renderWithContext(app: AppForCatalog) {

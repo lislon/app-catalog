@@ -9,9 +9,10 @@ import type {
 } from '../../types/common/appCatalogTypes'
 import type {
   CustomConfig,
-  PersonTeamConfig,
   ServiceConfig,
 } from '../../types/common/approvalMethodTypes'
+import type { Group, Person } from '../../types/common/personGroupTypes'
+import type { SubResource } from '../../types/common/subResourceTypes'
 import { omit } from 'radashi'
 import { parseSourceSlug } from '../../utils/parseSourceSlug'
 
@@ -96,17 +97,34 @@ export async function getApprovalMethodsFromPrisma(): Promise<
       case 'service':
         return {
           ...baseFields,
-          type: 'service',
+          type: 'service' as const,
           config: config as ServiceConfig,
         }
-      case 'personTeam':
+      case 'custom':
         return {
           ...baseFields,
-          type: 'personTeam',
-          config: config as PersonTeamConfig,
+          type: 'custom' as const,
+          config: config as CustomConfig,
         }
-      case 'custom':
-        return { ...baseFields, type: 'custom', config: config as CustomConfig }
+      case 'noAccessRequired':
+        return {
+          ...baseFields,
+          type: 'noAccessRequired' as const,
+          config: config as CustomConfig,
+        }
+      case 'unknown':
+        return {
+          ...baseFields,
+          type: 'unknown' as const,
+          config: config as CustomConfig,
+        }
+      case 'personTeam':
+        // Legacy: map personTeam to custom
+        return {
+          ...baseFields,
+          type: 'custom' as const,
+          config: config as CustomConfig,
+        }
     }
   })
 }
@@ -138,6 +156,10 @@ function rowToAppForCatalog(row: AppRowWithSourceRefs): AppForCatalog {
   const urlIssues = (row.urlIssues as unknown as string[] | null)?.length
     ? (row.urlIssues as unknown as string[])
     : undefined
+  const tiers =
+    row.tiers == null
+      ? undefined
+      : (row.tiers as unknown as AppForCatalog['tiers'])
 
   return {
     id: row.id,
@@ -157,6 +179,7 @@ function rowToAppForCatalog(row: AppRowWithSourceRefs): AppForCatalog {
     deprecated,
     aiPrompt,
     urlIssues,
+    tiers,
   }
 }
 
@@ -265,6 +288,54 @@ export function deriveCategories(apps: AppForCatalog[]): AppCategory[] {
   return categories
 }
 
+export async function getPersonsFromPrisma(): Promise<Person[]> {
+  const prisma = getDbClient()
+  const rows = await prisma.dbPerson.findMany()
+  return rows.map((row) => ({
+    slug: row.slug,
+    firstName: row.firstName,
+    lastName: row.lastName,
+    email: row.email ?? undefined,
+  }))
+}
+
+export async function getGroupsFromPrisma(): Promise<Group[]> {
+  const prisma = getDbClient()
+  const rows = await prisma.dbGroup.findMany({
+    include: { memberships: true },
+  })
+  return rows.map((row) => ({
+    slug: row.slug,
+    displayName: row.displayName ?? undefined,
+    email: row.email ?? undefined,
+    memberSlugs: row.memberships.map((m) => m.personSlug),
+  }))
+}
+
+export async function getSubResourcesFromPrisma(): Promise<SubResource[]> {
+  const prisma = getDbClient()
+  const rows = await prisma.dbSubResource.findMany()
+  return rows.map((row) => ({
+    slug: row.slug,
+    displayName: row.displayName,
+    description: row.description ?? undefined,
+    appSlug: row.appSlug,
+    familySlug: row.familySlug ?? undefined,
+    tierSlug: row.tierSlug ?? undefined,
+    aliases: row.aliases as unknown as string[],
+    ownerPersonSlug: row.ownerPersonSlug ?? undefined,
+    accessMaintainerGroupSlugs:
+      row.accessMaintainerGroupSlugs as unknown as string[],
+    accessRequest: row.accessRequest
+      ? (row.accessRequest as unknown as SubResource['accessRequest'])
+      : undefined,
+    accessComments: row.accessComments ?? undefined,
+    extra: row.extra
+      ? (row.extra as unknown as Record<string, unknown>)
+      : undefined,
+  }))
+}
+
 export async function getAppCatalogData(
   getAppsOptional?: () => Promise<AppForCatalog[]>,
 ): Promise<AppCatalogData> {
@@ -276,5 +347,8 @@ export async function getAppCatalogData(
     apps,
     tagsDefinitions: await getGroupingTagDefinitionsFromPrisma(),
     approvalMethods: await getApprovalMethodsFromPrisma(),
+    persons: await getPersonsFromPrisma(),
+    groups: await getGroupsFromPrisma(),
+    subResources: await getSubResourcesFromPrisma(),
   }
 }

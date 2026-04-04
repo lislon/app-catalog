@@ -1,4 +1,7 @@
-import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
+import type {
+  AppForCatalog,
+  SubResource,
+} from '@igstack/app-catalog-backend-core'
 
 export interface SearchMatch {
   /** Field where the match occurred */
@@ -10,6 +13,7 @@ export interface SearchMatch {
     | 'tags'
     | 'teams'
     | 'description'
+    | 'subResource'
   /** Type of match */
   type: 'exact' | 'prefix' | 'contains'
 }
@@ -44,11 +48,29 @@ export interface SearchResult {
 export function searchApps(
   apps: AppForCatalog[],
   searchQuery: string,
+  subResources?: SubResource[],
 ): AppForCatalog[] {
   const normalizedQuery = searchQuery.trim().toLowerCase()
 
   if (normalizedQuery === '') {
     return apps
+  }
+
+  // Split query into terms for multi-word matching (AND logic)
+  const queryTerms = normalizedQuery.split(/\s+/).filter(Boolean)
+
+  // Helper: all terms appear in the text (order-independent)
+  const allTermsMatch = (text: string): boolean =>
+    queryTerms.every((term) => text.includes(term))
+
+  // Build sub-resource lookup: appSlug -> SubResource[]
+  const subResourcesByApp = new Map<string, SubResource[]>()
+  if (subResources) {
+    for (const sr of subResources) {
+      const list = subResourcesByApp.get(sr.appSlug) ?? []
+      list.push(sr)
+      subResourcesByApp.set(sr.appSlug, list)
+    }
   }
 
   // Filter and score apps
@@ -111,14 +133,30 @@ export function searchApps(
         return { app, match: { field: 'tags', type: 'contains' } }
       }
 
-      // Check teams
-      if (teams.includes(normalizedQuery)) {
+      // Check teams (multi-word)
+      if (allTermsMatch(teams)) {
         return { app, match: { field: 'teams', type: 'contains' } }
       }
 
-      // Check description
-      if (description.includes(normalizedQuery)) {
+      // Check description (multi-word)
+      if (allTermsMatch(description)) {
         return { app, match: { field: 'description', type: 'contains' } }
+      }
+
+      // Check sub-resources (name, aliases, description) — supports multi-word queries
+      const appSubResources = subResourcesByApp.get(app.slug)
+      if (appSubResources) {
+        const subMatch = appSubResources.some(
+          (sr) =>
+            allTermsMatch(sr.displayName.toLowerCase()) ||
+            sr.aliases.some((a) => allTermsMatch(a.toLowerCase())) ||
+            (sr.description
+              ? allTermsMatch(sr.description.toLowerCase())
+              : false),
+        )
+        if (subMatch) {
+          return { app, match: { field: 'subResource', type: 'contains' } }
+        }
       }
 
       // No match found
@@ -154,7 +192,8 @@ export function searchApps(
       else if (match.field === 'nicknames') score = 10
       else if (match.field === 'tags') score = 11
       else if (match.field === 'teams') score = 12
-      else score = 13 // description
+      else if (match.field === 'subResource') score = 13
+      else score = 14 // description
     }
 
     scoreMap.set(app.id, score)

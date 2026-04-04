@@ -12,6 +12,9 @@ import type { AppCatalogCompanySpecificBackend } from '@igstack/app-catalog-back
 import {
   mockAppCatalog,
   mockApprovalMethods,
+  mockGroups,
+  mockPersons,
+  mockSubResources,
   mockTagDefinitions,
 } from './data/mockData.js'
 import {
@@ -120,6 +123,12 @@ const server = app.listen(port, async () => {
       mockAppCatalog,
       mockTagDefinitions,
       mockApprovalMethods,
+      undefined,
+      {
+        persons: mockPersons,
+        groups: mockGroups,
+        subResources: mockSubResources,
+      },
     )
     console.log(`✓ Synced ${mockAppCatalog.length} apps to database`)
   } catch (error) {

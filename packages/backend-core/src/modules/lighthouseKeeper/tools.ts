@@ -112,7 +112,7 @@ Return the updated card as a structured JSON object matching the card format:
 - appUrl: Main application URL
 - links: Array of {url, title} objects for related links
 - sources: Array of source URLs (documentation, Confluence pages, etc.)
-- accessRequest: Object with approvalMethodId, comments, requestPrompt, postApprovalInstructions, roles, approvers, urls, whoToReachOut
+- accessRequest: Object with approvalMethodSlug, comments, requestPrompt, postApprovalInstructions, roles, approverPersonSlugs, urls
 - notes: Additional notes
 - deprecated: Optional deprecation info with type, replacementSlug, comment
 

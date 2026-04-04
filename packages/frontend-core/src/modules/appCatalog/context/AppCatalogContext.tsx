@@ -2,7 +2,10 @@ import type {
   AppApprovalMethod,
   AppForCatalog,
   AppVersionInfo,
+  Group,
   GroupingTagDefinition,
+  Person,
+  SubResource,
 } from '@igstack/app-catalog-backend-core'
 import { useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
@@ -15,6 +18,9 @@ export interface AppCatalogContextIface {
   isLoadingApps: boolean
   tagsDefinitions: GroupingTagDefinition[]
   approvalMethods: AppApprovalMethod[]
+  persons: Person[]
+  groups: Group[]
+  subResources?: SubResource[]
   versions?: AppVersionInfo
 }
 
@@ -38,6 +44,9 @@ export function AppCatalogProvider({ children }: AppCatalogProviderProps) {
       isLoadingApps,
       tagsDefinitions: data?.tagsDefinitions ?? [],
       approvalMethods: data?.approvalMethods ?? [],
+      persons: data?.persons ?? [],
+      groups: data?.groups ?? [],
+      subResources: data?.subResources ?? [],
       versions: {
         ...data?.versions,
         ...(uiSettings.frontendBuildId && {
@@ -54,6 +63,9 @@ export function AppCatalogProvider({ children }: AppCatalogProviderProps) {
       data?.approvalMethods,
       data?.apps,
       data?.tagsDefinitions,
+      data?.persons,
+      data?.groups,
+      data?.subResources,
       data?.versions,
       uiSettings.frontendBuildId,
       isLoadingApps,
