@@ -52,8 +52,13 @@ export type ApprovalMethodConfig =
  */
 export type ApprovalMethod = {
   slug: string
+  /**
+   * Displayed approval method
+   */
   displayName: string
-  /** Old/migrated URLs that map to this approval method (e.g., jira.natera.com -> natera.atlassian.net) */
+  /**
+   * Optionally - older name of approval method if there were migration in organization.
+   */
   deprecatedAliases?: string[]
   createdAt?: Date
   updatedAt?: Date
@@ -88,8 +93,17 @@ export type ApprovalMethod = {
  * Role that can be requested for an app
  */
 export interface AppRole {
+  /**
+   * User-friendly role name.
+   */
   displayName: string
+  /**
+   * Description of role.
+   */
   description?: string
+  /**
+   * Notes for admins/approvers (Not for requestores)
+   */
   adminNotes?: string
 }
 
@@ -102,36 +116,38 @@ export interface ApprovalUrl {
 }
 
 /**
- * Per-app approval details - stored as JSON in DbAppForCatalog
- * All comment/text-like strings are markdown
+ * Used to store ONLY instructions related to access request
  */
 export interface AppAccessRequest {
+  /**
+   * Method of asking for access.
+   */
   approvalMethodSlug: string // FK to DbApprovalMethod
 
-  // Common fields (all types) - markdown text
+  /**
+   * Additional comments, if no other fields are fit.
+   */
   comments?: string
+  /**
+   * A template to put into a request ask.
+   */
   requestPrompt?: string
+  /**
+   * Recommended steps post approvel to get access to specific resources.
+   */
   postApprovalInstructions?: string
 
-  // Lists
+  /**
+   * Available roles for given resource.
+   */
   roles?: AppRole[]
+
+  /**
+   * Individuals that will approve request within given approval method. No need to reach them directly unless specified.
+   */
   approverPersonSlugs?: string[] // slugs referencing Person entities
+  /**
+   * Additional instructions to get approvals
+   */
   urls?: ApprovalUrl[]
-}
-
-// ============================================================================
-// INPUT TYPES FOR API
-// ============================================================================
-
-export interface CreateApprovalMethodInput {
-  type: ApprovalMethodType
-  displayName: string
-  config?: ApprovalMethodConfig
-}
-
-export interface UpdateApprovalMethodInput {
-  id: string
-  type?: ApprovalMethodType
-  displayName?: string
-  config?: ApprovalMethodConfig
 }
