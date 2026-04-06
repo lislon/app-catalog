@@ -1,11 +1,10 @@
 import type {
   AppApprovalMethod,
-  AppForCatalog,
   AppVersionInfo,
   Group,
   GroupingTagDefinition,
   Person,
-  SubResource,
+  Resource,
 } from '@igstack/app-catalog-backend-core'
 import { useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
@@ -14,13 +13,12 @@ import { ApiQueryMagazineAppCatalog } from '~/modules/appCatalog'
 import { useUiSettings } from '~/context/UiSettingsContext'
 
 export interface AppCatalogContextIface {
-  apps: AppForCatalog[]
+  resources: Resource[]
   isLoadingApps: boolean
   tagsDefinitions: GroupingTagDefinition[]
   approvalMethods: AppApprovalMethod[]
   persons: Person[]
   groups: Group[]
-  subResources?: SubResource[]
   versions?: AppVersionInfo
 }
 
@@ -40,13 +38,12 @@ export function AppCatalogProvider({ children }: AppCatalogProviderProps) {
 
   const contextValue = useMemo<AppCatalogContextIface>(
     () => ({
-      apps: data?.apps ?? [],
+      resources: data?.resources ?? [],
       isLoadingApps,
       tagsDefinitions: data?.tagsDefinitions ?? [],
       approvalMethods: data?.approvalMethods ?? [],
       persons: data?.persons ?? [],
       groups: data?.groups ?? [],
-      subResources: data?.subResources ?? [],
       versions: {
         ...data?.versions,
         ...(uiSettings.frontendBuildId && {
@@ -61,11 +58,10 @@ export function AppCatalogProvider({ children }: AppCatalogProviderProps) {
     }),
     [
       data?.approvalMethods,
-      data?.apps,
+      data?.resources,
       data?.tagsDefinitions,
       data?.persons,
       data?.groups,
-      data?.subResources,
       data?.versions,
       uiSettings.frontendBuildId,
       isLoadingApps,

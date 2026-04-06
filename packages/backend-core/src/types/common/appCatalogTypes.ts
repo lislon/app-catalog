@@ -8,23 +8,25 @@
 
 import type { AppAccessRequest, ApprovalMethod } from './approvalMethodTypes'
 import type { Group, Person } from './personGroupTypes'
-import type { SubResource } from './subResourceTypes'
 
 // ============================================================================
-// APP TIER VARIANT
+// TIER VARIANT
 // ============================================================================
 
 /**
- * A tier variant of an app (e.g., prod/dev environments).
+ * A tier variant of a resource (e.g., prod/dev environments).
  * Each tier can have its own URL and access process.
  */
-export interface AppTierVariant {
+export interface TierVariant {
   tierSlug: string
   displayName?: string
   description?: string
   appUrl?: string
   accessRequest?: AppAccessRequest
 }
+
+/** @deprecated Use TierVariant instead */
+export type AppTierVariant = TierVariant
 
 // ============================================================================
 // APP CATALOG TYPES
@@ -41,11 +43,14 @@ export interface SourceReference {
 }
 
 /**
- * Application entry in the catalog
+ * Resource entry in the catalog (application or sub-resource).
+ * Unified model: applications have no parentSlug; sub-resources have parentSlug.
  */
-export interface AppForCatalog {
+export interface Resource {
   id: string
   slug: string
+  /** Discriminator: "application" for top-level apps, "sub-resource" for children, etc. */
+  type?: string
   displayName: string
   abbreviation?: string // Optional short abbreviation (e.g. K8s, ECR, LV)
   nicknames?: string[] // Alternative names / AKA
@@ -72,8 +77,29 @@ export interface AppForCatalog {
   /** URL health issues detected by automated scanning */
   urlIssues?: string[]
   /** Optional tier variants (e.g., prod/dev) with per-tier URLs and access */
-  tiers?: AppTierVariant[]
+  tiers?: TierVariant[]
+
+  // --- Fields merged from former SubResource ---
+  /** Slug of parent resource (undefined for top-level applications) */
+  parentSlug?: string
+  /** Tier slug (e.g. "prod", "dev") — for sub-resources */
+  tier?: string
+  /** Groups tier variants visually */
+  familySlug?: string
+  /** Alternative identifiers */
+  aliases?: string[]
+  /** Person slug of the owner */
+  ownerPersonSlug?: string
+  /** Group slugs of access maintainers */
+  accessMaintainerGroupSlugs?: string[]
+  /** Free-text access comments */
+  accessComments?: string
+  /** Arbitrary extra data */
+  extra?: Record<string, unknown>
 }
+
+/** @deprecated Use Resource instead */
+export type AppForCatalog = Resource
 
 // Derived catalog data returned by backend
 export interface AppCategory {
@@ -115,11 +141,12 @@ export interface AppVersionInfo {
 }
 
 export interface AppCatalogData {
-  apps: AppForCatalog[]
+  resources: Resource[]
+  /** @deprecated Use resources instead */
+  apps?: Resource[]
   tagsDefinitions: GroupingTagDefinition[]
   approvalMethods: AppApprovalMethod[]
   persons: Person[]
   groups: Group[]
-  subResources: SubResource[]
   versions?: AppVersionInfo
 }

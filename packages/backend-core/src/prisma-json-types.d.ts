@@ -17,22 +17,22 @@ declare global {
     // DbApprovalMethod.config - Type-specific configuration
     type ApprovalMethodConfig = import('./types/index').ApprovalMethodConfig
 
-    // DbAppForCatalog.accessRequest - Per-app approval configuration
-    type AppAccessRequest = import('./types/index').AppAccessRequest
+    // DbResource.accessRequest - Per-resource approval configuration
+    type AccessRequest = import('./types/index').AccessRequest
 
-    // DbAppForCatalog.links - Array of links
+    // DbResource.links - Array of links
     interface AppLink {
       displayName?: string
       url: string
     }
 
-    // AppRole used within accessRequest
-    type AppRole = import('./types/index').AppRole
+    // Role used within accessRequest
+    type Role = import('./types/index').Role
 
-    // DbAppForCatalog.tiers - Tier variants (prod/dev)
-    type AppTierVariant = import('./types/index').AppTierVariant
+    // DbResource.tiers - Tier variants (prod/dev)
+    type TierVariant = import('./types/index').TierVariant
 
-    // DbSubResource.extra - Arbitrary extra data
+    // DbResource.extra - Arbitrary extra data
     type SubResourceExtra = Record<string, unknown>
   }
 }

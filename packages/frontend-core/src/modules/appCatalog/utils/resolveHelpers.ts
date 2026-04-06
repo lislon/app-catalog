@@ -1,8 +1,4 @@
-import type {
-  Group,
-  Person,
-  SubResource,
-} from '@igstack/app-catalog-backend-core'
+import type { Group, Person, Resource } from '@igstack/app-catalog-backend-core'
 
 export function getPersonBySlug(
   persons: Person[],
@@ -18,9 +14,16 @@ export function getGroupBySlug(
   return groups.find((g) => g.slug === slug)
 }
 
-export function getSubResourcesForApp(
-  subResources: SubResource[],
-  appSlug: string,
-): SubResource[] {
-  return subResources.filter((sr) => sr.appSlug === appSlug)
+export function getChildResources(
+  resources: Resource[],
+  parentSlug: string,
+): Resource[] {
+  return resources.filter((r) => r.parentSlug === parentSlug)
 }
+
+export function getRootResources(resources: Resource[]): Resource[] {
+  return resources.filter((r) => !r.parentSlug)
+}
+
+/** @deprecated Use getChildResources instead */
+export const getSubResourcesForApp = getChildResources

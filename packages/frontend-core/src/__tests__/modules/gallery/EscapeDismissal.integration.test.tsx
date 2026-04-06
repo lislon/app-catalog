@@ -13,13 +13,12 @@ import type { AppCatalogContextIface } from '~/modules/appCatalog/context/AppCat
 // Each Escape press dismisses only the innermost active layer.
 
 const minimalContext: AppCatalogContextIface = {
-  apps: [],
+  resources: [],
   isLoadingApps: false,
   tagsDefinitions: [],
   approvalMethods: [],
   persons: [],
   groups: [],
-  subResources: [],
 }
 
 function makeApp(): AppForCatalog {

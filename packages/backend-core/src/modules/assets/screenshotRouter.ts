@@ -50,7 +50,7 @@ export function createScreenshotRouter() {
         const prisma = getDbClient()
 
         // Find app by slug
-        const app = await prisma.dbAppForCatalog.findUnique({
+        const app = await prisma.dbResource.findUnique({
           where: { slug: input.appSlug },
           select: { screenshotIds: true },
         })
@@ -88,7 +88,7 @@ export function createScreenshotRouter() {
         const prisma = getDbClient()
 
         // Find app by slug
-        const app = await prisma.dbAppForCatalog.findUnique({
+        const app = await prisma.dbResource.findUnique({
           where: { slug: input.appSlug },
           select: { screenshotIds: true },
         })

@@ -17,6 +17,7 @@ import {
   mockSubResources,
   mockTagDefinitions,
 } from './data/mockData.js'
+
 import {
   getAuthPlugins,
   getAuthProviders,
@@ -119,18 +120,18 @@ const server = app.listen(port, async () => {
   // Sync mock data after server is fully running
   console.log('Syncing mock data to database...')
   try {
+    const allResources = [...mockAppCatalog, ...mockSubResources]
     await syncAppCatalog(
-      mockAppCatalog,
+      allResources,
       mockTagDefinitions,
       mockApprovalMethods,
       undefined,
       {
         persons: mockPersons,
         groups: mockGroups,
-        subResources: mockSubResources,
       },
     )
-    console.log(`✓ Synced ${mockAppCatalog.length} apps to database`)
+    console.log(`✓ Synced ${allResources.length} resources to database`)
   } catch (error) {
     console.error('Failed to sync app catalog:', error)
   }

@@ -27,8 +27,8 @@ export const TABLE_SYNC_MAGAZINE = {
     prismaModelName: 'DbGroupMembership',
     uniqColumns: ['groupSlug', 'personSlug'],
   },
-  DbAppForCatalog: {
-    prismaModelName: 'DbAppForCatalog',
+  DbResource: {
+    prismaModelName: 'DbResource',
     uniqColumns: ['slug'],
   },
   DbAppTagDefinition: {
@@ -45,13 +45,9 @@ export const TABLE_SYNC_MAGAZINE = {
     prismaModelName: 'Source',
     uniqColumns: ['slug'],
   },
-  DbSubResource: {
-    prismaModelName: 'DbSubResource',
-    uniqColumns: ['slug'],
-  },
   SourceReference: {
     prismaModelName: 'SourceReference',
-    uniqColumns: ['appId', 'url'],
+    uniqColumns: ['resourceId', 'url'],
   },
 } as const satisfies TableSyncMagazineType
 

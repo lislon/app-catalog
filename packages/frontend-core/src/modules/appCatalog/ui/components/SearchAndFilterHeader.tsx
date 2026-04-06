@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { useAppCounts } from '../../hooks/useAppCounts'
@@ -11,7 +11,11 @@ import { FilterBar } from '../filters/FilterBar'
  * Uses deferred search value to avoid blocking the input.
  */
 export function SearchAndFilterHeader() {
-  const { apps } = useAppCatalogContext()
+  const { resources } = useAppCatalogContext()
+  const apps = useMemo(
+    () => resources.filter((r) => !r.parentSlug),
+    [resources],
+  )
   const { getTopApps } = useAppClickHistory()
   const { state } = useAppCatalogFilters()
 

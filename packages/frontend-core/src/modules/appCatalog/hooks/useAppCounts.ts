@@ -1,10 +1,10 @@
 import { useMemo } from 'react'
-import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
-import { searchApps } from '../utils/searchApps'
+import type { Resource } from '@igstack/app-catalog-backend-core'
+import { searchResources } from '../utils/searchApps'
 import { useAppCatalogFilters } from '../ui/context/AppCatalogFiltersContext'
 
 interface UseAppCountsOptions {
-  apps: AppForCatalog[]
+  apps: Resource[]
   topAppSlugs: string[]
   searchValue: string
 }
@@ -31,7 +31,7 @@ export function useAppCounts({
     if (!filterState.showDeprecated) {
       recentApps = recentApps.filter((app) => !app.deprecated)
     }
-    return searchApps(recentApps, searchValue).length
+    return searchResources(recentApps, searchValue).length
   }, [apps, topAppSlugs, searchValue, filterState.showDeprecated])
 
   // Count for "Show All" (respects showDeprecated, tag filters, and search)
@@ -57,7 +57,7 @@ export function useAppCounts({
       })
     }
 
-    return searchApps(result, searchValue).length
+    return searchResources(result, searchValue).length
   }, [apps, filterState.tagFilters, filterState.showDeprecated, searchValue])
 
   return { recentCount, allCount, deprecatedCount }

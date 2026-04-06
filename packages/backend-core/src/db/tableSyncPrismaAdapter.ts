@@ -12,7 +12,7 @@ export type ScalarFilter<TPrismaModelName extends Prisma.ModelName> = Partial<
 >
 
 export type GetOperationFns<TModel extends Prisma.ModelName> = {
-  [TOperation in keyof Prisma.TypeMap['model']['DbAppForCatalog']['operations']]: (
+  [TOperation in keyof Prisma.TypeMap['model']['DbResource']['operations']]: (
     args: Prisma.TypeMap['model'][TModel]['operations'][TOperation]['args'],
   ) => Promise<
     Prisma.TypeMap['model'][TModel]['operations'][TOperation]['result']

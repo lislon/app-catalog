@@ -1,4 +1,4 @@
-import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
+import type { Resource } from '@igstack/app-catalog-backend-core'
 import { X } from 'lucide-react'
 import { useMemo } from 'react'
 import { Button } from '~/ui/button'
@@ -21,7 +21,7 @@ interface FilterBarProps {
   /** Number of deprecated apps (total) */
   deprecatedCount: number
   /** All apps for counting filter options */
-  apps: AppForCatalog[]
+  apps: Resource[]
 }
 
 /**

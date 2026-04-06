@@ -1,4 +1,4 @@
-import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
+import type { Resource } from '@igstack/app-catalog-backend-core'
 import { X } from 'lucide-react'
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { Button } from '~/ui/button'
@@ -14,15 +14,14 @@ import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { useAppCounts } from '../../hooks/useAppCounts'
 import { useUrlSyncedState } from '../../hooks/useUrlSyncedState'
-import { searchApps } from '../../utils/searchApps'
+import { searchResources } from '../../utils/searchApps'
 import { OnboardingCard } from '../components/OnboardingCard'
 import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
 import { FilterBar } from '../filters/FilterBar'
 import { AppCatalogGrid } from '../grid/AppCatalogGrid'
 
 export function AppCatalogPage() {
-  const { apps, isLoadingApps, tagsDefinitions, subResources } =
-    useAppCatalogContext()
+  const { resources, isLoadingApps, tagsDefinitions } = useAppCatalogContext()
   const { state: filterState, actions } = useAppCatalogFilters()
   const { getTopApps } = useAppClickHistory()
 
@@ -49,8 +48,14 @@ export function AppCatalogPage() {
     void getTopApps(10).then(setTopAppSlugs)
   }, [getTopApps])
 
+  // Get root resources for filtering (children handled internally by searchResources)
+  const rootResources = useMemo(
+    () => resources.filter((r) => !r.parentSlug),
+    [resources],
+  )
+
   const filteredApps = useMemo(() => {
-    let result = apps
+    let result = rootResources
 
     // Step 1: Filter deprecated apps (if not showing them)
     if (!filterState.showDeprecated) {
@@ -76,22 +81,27 @@ export function AppCatalogPage() {
     }
 
     // Step 3: Apply search (using deferred value)
-    result = searchApps(result, deferredSearchValue, subResources)
+    // Pass all resources so children contribute to parent scoring
+    const childResources = resources.filter((r) => r.parentSlug)
+    result = searchResources(
+      [...result, ...childResources],
+      deferredSearchValue,
+    )
 
     return result
   }, [
-    apps,
+    rootResources,
+    resources,
     deferredSearchValue,
     filterState.recentMode,
     filterState.tagFilters,
     filterState.showDeprecated,
     topAppSlugs,
-    subResources,
   ])
 
   // Calculate counts for FilterBar
   const { allCount, recentCount, deprecatedCount } = useAppCounts({
-    apps,
+    apps: rootResources,
     topAppSlugs,
     searchValue: deferredSearchValue,
   })
@@ -103,7 +113,7 @@ export function AppCatalogPage() {
     }
   }, [filteredApps, setSelectedAppSlug])
 
-  const handleAppClick = (app: AppForCatalog) => {
+  const handleAppClick = (app: Resource) => {
     setSelectedAppSlug(app.slug)
   }
 
@@ -115,12 +125,12 @@ export function AppCatalogPage() {
 
   // Calculate total apps count (respecting showDeprecated setting)
   const totalAppsCount = useMemo(() => {
-    let count = apps.length
+    let count = rootResources.length
     if (!filterState.showDeprecated) {
-      count = apps.filter((app) => !app.deprecated).length
+      count = rootResources.filter((app) => !app.deprecated).length
     }
     return count
-  }, [apps, filterState.showDeprecated])
+  }, [rootResources, filterState.showDeprecated])
 
   if (isLoadingApps) {
     return <div className="py-6 text-muted-foreground">Loading…</div>
@@ -140,7 +150,7 @@ export function AppCatalogPage() {
           totalCount={allCount}
           recentCount={recentCount}
           deprecatedCount={deprecatedCount}
-          apps={apps}
+          apps={rootResources}
         />
       </div>
 

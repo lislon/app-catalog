@@ -1,8 +1,7 @@
 import type {
   AppApprovalMethod,
-  AppForCatalog,
   GroupingTagDefinition,
-  SubResource,
+  Resource,
 } from '@igstack/app-catalog-backend-core'
 import type { MockDb } from './MockDb'
 import type { MockUserContext, UserConfig } from './MockUserContext'
@@ -24,9 +23,9 @@ export class MockBackendConfigurer {
     readonly userContext: MockUserContext,
   ) {}
 
-  withApp(overrides?: Partial<AppForCatalog>): AppForCatalog {
+  withApp(overrides?: Partial<Resource>): Resource {
     const id = overrides?.id ?? nextId()
-    const app: AppForCatalog = {
+    const app: Resource = {
       id,
       slug: overrides?.slug ?? nextSlug(),
       displayName: overrides?.displayName ?? `App ${counter}`,
@@ -35,7 +34,7 @@ export class MockBackendConfigurer {
       screenshotIds: overrides?.screenshotIds ?? [],
       ...overrides,
     }
-    this.db.upsertApp(app)
+    this.db.upsertResource(app)
     return app
   }
 
@@ -67,17 +66,22 @@ export class MockBackendConfigurer {
   }
 
   withSubResource(
-    overrides: Partial<SubResource> & { appSlug: string },
-  ): SubResource {
-    const sr: SubResource = {
-      slug: overrides.slug ?? `sr-${nextId()}`,
+    overrides: Partial<Resource> & { appSlug: string },
+  ): Resource {
+    const appSlug = overrides.appSlug
+    const id = overrides.id ?? nextId()
+    const resource: Resource = {
+      id,
+      slug: overrides.slug ?? `sr-${id}`,
       displayName: overrides.displayName ?? `Sub Resource ${counter}`,
       aliases: overrides.aliases ?? [],
       accessMaintainerGroupSlugs: overrides.accessMaintainerGroupSlugs ?? [],
-      ...overrides,
+      parentSlug: appSlug,
+      tier: overrides.tier,
+      ownerPersonSlug: overrides.ownerPersonSlug,
     }
-    this.db.addSubResource(sr)
-    return sr
+    this.db.upsertResource(resource)
+    return resource
   }
 
   withUser(overrides: Partial<UserConfig>): void {

@@ -176,7 +176,7 @@ async function syncScreenshotsFromDirectory(
     for (const [appId, screenshots] of screenshotsByApp) {
       try {
         // Check if app exists
-        const app = await prisma.dbAppForCatalog.findUnique({
+        const app = await prisma.dbResource.findUnique({
           where: { slug: appId },
           select: { id: true },
         })
@@ -200,14 +200,14 @@ async function syncScreenshotsFromDirectory(
 
             if (existing) {
               // Link to app via screenshotIds array if not already linked
-              const existingApp = await prisma.dbAppForCatalog.findUnique({
+              const existingApp = await prisma.dbResource.findUnique({
                 where: { slug: appId },
               })
               if (
                 existingApp &&
                 !existingApp.screenshotIds.includes(existing.id)
               ) {
-                await prisma.dbAppForCatalog.update({
+                await prisma.dbResource.update({
                   where: { slug: appId },
                   data: {
                     screenshotIds: [...existingApp.screenshotIds, existing.id],
@@ -245,7 +245,7 @@ async function syncScreenshotsFromDirectory(
             })
 
             // Link screenshot to app via screenshotIds array
-            await prisma.dbAppForCatalog.update({
+            await prisma.dbResource.update({
               where: { slug: appId },
               data: {
                 screenshotIds: {

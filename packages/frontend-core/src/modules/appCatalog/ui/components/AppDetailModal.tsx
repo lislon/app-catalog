@@ -19,7 +19,7 @@ import {
 import { ScreenshotGallery } from './ScreenshotGallery'
 import { TierVariantsSection } from './TierVariantsSection'
 import { SubResourcesSection } from './SubResourcesSection'
-import { getSubResourcesForApp } from '~/modules/appCatalog/utils/resolveHelpers'
+import { getChildResources } from '~/modules/appCatalog/utils/resolveHelpers'
 
 export interface AppDetailModalProps {
   app: AppForCatalog
@@ -187,10 +187,10 @@ function AccessSection({ app }: { app: AppForCatalog }) {
 }
 
 function TiersAndSubResources({ app }: { app: AppForCatalog }) {
-  const { subResources } = useAppCatalogContext()
+  const { resources } = useAppCatalogContext()
   const appSubResources = useMemo(
-    () => getSubResourcesForApp(subResources ?? [], app.slug),
-    [subResources, app.slug],
+    () => getChildResources(resources, app.slug),
+    [resources, app.slug],
   )
 
   return (
