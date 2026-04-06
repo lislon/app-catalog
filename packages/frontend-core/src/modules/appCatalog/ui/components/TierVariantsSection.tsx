@@ -1,7 +1,7 @@
 import type {
   AppAccessRequest,
   AppApprovalMethod,
-  AppTierVariant,
+  TierVariant,
 } from '@igstack/app-catalog-backend-core'
 import { Bot, ExternalLinkIcon, Settings, Users } from 'lucide-react'
 import { useState } from 'react'
@@ -19,7 +19,7 @@ import { useAppCatalogContext } from '~/modules/appCatalog'
 import { PersonBadge } from './PersonBadge'
 
 interface TierVariantsSectionProps {
-  tiers: AppTierVariant[]
+  tiers: TierVariant[]
 }
 
 function getTierBadgeVariant(

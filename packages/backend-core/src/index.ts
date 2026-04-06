@@ -15,7 +15,7 @@ export type { AcStaticControllerContract } from './server/acStaticControllerCont
 
 // backend-only
 
-export type { AppForCatalog } from './types/common/appCatalogTypes'
+export type { Resource } from './types/common/appCatalogTypes'
 export * from './types/index'
 
 // Auth

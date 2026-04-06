@@ -1,4 +1,4 @@
-import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
+import type { Resource } from '@igstack/app-catalog-backend-core'
 import type { ColumnDef } from '@tanstack/react-table'
 import {
   flexRender,
@@ -17,11 +17,11 @@ import {
 import { getAppUrl } from './appCatalogUtils'
 
 export interface AppCatalogTableProps {
-  apps: AppForCatalog[]
+  apps: Resource[]
 }
 
 export function AppCatalogTable({ apps }: AppCatalogTableProps) {
-  const columns = useMemo<ColumnDef<AppForCatalog>[]>(
+  const columns = useMemo<ColumnDef<Resource>[]>(
     () => [
       {
         slug: 'name',

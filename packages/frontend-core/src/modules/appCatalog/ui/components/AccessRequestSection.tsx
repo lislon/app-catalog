@@ -1,6 +1,6 @@
 import type {
   AppApprovalMethod,
-  AppForCatalog,
+  Resource,
 } from '@igstack/app-catalog-backend-core'
 import { Bot, Check, Copy, ExternalLink, Settings, Users } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -26,7 +26,7 @@ import { PersonBadge } from './PersonBadge'
 const COPY_FEEDBACK_DURATION = 2000
 
 interface AccessRequestSectionProps {
-  app: AppForCatalog
+  app: Resource
   approvalMethods: AppApprovalMethod[]
 }
 

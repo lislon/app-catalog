@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 
-import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
+import type { Resource } from '@igstack/app-catalog-backend-core'
 import { AppDetailModal } from '~/modules/appCatalog/ui/components/AppDetailModal'
 import { AppCatalogContext } from '~/modules/appCatalog/context/AppCatalogContext'
 import type { AppCatalogContextIface } from '~/modules/appCatalog/context/AppCatalogContext'
@@ -18,7 +18,7 @@ const minimalContext: AppCatalogContextIface = {
   groups: [],
 }
 
-function renderWithContext(app: AppForCatalog) {
+function renderWithContext(app: Resource) {
   return render(
     <AppCatalogContext value={minimalContext}>
       <AppDetailModal app={app} isOpen={true} onClose={() => {}} />
@@ -26,7 +26,7 @@ function renderWithContext(app: AppForCatalog) {
   )
 }
 
-function makeApp(screenshotIds: string[]): AppForCatalog {
+function makeApp(screenshotIds: string[]): Resource {
   return {
     id: 'app-1',
     slug: 'test-app',
