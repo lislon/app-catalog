@@ -9,7 +9,7 @@
  *   pnpm run db:sync-catalog
  */
 
-import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
+import type { Resource } from '@igstack/app-catalog-backend-core'
 import {
   connectDb,
   disconnectDb,
@@ -20,7 +20,7 @@ import { config as loadEnv } from 'dotenv-defaults'
 loadEnv()
 
 // Sample app catalog data for fallback
-const sampleAppCatalog: AppForCatalog[] = [
+const sampleAppCatalog: Resource[] = [
   {
     id: 'car-shop-sales',
     slug: 'car-shop-sales',
@@ -90,7 +90,7 @@ const sampleAppCatalog: AppForCatalog[] = [
   },
 ]
 
-async function loadAppCatalog(): Promise<AppForCatalog[]> {
+async function loadAppCatalog(): Promise<Resource[]> {
   try {
     const { appCatalog } = await import('../local/appCatalog.js')
     console.log('Loaded app catalog from local/appCatalog.ts')

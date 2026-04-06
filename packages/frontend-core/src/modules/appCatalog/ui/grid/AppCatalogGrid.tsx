@@ -1,6 +1,6 @@
 import type {
-  AppForCatalog,
   GroupingTagDefinition,
+  Resource,
 } from '@igstack/app-catalog-backend-core'
 import type { ColumnDef } from '@tanstack/react-table'
 import {
@@ -42,10 +42,10 @@ import { SubResourcesSection } from '../components/SubResourcesSection'
 import { getChildResources } from '../../utils/resolveHelpers'
 
 export interface AppCatalogGridProps {
-  apps: AppForCatalog[]
+  apps: Resource[]
   selectedAppSlug?: string
   groupingDefinition?: GroupingTagDefinition
-  onAppClick?: (app: AppForCatalog) => void
+  onAppClick?: (app: Resource) => void
   /** Whether search is active (affects group sorting) */
   hasSearch?: boolean
   /** Search query for highlighting matches */
@@ -91,13 +91,7 @@ function HighlightedText({
   )
 }
 
-function AppIcon({
-  app,
-  className,
-}: {
-  app: AppForCatalog
-  className?: string
-}) {
+function AppIcon({ app, className }: { app: Resource; className?: string }) {
   const [imageError, setImageError] = React.useState(false)
 
   // Use iconName from backend if available
@@ -127,7 +121,7 @@ function AppIcon({
   )
 }
 
-function AppScreenshot({ app }: { app: AppForCatalog }) {
+function AppScreenshot({ app }: { app: Resource }) {
   const [imageError, setImageError] = React.useState(false)
   const [isLoadingImage, setIsLoadingImage] = React.useState(true)
 
@@ -172,7 +166,7 @@ function AppScreenshot({ app }: { app: AppForCatalog }) {
   )
 }
 
-function TiersAndSubResourcesPanel({ app }: { app: AppForCatalog }) {
+function TiersAndSubResourcesPanel({ app }: { app: Resource }) {
   const { resources } = useAppCatalogContext()
   const appSubResources = React.useMemo(
     () => getChildResources(resources, app.slug),
@@ -200,8 +194,8 @@ function AppDetails({
   onAppClick,
   onClosePanel,
 }: {
-  app: AppForCatalog
-  onAppClick?: (app: AppForCatalog) => void
+  app: Resource
+  onAppClick?: (app: Resource) => void
   onClosePanel: () => void
 }) {
   const [isGalleryOpen, setIsGalleryOpen] = React.useState(false)
@@ -621,11 +615,11 @@ function AppDetails({
 
 interface GroupedApps {
   groupName: string
-  apps: AppForCatalog[]
+  apps: Resource[]
 }
 
 function groupApps(
-  apps: AppForCatalog[],
+  apps: Resource[],
   groupingDef?: GroupingTagDefinition,
   hasSearch?: boolean,
 ): GroupedApps[] {
@@ -642,8 +636,8 @@ function groupApps(
     return [{ groupName: 'All Apps', apps: sortedApps }]
   }
 
-  const grouped = new Map<string, AppForCatalog[]>()
-  const ungrouped: AppForCatalog[] = []
+  const grouped = new Map<string, Resource[]>()
+  const ungrouped: Resource[] = []
 
   for (const app of apps) {
     const matchingTag = app.tags?.find((tag) =>
@@ -751,7 +745,7 @@ export function AppCatalogGrid({
   }, [searchQuery, allResources2])
 
   // Define columns
-  const columns = React.useMemo<ColumnDef<AppForCatalog>[]>(
+  const columns = React.useMemo<ColumnDef<Resource>[]>(
     () => [
       {
         id: 'application',
@@ -859,7 +853,7 @@ export function AppCatalogGrid({
     }
   }, [selectedAppSlug, rowRefs])
 
-  const handleAppClick = (app: AppForCatalog) => {
+  const handleAppClick = (app: Resource) => {
     onAppClick?.(app)
   }
 

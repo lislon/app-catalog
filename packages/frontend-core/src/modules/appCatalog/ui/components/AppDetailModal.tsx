@@ -1,4 +1,4 @@
-import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
+import type { Resource } from '@igstack/app-catalog-backend-core'
 import { AppWindowIcon, ExternalLinkIcon, XIcon } from 'lucide-react'
 import React, { useEffect, useMemo, useState } from 'react'
 import { Badge } from '~/ui/badge'
@@ -22,7 +22,7 @@ import { SubResourcesSection } from './SubResourcesSection'
 import { getChildResources } from '~/modules/appCatalog/utils/resolveHelpers'
 
 export interface AppDetailModalProps {
-  app: AppForCatalog
+  app: Resource
   isOpen: boolean
   onClose: () => void
 }
@@ -31,7 +31,7 @@ function getIconUrl(iconName: string): string {
   return `/api/icons/${iconName}`
 }
 
-function AppIcon({ app }: { app: AppForCatalog }) {
+function AppIcon({ app }: { app: Resource }) {
   const [imageError, setImageError] = React.useState(false)
 
   if (app.iconName && !imageError) {
@@ -52,7 +52,7 @@ function AppIcon({ app }: { app: AppForCatalog }) {
   )
 }
 
-function ScreenshotPreview({ app }: { app: AppForCatalog }) {
+function ScreenshotPreview({ app }: { app: Resource }) {
   const [imageErrors, setImageErrors] = useState<Set<string>>(() => new Set())
   const [galleryOpen, setGalleryOpen] = useState(false)
   const [initialIndex, setInitialIndex] = useState(0)
@@ -124,7 +124,7 @@ function ScreenshotPreview({ app }: { app: AppForCatalog }) {
   )
 }
 
-function AccessSection({ app }: { app: AppForCatalog }) {
+function AccessSection({ app }: { app: Resource }) {
   const { approvalMethods } = useAppCatalogContext()
   const { accessRequest } = app
   if (!accessRequest) {
@@ -186,7 +186,7 @@ function AccessSection({ app }: { app: AppForCatalog }) {
   )
 }
 
-function TiersAndSubResources({ app }: { app: AppForCatalog }) {
+function TiersAndSubResources({ app }: { app: Resource }) {
   const { resources } = useAppCatalogContext()
   const appSubResources = useMemo(
     () => getChildResources(resources, app.slug),

@@ -25,9 +25,6 @@ export interface TierVariant {
   accessRequest?: AppAccessRequest
 }
 
-/** @deprecated Use TierVariant instead */
-export type AppTierVariant = TierVariant
-
 // ============================================================================
 // APP CATALOG TYPES
 // ============================================================================
@@ -98,9 +95,6 @@ export interface Resource {
   extra?: Record<string, unknown>
 }
 
-/** @deprecated Use Resource instead */
-export type AppForCatalog = Resource
-
 // Derived catalog data returned by backend
 export interface AppCategory {
   id: string
@@ -142,8 +136,6 @@ export interface AppVersionInfo {
 
 export interface AppCatalogData {
   resources: Resource[]
-  /** @deprecated Use resources instead */
-  apps?: Resource[]
   tagsDefinitions: GroupingTagDefinition[]
   approvalMethods: AppApprovalMethod[]
   persons: Person[]

@@ -4,8 +4,6 @@ export * from './common/resourceTypes.js'
 export * from './common/appCatalogTypes.js'
 export * from './common/approvalMethodTypes.js'
 export * from './common/personGroupTypes.js'
-// SubResource type is now merged into Resource — re-export for backward compat
-export * from './common/subResourceTypes.js'
 export * from './common/env/envTypes.js'
 export * from './common/app/appTypes.js'
 export * from './common/app/ui/appUiTypes.js'

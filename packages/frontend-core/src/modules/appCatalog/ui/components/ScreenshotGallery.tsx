@@ -1,6 +1,6 @@
 import { useMemo, useRef } from 'react'
 
-import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
+import type { Resource } from '@igstack/app-catalog-backend-core'
 
 import { Gallery } from '~/modules/gallery/Gallery'
 import type { GalleryImage } from '~/modules/gallery/Gallery'
@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogTitle } from '~/ui/dialog'
 import { VisuallyHidden } from '~/ui/visually-hidden'
 
 export interface ScreenshotGalleryProps {
-  app: AppForCatalog
+  app: Resource
   screenshotIds: string[]
   initialIndex?: number
   open: boolean

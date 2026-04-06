@@ -3,7 +3,7 @@ import {
   updateApp as updateAppService,
 } from '../modules/appCatalog/service'
 import type { AppCatalogData } from '../types'
-import type { AppForCatalog } from '../types/common/appCatalogTypes'
+import type { Resource } from '../types/common/appCatalogTypes'
 
 import type { BetterAuth } from '../modules/auth/auth'
 import { createAuthRouter } from '../modules/auth/authRouter.js'
@@ -50,7 +50,7 @@ export function createTrpcRouter(
       ),
       updateApp: publicProcedure
         .input(updateAppInputSchema)
-        .mutation(async ({ input }): Promise<AppForCatalog> => {
+        .mutation(async ({ input }): Promise<Resource> => {
           return updateAppService(input)
         }),
     }),

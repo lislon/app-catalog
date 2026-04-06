@@ -18,7 +18,7 @@ declare global {
     type ApprovalMethodConfig = import('./types/index').ApprovalMethodConfig
 
     // DbResource.accessRequest - Per-resource approval configuration
-    type AccessRequest = import('./types/index').AccessRequest
+    type AccessRequest = import('./types/index').AppAccessRequest
 
     // DbResource.links - Array of links
     interface AppLink {
@@ -27,7 +27,7 @@ declare global {
     }
 
     // Role used within accessRequest
-    type Role = import('./types/index').Role
+    type Role = import('./types/index').AppRole
 
     // DbResource.tiers - Tier variants (prod/dev)
     type TierVariant = import('./types/index').TierVariant
