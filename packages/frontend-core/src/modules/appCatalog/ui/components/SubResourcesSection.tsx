@@ -1,4 +1,4 @@
-import type { SubResource } from '@igstack/app-catalog-backend-core'
+import type { Resource } from '@igstack/app-catalog-backend-core'
 import { Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Badge } from '~/ui/badge'
@@ -23,7 +23,7 @@ import { useAppCatalogContext } from '~/modules/appCatalog'
 import { getGroupBySlug } from '~/modules/appCatalog/utils/resolveHelpers'
 
 interface SubResourcesSectionProps {
-  subResources: SubResource[]
+  subResources: Resource[]
 }
 
 function getTierBadgeVariant(
@@ -63,7 +63,7 @@ export function SubResourcesSection({
   const uniqueTiers = useMemo(() => {
     const tiers = new Set<string>()
     for (const sr of subResources) {
-      if (sr.tierSlug) tiers.add(sr.tierSlug)
+      if (sr.tier) tiers.add(sr.tier)
     }
     return [...tiers].sort()
   }, [subResources])
@@ -72,7 +72,7 @@ export function SubResourcesSection({
     let result = subResources
 
     if (tierFilter !== 'all') {
-      result = result.filter((sr) => sr.tierSlug === tierFilter)
+      result = result.filter((sr) => sr.tier === tierFilter)
     }
 
     if (search.trim()) {
@@ -80,7 +80,7 @@ export function SubResourcesSection({
       result = result.filter(
         (sr) =>
           sr.displayName.toLowerCase().includes(q) ||
-          sr.aliases.some((a) => a.toLowerCase().includes(q)) ||
+          (sr.aliases ?? []).some((a) => a.toLowerCase().includes(q)) ||
           (sr.description?.toLowerCase().includes(q) ?? false),
       )
     }
@@ -150,12 +150,12 @@ export function SubResourcesSection({
             ) : (
               filtered.map((sr) => {
                 // Resolve maintainer group members
-                const maintainerMembers = sr.accessMaintainerGroupSlugs.flatMap(
-                  (groupSlug) => {
-                    const group = getGroupBySlug(groups, groupSlug)
-                    return group?.memberSlugs ?? []
-                  },
-                )
+                const maintainerMembers = (
+                  sr.accessMaintainerGroupSlugs ?? []
+                ).flatMap((groupSlug) => {
+                  const group = getGroupBySlug(groups, groupSlug)
+                  return group?.memberSlugs ?? []
+                })
                 // Deduplicate
                 const uniqueMaintainers = [...new Set(maintainerMembers)]
 
@@ -165,9 +165,9 @@ export function SubResourcesSection({
                       <div className="font-medium text-sm">
                         {sr.displayName}
                       </div>
-                      {sr.aliases.length > 0 && (
+                      {(sr.aliases ?? []).length > 0 && (
                         <div className="text-xs text-muted-foreground mt-0.5">
-                          {sr.aliases.join(', ')}
+                          {(sr.aliases ?? []).join(', ')}
                         </div>
                       )}
                       {sr.description && (
@@ -177,12 +177,12 @@ export function SubResourcesSection({
                       )}
                     </TableCell>
                     <TableCell>
-                      {sr.tierSlug && (
+                      {sr.tier && (
                         <Badge
-                          variant={getTierBadgeVariant(sr.tierSlug)}
-                          className={`text-xs ${getTierBadgeClassName(sr.tierSlug)}`}
+                          variant={getTierBadgeVariant(sr.tier)}
+                          className={`text-xs ${getTierBadgeClassName(sr.tier)}`}
                         >
-                          {getTierDisplayLabel(sr.tierSlug)}
+                          {getTierDisplayLabel(sr.tier)}
                         </Badge>
                       )}
                     </TableCell>

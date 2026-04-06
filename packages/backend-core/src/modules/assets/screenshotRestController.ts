@@ -33,7 +33,7 @@ export function registerScreenshotRestController(
         const prisma = getDbClient()
 
         // Find app by slug
-        const app = await prisma.dbAppForCatalog.findUnique({
+        const app = await prisma.dbResource.findUnique({
           where: { slug: appSlug },
           select: { screenshotIds: true },
         })
@@ -82,7 +82,7 @@ export function registerScreenshotRestController(
         const prisma = getDbClient()
 
         // Find app by slug
-        const app = await prisma.dbAppForCatalog.findUnique({
+        const app = await prisma.dbResource.findUnique({
           where: { slug: appSlug },
           select: { screenshotIds: true },
         })

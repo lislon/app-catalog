@@ -3,6 +3,7 @@ import type { AppAccessRequest } from './approvalMethodTypes'
 /**
  * A sub-resource within an app.
  * Example: an AWS account under the "AWS Console" app.
+ * @deprecated Use Resource with parentSlug instead. SubResource is kept for backward compatibility.
  */
 export interface SubResource {
   slug: string

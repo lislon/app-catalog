@@ -125,19 +125,19 @@ describe('App Catalog Integration', () => {
         backendCfg.withSubResource({
           appSlug: app.slug,
           displayName: 'acct-prod',
-          tierSlug: 'prod',
+          tier: 'prod',
           ownerPersonSlug: 'jsmith',
         })
         backendCfg.withSubResource({
           appSlug: app.slug,
           displayName: 'acct-dev',
-          tierSlug: 'dev',
+          tier: 'dev',
           ownerPersonSlug: 'jdoe',
         })
         backendCfg.withSubResource({
           appSlug: app.slug,
           displayName: 'acct-staging',
-          tierSlug: 'staging',
+          tier: 'staging',
         })
       }),
     )

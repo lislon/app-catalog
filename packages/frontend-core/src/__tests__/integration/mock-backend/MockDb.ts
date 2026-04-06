@@ -1,33 +1,49 @@
 import type {
   AppApprovalMethod,
   AppCatalogData,
-  AppForCatalog,
   GroupingTagDefinition,
-  SubResource,
+  Resource,
 } from '@igstack/app-catalog-backend-core'
 
 export class MockDb {
-  apps: AppForCatalog[] = []
+  resources: Resource[] = []
   tagsDefinitions: GroupingTagDefinition[] = []
   approvalMethods: AppApprovalMethod[] = []
-  subResources: SubResource[] = []
 
-  upsertApp(app: AppForCatalog): void {
-    this.apps = [...this.apps.filter((a) => a.id !== app.id), app]
+  upsertResource(resource: Resource): void {
+    this.resources = [
+      ...this.resources.filter((r) => r.id !== resource.id),
+      resource,
+    ]
   }
 
-  getApps(): AppForCatalog[] {
-    return this.apps
+  /** @deprecated Use upsertResource */
+  upsertApp(app: Resource): void {
+    this.upsertResource(app)
   }
 
-  getApp(slug: string): AppForCatalog {
-    const app = this.apps.find((a) => a.slug === slug)
-    if (!app) {
+  getResources(): Resource[] {
+    return this.resources
+  }
+
+  /** @deprecated Use getResources */
+  getApps(): Resource[] {
+    return this.getResources()
+  }
+
+  getResource(slug: string): Resource {
+    const resource = this.resources.find((r) => r.slug === slug)
+    if (!resource) {
       throw new Error(
-        `MockDb: app with slug "${slug}" not found. Available: ${this.apps.map((a) => a.slug).join(', ')}`,
+        `MockDb: resource with slug "${slug}" not found. Available: ${this.resources.map((r) => r.slug).join(', ')}`,
       )
     }
-    return app
+    return resource
+  }
+
+  /** @deprecated Use getResource */
+  getApp(slug: string): Resource {
+    return this.getResource(slug)
   }
 
   setTagDefinitions(defs: GroupingTagDefinition[]): void {
@@ -38,21 +54,13 @@ export class MockDb {
     this.approvalMethods = methods
   }
 
-  addSubResource(sr: SubResource): void {
-    this.subResources = [
-      ...this.subResources.filter((s) => s.slug !== sr.slug),
-      sr,
-    ]
-  }
-
   getAppCatalogData(): AppCatalogData {
     return {
-      apps: this.apps,
+      resources: this.resources,
       tagsDefinitions: this.tagsDefinitions,
       approvalMethods: this.approvalMethods,
       persons: [],
       groups: [],
-      subResources: this.subResources,
     }
   }
 }

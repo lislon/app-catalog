@@ -39,7 +39,7 @@ import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation'
 import { highlightText } from '../../utils/searchApps'
 import { TierVariantsSection } from '../components/TierVariantsSection'
 import { SubResourcesSection } from '../components/SubResourcesSection'
-import { getSubResourcesForApp } from '../../utils/resolveHelpers'
+import { getChildResources } from '../../utils/resolveHelpers'
 
 export interface AppCatalogGridProps {
   apps: AppForCatalog[]
@@ -173,10 +173,10 @@ function AppScreenshot({ app }: { app: AppForCatalog }) {
 }
 
 function TiersAndSubResourcesPanel({ app }: { app: AppForCatalog }) {
-  const { subResources } = useAppCatalogContext()
+  const { resources } = useAppCatalogContext()
   const appSubResources = React.useMemo(
-    () => getSubResourcesForApp(subResources ?? [], app.slug),
-    [subResources, app.slug],
+    () => getChildResources(resources, app.slug),
+    [resources, app.slug],
   )
 
   return (
@@ -206,7 +206,7 @@ function AppDetails({
 }) {
   const [isGalleryOpen, setIsGalleryOpen] = React.useState(false)
   const [galleryInitialIndex, setGalleryInitialIndex] = React.useState(0)
-  const { approvalMethods, apps } = useAppCatalogContext()
+  const { approvalMethods, resources: allResources } = useAppCatalogContext()
   const { recordClick } = useAppClickHistory()
   const updateApp = useUpdateApp()
   const [draftSource, setDraftSource] = React.useState<string | null>(null)
@@ -258,7 +258,7 @@ function AppDetails({
 
   // Find replacement app if deprecated
   const replacementApp = app.deprecated?.replacementSlug
-    ? apps.find((a) => a.slug === app.deprecated?.replacementSlug)
+    ? allResources.find((a) => a.slug === app.deprecated?.replacementSlug)
     : null
 
   return (
@@ -720,11 +720,11 @@ export function AppCatalogGrid({
     onAppClick,
   })
 
-  // Build a map of appSlug -> matched sub-resource displayName for search annotation
-  const { subResources: allSubResources } = useAppCatalogContext()
+  // Build a map of parentSlug -> matched child resource displayName for search annotation
+  const { resources: allResources2 } = useAppCatalogContext()
   const matchedSubResourceMap = React.useMemo(() => {
     const map = new Map<string, string>()
-    if (!searchQuery?.trim() || !allSubResources?.length) return map
+    if (!searchQuery?.trim() || allResources2.length === 0) return map
     const queryTerms = searchQuery
       .trim()
       .toLowerCase()
@@ -733,19 +733,22 @@ export function AppCatalogGrid({
     const allTermsMatch = (text: string): boolean =>
       queryTerms.every((term) => text.includes(term))
 
-    for (const sr of allSubResources) {
-      if (map.has(sr.appSlug)) continue
-      const nameMatch = allTermsMatch(sr.displayName.toLowerCase())
-      const aliasMatch = sr.aliases.some((a) => allTermsMatch(a.toLowerCase()))
-      const descMatch = sr.description
-        ? allTermsMatch(sr.description.toLowerCase())
+    for (const r of allResources2) {
+      if (!r.parentSlug) continue
+      if (map.has(r.parentSlug)) continue
+      const nameMatch = allTermsMatch(r.displayName.toLowerCase())
+      const aliasMatch = (r.aliases ?? []).some((a) =>
+        allTermsMatch(a.toLowerCase()),
+      )
+      const descMatch = r.description
+        ? allTermsMatch(r.description.toLowerCase())
         : false
       if (nameMatch || aliasMatch || descMatch) {
-        map.set(sr.appSlug, sr.displayName)
+        map.set(r.parentSlug, r.displayName)
       }
     }
     return map
-  }, [searchQuery, allSubResources])
+  }, [searchQuery, allResources2])
 
   // Define columns
   const columns = React.useMemo<ColumnDef<AppForCatalog>[]>(

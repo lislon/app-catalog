@@ -1,14 +1,14 @@
-import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
+import type { Resource } from '@igstack/app-catalog-backend-core'
 import type { MockDb } from '../mock-backend/MockDb'
 
 export class MockBackendVerifier {
   constructor(readonly db: MockDb) {}
 
-  apps(): AppForCatalog[] {
-    return this.db.getApps()
+  apps(): Resource[] {
+    return this.db.getResources()
   }
 
-  getApp(slug: string): AppForCatalog {
-    return this.db.getApp(slug)
+  getApp(slug: string): Resource {
+    return this.db.getResource(slug)
   }
 }

@@ -1,4 +1,4 @@
-import type { AppForCatalog } from '../../types/common/appCatalogTypes'
+import type { Resource } from '../../types/common/appCatalogTypes'
 import { getDbClient } from '../../db/client'
 
 interface LinkCheck {
@@ -147,9 +147,9 @@ function formatStatus(status: number | null, error?: string): string {
   return `${status}`
 }
 
-async function getAppsFromDb(): Promise<AppForCatalog[]> {
+async function getAppsFromDb(): Promise<Resource[]> {
   const prisma = getDbClient()
-  const rows = await prisma.dbAppForCatalog.findMany({
+  const rows = await prisma.dbResource.findMany({
     include: {
       sourceRefs: true,
     },
@@ -157,11 +157,11 @@ async function getAppsFromDb(): Promise<AppForCatalog[]> {
 
   return rows.map((row) => {
     const accessRequest =
-      row.accessRequest as unknown as AppForCatalog['accessRequest']
+      row.accessRequest as unknown as Resource['accessRequest']
     const teams = (row.teams as unknown as string[] | null) ?? []
-    const tags = (row.tags as unknown as AppForCatalog['tags']) ?? []
+    const tags = (row.tags as unknown as Resource['tags']) ?? []
     const screenshotIds =
-      (row.screenshotIds as unknown as AppForCatalog['screenshotIds']) ?? []
+      (row.screenshotIds as unknown as Resource['screenshotIds']) ?? []
     const sources = row.sourceRefs.map((ref) => ({
       sourceSlug: ref.sourceSlug,
       url: ref.url,
@@ -173,7 +173,7 @@ async function getAppsFromDb(): Promise<AppForCatalog[]> {
     const deprecated =
       row.deprecated == null
         ? undefined
-        : (row.deprecated as unknown as AppForCatalog['deprecated'])
+        : (row.deprecated as unknown as Resource['deprecated'])
 
     return {
       id: row.id,

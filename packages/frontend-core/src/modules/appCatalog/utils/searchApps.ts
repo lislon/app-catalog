@@ -1,7 +1,4 @@
-import type {
-  AppForCatalog,
-  SubResource,
-} from '@igstack/app-catalog-backend-core'
+import type { Resource } from '@igstack/app-catalog-backend-core'
 
 export interface SearchMatch {
   /** Field where the match occurred */
@@ -19,12 +16,15 @@ export interface SearchMatch {
 }
 
 export interface SearchResult {
-  app: AppForCatalog
+  app: Resource
   match: SearchMatch
 }
 
 /**
- * Search and sort apps by relevance with highlighting support.
+ * Search and sort resources by relevance with highlighting support.
+ * Only root resources (no parentSlug) are scored and returned.
+ * Child resources (with parentSlug) contribute to their parent's score.
+ *
  * Priority order:
  * 0. Exact match in abbreviation
  * 1. Exact match in displayName
@@ -41,19 +41,21 @@ export interface SearchResult {
  * 12. Teams
  * 13. Description
  *
- * @param apps - Array of apps to search
+ * @param resources - Array of all resources (root + children)
  * @param searchQuery - Search query string
- * @returns Filtered and sorted array of apps with search results
+ * @returns Filtered and sorted array of root resources
  */
-export function searchApps(
-  apps: AppForCatalog[],
+export function searchResources(
+  resources: Resource[],
   searchQuery: string,
-  subResources?: SubResource[],
-): AppForCatalog[] {
+): Resource[] {
   const normalizedQuery = searchQuery.trim().toLowerCase()
 
+  // Separate root resources from children
+  const rootResources = resources.filter((r) => !r.parentSlug)
+
   if (normalizedQuery === '') {
-    return apps
+    return rootResources
   }
 
   // Split query into terms for multi-word matching (AND logic)
@@ -63,18 +65,18 @@ export function searchApps(
   const allTermsMatch = (text: string): boolean =>
     queryTerms.every((term) => text.includes(term))
 
-  // Build sub-resource lookup: appSlug -> SubResource[]
-  const subResourcesByApp = new Map<string, SubResource[]>()
-  if (subResources) {
-    for (const sr of subResources) {
-      const list = subResourcesByApp.get(sr.appSlug) ?? []
-      list.push(sr)
-      subResourcesByApp.set(sr.appSlug, list)
+  // Build children lookup: parentSlug -> Resource[]
+  const childrenByParent = new Map<string, Resource[]>()
+  for (const r of resources) {
+    if (r.parentSlug) {
+      const list = childrenByParent.get(r.parentSlug) ?? []
+      list.push(r)
+      childrenByParent.set(r.parentSlug, list)
     }
   }
 
-  // Filter and score apps
-  const scoredApps = apps
+  // Filter and score root resources
+  const scoredApps = rootResources
     .map((app): SearchResult | null => {
       const name = app.displayName.toLowerCase()
       const abbreviation = app.abbreviation?.toLowerCase() || ''
@@ -143,15 +145,15 @@ export function searchApps(
         return { app, match: { field: 'description', type: 'contains' } }
       }
 
-      // Check sub-resources (name, aliases, description) — supports multi-word queries
-      const appSubResources = subResourcesByApp.get(app.slug)
-      if (appSubResources) {
-        const subMatch = appSubResources.some(
-          (sr) =>
-            allTermsMatch(sr.displayName.toLowerCase()) ||
-            sr.aliases.some((a) => allTermsMatch(a.toLowerCase())) ||
-            (sr.description
-              ? allTermsMatch(sr.description.toLowerCase())
+      // Check child resources (name, aliases, description) — supports multi-word queries
+      const children = childrenByParent.get(app.slug)
+      if (children) {
+        const subMatch = children.some(
+          (r) =>
+            allTermsMatch(r.displayName.toLowerCase()) ||
+            (r.aliases ?? []).some((a) => allTermsMatch(a.toLowerCase())) ||
+            (r.description
+              ? allTermsMatch(r.description.toLowerCase())
               : false),
         )
         if (subMatch) {
@@ -259,3 +261,6 @@ export function highlightText(
 
   return segments
 }
+
+/** @deprecated Use searchResources instead */
+export const searchApps = searchResources

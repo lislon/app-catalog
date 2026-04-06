@@ -151,3 +151,9 @@ export interface AppAccessRequest {
    */
   urls?: ApprovalUrl[]
 }
+
+/** @deprecated Use AppAccessRequest instead (same type, new canonical name) */
+export type AccessRequest = AppAccessRequest
+
+/** @deprecated Use AppRole instead (same type, new canonical name) */
+export type Role = AppRole

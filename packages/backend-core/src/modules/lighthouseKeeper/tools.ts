@@ -44,7 +44,7 @@ export function createAppCatalogAITools(
     inputSchema: getAppCardSchema,
     execute: async ({ slug }: { slug: string }) => {
       try {
-        const app = await prisma.dbAppForCatalog.findUnique({
+        const app = await prisma.dbResource.findUnique({
           where: { slug },
           include: {
             sourceRefs: true,

@@ -10,13 +10,12 @@ import type { AppCatalogContextIface } from '~/modules/appCatalog/context/AppCat
 // Minimal context value — ScreenshotPreview doesn't use context directly,
 // but AccessSection (sibling in AppDetailModal) does.
 const minimalContext: AppCatalogContextIface = {
-  apps: [],
+  resources: [],
   isLoadingApps: false,
   tagsDefinitions: [],
   approvalMethods: [],
   persons: [],
   groups: [],
-  subResources: [],
 }
 
 function renderWithContext(app: AppForCatalog) {

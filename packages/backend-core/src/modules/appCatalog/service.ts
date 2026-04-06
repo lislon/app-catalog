@@ -4,20 +4,19 @@ import type {
   AppApprovalMethod,
   AppCatalogData,
   AppCategory,
-  AppForCatalog,
   GroupingTagDefinition,
+  Resource,
 } from '../../types/common/appCatalogTypes'
 import type {
   CustomConfig,
   ServiceConfig,
 } from '../../types/common/approvalMethodTypes'
 import type { Group, Person } from '../../types/common/personGroupTypes'
-import type { SubResource } from '../../types/common/subResourceTypes'
 import { omit } from 'radashi'
 import { parseSourceSlug } from '../../utils/parseSourceSlug'
 
-/** Prisma query result for DbAppForCatalog with sourceRefs included (used by rowToAppForCatalog) */
-type AppRowWithSourceRefs = Prisma.DbAppForCatalogGetPayload<{
+/** Prisma query result for DbResource with sourceRefs included (used by rowToResource) */
+type ResourceRowWithSourceRefs = Prisma.DbResourceGetPayload<{
   include: { sourceRefs: true }
 }>
 
@@ -34,16 +33,16 @@ export async function getGroupingTagDefinitionsFromPrisma(): Promise<
   // Fetch all tag definitions
   const rows = await prisma.dbAppTagDefinition.findMany()
 
-  // Fetch all apps to count tag usage
-  const apps = await prisma.dbAppForCatalog.findMany({
+  // Fetch all resources to count tag usage
+  const resources = await prisma.dbResource.findMany({
     select: { tags: true },
   })
 
-  // Count tag values across all apps
+  // Count tag values across all resources
   const tagCounts = new Map<string, Map<string, number>>()
 
-  for (const app of apps) {
-    const tags = (app.tags as unknown as string[] | null) ?? []
+  for (const resource of resources) {
+    const tags = (resource.tags as unknown as string[] | null) ?? []
     for (const tag of tags) {
       const [prefix, value] = tag.split(':')
       if (prefix && value) {
@@ -80,7 +79,7 @@ export async function getApprovalMethodsFromPrisma(): Promise<
 > {
   const prisma = getDbClient()
 
-  // Fetch all apps
+  // Fetch all approval methods
   const rows = await prisma.dbApprovalMethod.findMany()
 
   return rows.map((row) => {
@@ -129,13 +128,13 @@ export async function getApprovalMethodsFromPrisma(): Promise<
   })
 }
 
-function rowToAppForCatalog(row: AppRowWithSourceRefs): AppForCatalog {
+function rowToResource(row: ResourceRowWithSourceRefs): Resource {
   const accessRequest =
-    row.accessRequest as unknown as AppForCatalog['accessRequest']
+    row.accessRequest as unknown as Resource['accessRequest']
   const teams = (row.teams as unknown as string[] | null) ?? []
-  const tags = (row.tags as unknown as AppForCatalog['tags']) ?? []
+  const tags = (row.tags as unknown as Resource['tags']) ?? []
   const screenshotIds =
-    (row.screenshotIds as unknown as AppForCatalog['screenshotIds']) ?? []
+    (row.screenshotIds as unknown as Resource['screenshotIds']) ?? []
   const sources = row.sourceRefs.map((ref) => ({
     sourceSlug: ref.sourceSlug,
     url: ref.url,
@@ -151,19 +150,18 @@ function rowToAppForCatalog(row: AppRowWithSourceRefs): AppForCatalog {
   const deprecated =
     row.deprecated == null
       ? undefined
-      : (row.deprecated as unknown as AppForCatalog['deprecated'])
+      : (row.deprecated as unknown as Resource['deprecated'])
   const aiPrompt = row.aiPrompt == null ? undefined : row.aiPrompt
   const urlIssues = (row.urlIssues as unknown as string[] | null)?.length
     ? (row.urlIssues as unknown as string[])
     : undefined
   const tiers =
-    row.tiers == null
-      ? undefined
-      : (row.tiers as unknown as AppForCatalog['tiers'])
+    row.tiers == null ? undefined : (row.tiers as unknown as Resource['tiers'])
 
   return {
     id: row.id,
     slug: row.slug,
+    type: row.type,
     displayName: row.displayName,
     abbreviation,
     nicknames,
@@ -180,20 +178,36 @@ function rowToAppForCatalog(row: AppRowWithSourceRefs): AppForCatalog {
     aiPrompt,
     urlIssues,
     tiers,
+    // Fields from former SubResource
+    parentSlug: row.parentSlug ?? undefined,
+    tier: row.tier ?? undefined,
+    familySlug: row.familySlug ?? undefined,
+    aliases: row.aliases.length ? row.aliases : undefined,
+    ownerPersonSlug: row.ownerPersonSlug ?? undefined,
+    accessMaintainerGroupSlugs: row.accessMaintainerGroupSlugs.length
+      ? row.accessMaintainerGroupSlugs
+      : undefined,
+    accessComments: row.accessComments ?? undefined,
+    extra: row.extra
+      ? (row.extra as unknown as Record<string, unknown>)
+      : undefined,
   }
 }
 
-export async function getAppsFromPrisma(): Promise<AppForCatalog[]> {
+export async function getResourcesFromPrisma(): Promise<Resource[]> {
   const prisma = getDbClient()
 
-  const rows = await prisma.dbAppForCatalog.findMany({
+  const rows = await prisma.dbResource.findMany({
     include: {
       sourceRefs: true,
     },
   })
 
-  return rows.map(rowToAppForCatalog)
+  return rows.map(rowToResource)
 }
+
+/** @deprecated Use getResourcesFromPrisma instead */
+export const getAppsFromPrisma = getResourcesFromPrisma
 
 export interface UpdateAppInput {
   id: string
@@ -208,7 +222,7 @@ export interface UpdateAppInput {
   }
 }
 
-export async function updateApp(input: UpdateAppInput): Promise<AppForCatalog> {
+export async function updateApp(input: UpdateAppInput): Promise<Resource> {
   const prisma = getDbClient()
   const { id, data } = input
 
@@ -230,7 +244,7 @@ export async function updateApp(input: UpdateAppInput): Promise<AppForCatalog> {
     updatePayload.description = data.description
   if (data.aiPrompt !== undefined) updatePayload.aiPrompt = data.aiPrompt
 
-  const updated = await prisma.dbAppForCatalog.update({
+  const updated = await prisma.dbResource.update({
     where: { id },
     data: updatePayload,
     include: { sourceRefs: true },
@@ -249,34 +263,34 @@ export async function updateApp(input: UpdateAppInput): Promise<AppForCatalog> {
     }
 
     await prisma.sourceReference.deleteMany({
-      where: { appId: updated.id },
+      where: { resourceId: updated.id },
     })
 
     if (urls.length > 0) {
       await prisma.sourceReference.createMany({
         data: urls.map((url) => ({
-          appId: updated.id,
+          resourceId: updated.id,
           sourceSlug: parseSourceSlug(url),
           url: url.trim(),
         })),
       })
     }
 
-    const refetched = await prisma.dbAppForCatalog.findUnique({
+    const refetched = await prisma.dbResource.findUnique({
       where: { id },
       include: { sourceRefs: true },
     })
-    if (!refetched) throw new Error('App not found after update')
-    return rowToAppForCatalog(refetched)
+    if (!refetched) throw new Error('Resource not found after update')
+    return rowToResource(refetched)
   }
 
-  return rowToAppForCatalog(updated)
+  return rowToResource(updated)
 }
 
-export function deriveCategories(apps: AppForCatalog[]): AppCategory[] {
+export function deriveCategories(resources: Resource[]): AppCategory[] {
   const tagSet = new Set<string>()
-  for (const app of apps) {
-    for (const tag of app.tags ?? []) {
+  for (const resource of resources) {
+    for (const tag of resource.tags ?? []) {
       const normalized = tag.trim().toLowerCase()
       if (normalized) tagSet.add(normalized)
     }
@@ -312,43 +326,18 @@ export async function getGroupsFromPrisma(): Promise<Group[]> {
   }))
 }
 
-export async function getSubResourcesFromPrisma(): Promise<SubResource[]> {
-  const prisma = getDbClient()
-  const rows = await prisma.dbSubResource.findMany()
-  return rows.map((row) => ({
-    slug: row.slug,
-    displayName: row.displayName,
-    description: row.description ?? undefined,
-    appSlug: row.appSlug,
-    familySlug: row.familySlug ?? undefined,
-    tierSlug: row.tierSlug ?? undefined,
-    aliases: row.aliases as unknown as string[],
-    ownerPersonSlug: row.ownerPersonSlug ?? undefined,
-    accessMaintainerGroupSlugs:
-      row.accessMaintainerGroupSlugs as unknown as string[],
-    accessRequest: row.accessRequest
-      ? (row.accessRequest as unknown as SubResource['accessRequest'])
-      : undefined,
-    accessComments: row.accessComments ?? undefined,
-    extra: row.extra
-      ? (row.extra as unknown as Record<string, unknown>)
-      : undefined,
-  }))
-}
-
 export async function getAppCatalogData(
-  getAppsOptional?: () => Promise<AppForCatalog[]>,
+  getResourcesOptional?: () => Promise<Resource[]>,
 ): Promise<AppCatalogData> {
-  const apps = getAppsOptional
-    ? await getAppsOptional()
-    : await getAppsFromPrisma()
+  const resources = getResourcesOptional
+    ? await getResourcesOptional()
+    : await getResourcesFromPrisma()
 
   return {
-    apps,
+    resources,
     tagsDefinitions: await getGroupingTagDefinitionsFromPrisma(),
     approvalMethods: await getApprovalMethodsFromPrisma(),
     persons: await getPersonsFromPrisma(),
     groups: await getGroupsFromPrisma(),
-    subResources: await getSubResourcesFromPrisma(),
   }
 }

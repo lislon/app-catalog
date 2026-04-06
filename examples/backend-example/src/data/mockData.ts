@@ -1,10 +1,9 @@
 import type {
-  AppForCatalog,
   ApprovalMethod,
   Group,
   GroupingTagDefinition,
   Person,
-  SubResource,
+  Resource,
 } from '@igstack/app-catalog-backend-core'
 
 // ============================================================================
@@ -147,7 +146,7 @@ export const mockApprovalMethods: ApprovalMethod[] = [
 // APPLICATION CATALOG
 // ============================================================================
 
-export const mockAppCatalog: AppForCatalog[] = [
+export const mockAppCatalog: Resource[] = [
   // COMMUNICATION & COLLABORATION
   {
     id: 'slack',
@@ -760,41 +759,47 @@ export const mockGroups: Group[] = [
 ]
 
 // ============================================================================
-// SUB-RESOURCES (AWS accounts)
+// SUB-RESOURCES (AWS accounts) — now modeled as Resource with parentSlug
 // ============================================================================
 
-export const mockSubResources: SubResource[] = [
+export const mockSubResources: Resource[] = [
   {
+    id: 'aws-prod-main',
     slug: 'aws-prod-main',
+    type: 'sub-resource',
     displayName: 'company-prod-main',
     description: 'Main production AWS account',
-    appSlug: 'aws-console',
+    parentSlug: 'aws-console',
     familySlug: 'company-main',
-    tierSlug: 'prod',
+    tier: 'prod',
     aliases: ['123456789012'],
     ownerPersonSlug: 'jsmith@example.com',
     accessMaintainerGroupSlugs: ['cloud-team'],
     extra: { orgUnit: 'Engineering', accounting: 'OpEx' },
   },
   {
+    id: 'aws-dev-main',
     slug: 'aws-dev-main',
+    type: 'sub-resource',
     displayName: 'company-dev-main',
     description: 'Main development AWS account',
-    appSlug: 'aws-console',
+    parentSlug: 'aws-console',
     familySlug: 'company-main',
-    tierSlug: 'dev',
+    tier: 'dev',
     aliases: ['987654321098'],
     ownerPersonSlug: 'jsmith@example.com',
     accessMaintainerGroupSlugs: ['cloud-team'],
     extra: { orgUnit: 'Engineering', accounting: 'RnD' },
   },
   {
+    id: 'aws-data-analytics-prod',
     slug: 'aws-data-analytics-prod',
+    type: 'sub-resource',
     displayName: 'company-data-analytics-prod',
     description: 'Data analytics production account',
-    appSlug: 'aws-console',
+    parentSlug: 'aws-console',
     familySlug: 'company-data-analytics',
-    tierSlug: 'prod',
+    tier: 'prod',
     aliases: ['111222333444'],
     ownerPersonSlug: 'bwilson@example.com',
     accessMaintainerGroupSlugs: ['data-team'],
