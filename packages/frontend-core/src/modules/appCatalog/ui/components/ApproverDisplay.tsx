@@ -7,10 +7,10 @@ import { Button } from '~/ui/button'
 // Legacy approver types - kept for backward compatibility
 type ApproverBase = {
   comment?: string
-  roles?: Array<AppRole>
+  roles?: AppRole[]
   approvalPolicy?: string
   postApprovalInstructions?: string
-  seeMoreUrls?: Array<string>
+  seeMoreUrls?: string[]
 }
 
 type BotApprover = ApproverBase & {

@@ -1,20 +1,20 @@
-import type { EhMetaDictionary } from '../common/sharedTypes'
+import type { AcMetaDictionary } from '../common/sharedTypes'
 
-export interface EhBackendEnvironmentInput {
+export interface AcBackendEnvironmentInput {
   slug: string
   displayName?: string
   description?: string
-  meta?: EhMetaDictionary
+  meta?: AcMetaDictionary
 }
 
-export interface EhBackendDeploymentInput {
+export interface AcBackendDeploymentInput {
   envId: string
   appId: string
   displayVersion: string
-  meta?: EhMetaDictionary
+  meta?: AcMetaDictionary
 }
 
-export interface EhBackendDeployableInput {
+export interface AcBackendDeployableInput {
   slug: string
   meta?: {
     config: string
@@ -25,16 +25,16 @@ export interface EhBackendDeployableInput {
  * Latest - backend returned latest data.
  * Cached - backend in process of updating data, but returned cached data.
  */
-export type EhBackendDataFreshness = 'latest' | 'cached'
+export type AcBackendDataFreshness = 'latest' | 'cached'
 
-export interface EhBackendDataVersion {
+export interface AcBackendDataVersion {
   version: string
-  freshness: EhBackendDataFreshness
+  freshness: AcBackendDataFreshness
 }
 
-export interface EhBackendDeployment {
+export interface AcBackendDeployment {
   appName: string
   deployableServiceName: string
   envName: string
-  version: EhBackendDataVersion
+  version: AcBackendDataVersion
 }

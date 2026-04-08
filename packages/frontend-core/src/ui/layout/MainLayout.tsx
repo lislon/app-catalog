@@ -15,7 +15,7 @@ export function MainLayout({
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <div className="flex-1 flex min-h-0">
-        <main className="flex-1 w-full flex justify-center font-sans p-6">
+        <main className="flex-1 w-full flex justify-center font-sans px-6 pt-6">
           <div className="w-full flex flex-col flex-1 min-h-0">
             <Header middle={headerMiddle} />
             {breadcrumbs}

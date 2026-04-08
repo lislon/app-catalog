@@ -11,10 +11,10 @@ interface Credential {
 }
 
 interface CredentialsWidgetProps {
-  credentials?: Array<Credential>
+  credentials?: Credential[]
 }
 
-const defaultCredentials: Array<Credential> = [
+const defaultCredentials: Credential[] = [
   { slug: 'SC', desc: 'San‑Carlos', user: 'test@company.com', pwd: 'password' },
   { slug: 'AU', desc: 'Austin', user: 'austin@company.com', pwd: 'password' },
 ]

@@ -3,11 +3,11 @@ import type { ReactEditor } from 'slate-react'
 
 type TagElement = {
   type: 'tag'
-  children: Array<CustomText>
+  children: CustomText[]
   selected: boolean
 }
-type InterTagElement = { type: 'inter-tag'; children: Array<CustomText> }
-type TagContainer = { type: 'tag-container'; children: Array<CustomText> }
+type InterTagElement = { type: 'inter-tag'; children: CustomText[] }
+type TagContainer = { type: 'tag-container'; children: CustomText[] }
 type CustomText = { text: string }
 
 export type CustomElement = TagElement | TagContainer | InterTagElement

@@ -2,56 +2,28 @@
 
 export { createTrpcRouter } from './server/controller'
 export type { TRPCRouter } from './server/controller'
-export { createEhTrpcContext } from './server/ehTrpcContext'
+export { createAcTrpcContext } from './server/acTrpcContext'
 export type {
-  EhTrpcContext,
-  EhTrpcContextOptions,
-} from './server/ehTrpcContext'
+  AcTrpcContext,
+  AcTrpcContextOptions,
+} from './server/acTrpcContext'
 
-export { staticControllerContract } from './server/ehStaticControllerContract'
-export type { EhStaticControllerContract } from './server/ehStaticControllerContract'
+export { staticControllerContract } from './server/acStaticControllerContract'
+export type { AcStaticControllerContract } from './server/acStaticControllerContract'
 
 // ui-only
 
 // backend-only
 
-export type { AppForCatalog } from './types/common/appCatalogTypes'
+export type { Resource } from './types/common/appCatalogTypes'
 export * from './types/index'
 
 // Auth
-export {
-  createAuth,
-  type AuthConfig,
-  type BetterAuth,
-} from './modules/auth/auth'
+export { createAuth, type BetterAuth } from './modules/auth/auth'
 
 export { registerAuthRoutes } from './modules/auth/registerAuthRoutes'
 
 export { createAuthRouter, type AuthRouter } from './modules/auth/authRouter'
-
-export {
-  getUserGroups,
-  isMemberOfAnyGroup,
-  isMemberOfAllGroups,
-  isAdmin,
-  requireAdmin,
-  requireGroups,
-  type UserWithGroups,
-} from './modules/auth/authorizationUtils'
-
-// Admin
-export {
-  createAdminChatHandler,
-  tool,
-  type AdminChatHandlerOptions,
-} from './modules/admin/chat/createAdminChatHandler'
-
-export {
-  createDatabaseTools,
-  createPrismaDatabaseClient,
-  DEFAULT_ADMIN_SYSTEM_PROMPT,
-  type DatabaseClient,
-} from './modules/admin/chat/createDatabaseTools'
 
 // Icon management
 export {
@@ -77,19 +49,13 @@ export {
   type ScreenshotRestControllerConfig,
 } from './modules/assets/screenshotRestController'
 
-export { createScreenshotRouter } from './modules/assets/screenshotRouter'
-
 export { syncAssets, type SyncAssetsConfig } from './modules/assets/syncAssets'
 
-// App Catalog Admin
-export { createAppCatalogAdminRouter } from './modules/appCatalogAdmin/appCatalogAdminRouter'
-
-// Approval Methods
-export { createApprovalMethodRouter } from './modules/approvalMethod/approvalMethodRouter'
+// App Catalog utilities
 export {
-  syncApprovalMethods,
-  type ApprovalMethodSyncInput,
-} from './modules/approvalMethod/syncApprovalMethods'
+  checkAllLinks,
+  printLinkCheckReport,
+} from './modules/appCatalog/checkLinks'
 
 // Database utilities
 export {
@@ -112,15 +78,33 @@ export {
 
 // Middleware (batteries-included backend setup)
 export {
-  createEhMiddleware,
-  EhDatabaseManager,
-  type EhDatabaseConfig,
-  type EhAuthConfig,
-  type EhAdminChatConfig,
-  type EhFeatureToggles,
-  type EhBackendProvider,
-  type EhLifecycleHooks,
-  type EhMiddlewareOptions,
-  type EhMiddlewareResult,
+  createAcMiddleware,
+  AcDatabaseManager,
+  injectCustomScripts,
+  type AcDatabaseConfig,
+  type AcAuthConfig,
+  type AcFeatureToggles,
+  type AcBackendProvider,
+  type AcLifecycleHooks,
+  type AcMiddlewareOptions,
+  type AcMiddlewareResult,
   type MiddlewareContext,
 } from './middleware'
+
+// Lighthouse Keeper (agentic AI debugging tool)
+export { runLighthouseKeeperDemo } from './modules/lighthouseKeeper/demo.js'
+export {
+  createAppCatalogAITools,
+  APP_CATALOG_AI_SYSTEM_PROMPT,
+} from './modules/lighthouseKeeper/tools.js'
+export type {
+  AcLighthouseKeeperConfig,
+  AcMcpServerConfig,
+} from './middleware/types.js'
+
+// Version utilities
+export {
+  getBuildPipelineId,
+  getFrontendPackageVersion,
+  getVersionInfo,
+} from './utils/versionUtils'

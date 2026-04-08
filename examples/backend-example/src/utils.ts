@@ -1,25 +1,25 @@
 import Rand from 'rand-seed'
 import type {
+  AcAppIndexed,
+  AcEnvIndexed,
   AvailabilityVariant,
   AvailiabilityMatrixData,
-  EhAppIndexed,
-  EhEnvIndexed,
 } from '@igstack/app-catalog-backend-core'
 
 export interface RandomAvailablityMatrixParams {
-  apps: Array<EhAppIndexed>
-  envs: Array<EhEnvIndexed>
+  apps: AcAppIndexed[]
+  envs: AcEnvIndexed[]
 }
 
 export function makeResourceJumpSlugFromAppAndPage(
-  app: { slug: string; ui?: { pages?: Array<{ slug: string }> } },
+  app: { slug: string; ui?: { pages?: { slug: string }[] } },
   page: { slug: string },
 ) {
   const singlePageApp = app.ui?.pages?.length === 1
   return (singlePageApp ? app.slug : app.slug + '-' + page.slug).toLowerCase()
 }
 
-export function getResourceJumpsFromApp(app: EhAppIndexed): Array<string> {
+export function getResourceJumpsFromApp(app: AcAppIndexed): string[] {
   return (
     app.ui?.pages.map((page) => {
       return makeResourceJumpSlugFromAppAndPage(app, page)
@@ -34,7 +34,7 @@ export function getRandomAvailabilityMatrix(
 
   const resourceJumpsSlugs = apps.flatMap(getResourceJumpsFromApp)
 
-  const variants: Array<AvailabilityVariant & { weight: number }> = [
+  const variants: (AvailabilityVariant & { weight: number })[] = [
     {
       isDeployed: true,
       isHealthy: true,

@@ -1,8 +1,10 @@
-import type { AppApprovalMethod, AppForCatalog } from '@igstack/app-catalog-backend-core'
+import type {
+  AppApprovalMethod,
+  Resource,
+} from '@igstack/app-catalog-backend-core'
 import { Bot, Check, Copy, ExternalLink, Settings, Users } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { Badge } from '~/ui/badge'
 import { Button } from '~/ui/button'
 import {
   Accordion,
@@ -18,13 +20,14 @@ import {
   TableHeader,
   TableRow,
 } from '~/ui/table'
+import { PersonBadge } from './PersonBadge'
 
 // Constants
 const COPY_FEEDBACK_DURATION = 2000
 
 interface AccessRequestSectionProps {
-  app: AppForCatalog
-  approvalMethods: Array<AppApprovalMethod>
+  app: Resource
+  approvalMethods: AppApprovalMethod[]
 }
 
 // Component for rendering markdown links with security attributes
@@ -46,13 +49,17 @@ const MarkdownLink = ({
 )
 
 // Helper function for approval method icons
-function getApprovalMethodIcon(type: 'service' | 'personTeam' | 'custom') {
+function getApprovalMethodIcon(
+  type: 'service' | 'personTeam' | 'custom' | 'noAccessRequired' | 'unknown',
+) {
   switch (type) {
     case 'service':
       return <Bot className="size-5 text-primary" />
     case 'personTeam':
       return <Users className="size-5 text-primary" />
     case 'custom':
+    case 'noAccessRequired':
+    case 'unknown':
       return <Settings className="size-5 text-primary" />
   }
 }
@@ -151,7 +158,7 @@ export function AccessRequestSection({
   const { copiedId, copyToClipboard } = useCopyToClipboard()
   const accessRequest = app.accessRequest
   const approvalMethod = approvalMethods.find(
-    (m) => m.slug === accessRequest?.approvalMethodId,
+    (m) => m.slug === accessRequest?.approvalMethodSlug,
   )
 
   const handleCopyPrompt = useCallback(() => {
@@ -159,13 +166,6 @@ export function AccessRequestSection({
       copyToClipboard(accessRequest.requestPrompt, 'prompt')
     }
   }, [accessRequest?.requestPrompt, copyToClipboard])
-
-  const handleCopyApproverEmail = useCallback(
-    (email: string, index: number) => {
-      copyToClipboard(email, `approver-${index}`)
-    },
-    [copyToClipboard],
-  )
 
   // Early return if no access request
   if (!accessRequest) return null
@@ -243,14 +243,14 @@ export function AccessRequestSection({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[180px]">Role</TableHead>
+                  <TableHead className="whitespace-nowrap">Role</TableHead>
                   <TableHead>Description</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {accessRequest.roles.map((role, idx) => (
                   <TableRow key={`${role.displayName}-${idx}`}>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium whitespace-nowrap">
                       {role.displayName}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
@@ -270,59 +270,17 @@ export function AccessRequestSection({
       )}
 
       {/* Approvers */}
-      {accessRequest.approvers && accessRequest.approvers.length > 0 && (
-        <div>
-          <h4 className="mb-2 text-sm font-medium">Approvers</h4>
-          <div className="flex flex-wrap gap-2">
-            {accessRequest.approvers.map((approver, idx) => {
-              const approverId = `approver-${idx}`
-              const isCopied = copiedId === approverId
-
-              return (
-                <Badge
-                  key={`${approver.displayName}-${idx}`}
-                  variant="outline"
-                  className="font-normal inline-flex items-center gap-1"
-                >
-                  {approver.displayName}
-                  {approver.contact && (
-                    <>
-                      <span className="text-xs opacity-70">
-                        ({approver.contact})
-                      </span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleCopyApproverEmail(approver.contact!, idx)
-                        }}
-                        className="inline-flex items-center justify-center hover:bg-accent rounded p-0.5 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1"
-                        aria-label={`Copy ${approver.displayName}'s email`}
-                        title={isCopied ? 'Copied!' : 'Copy email'}
-                      >
-                        {isCopied ? (
-                          <>
-                            <Check className="h-3 w-3 text-green-600" />
-                            <span
-                              className="sr-only"
-                              role="status"
-                              aria-live="polite"
-                            >
-                              Email copied to clipboard
-                            </span>
-                          </>
-                        ) : (
-                          <Copy className="h-3 w-3 opacity-50 hover:opacity-100" />
-                        )}
-                      </button>
-                    </>
-                  )}
-                </Badge>
-              )
-            })}
+      {accessRequest.approverPersonSlugs &&
+        accessRequest.approverPersonSlugs.length > 0 && (
+          <div>
+            <h4 className="mb-2 text-sm font-medium">Approvers</h4>
+            <div className="flex flex-wrap gap-2">
+              {accessRequest.approverPersonSlugs.map((slug) => (
+                <PersonBadge key={slug} slug={slug} />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Documentation URLs */}
       {accessRequest.urls && accessRequest.urls.length > 0 && (

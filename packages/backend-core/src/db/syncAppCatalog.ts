@@ -1,6 +1,6 @@
 import type {
-  AppForCatalog,
   GroupingTagDefinition,
+  Resource,
 } from '../types/common/appCatalogTypes'
 import { getDbClient } from './client'
 import { TABLE_SYNC_MAGAZINE } from './tableSyncMagazine'
@@ -8,8 +8,10 @@ import { tableSyncPrisma } from './tableSyncPrismaAdapter'
 import { readFile, readdir, stat } from 'node:fs/promises'
 import { group } from 'radashi'
 import { upsertAsset } from '../modules/assets/upsertAsset'
-import type { ApprovalMethod } from '../types'
-import type { PrismaClient } from '@prisma/client'
+import type { ApprovalMethod, Group, Person } from '../types'
+import type { PrismaClient } from '../generated/prisma/client'
+import { naturalSort } from '../utils/naturalSort'
+import { parseSourceSlug } from '../utils/parseSourceSlug'
 
 export interface SyncAppCatalogResult {
   created: number
@@ -19,7 +21,7 @@ export interface SyncAppCatalogResult {
 }
 
 interface AssetSyncResult {
-  screenshotIds: Array<string>
+  screenshotIds: string[]
   iconName: string | null
 }
 
@@ -36,13 +38,14 @@ async function processAssetDirectory(
   appSlug: string,
   assetType: 'screenshot' | 'icon',
   prisma: PrismaClient,
-): Promise<Array<string>> {
+): Promise<string[]> {
   try {
     const files = await readdir(dirPath)
-    const assetIds: Array<string> = []
+    const sortedFiles = naturalSort(files)
+    const assetIds: string[] = []
 
-    for (let i = 0; i < files.length; i++) {
-      const fileName = files[i]
+    for (let i = 0; i < sortedFiles.length; i++) {
+      const fileName = sortedFiles[i]
       if (!fileName) continue
 
       const assetName =
@@ -100,12 +103,12 @@ async function syncAppAssets(
 }
 
 async function syncAssetsFromFileSystem(
-  apps: Array<AppForCatalog>,
+  resources: Resource[],
   allAppsAssetsPath: string,
 ) {
   const appDirectories = await readdir(allAppsAssetsPath)
   const prisma = getDbClient()
-  const bySlug = group(apps, (a) => a.slug)
+  const bySlug = group(resources, (a) => a.slug)
 
   for (const appDirName of appDirectories) {
     try {
@@ -135,7 +138,7 @@ async function syncAssetsFromFileSystem(
       )
 
       const updateData: {
-        screenshotIds?: Array<string>
+        screenshotIds?: string[]
         iconName?: string | null
       } = {}
 
@@ -147,7 +150,7 @@ async function syncAssetsFromFileSystem(
       }
 
       if (Object.keys(updateData).length > 0) {
-        await prisma.dbAppForCatalog.update({
+        await prisma.dbResource.update({
           where: { slug: appSlug },
           data: updateData,
         })
@@ -160,89 +163,70 @@ async function syncAssetsFromFileSystem(
       )
     }
   }
-  // private async syncScreenshots(apps: AppForCatalog[], screenshotsPath: string): Promise<void> {
-  //     const db = getDbClient();
-  //
-  //     for (const app of apps) {
-  //     const dirPath = join(screenshotsPath, `${app.slug}-screenshots`);
-  //
-  //     try {
-  //       const files = await readdir(dirPath);
-  //       const imageFiles = files.filter(f => /\.(png|jpg|jpeg|gif|webp)$/i.test(f)).sort();
-  //
-  //       if (imageFiles.length === 0) continue;
-  //
-  //       const screenshotIds: string[] = [];
-  //
-  //       for (const filename of imageFiles) {
-  //         const filePath = join(dirPath, filename);
-  //         const content = await readFile(filePath);
-  //         const buffer = Buffer.from(content);
-  //         const checksum = generateChecksum(buffer);
-  //         const { width, height } = await getImageDimensions(buffer);
-  //
-  //         const ext = filename.split('.').pop()?.toLowerCase();
-  //         const mimeType = {
-  //           png: 'image/png',
-  //           jpg: 'image/jpeg',
-  //           jpeg: 'image/jpeg',
-  //           gif: 'image/gif',
-  //           webp: 'image/webp',
-  //         }[ext || ''] || 'application/octet-stream';
-  //
-  //         const asset = await db.dbAsset.upsert({
-  //           where: { checksum },
-  //           create: {
-  //             name: `${app.slug}/${filename}`,
-  //             assetType: 'screenshot',
-  //             content: new Uint8Array(buffer),
-  //             checksum,
-  //             mimeType,
-  //             fileSize: buffer.length,
-  //             width,
-  //             height,
-  //           },
-  //           update: {
-  //             name: `${app.slug}/${filename}`,
-  //             content: new Uint8Array(buffer),
-  //             mimeType,
-  //             fileSize: buffer.length,
-  //             width,
-  //             height,
-  //           },
-  //         });
-  //
-  //         screenshotIds.push(asset.id);
-  //       }
-  //
-  //       await db.dbAppForCatalog.update({
-  //         where: { slug: app.slug },
-  //         data: { screenshotIds },
-  //       });
-  //
-  //       logger.info(`Synced ${screenshotIds.length} screenshots for ${app.slug}`);
-  //     } catch (error: any) {
-  //       if (error.code === 'ENOENT') continue; // Skip if directory doesn't exist
-  //       throw error;
-  //     }
-  //   }
-  // }
+}
+
+/**
+ * Optional data to sync alongside the core app catalog.
+ */
+export interface SyncAppCatalogOptions {
+  persons?: Person[]
+  groups?: Group[]
 }
 
 /**
  * Syncs app catalog data to the database using table sync.
- * This will create new apps, update existing ones, and delete any that are no longer in the input.
+ * This will create new resources, update existing ones, and delete any that are no longer in the input.
  *
  * Note: Call connectDb() before and disconnectDb() after if running in a script.
  */
 export async function syncAppCatalog(
-  apps: Array<AppForCatalog>,
-  tagsDefinitions: Array<GroupingTagDefinition>,
-  approvalMethods: Array<ApprovalMethod>,
-  sreenshotsPath?: string,
+  resources: Resource[],
+  tagsDefinitions: GroupingTagDefinition[],
+  approvalMethods: ApprovalMethod[],
+  screenshotsPath?: string,
+  options?: SyncAppCatalogOptions,
 ): Promise<SyncAppCatalogResult> {
   try {
     const prisma = getDbClient()
+
+    // Sync Persons first (groups depend on persons via memberships)
+    if (options?.persons) {
+      const dbPersons = options.persons.map((p) => ({
+        slug: p.slug,
+        firstName: p.firstName,
+        lastName: p.lastName,
+        email: p.email ?? null,
+      }))
+      await tableSyncPrisma({
+        prisma,
+        ...TABLE_SYNC_MAGAZINE.DbPerson,
+      }).sync(dbPersons)
+    }
+
+    // Sync Groups (without memberships first)
+    if (options?.groups) {
+      const dbGroups = options.groups.map((g) => ({
+        slug: g.slug,
+        displayName: g.displayName ?? null,
+        email: g.email ?? null,
+      }))
+      await tableSyncPrisma({
+        prisma,
+        ...TABLE_SYNC_MAGAZINE.DbGroup,
+      }).sync(dbGroups)
+
+      // Now sync GroupMemberships
+      const allMemberships = options.groups.flatMap((g) =>
+        g.memberSlugs.map((personSlug) => ({
+          groupSlug: g.slug,
+          personSlug,
+        })),
+      )
+      await tableSyncPrisma({
+        prisma,
+        ...TABLE_SYNC_MAGAZINE.DbGroupMembership,
+      }).sync(allMemberships)
+    }
 
     await tableSyncPrisma({
       prisma,
@@ -251,7 +235,7 @@ export async function syncAppCatalog(
 
     const sync = tableSyncPrisma({
       prisma,
-      ...TABLE_SYNC_MAGAZINE.DbAppForCatalog,
+      ...TABLE_SYNC_MAGAZINE.DbResource,
     })
 
     await tableSyncPrisma({
@@ -259,43 +243,131 @@ export async function syncAppCatalog(
       ...TABLE_SYNC_MAGAZINE.DbAppTagDefinition,
     }).sync(tagsDefinitions)
 
-    // Transform AppForCatalog to DbAppForCatalog format
-    const dbApps = apps.map((app) => {
+    // Collect all unique source slugs for sync
+    const uniqueSourceSlugs = new Set<string>()
+    for (const resource of resources) {
+      for (const source of resource.sources ?? []) {
+        const url = typeof source === 'string' ? source : source.url
+        const sourceSlug = parseSourceSlug(url)
+        uniqueSourceSlugs.add(sourceSlug)
+      }
+    }
+
+    // Sync Source entries using tableSyncPrisma
+    const sources = Array.from(uniqueSourceSlugs).map((slug) => ({
+      slug,
+      userPrompt: null,
+    }))
+    await tableSyncPrisma({
+      prisma,
+      ...TABLE_SYNC_MAGAZINE.Source,
+    }).sync(sources)
+
+    // Sort resources: parents first (no parentSlug), then children — for FK integrity
+    const sortedResources = [...resources].sort((a, b) => {
+      const aIsChild = a.parentSlug ? 1 : 0
+      const bIsChild = b.parentSlug ? 1 : 0
+      return aIsChild - bIsChild
+    })
+
+    // Transform Resource to DbResource format (scalar fields only)
+    const dbResources = sortedResources.map((resource) => {
       const slug =
-        app.slug ||
-        app.displayName
+        resource.slug ||
+        resource.displayName
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/^-+|-+$/g, '')
 
       return {
         slug,
-        displayName: app.displayName,
-        description: app.description,
-        teams: app.teams ?? [],
-        accessRequest: app.accessRequest ?? null,
-        notes: app.notes ?? null,
-        tags: app.tags ?? [],
-        appUrl: app.appUrl ?? null,
-        links: app.links ?? null,
-        iconName: app.iconName ?? null,
-        screenshotIds: app.screenshotIds ?? [],
+        type: resource.type ?? 'application',
+        displayName: resource.displayName,
+        abbreviation: resource.abbreviation ?? null,
+        nicknames: resource.nicknames ?? [],
+        description: resource.description,
+        teams: resource.teams ?? [],
+        accessRequest: resource.accessRequest ?? null,
+        notes: resource.notes ?? null,
+        tags: resource.tags ?? [],
+        appUrl: resource.appUrl ?? null,
+        links: resource.links ?? null,
+        iconName: resource.iconName ?? null,
+        screenshotIds: resource.screenshotIds ?? [],
+        deprecated: resource.deprecated ?? null,
+        aiPrompt: resource.aiPrompt ?? null,
+        urlIssues: resource.urlIssues ?? [],
+        tiers: resource.tiers ?? null,
+        // Fields from former SubResource
+        parentSlug: resource.parentSlug ?? null,
+        tier: resource.tier ?? null,
+        familySlug: resource.familySlug ?? null,
+        aliases: resource.aliases ?? [],
+        ownerPersonSlug: resource.ownerPersonSlug ?? null,
+        accessMaintainerGroupSlugs: resource.accessMaintainerGroupSlugs ?? [],
+        accessComments: resource.accessComments ?? null,
+        extra: resource.extra ?? null,
       }
     })
 
-    const result = await sync.sync(dbApps)
+    // Sync resources
+    const result = await sync.sync(dbResources)
+
+    // Resolve slug -> id for synced resources so SourceReference can reference by resourceId
+    const slugs = dbResources.map((a) => a.slug)
+    const resourceRows = await prisma.dbResource.findMany({
+      where: { slug: { in: slugs } },
+      select: { slug: true, id: true },
+    })
+    const slugToId = Object.fromEntries(resourceRows.map((r) => [r.slug, r.id]))
+
+    // Build allSourceRefs with resourceId (slug already resolved to id)
+    const allSourceRefs = sortedResources.flatMap((resource) => {
+      const resourceSlug =
+        resource.slug ||
+        resource.displayName
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+      const resourceId = slugToId[resourceSlug]
+      if (!resourceId) {
+        throw new Error(
+          `Resource '${resourceSlug}' has no id after sync. Existing slugs: ${Object.keys(slugToId).join(', ')}`,
+        )
+      }
+
+      return (resource.sources ?? []).map((source) => {
+        const url = typeof source === 'string' ? source : source.url
+        const sourceSlug = parseSourceSlug(url)
+        return {
+          resourceId,
+          sourceSlug,
+          url,
+          parseDate: null,
+          excerpts: [],
+          userPrompt: null,
+        }
+      })
+    })
+
+    // Then sync all SourceReferences (with set semantics: old ones deleted, new ones created)
+    await tableSyncPrisma({
+      prisma,
+      ...TABLE_SYNC_MAGAZINE.SourceReference,
+    }).sync(allSourceRefs)
 
     // Get actual synced data to calculate stats
     const actual = result.getActual()
 
-    if (sreenshotsPath) {
-      await syncAssetsFromFileSystem(apps, sreenshotsPath)
+    if (screenshotsPath) {
+      await syncAssetsFromFileSystem(resources, screenshotsPath)
     } else {
-      console.warn('DO not sync screenhots')
+      console.warn('Do not sync screenhots')
     }
 
     return {
-      created: actual.length - apps.length + (apps.length - actual.length),
+      created:
+        actual.length - resources.length + (resources.length - actual.length),
       updated: 0, // TableSync doesn't expose this directly
       deleted: 0, // TableSync doesn't expose this directly
       total: actual.length,

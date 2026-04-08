@@ -9,7 +9,7 @@
  *
  * @example
  * ```typescript
- * const eh = await createEhMiddleware({
+ * const eh = await createAcMiddleware({
  *   basePath: '/api',
  *   database: { host, port, database, username, password, schema },
  *   auth: { baseURL, secret, providers },
@@ -24,20 +24,23 @@
  */
 
 // Main middleware factory
-export { createEhMiddleware } from './createEhMiddleware'
+export { createAcMiddleware } from './createAcMiddleware'
 
 // Types
 export type {
-  EhDatabaseConfig,
-  EhAuthConfig,
-  EhAdminChatConfig,
-  EhFeatureToggles,
-  EhBackendProvider,
-  EhLifecycleHooks,
-  EhMiddlewareOptions,
-  EhMiddlewareResult,
+  AcDatabaseConfig,
+  AcAuthConfig,
+  AcAdminChatConfig,
+  AcFeatureToggles,
+  AcBackendProvider,
+  AcLifecycleHooks,
+  AcMiddlewareOptions,
+  AcMiddlewareResult,
   MiddlewareContext,
 } from './types'
 
 // Database manager (for advanced use cases)
-export { EhDatabaseManager } from './database'
+export { AcDatabaseManager } from './database'
+
+// HTML injection utilities
+export { injectCustomScripts } from './htmlInjection'

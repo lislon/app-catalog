@@ -1,5 +1,8 @@
 import { createCachingFetcher } from './createCachingFetcher'
-import type { AppCatalogData, TRPCRouter } from '@igstack/app-catalog-backend-core'
+import type {
+  AppCatalogData,
+  TRPCRouter,
+} from '@igstack/app-catalog-backend-core'
 import type { QueryFunctionContext, QueryKey } from '@tanstack/react-query'
 import type { TRPCClient } from '@trpc/client'
 import type { AcDb } from '~/userDb/AcDb'
@@ -22,8 +25,8 @@ export function appCatalogFetcher({
   return createCachingFetcher<AppCatalogData>({
     cacheKey: dbCacheDbKeys.AppCatalog,
     networkFetchFn: trpcClient
-      ? () => trpcClient.appCatalog.query()
-      : (ctx) => getTrpcFromMeta(ctx).appCatalog.query(),
+      ? () => trpcClient.appCatalog.getData.query()
+      : (ctx) => getTrpcFromMeta(ctx).appCatalog.getData.query(),
     getDbTable: db
       ? () => db.appCatalog
       : (ctx) => getDbFromMeta(ctx).appCatalog,

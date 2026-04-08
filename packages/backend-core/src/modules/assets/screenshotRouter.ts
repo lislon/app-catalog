@@ -50,7 +50,7 @@ export function createScreenshotRouter() {
         const prisma = getDbClient()
 
         // Find app by slug
-        const app = await prisma.dbAppForCatalog.findUnique({
+        const app = await prisma.dbResource.findUnique({
           where: { slug: input.appSlug },
           select: { screenshotIds: true },
         })
@@ -59,8 +59,8 @@ export function createScreenshotRouter() {
           return []
         }
 
-        // Fetch all screenshots for the app
-        return prisma.dbAsset.findMany({
+        // Fetch all screenshots for the app, then sort by screenshotIds order
+        const results = await prisma.dbAsset.findMany({
           where: {
             id: { in: app.screenshotIds },
             assetType: 'screenshot',
@@ -76,6 +76,10 @@ export function createScreenshotRouter() {
             updatedAt: true,
           },
         })
+
+        return app.screenshotIds
+          .map((id) => results.find((r) => r.id === id))
+          .filter((r) => r !== undefined)
       }),
 
     getFirstByAppSlug: publicProcedure
@@ -84,7 +88,7 @@ export function createScreenshotRouter() {
         const prisma = getDbClient()
 
         // Find app by slug
-        const app = await prisma.dbAppForCatalog.findUnique({
+        const app = await prisma.dbResource.findUnique({
           where: { slug: input.appSlug },
           select: { screenshotIds: true },
         })

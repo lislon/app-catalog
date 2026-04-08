@@ -1,35 +1,40 @@
 import { config as loadEnv } from 'dotenv-defaults'
 import express from 'express'
-import { openai } from '@ai-sdk/openai'
 import {
-  DEFAULT_ADMIN_SYSTEM_PROMPT,
-  createDatabaseTools,
-  createEhMiddleware,
+  createAcMiddleware,
   getAssetByName,
+  getVersionInfo,
   staticControllerContract,
+  syncAppCatalog,
 } from '@igstack/app-catalog-backend-core'
 import type { Express, Request, Response } from 'express'
 import type { AppCatalogCompanySpecificBackend } from '@igstack/app-catalog-backend-core'
 import {
-  getAdminGroups,
+  mockAppCatalog,
+  mockApprovalMethods,
+  mockGroups,
+  mockPersons,
+  mockSubResources,
+  mockTagDefinitions,
+} from './data/mockData.js'
+
+import {
   getAuthPlugins,
   getAuthProviders,
   validateAuthConfig,
 } from './config/authProviders.js'
 
 loadEnv()
-
-// Validate auth configuration
 validateAuthConfig()
 
 // Company-specific backend implementation
-// Optional: implement getApps() to provide app catalog data
 const companySpecificBackend: AppCatalogCompanySpecificBackend = {
-  // Example: async getApps() { return [...] }
+  // Automatically gets version info from BUILD_PIPELINE_ID/URL and package.json
+  getVersionInfo: () => getVersionInfo(),
 }
 
 // Create the middleware with all configuration
-const eh = await createEhMiddleware({
+const eh = await createAcMiddleware({
   basePath: '/api',
 
   database: {
@@ -37,33 +42,26 @@ const eh = await createEhMiddleware({
   },
 
   auth: {
-    baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:4000',
-    secret:
-      process.env.BETTER_AUTH_SECRET ||
-      'dev-secret-change-in-production-minimum-32-chars!',
-    providers: getAuthProviders(),
-    plugins: getAuthPlugins(),
-    adminGroups: getAdminGroups(),
-    sessionExpiresIn: 60 * 60 * 24 * 30, // 30 days
-    sessionUpdateAge: 60 * 60 * 24, // Refresh after 1 day
+    betterAuthOptions: {
+      baseURL: process.env.BETTER_AUTH_URL || 'http://localhost:4001',
+      secret:
+        process.env.BETTER_AUTH_SECRET ||
+        'dev-secret-change-in-production-minimum-32-chars!',
+      emailAndPassword: { enabled: true },
+      socialProviders: getAuthProviders(),
+      plugins: getAuthPlugins(),
+      session: {
+        expiresIn: 60 * 60 * 24 * 30, // 30 days
+        updateAge: 60 * 60 * 24, // Refresh after 1 day
+      },
+    },
+    devMockUser:
+      process.env.NODE_ENV !== 'production'
+        ? { id: 'dev-user', email: 'dev@example.com', name: 'Dev User' }
+        : undefined,
   },
 
   backend: companySpecificBackend,
-
-  adminChat: {
-    model: openai.chat('gpt-4o-mini'),
-    systemPrompt: DEFAULT_ADMIN_SYSTEM_PROMPT,
-    tools: createDatabaseTools(),
-    validateConfig: () => {
-      if (!process.env['OPENAI_API_KEY']) {
-        throw new Error('OPENAI_API_KEY environment variable is not configured')
-      }
-    },
-  },
-
-  features: {
-    legacyIconEndpoint: true, // Enable /static/icon/:icon
-  },
 
   hooks: {
     onRoutesRegistered: (router) => {
@@ -112,10 +110,31 @@ const app = express()
 // Mount the middleware
 app.use(eh.router)
 
-// Connect and start
+// Connect to database
 await eh.connect()
+
 const port = process.env.PORT || 4001
-app.listen(port)
-console.log(`Example app-catalog listening on port ${port}`)
+const server = app.listen(port, async () => {
+  console.log(`Example app-catalog listening on port ${port}`)
+
+  // Sync mock data after server is fully running
+  console.log('Syncing mock data to database...')
+  try {
+    const allResources = [...mockAppCatalog, ...mockSubResources]
+    await syncAppCatalog(
+      allResources,
+      mockTagDefinitions,
+      mockApprovalMethods,
+      undefined,
+      {
+        persons: mockPersons,
+        groups: mockGroups,
+      },
+    )
+    console.log(`✓ Synced ${allResources.length} resources to database`)
+  } catch (error) {
+    console.error('Failed to sync app catalog:', error)
+  }
+})
 
 export const viteNodeApp: Express = app

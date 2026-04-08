@@ -1,18 +1,25 @@
 import type {
   AppApprovalMethod,
-  AppForCatalog,
+  AppVersionInfo,
+  Group,
   GroupingTagDefinition,
+  Person,
+  Resource,
 } from '@igstack/app-catalog-backend-core'
 import { useQuery } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
-import { createContext, use, useMemo } from 'react'
+import { createContext, use, useEffect, useMemo } from 'react'
 import { ApiQueryMagazineAppCatalog } from '~/modules/appCatalog'
+import { useUiSettings } from '~/context/UiSettingsContext'
 
 export interface AppCatalogContextIface {
-  apps: Array<AppForCatalog>
+  resources: Resource[]
   isLoadingApps: boolean
-  tagsDefinitions: Array<GroupingTagDefinition>
-  approvalMethods: Array<AppApprovalMethod>
+  tagsDefinitions: GroupingTagDefinition[]
+  approvalMethods: AppApprovalMethod[]
+  persons: Person[]
+  groups: Group[]
+  versions?: AppVersionInfo
 }
 
 export const AppCatalogContext = createContext<
@@ -27,16 +34,48 @@ export function AppCatalogProvider({ children }: AppCatalogProviderProps) {
   const { data, isLoading: isLoadingApps } = useQuery(
     ApiQueryMagazineAppCatalog.getAppCatalog(),
   )
+  const uiSettings = useUiSettings()
 
   const contextValue = useMemo<AppCatalogContextIface>(
     () => ({
-      apps: data?.apps ?? [],
+      resources: data?.resources ?? [],
       isLoadingApps,
       tagsDefinitions: data?.tagsDefinitions ?? [],
       approvalMethods: data?.approvalMethods ?? [],
+      persons: data?.persons ?? [],
+      groups: data?.groups ?? [],
+      versions: {
+        ...data?.versions,
+        ...(uiSettings.frontendBuildId && {
+          frontend: {
+            displayName:
+              uiSettings.frontendBuildId === 'local'
+                ? 'local'
+                : `#${uiSettings.frontendBuildId}`,
+          },
+        }),
+      },
     }),
-    [data?.approvalMethods, data?.apps, data?.tagsDefinitions, isLoadingApps],
+    [
+      data?.approvalMethods,
+      data?.resources,
+      data?.tagsDefinitions,
+      data?.persons,
+      data?.groups,
+      data?.versions,
+      uiSettings.frontendBuildId,
+      isLoadingApps,
+    ],
   )
+
+  // Update document title based on backend version
+  useEffect(() => {
+    if (data?.versions?.backend?.displayName === 'local') {
+      document.title = 'Local'
+    } else {
+      document.title = 'App Catalog'
+    }
+  }, [data?.versions?.backend?.displayName])
 
   return <AppCatalogContext value={contextValue}>{children}</AppCatalogContext>
 }

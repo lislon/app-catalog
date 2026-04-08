@@ -1,6 +1,6 @@
 import type { BetterAuthPlugin } from 'better-auth'
 import type { TRPCRootObject } from '@trpc/server'
-import type { EhTrpcContext } from '../../server/ehTrpcContext'
+import type { AcTrpcContext } from '../../server/acTrpcContext'
 import type { BetterAuth } from './auth'
 
 /**
@@ -10,23 +10,24 @@ import type { BetterAuth } from './auth'
  * @returns tRPC router with auth procedures
  */
 export function createAuthRouter(
-  t: TRPCRootObject<EhTrpcContext, {}, {}>,
+  t: TRPCRootObject<AcTrpcContext, {}, {}>,
   auth?: BetterAuth,
+  options?: { devLoginEnabled?: boolean },
 ) {
   const router = t.router
   const publicProcedure = t.procedure
 
   return router({
     getSession: publicProcedure.query(async ({ ctx }) => {
-      // User is now extracted in the tRPC context creation
       return {
         user: ctx.user ?? null,
         isAuthenticated: !!ctx.user,
+        isAdmin: ctx.isAdmin,
       }
     }),
     getProviders: publicProcedure.query(() => {
       // Return configured social providers and OAuth providers from plugins
-      const providers: Array<string> = []
+      const providers: string[] = []
       const authOptions = auth?.options
 
       // Add built-in social providers (github, google, etc.)
@@ -45,10 +46,10 @@ export function createAuthRouter(
       // Add OAuth providers from plugins (like Okta via genericOAuth)
       if (authOptions?.plugins) {
         const plugins = authOptions.plugins
-        plugins.forEach((plugin) => {
+        plugins.forEach((plugin: BetterAuthPlugin) => {
           const pluginWithConfig = plugin as BetterAuthPlugin & {
             options?: {
-              config?: Array<{ providerId?: string }>
+              config?: { providerId?: string }[]
             }
           }
           if (
@@ -67,7 +68,7 @@ export function createAuthRouter(
         })
       }
 
-      return { providers }
+      return { providers, devLoginEnabled: options?.devLoginEnabled ?? false }
     }),
   })
 }

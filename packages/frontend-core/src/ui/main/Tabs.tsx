@@ -5,7 +5,7 @@ const tabList = [
   { label: 'Logs', value: 'logs' },
 ]
 
-export function Tabs({ children }: { children: Array<React.ReactNode> }) {
+export function Tabs({ children }: { children: React.ReactNode[] }) {
   const [active, setActive] = React.useState('jump')
   return (
     <div className="mb-4">

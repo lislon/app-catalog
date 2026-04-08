@@ -1,14 +1,8 @@
 import { TRPCError, initTRPC } from '@trpc/server'
-import type { EhTrpcContext } from './ehTrpcContext'
-import { isAdmin } from '../modules/auth/authorizationUtils'
+import type { AcTrpcContext } from './acTrpcContext'
 
-/**
- * Initialization of tRPC backend
- * Should be done only once per backend!
- */
-export const t = initTRPC.context<EhTrpcContext>().create({
+export const t = initTRPC.context<AcTrpcContext>().create({
   errorFormatter({ error, shape }: { error: unknown; shape: unknown }) {
-    // Log all tRPC errors to console
     console.error('[tRPC Error]', {
       path: (shape as { data?: { path?: string } }).data?.path,
       code: (error as { code?: string }).code,
@@ -51,25 +45,15 @@ const isAdminMiddleware = t.middleware(({ ctx, next }) => {
   if (!ctx.user) {
     throw new TRPCError({
       code: 'UNAUTHORIZED',
-      message: 'You must be logged in to access this resource',
+      message: 'You must be logged in',
     })
   }
-
-  console.log('[isAdminMiddleware] === ADMIN CHECK DEBUG ===')
-  console.log('[isAdminMiddleware] User:', ctx.user.email)
-  console.log('[isAdminMiddleware] Required admin groups:', ctx.adminGroups)
-  console.log('[isAdminMiddleware] Calling isAdmin()...')
-
-  const hasAdminAccess = isAdmin(ctx.user, ctx.adminGroups)
-  console.log('[isAdminMiddleware] Has admin access:', hasAdminAccess)
-
-  if (!hasAdminAccess) {
+  if (!ctx.isAdmin) {
     throw new TRPCError({
       code: 'FORBIDDEN',
-      message: `You must be an admin to access this resource. Required groups: ${ctx.adminGroups.join(', ') || 'env_hopper_ui_super_admins'}`,
+      message: 'Admin access required',
     })
   }
-
   return next({
     ctx: {
       ...ctx,

@@ -1,5 +1,5 @@
-import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
+import type { Resource } from '@igstack/app-catalog-backend-core'
 
-export function getAppUrl(app: AppForCatalog): string {
+export function getAppUrl(app: Resource): string {
   return app.appUrl || '#'
 }

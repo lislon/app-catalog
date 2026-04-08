@@ -1,73 +1,73 @@
-import type { EhAppIndexed } from '../common/app/appTypes'
+import type { AcAppIndexed } from '../common/app/appTypes'
 import type {
-  EhAppPageIndexed,
-  EhAppUiIndexed,
+  AcAppPageIndexed,
+  AcAppUiIndexed,
 } from '../common/app/ui/appUiTypes'
 import type {
-  EhBackendCredentialInput,
-  EhBackendUiDefaultsInput,
+  AcBackendCredentialInput,
+  AcBackendUiDefaultsInput,
 } from './common'
-import type { EhBackendDataSourceInput } from './dataSources'
+import type { AcBackendDataSourceInput } from './dataSources'
 
-export interface EhBackendVersionsRequestParams {
-  envNames: Array<string>
-  appNames: Array<string>
+export interface AcBackendVersionsRequestParams {
+  envNames: string[]
+  appNames: string[]
 }
 
-export interface EhBackendVersionsReturn {
-  envIds: Array<string>
-  appIds: Array<string>
+export interface AcBackendVersionsReturn {
+  envIds: string[]
+  appIds: string[]
 }
 
-export interface EhBackendPageInput extends EhAppPageIndexed {
+export interface AcBackendPageInput extends AcAppPageIndexed {
   slug: string
   title?: string
   url: string
-  credentialsRefs?: Array<string>
+  credentialsRefs?: string[]
 }
 
-export interface EhBackendAppUIBaseInput {
-  credentials?: Array<EhBackendCredentialInput>
-  defaults?: EhBackendUiDefaultsInput
+export interface AcBackendAppUIBaseInput {
+  credentials?: AcBackendCredentialInput[]
+  defaults?: AcBackendUiDefaultsInput
 }
 
-export interface EhBackendAppUIInput
-  extends EhBackendAppUIBaseInput, EhAppUiIndexed {
-  pages: Array<EhBackendPageInput>
+export interface AcBackendAppUIInput
+  extends AcBackendAppUIBaseInput, AcAppUiIndexed {
+  pages: AcBackendPageInput[]
 }
 
-export interface EhBackendTagsDescriptionDataIndexed {
-  descriptions: Array<EhBackendTagDescriptionDataIndexed>
+export interface AcBackendTagsDescriptionDataIndexed {
+  descriptions: AcBackendTagDescriptionDataIndexed[]
 }
 
-export interface EhBackendTagDescriptionDataIndexed {
+export interface AcBackendTagDescriptionDataIndexed {
   tagKey: string
   displayName?: string
-  fixedTagValues?: Array<EhBackendTagFixedTagValue>
+  fixedTagValues?: AcBackendTagFixedTagValue[]
 }
 
-export interface EhBackendTagFixedTagValue {
+export interface AcBackendTagFixedTagValue {
   tagValue: string
   displayName: string
 }
 
-export interface EhBackendAppInput extends EhAppIndexed {
-  ui?: EhBackendAppUIInput
-  dataSources?: Array<EhBackendDataSourceInput>
+export interface AcBackendAppInput extends AcAppIndexed {
+  ui?: AcBackendAppUIInput
+  dataSources?: AcBackendDataSourceInput[]
 }
 
-export interface EhContextIndexed {
+export interface AcContextIndexed {
   slug: string
   displayName: string
   /**
    * The value is shared across envs (By default: false)
    */
   isSharedAcrossEnvs?: boolean
-  defaultFixedValues?: Array<string>
+  defaultFixedValues?: string[]
 }
-export type EhBackendAppDto = EhAppIndexed
+export type AcBackendAppDto = AcAppIndexed
 
-export interface EhAppsMeta {
+export interface AcAppsMeta {
   defaultIcon?: string
-  tags: EhBackendTagsDescriptionDataIndexed
+  tags: AcBackendTagsDescriptionDataIndexed
 }

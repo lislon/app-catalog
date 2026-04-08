@@ -1,0 +1,266 @@
+import type { Resource } from '@igstack/app-catalog-backend-core'
+
+export interface SearchMatch {
+  /** Field where the match occurred */
+  field:
+    | 'displayName'
+    | 'abbreviation'
+    | 'nicknames'
+    | 'slug'
+    | 'tags'
+    | 'teams'
+    | 'description'
+    | 'subResource'
+  /** Type of match */
+  type: 'exact' | 'prefix' | 'contains'
+}
+
+export interface SearchResult {
+  app: Resource
+  match: SearchMatch
+}
+
+/**
+ * Search and sort resources by relevance with highlighting support.
+ * Only root resources (no parentSlug) are scored and returned.
+ * Child resources (with parentSlug) contribute to their parent's score.
+ *
+ * Priority order:
+ * 0. Exact match in abbreviation
+ * 1. Exact match in displayName
+ * 2. Exact match in nickname
+ * 3. Prefix match in abbreviation
+ * 4. Prefix match in displayName
+ * 5. Prefix match in nickname
+ * 6. Exact match in tags
+ * 7. Prefix match in tags
+ * 8. Contains match in abbreviation
+ * 9. Contains match in displayName
+ * 10. Contains match in nickname
+ * 11. Contains match in tags
+ * 12. Teams
+ * 13. Description
+ *
+ * @param resources - Array of all resources (root + children)
+ * @param searchQuery - Search query string
+ * @returns Filtered and sorted array of root resources
+ */
+export function searchResources(
+  resources: Resource[],
+  searchQuery: string,
+): Resource[] {
+  const normalizedQuery = searchQuery.trim().toLowerCase()
+
+  // Separate root resources from children
+  const rootResources = resources.filter((r) => !r.parentSlug)
+
+  if (normalizedQuery === '') {
+    return rootResources
+  }
+
+  // Split query into terms for multi-word matching (AND logic)
+  const queryTerms = normalizedQuery.split(/\s+/).filter(Boolean)
+
+  // Helper: all terms appear in the text (order-independent)
+  const allTermsMatch = (text: string): boolean =>
+    queryTerms.every((term) => text.includes(term))
+
+  // Build children lookup: parentSlug -> Resource[]
+  const childrenByParent = new Map<string, Resource[]>()
+  for (const r of resources) {
+    if (r.parentSlug) {
+      const list = childrenByParent.get(r.parentSlug) ?? []
+      list.push(r)
+      childrenByParent.set(r.parentSlug, list)
+    }
+  }
+
+  // Filter and score root resources
+  const scoredApps = rootResources
+    .map((app): SearchResult | null => {
+      const name = app.displayName.toLowerCase()
+      const abbreviation = app.abbreviation?.toLowerCase() || ''
+      const nicknames = app.nicknames?.map((n) => n.toLowerCase()) || []
+      const description = app.description?.toLowerCase() || ''
+      const tags = app.tags?.join(' ').toLowerCase() || ''
+      const teams = app.teams?.join(' ').toLowerCase() || ''
+
+      // Check exact matches first - prioritize abbreviation over displayName
+      if (abbreviation && abbreviation === normalizedQuery) {
+        return { app, match: { field: 'abbreviation', type: 'exact' } }
+      }
+      if (name === normalizedQuery) {
+        return { app, match: { field: 'displayName', type: 'exact' } }
+      }
+      if (nicknames.some((n) => n === normalizedQuery)) {
+        return { app, match: { field: 'nicknames', type: 'exact' } }
+      }
+
+      // Check prefix matches
+      if (abbreviation && abbreviation.startsWith(normalizedQuery)) {
+        return { app, match: { field: 'abbreviation', type: 'prefix' } }
+      }
+      if (name.startsWith(normalizedQuery)) {
+        return { app, match: { field: 'displayName', type: 'prefix' } }
+      }
+      if (nicknames.some((n) => n.startsWith(normalizedQuery))) {
+        return { app, match: { field: 'nicknames', type: 'prefix' } }
+      }
+
+      // Check exact match in tags (any tag exactly matches query)
+      if (app.tags?.some((tag) => tag.toLowerCase() === normalizedQuery)) {
+        return { app, match: { field: 'tags', type: 'exact' } }
+      }
+
+      // Check tags - prefix match (any tag starts with query)
+      if (
+        app.tags?.some((tag) => tag.toLowerCase().startsWith(normalizedQuery))
+      ) {
+        return { app, match: { field: 'tags', type: 'prefix' } }
+      }
+
+      // Check contains matches - prioritize abbreviation over displayName
+      if (abbreviation && abbreviation.includes(normalizedQuery)) {
+        return { app, match: { field: 'abbreviation', type: 'contains' } }
+      }
+      if (name.includes(normalizedQuery)) {
+        return { app, match: { field: 'displayName', type: 'contains' } }
+      }
+      if (nicknames.some((n) => n.includes(normalizedQuery))) {
+        return { app, match: { field: 'nicknames', type: 'contains' } }
+      }
+
+      // Check tags - contains match
+      if (tags.includes(normalizedQuery)) {
+        return { app, match: { field: 'tags', type: 'contains' } }
+      }
+
+      // Check teams (multi-word)
+      if (allTermsMatch(teams)) {
+        return { app, match: { field: 'teams', type: 'contains' } }
+      }
+
+      // Check description (multi-word)
+      if (allTermsMatch(description)) {
+        return { app, match: { field: 'description', type: 'contains' } }
+      }
+
+      // Check child resources (name, aliases, description) — supports multi-word queries
+      const children = childrenByParent.get(app.slug)
+      if (children) {
+        const subMatch = children.some(
+          (r) =>
+            allTermsMatch(r.displayName.toLowerCase()) ||
+            (r.aliases ?? []).some((a) => allTermsMatch(a.toLowerCase())) ||
+            (r.description
+              ? allTermsMatch(r.description.toLowerCase())
+              : false),
+        )
+        if (subMatch) {
+          return { app, match: { field: 'subResource', type: 'contains' } }
+        }
+      }
+
+      // No match found
+      return null
+    })
+    .filter((item): item is SearchResult => item !== null)
+
+  // Calculate numeric scores for sorting
+  const scoreMap = new Map<string, number>()
+  scoredApps.forEach(({ app, match }) => {
+    let score = 0
+
+    // Exact matches: 0-2 (abbreviation, displayName, nicknames)
+    if (match.type === 'exact') {
+      if (match.field === 'abbreviation') score = 0
+      else if (match.field === 'displayName') score = 1
+      else if (match.field === 'nicknames') score = 2
+      else if (match.field === 'tags') score = 6
+      else score = 999
+    }
+    // Prefix matches: 3-5 (abbreviation, displayName, nicknames), 7 (tags)
+    else if (match.type === 'prefix') {
+      if (match.field === 'abbreviation') score = 3
+      else if (match.field === 'displayName') score = 4
+      else if (match.field === 'nicknames') score = 5
+      else if (match.field === 'tags') score = 7
+      else score = 999
+    }
+    // Contains matches
+    else {
+      if (match.field === 'abbreviation') score = 8
+      else if (match.field === 'displayName') score = 9
+      else if (match.field === 'nicknames') score = 10
+      else if (match.field === 'tags') score = 11
+      else if (match.field === 'teams') score = 12
+      else if (match.field === 'subResource') score = 13
+      else score = 14 // description
+    }
+
+    scoreMap.set(app.id, score)
+  })
+
+  // Sort by score (ascending - lower score = higher priority)
+  scoredApps.sort((a, b) => {
+    const scoreA = scoreMap.get(a.app.id) ?? 999
+    const scoreB = scoreMap.get(b.app.id) ?? 999
+
+    if (scoreA !== scoreB) {
+      return scoreA - scoreB
+    }
+    // If same score, sort alphabetically by display name
+    return a.app.displayName.localeCompare(b.app.displayName)
+  })
+
+  return scoredApps.map((item) => item.app)
+}
+
+/**
+ * Highlight matching text in a string
+ * @param text - Text to highlight
+ * @param query - Search query
+ * @returns Array of text segments with highlight flags
+ */
+export function highlightText(
+  text: string,
+  query: string,
+): { text: string; highlight: boolean }[] {
+  if (!query.trim()) {
+    return [{ text, highlight: false }]
+  }
+
+  const normalizedQuery = query.trim().toLowerCase()
+  const lowerText = text.toLowerCase()
+  const index = lowerText.indexOf(normalizedQuery)
+
+  if (index === -1) {
+    return [{ text, highlight: false }]
+  }
+
+  const segments: { text: string; highlight: boolean }[] = []
+
+  // Text before match
+  if (index > 0) {
+    segments.push({ text: text.slice(0, index), highlight: false })
+  }
+
+  // Matched text
+  segments.push({
+    text: text.slice(index, index + normalizedQuery.length),
+    highlight: true,
+  })
+
+  // Text after match
+  if (index + normalizedQuery.length < text.length) {
+    segments.push({
+      text: text.slice(index + normalizedQuery.length),
+      highlight: false,
+    })
+  }
+
+  return segments
+}
+
+/** @deprecated Use searchResources instead */
+export const searchApps = searchResources

@@ -1,6 +1,6 @@
 {
   "name": "@igstack/app-catalog-backend-core",
-  "version": "0.0.1",
+  "version": "0.3.1-alpha-20260406011911",
   "description": "Backend core library for App Catalog",
   "homepage": "https://github.com/lislon/app-catalog",
   "repository": {
@@ -15,19 +15,16 @@
   "exports": {
     ".": {
       "my-custom-condition": "./src/index.ts",
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      }
+      "default": "./dist/index.mjs"
     },
     "./package.json": "./package.json"
   },
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "types": "./dist/index.d.mts",
   "files": [
     "dist",
     "src",
-    "prisma"
+    "prisma",
+    "prisma.config.ts"
   ],
   "scripts": {
     "build": "tsdown",
@@ -35,21 +32,26 @@
     "clean": "premove ./dist ./coverage ./dist-ts",
     "compile": "tsc --build",
     "dev": "tsx watch src/index.ts",
+    "fix": "prettier --write ./src && eslint --fix ./src",
     "prisma:generate": "prisma generate",
-    "test:eslint": "eslint ./src",
+    "test:eslint": "eslint ./src --max-warnings=0",
+    "test:types": "tsc --noEmit",
     "test:unit": "vitest",
     "test:unit:dev": "pnpm run test:unit --watch"
   },
   "dependencies": {
+    "@ai-sdk/mcp": "^1.0.25",
+    "@better-auth/prisma-adapter": "^1.5.3",
     "@igstack/app-catalog-shared-core": "workspace:*",
     "@igstack/app-catalog-table-sync": "workspace:*",
     "@kubernetes/client-node": "^1.2.0",
-    "@prisma/client": "6.19.1",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
     "ai": "^6.0.37",
-    "better-auth": "^1.4.18",
+    "better-auth": "catalog:",
     "cors": "^2.8.5",
+    "dotenv": "^17.3.1",
     "dotenv-defaults": "catalog:",
     "express": "catalog:",
     "jsonwebtoken": "^9.0.2",
@@ -70,15 +72,27 @@
     "@types/jsonwebtoken": "^9.0.9",
     "@types/multer": "catalog:",
     "@types/node": "catalog:",
+    "@types/pg": "catalog:",
     "esbuild": "catalog:",
-    "prisma": "^6.8.2",
+    "prisma": "catalog:",
     "prisma-json-types-generator": "catalog:",
     "tsdown": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vite-plugin-dts": "^4.5.4"
   },
+  "peerDependencies": {
+    "@prisma/adapter-pg": "catalog:",
+    "@prisma/client": "catalog:",
+    "pg": "catalog:"
+  },
   "engines": {
-    "node": ">=16"
+    "node": ">=24"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": "./dist/index.mjs",
+      "./package.json": "./package.json"
+    }
   }
 }

@@ -4,6 +4,7 @@
 **/coverage
 **/dist
 **/dist-ts
+**/generated
 pnpm-lock.yaml
 **/snapshots
 **/.vercel

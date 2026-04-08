@@ -3,7 +3,7 @@ import { VersionWidget } from '../widgets/VersionWidget'
 import { AddWidgetCard } from './AddWidgetCard'
 
 interface WidgetGridProps {
-  widgets: ReadonlyArray<string>
+  widgets: readonly string[]
   onAddWidget?: () => void
 }
 

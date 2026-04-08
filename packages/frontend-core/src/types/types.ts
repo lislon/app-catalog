@@ -5,7 +5,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import type { RouterHistory } from '@tanstack/react-router'
 import type { TRPCClient } from '@trpc/client'
 import type { EnvHopperHealthStateBootstrapPart } from '~/modules/config/HealthStateContext'
-import type { EhPlugin } from '~/modules/pluginCore/types'
+import type { AcPlugin } from '~/modules/pluginCore/types'
 import type { AcDb } from '~/userDb/AcDb'
 
 export interface BreadcrumbMeta {
@@ -13,18 +13,18 @@ export interface BreadcrumbMeta {
   href?: string
 }
 
-export interface EhRouterContext {
+export interface AcRouterContext {
   queryClient: QueryClient
   trpcClient: TRPCClient<TRPCRouter>
   db: AcDb
-  plugins: Array<EhPlugin>
+  plugins: AcPlugin[]
   boostrapHealth: EnvHopperHealthStateBootstrapPart
   meta?: {
     breadcrumb?: BreadcrumbMeta
   }
 }
 
-export interface EhRouterInitParams {
+export interface AcRouterInitParams {
   history: RouterHistory
-  context: EhRouterContext
+  context: AcRouterContext
 }

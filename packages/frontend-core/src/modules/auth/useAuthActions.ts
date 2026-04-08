@@ -46,17 +46,35 @@ export function useAuthActions() {
   }, [])
 
   const logout = useCallback(async () => {
+    // Clear dev session cookie if present
+    await fetch('/api/auth/dev-logout', {
+      method: 'POST',
+      credentials: 'include',
+    }).catch(() => {})
+
     const response = await fetch('/api/auth/sign-out', {
       method: 'POST',
       credentials: 'include',
     })
 
     if (!response.ok) {
-      throw new Error('Logout failed')
+      // Sign-out may fail if there's no real session (dev-only login)
+      // Still reload to clear UI state
     }
 
     // Clear session and reload to update UI
     window.location.href = '/'
+  }, [])
+
+  const devLogin = useCallback(async () => {
+    const response = await fetch('/api/auth/dev-login', {
+      method: 'POST',
+      credentials: 'include',
+    })
+    if (!response.ok) {
+      throw new Error('Dev login failed')
+    }
+    window.location.reload()
   }, [])
 
   const socialLogin = useCallback(async (provider: 'github' | 'google') => {
@@ -81,5 +99,6 @@ export function useAuthActions() {
     signup,
     logout,
     socialLogin,
+    devLogin,
   }
 }

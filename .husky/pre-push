@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# Pre-push hook: Run comprehensive tests before pushing to remote
+# This mirrors CI/CD pipeline to catch issues early
+
+# Skip in CI (already tested)
+if [ -n "$CI" ] || [ -n "$GITHUB_ACTIONS" ]; then
+  echo "⏭️  Skipping pre-push tests in CI/CD"
+  exit 0
+fi
+
+echo ""
+echo "🚀 Running pre-push tests (mirrors CI pipeline)..."
+echo ""
+
+# Run the same tests as CI with parallel execution for speed
+# This includes: Prisma generation, ESLint, unit tests, type checking, and builds
+pnpm run test:ci --parallel=3
+
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Pre-push tests failed!"
+  echo "Please fix the errors before pushing."
+  echo ""
+  echo "💡 To skip this hook (not recommended): git push --no-verify"
+  exit 1
+fi
+
+echo ""
+echo "✅ All pre-push tests passed!"
+echo ""
+exit 0

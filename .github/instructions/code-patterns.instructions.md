@@ -53,20 +53,20 @@ if (isValidType(result)) {
 ```typescript
 // ❌ Bad - duplicating backend types
 interface FrontendApp {
-  id: string;
-  name: string;
-  url: string;
-  iconId: string | null;
+  id: string
+  name: string
+  url: string
+  iconId: string | null
 }
 
 // ✅ Good - reusing backend types
-import type { App } from '@igstack/app-catalog-backend-core';
-type FrontendApp = App;
+import type { App } from '@igstack/app-catalog-backend-core'
+type FrontendApp = App
 
 // ✅ Good - modifying with utilities
-import type { App } from '@igstack/app-catalog-backend-core';
-type AppFormData = Omit<App, 'id' | 'createdAt'>;
-type AppPreview = Pick<App, 'id' | 'name' | 'iconId'>;
+import type { App } from '@igstack/app-catalog-backend-core'
+type AppFormData = Omit<App, 'id' | 'createdAt'>
+type AppPreview = Pick<App, 'id' | 'name' | 'iconId'>
 ```
 
 ## Code Abstraction

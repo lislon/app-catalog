@@ -3,11 +3,11 @@
 
 datasource db {
   provider = "postgresql"
-  url      = env("AC_CORE_DATABASE_URL")
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 generator json {
@@ -76,43 +76,101 @@ enum ApprovalMethodType {
   service
   personTeam
   custom
+  noAccessRequired
+  unknown
+}
+
+// ========== Person & Group Models ==========
+
+model DbPerson {
+  slug        String              @id // email or synthetic
+  firstName   String
+  lastName    String
+  email       String?             @unique
+  memberships DbGroupMembership[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model DbGroup {
+  slug        String              @id
+  displayName String?
+  email       String? // team alias
+  memberships DbGroupMembership[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model DbGroupMembership {
+  id         Int      @id @default(autoincrement())
+  groupSlug  String
+  group      DbGroup  @relation(fields: [groupSlug], references: [slug], onDelete: Cascade)
+  personSlug String
+  person     DbPerson @relation(fields: [personSlug], references: [slug], onDelete: Cascade)
+
+  @@unique([groupSlug, personSlug])
 }
 
 model DbApprovalMethod {
-  slug        String             @id
-  type        ApprovalMethodType
-  displayName String
+  slug              String             @id
+  type              ApprovalMethodType
+  displayName       String
   /// [ApprovalMethodConfig] - Type-specific configuration
-  config      Json?
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  config            Json?
+  deprecatedAliases String[]           @default([]) // Old URLs that should redirect to this method
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
   @@unique([type, displayName])
 }
 
-model DbAppForCatalog {
-  id            String   @id @default(cuid())
-  slug          String   @unique // URL-friendly identifier for navigation
-  displayName   String
-  description   String
+model DbResource {
+  id                         String            @id @default(cuid())
+  slug                       String            @unique // URL-friendly identifier for navigation
+  type                       String            @default("application") // "application" | "sub-resource" | etc.
+  displayName                String
+  abbreviation               String? // Optional short abbreviation (e.g. K8s, ECR, LV)
+  nicknames                  String[]          @default([]) // Alternative names / AKA
+  description                String
   /// [AccessMethod]
-  access        Json?
-  teams         String[] @default([])
-  /// [AppAccessRequest] - Per-app approval configuration linking to ApprovalMethod
-  accessRequest Json?
-  notes         String?
-  tags          String[] @default([])
-  appUrl        String?
+  access                     Json?
+  teams                      String[]          @default([])
+  /// [AccessRequest] - Per-resource approval configuration linking to ApprovalMethod
+  accessRequest              Json?
+  notes                      String?
+  tags                       String[]          @default([])
+  appUrl                     String?
   /// [AppLink[]]
-  links         Json? // Array of {displayName?: string, url: string}
-  iconName      String? // Optional icon identifier matching DbAsset.name
-  screenshotIds String[] @default([]) // Ordered array of DbAsset IDs
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  links                      Json? // Array of {displayName?: string, url: string}
+  iconName                   String? // Optional icon identifier matching DbAsset.name
+  screenshotIds              String[]          @default([]) // Ordered array of DbAsset IDs
+  /// [AppDeprecation] - Deprecation info with optional replacement slug
+  deprecated                 Json?
+  aiPrompt                   String?
+  urlIssues                  String[]          @default([])
+  /// [TierVariant[]]
+  tiers                      Json?
+  sourceRefs                 SourceReference[]
+  // Self-referential tree: sub-resources point to their parent
+  parentSlug                 String?
+  parent                     DbResource?       @relation("ResourceTree", fields: [parentSlug], references: [slug])
+  children                   DbResource[]      @relation("ResourceTree")
+  // Fields merged from former DbSubResource
+  tier                       String? // e.g. "prod", "dev"
+  familySlug                 String? // groups tier variants visually
+  aliases                    String[]          @default([])
+  ownerPersonSlug            String?
+  accessMaintainerGroupSlugs String[]          @default([])
+  accessComments             String?
+  /// [SubResourceExtra]
+  extra                      Json?
+  createdAt                  DateTime          @default(now())
+  updatedAt                  DateTime          @updatedAt
 
   @@index([displayName])
   @@index([slug])
   @@index([tags])
+  @@index([parentSlug])
 }
 
 model DbAppTagDefinition {
@@ -146,4 +204,24 @@ model DbAsset {
 
   @@index([name])
   @@index([assetType])
+}
+
+model Source {
+  slug       String            @id
+  userPrompt String?
+  references SourceReference[]
+}
+
+model SourceReference {
+  id         Int        @id @default(autoincrement())
+  sourceSlug String
+  source     Source     @relation(fields: [sourceSlug], references: [slug], onDelete: Cascade)
+  resourceId String
+  resource   DbResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  url        String
+  parseDate  DateTime?
+  excerpts   String[]   @default([])
+  userPrompt String?
+
+  @@unique([resourceId, url])
 }

@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Package } from 'lucide-react'
-import type { EhAppIndexed } from '@igstack/app-catalog-backend-core'
+import type { AcAppIndexed } from '@igstack/app-catalog-backend-core'
 // import { useBootstrapConfig } from '~/modules/config/BootstrapConfigContext'
 
 interface AppIconProps {
-  app: EhAppIndexed
+  app: AcAppIndexed
   className?: string
 }
 
@@ -37,7 +37,7 @@ export function AppIcon({ app, className = 'w-4 h-4' }: AppIconProps) {
     return (
       <img
         src={iconSrc}
-        alt={`${app.displayName} icon`}
+        alt={`${app.abbr || app.displayName} icon`}
         className={className}
         onError={handleImageError}
       />

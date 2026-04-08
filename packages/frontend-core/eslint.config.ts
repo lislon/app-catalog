@@ -18,6 +18,10 @@ export default [
     rules: {
       ...pluginReact.configs.recommended.rules,
       '@eslint-react/no-array-index-key': 'off',
+      // Standard React pattern - calling setState in useEffect with proper dependencies
+      '@eslint-react/hooks-extra/no-direct-set-state-in-use-effect': 'off',
+      // React 19 context provider pattern - Radix UI requires .Provider for now
+      '@eslint-react/no-context-provider': 'off',
     },
   },
   {

@@ -3,7 +3,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import { Markdown } from 'tiptap-markdown'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '~/lib/utils'
 import { Button } from '~/ui/button'
 import { Textarea } from '~/ui/textarea'
@@ -28,6 +28,7 @@ export function MarkdownEditor({
 }: MarkdownEditorProps) {
   const [mode, setMode] = useState<'visual' | 'raw'>('visual')
   const [rawValue, setRawValue] = useState(value)
+  const isInternalChange = useRef(false)
 
   const editor = useEditor({
     extensions: [
@@ -46,15 +47,22 @@ export function MarkdownEditor({
     content: value,
     editable: !disabled,
     onUpdate: ({ editor: editorInstance }) => {
+      isInternalChange.current = true
       const markdown = editorInstance.storage.markdown.getMarkdown()
       onChange(markdown)
       setRawValue(markdown)
     },
   })
 
-  // Sync external value changes
+  // Sync external value changes to editor
   useEffect(() => {
-    if (editor && value !== editor.storage.markdown.getMarkdown()) {
+    if (!editor || isInternalChange.current) {
+      isInternalChange.current = false
+      return
+    }
+
+    const currentMarkdown = editor.storage.markdown.getMarkdown()
+    if (value !== currentMarkdown) {
       editor.commands.setContent(value)
       setRawValue(value)
     }

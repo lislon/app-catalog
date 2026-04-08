@@ -1,17 +1,10 @@
-import type { EhDevMockUser } from '../../middleware/types'
+import type { AcDevMockUser } from '../../middleware/types'
 import type { User } from 'better-auth/types'
-
-/**
- * Extended User type with app-catalog specific fields
- */
-type EhUser = User & {
-  env_hopper_groups?: Array<string>
-}
 
 /**
  * Creates a complete User object from basic dev mock user details
  */
-export function createMockUserFromDevConfig(devUser: EhDevMockUser): EhUser {
+export function createMockUserFromDevConfig(devUser: AcDevMockUser): User {
   return {
     id: devUser.id,
     email: devUser.email,
@@ -19,14 +12,13 @@ export function createMockUserFromDevConfig(devUser: EhDevMockUser): EhUser {
     emailVerified: true,
     createdAt: new Date(),
     updatedAt: new Date(),
-    env_hopper_groups: devUser.groups,
   }
 }
 
 /**
  * Creates a mock session response for /api/auth/session endpoint
  */
-export function createMockSessionResponse(devUser: EhDevMockUser) {
+export function createMockSessionResponse(devUser: AcDevMockUser) {
   return {
     user: {
       id: devUser.id,
@@ -35,7 +27,6 @@ export function createMockSessionResponse(devUser: EhDevMockUser) {
       emailVerified: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      env_hopper_groups: devUser.groups,
     },
     session: {
       id: `${devUser.id}-session`,
@@ -45,5 +36,6 @@ export function createMockSessionResponse(devUser: EhDevMockUser) {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
+    isAdmin: true, // dev mock user is always admin
   }
 }

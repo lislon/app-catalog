@@ -9,6 +9,9 @@
     "clean": "premove ./dist ./coverage ./dist-ts",
     "compile": "tsc --build",
     "dev": "vite",
+    "e2e": "playwright test --project=chromium",
+    "fix": "prettier --write ./src && eslint --fix ./src",
+    "preview": "vite preview",
     "start": "node dist/index.js",
     "test:eslint": "eslint ./src",
     "test:unit": "vitest"
@@ -16,11 +19,16 @@
   "dependencies": {
     "@igstack/app-catalog-frontend-build-vite": "2.0.1-alpha-20260224192214",
     "@igstack/app-catalog-frontend-core": "2.0.1-alpha-20260224192214",
+    "@tanstack/react-query": "catalog:",
+    "@trpc/client": "catalog:",
+    "@trpc/server": "catalog:",
+    "@trpc/tanstack-react-query": "catalog:",
     "cross-env": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"
   },
   "devDependencies": {
+    "@playwright/test": "^1.50.1",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/react-router-devtools": "catalog:",
     "@types/react": "catalog:",
@@ -32,6 +40,7 @@
     "vite-plugin-pwa": "catalog:",
     "vite-plugin-svgr": "catalog:",
     "vite-tsconfig-paths": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "workbox-window": "^7.4.0"
   }
 }

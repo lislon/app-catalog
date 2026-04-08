@@ -1,6 +1,7 @@
-import type { Router } from 'express'
+import type { Request, Router } from 'express'
 import type { LanguageModel, Tool } from 'ai'
-import type { BetterAuthOptions, BetterAuthPlugin } from 'better-auth'
+import type { BetterAuthOptions } from 'better-auth'
+import type { Session, User } from 'better-auth/types'
 import type { AppCatalogCompanySpecificBackend } from '../types/backend/companySpecificBackend'
 import type { BetterAuth } from '../modules/auth/auth'
 import type { TRPCRouter } from '../server/controller'
@@ -9,7 +10,7 @@ import type { TRPCRouter } from '../server/controller'
  * Database connection configuration.
  * Supports both connection URL and structured config.
  */
-export type EhDatabaseConfig =
+export type AcDatabaseConfig =
   | { url: string }
   | {
       host: string
@@ -23,49 +24,38 @@ export type EhDatabaseConfig =
 /**
  * Mock user configuration for development/testing.
  * When provided, bypasses authentication and injects this user into all requests.
+ * Dev mock user is always treated as admin.
  */
-export interface EhDevMockUser {
+export interface AcDevMockUser {
   /** User ID */
   id: string
   /** User email */
   email: string
   /** User display name */
   name: string
-  /** User groups (for authorization) */
-  groups: Array<string>
 }
 
 /**
  * Auth configuration for Better Auth integration.
  */
-export interface EhAuthConfig {
-  /** Base URL for auth callbacks (e.g., 'http://localhost:4000') */
-  baseURL: string
-  /** Secret for signing sessions (min 32 chars in production) */
-  secret: string
-  /** OAuth providers configuration */
-  providers?: BetterAuthOptions['socialProviders']
-  /** Additional Better Auth plugins (e.g., Okta) */
-  plugins?: Array<BetterAuthPlugin>
-  /** Session expiration in seconds (default: 30 days) */
-  sessionExpiresIn?: number
-  /** Session refresh threshold in seconds (default: 1 day) */
-  sessionUpdateAge?: number
-  /** Application name shown in auth UI */
-  appName?: string
-  /** Development mock user - bypasses auth when provided */
-  devMockUser?: EhDevMockUser
-  /** Admin group names for authorization (default: ['env_hopper_ui_super_admins']) */
-  adminGroups?: Array<string>
-  /** Okta groups claim name (e.g., 'env_hopper_ui_groups') - used to extract groups from access token JWT */
-  oktaGroupsClaim?: string
+export interface AcAuthConfig {
+  /** Full better-auth options — deployment controls everything */
+  betterAuthOptions: BetterAuthOptions
+  /** Dev bypass */
+  devMockUser?: AcDevMockUser
+  /** Deployment decides who is admin. If not provided, nobody is admin. */
+  isAdmin?: (
+    user: User,
+    session: Session,
+    ctx: { request: Request; auth: BetterAuth },
+  ) => boolean | Promise<boolean>
 }
 
 /**
  * Admin chat (AI) configuration.
  * When provided, enables the admin/chat endpoint.
  */
-export interface EhAdminChatConfig {
+export interface AcAdminChatConfig {
   /** AI model instance from @ai-sdk/* packages */
   model: LanguageModel
   /** System prompt for the AI assistant */
@@ -77,20 +67,39 @@ export interface EhAdminChatConfig {
 }
 
 /**
+ * MCP server configuration for Lighthouse Keeper.
+ */
+export interface AcMcpServerConfig {
+  name: string
+  url: string
+  headers?: Record<string, string>
+}
+
+/**
+ * Lighthouse Keeper (agentic AI debugging tool) configuration.
+ */
+export interface AcLighthouseKeeperConfig {
+  /** AI model instance from @ai-sdk/* packages */
+  model: LanguageModel
+  /** MCP servers to make available as tools */
+  mcpServers: AcMcpServerConfig[]
+  /** System prompt for the lighthouse keeper AI (optional; deployment can provide its own) */
+  systemPrompt?: string
+}
+
+/**
  * Feature toggles for enabling/disabling specific functionality.
  *
  * Note: Icons, assets, screenshots, and catalog backup are always enabled.
  * Only these optional features can be toggled:
  */
-export interface EhFeatureToggles {
+export interface AcFeatureToggles {
   /** Enable tRPC endpoints (default: true) */
   trpc?: boolean
   /** Enable auth endpoints (default: true) */
   auth?: boolean
   /** Enable admin chat endpoint (default: true if adminChat config provided) */
   adminChat?: boolean
-  /** Enable legacy icon endpoint at /static/icon/:icon (default: false) */
-  legacyIconEndpoint?: boolean
 }
 
 /**
@@ -99,7 +108,7 @@ export interface EhFeatureToggles {
  * 2. Factory function called per-request (for DI integration)
  * 3. Async factory function
  */
-export type EhBackendProvider =
+export type AcBackendProvider =
   | AppCatalogCompanySpecificBackend
   | (() => AppCatalogCompanySpecificBackend)
   | (() => Promise<AppCatalogCompanySpecificBackend>)
@@ -107,7 +116,7 @@ export type EhBackendProvider =
 /**
  * Lifecycle hooks for database and middleware events.
  */
-export interface EhLifecycleHooks {
+export interface AcLifecycleHooks {
   /** Called after database connection is established */
   onDatabaseConnected?: () => void | Promise<void>
   /** Called before database disconnection (for cleanup) */
@@ -121,7 +130,7 @@ export interface EhLifecycleHooks {
 /**
  * Main configuration options for the app-catalog middleware.
  */
-export interface EhMiddlewareOptions {
+export interface AcMiddlewareOptions {
   /**
    * Base path prefix for all routes (default: '/api')
    * - tRPC: {basePath}/trpc
@@ -137,22 +146,31 @@ export interface EhMiddlewareOptions {
    * Database connection configuration (required).
    * Backend-core manages the database for all features.
    */
-  database: EhDatabaseConfig
+  database: AcDatabaseConfig
 
   /** Auth configuration (required) */
-  auth: EhAuthConfig
+  auth: AcAuthConfig
 
   /** Company-specific backend implementation (required) */
-  backend: EhBackendProvider
+  backend: AcBackendProvider
 
   /** AI admin chat configuration (optional) */
-  adminChat?: EhAdminChatConfig
+  adminChat?: AcAdminChatConfig
 
   /** Feature toggles (all enabled by default) */
-  features?: EhFeatureToggles
+  features?: AcFeatureToggles
 
   /** Lifecycle hooks */
-  hooks?: EhLifecycleHooks
+  hooks?: AcLifecycleHooks
+
+  /**
+   * Custom script URLs to inject at the end of the HTML body.
+   * Useful for analytics, monitoring, or other third-party scripts.
+   *
+   * @example
+   * customScripts: ['/assets-static/analytics/analytics.js']
+   */
+  customScripts?: string[]
 }
 
 /**
@@ -160,7 +178,7 @@ export interface EhMiddlewareOptions {
  *
  * @example
  * ```typescript
- * const eh = await createEhMiddleware({ ... })
+ * const eh = await createAcMiddleware({ ... })
  *
  * // Mount routes
  * app.use(eh.router)
@@ -174,7 +192,7 @@ export interface EhMiddlewareOptions {
  * })
  * ```
  */
-export interface EhMiddlewareResult {
+export interface AcMiddlewareResult {
   /** Express router with all app-catalog routes */
   router: Router
   /** Better Auth instance (for extending auth functionality) */
@@ -198,5 +216,5 @@ export interface MiddlewareContext {
   createContext: () => Promise<{
     companySpecificBackend: AppCatalogCompanySpecificBackend
   }>
-  authConfig: EhAuthConfig
+  isAdmin?: AcAuthConfig['isAdmin']
 }

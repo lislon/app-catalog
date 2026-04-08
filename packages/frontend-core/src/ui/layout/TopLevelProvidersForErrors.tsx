@@ -3,6 +3,7 @@ import { ThemeProvider } from '~/components/theme-provider'
 import { AuthProvider } from '~/modules/auth'
 import { AuthModalProvider } from '~/modules/auth/AuthModalContext'
 import { LoginModal } from '~/modules/auth/ui/LoginModal'
+import { TooltipProvider } from '~/ui/tooltip'
 
 export interface TopLevelProvidersForErrorsProps {
   children: React.ReactNode
@@ -13,7 +14,9 @@ export interface TopLevelProvidersForErrorsProps {
  * Includes authentication and theme providers to avoid "useAuth must be used within AuthProvider" errors
  * when error components try to render Header or other auth-dependent components
  */
-export function TopLevelProvidersForErrors({ children }: TopLevelProvidersForErrorsProps) {
+export function TopLevelProvidersForErrors({
+  children,
+}: TopLevelProvidersForErrorsProps) {
   return (
     <ThemeProvider
       attribute="class"
@@ -21,14 +24,16 @@ export function TopLevelProvidersForErrors({ children }: TopLevelProvidersForErr
       enableSystem
       disableTransitionOnChange
     >
-      <AuthModalProvider>
-        <AuthProvider>
-          <>
-            {children}
-            <LoginModal />
-          </>
-        </AuthProvider>
-      </AuthModalProvider>
+      <TooltipProvider>
+        <AuthModalProvider>
+          <AuthProvider>
+            <>
+              {children}
+              <LoginModal />
+            </>
+          </AuthProvider>
+        </AuthModalProvider>
+      </TooltipProvider>
     </ThemeProvider>
   )
 }

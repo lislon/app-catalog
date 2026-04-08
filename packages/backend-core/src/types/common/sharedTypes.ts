@@ -1,4 +1,4 @@
-export interface EhMetaDictionary {
+export interface AcMetaDictionary {
   [key: string]: string | null | Record<string, string | null>
 }
 

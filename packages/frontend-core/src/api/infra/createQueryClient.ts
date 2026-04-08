@@ -1,7 +1,7 @@
 import { QueryClient } from '@tanstack/react-query'
 import type { TRPCRouter } from '@igstack/app-catalog-backend-core'
 import type { TRPCClient } from '@trpc/client'
-import type { AcDb } from '~/userDb/AcDb'
+import type { AcDb } from '../../userDb/AcDb'
 
 export interface CreateQueryParams {
   trpcClient: TRPCClient<TRPCRouter>
