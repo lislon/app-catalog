@@ -14,9 +14,10 @@ export interface GalleryImage {
 }
 
 export interface GalleryProps {
-  images: Array<GalleryImage>
+  images: GalleryImage[]
   initialIndex?: number
   onIndexChange?: (index: number) => void
+  onFullscreenChange?: (isFullscreen: boolean) => void
   className?: string
   title?: string
 }
@@ -25,11 +26,16 @@ export function Gallery({
   images,
   initialIndex = 0,
   onIndexChange,
+  onFullscreenChange,
   className,
   title,
 }: GalleryProps) {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: 'center' })
-  const [currentIndex, setCurrentIndex] = useState(
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: false,
+    align: 'center',
+  })
+  // Use lazy initialization for clamp() call
+  const [currentIndex, setCurrentIndex] = useState(() =>
     clamp(initialIndex, 0, images.length - 1),
   )
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -41,6 +47,17 @@ export function Gallery({
   useEffect(() => {
     setImageStates(Object.fromEntries(images.map((_, i) => [i, 'loading'])))
   }, [images])
+
+  // Stabilize onFullscreenChange callback with ref
+  const onFullscreenChangeRef = useRef(onFullscreenChange)
+  useEffect(() => {
+    onFullscreenChangeRef.current = onFullscreenChange
+  }, [onFullscreenChange])
+
+  const setFullscreen = useCallback((value: boolean) => {
+    setIsFullscreen(value)
+    onFullscreenChangeRef.current?.(value)
+  }, [])
 
   // Stabilize onIndexChange callback with ref
   const onIndexChangeRef = useRef(onIndexChange)
@@ -56,7 +73,7 @@ export function Gallery({
     if (emblaApi) emblaApi.scrollNext()
   }, [emblaApi])
 
-  // Sync current index with embla
+  // Sync current index with embla using event handler
   const onSelect = useCallback(() => {
     if (!emblaApi) return
     const index = emblaApi.selectedScrollSnap()
@@ -64,9 +81,14 @@ export function Gallery({
     onIndexChangeRef.current?.(index)
   }, [emblaApi])
 
+  // Subscribe to embla select events and initialize
   useEffect(() => {
     if (!emblaApi) return
+
+    // Initialize current index
     onSelect()
+
+    // Subscribe to future changes
     emblaApi.on('select', onSelect)
     return () => {
       emblaApi.off('select', onSelect)
@@ -107,17 +129,23 @@ export function Gallery({
     },
     [scrollNext, images.length],
   )
-  useHotkeys(
-    'escape',
-    (e) => {
-      if (isFullscreen) {
+  // Intercept Escape in fullscreen — must stopPropagation before Radix Dialog sees it
+  useEffect(() => {
+    if (!isFullscreen) return
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation()
         e.preventDefault()
-        setIsFullscreen(false)
+        setFullscreen(false)
       }
-    },
-    { enabled: isFullscreen, enableOnFormTags: false, preventDefault: true },
-    [isFullscreen],
-  )
+    }
+
+    document.addEventListener('keydown', handleEscape, true)
+    return () => {
+      document.removeEventListener('keydown', handleEscape, true)
+    }
+  }, [isFullscreen, setFullscreen])
 
   // Mouse wheel navigation with debouncing
   useEffect(() => {
@@ -212,7 +240,7 @@ export function Gallery({
         <Button
           variant="outline"
           size="icon"
-          onClick={() => setIsFullscreen(false)}
+          onClick={() => setFullscreen(false)}
           className="absolute top-4 right-4 z-10"
           aria-label="Exit fullscreen"
         >
@@ -267,6 +295,8 @@ export function Gallery({
                         onClick={() => {
                           if (index !== currentIndex) {
                             emblaApi?.scrollTo(index)
+                          } else {
+                            setFullscreen(true)
                           }
                         }}
                         onLoad={() => handleImageLoad(index)}

@@ -14,12 +14,15 @@ function AuthCallbackPage() {
   const search = useSearch({ from: '/auth/callback' })
 
   const errorMessages: Record<string, string> = {
-    'internal_server_error': 'An internal server error occurred. Please try again.',
-    'invalid_request': 'Invalid authentication request. Please try again.',
-    'access_denied': 'Authentication was denied. Please try again.',
-    'unauthorized_client': 'This client is not authorized. Please contact support.',
-    'server_error': 'Server error occurred. Please try again.',
-    'temporarily_unavailable': 'Authentication service is temporarily unavailable. Please try again later.',
+    internal_server_error:
+      'An internal server error occurred. Please try again.',
+    invalid_request: 'Invalid authentication request. Please try again.',
+    access_denied: 'Authentication was denied. Please try again.',
+    unauthorized_client:
+      'This client is not authorized. Please contact support.',
+    server_error: 'Server error occurred. Please try again.',
+    temporarily_unavailable:
+      'Authentication service is temporarily unavailable. Please try again later.',
   }
 
   const displayMessage = search.error

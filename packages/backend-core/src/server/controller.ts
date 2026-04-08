@@ -1,46 +1,62 @@
-import { getAppCatalogData } from '../modules/appCatalog/service'
+import {
+  getAppCatalogData,
+  updateApp as updateAppService,
+} from '../modules/appCatalog/service'
 import type { AppCatalogData } from '../types'
+import type { Resource } from '../types/common/appCatalogTypes'
 
-import { createAppCatalogAdminRouter } from '../modules/appCatalogAdmin/appCatalogAdminRouter.js'
-import { createApprovalMethodRouter } from '../modules/approvalMethod/approvalMethodRouter.js'
-import { createScreenshotRouter } from '../modules/assets/screenshotRouter.js'
 import type { BetterAuth } from '../modules/auth/auth'
 import { createAuthRouter } from '../modules/auth/authRouter.js'
-import { createIconRouter } from '../modules/icons/iconRouter.js'
 import { publicProcedure, router, t } from './trpcSetup'
+import { z } from 'zod'
+
+const updateAppInputSchema = z.object({
+  id: z.string(),
+  data: z
+    .object({
+      displayName: z.string().optional(),
+      abbreviation: z.string().max(20).nullable().optional(),
+      slug: z.string().optional(),
+      appUrl: z.string().optional(),
+      description: z.string().optional(),
+      sources: z.array(z.string()).optional(),
+      aiPrompt: z.string().nullable().optional(),
+    })
+    .refine((d) => Object.keys(d).length > 0, {
+      message: 'At least one field required',
+    }),
+})
 
 /**
  * Create the main tRPC router with optional auth instance
  * @param auth - Optional Better Auth instance for auth-related queries
  */
-export function createTrpcRouter(auth?: BetterAuth) {
+export function createTrpcRouter(
+  auth?: BetterAuth,
+  options?: { devLoginEnabled?: boolean },
+) {
   return router({
-    authConfig: publicProcedure.query(async ({ ctx }) => {
-      return {
-        adminGroups: ctx.adminGroups,
-      }
+    appCatalog: router({
+      getData: publicProcedure.query(
+        async ({ ctx }): Promise<AppCatalogData> => {
+          const baseData = await getAppCatalogData()
+          const versions = await ctx.companySpecificBackend.getVersionInfo?.()
+
+          return {
+            ...baseData,
+            ...(versions && { versions }),
+          }
+        },
+      ),
+      updateApp: publicProcedure
+        .input(updateAppInputSchema)
+        .mutation(async ({ input }): Promise<Resource> => {
+          return updateAppService(input)
+        }),
     }),
 
-    appCatalog: publicProcedure.query(
-      async ({ ctx }): Promise<AppCatalogData> => {
-        return await getAppCatalogData(ctx.companySpecificBackend.getApps)
-      },
-    ),
-
-    // Icon management routes
-    icon: createIconRouter(),
-
-    // Screenshot management routes
-    screenshot: createScreenshotRouter(),
-
-    // App catalog admin routes
-    appCatalogAdmin: createAppCatalogAdminRouter(),
-
-    // Approval method routes
-    approvalMethod: createApprovalMethodRouter(),
-
     // Auth routes (requires auth instance)
-    auth: createAuthRouter(t, auth),
+    auth: createAuthRouter(t, auth, options),
   })
 }
 

@@ -1,0 +1,91 @@
+import { ArrowDown, ArrowUp, X } from 'lucide-react'
+import { useState } from 'react'
+import type { ReactNode } from 'react'
+import { Button } from '~/ui/button'
+import { Card } from '~/ui/card'
+
+const STORAGE_KEY = 'app-catalog-onboarding-dismissed'
+
+export interface OnboardingCardProps {
+  /** Main heading text */
+  title?: ReactNode
+  /** Description text below the title */
+  description?: ReactNode
+}
+
+/**
+ * First-time user onboarding card showing keyboard navigation instructions.
+ * Dismissible and persists preference to localStorage.
+ */
+export function OnboardingCard({
+  title = 'Welcome to App Catalog',
+  description = 'Browse and discover applications available to you. Click on any app to view details, screenshots, and request access if needed.',
+}: OnboardingCardProps = {}) {
+  // Initialize from localStorage to avoid hydration flash
+  const [isDismissed, setIsDismissed] = useState(() => {
+    // Check localStorage on mount
+    if (typeof window !== 'undefined') {
+      const dismissed = localStorage.getItem(STORAGE_KEY)
+      return dismissed === 'true'
+    }
+    return true // Default to dismissed during SSR
+  })
+
+  const handleDismiss = () => {
+    localStorage.setItem(STORAGE_KEY, 'true')
+    setIsDismissed(true)
+  }
+
+  if (isDismissed) {
+    return null
+  }
+
+  return (
+    <Card className="p-4 mb-3 relative">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-2 right-2"
+        onClick={handleDismiss}
+        aria-label="Dismiss onboarding"
+      >
+        <X className="h-4 w-4" />
+      </Button>
+
+      <div className="pr-10">
+        <h2 className="text-lg font-bold mb-2">{title}</h2>
+        <p className="text-muted-foreground mb-3 text-sm">{description}</p>
+
+        <div className="bg-muted/50 rounded-lg p-3">
+          <h3 className="font-semibold mb-2 text-xs">Keyboard Navigation</h3>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <kbd className="px-2 py-1 bg-background border rounded text-xs flex items-center">
+                  <ArrowUp className="h-3 w-3" />
+                </kbd>
+                <span className="text-muted-foreground">/</span>
+                <kbd className="px-2 py-1 bg-background border rounded text-xs flex items-center">
+                  <ArrowDown className="h-3 w-3" />
+                </kbd>
+              </div>
+              <span className="text-muted-foreground">Navigate apps</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <kbd className="px-2 py-1 bg-background border rounded text-xs">
+                Enter
+              </kbd>
+              <span className="text-muted-foreground">Open screenshots</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <kbd className="px-2 py-1 bg-background border rounded text-xs">
+                Esc
+              </kbd>
+              <span className="text-muted-foreground">Close details</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  )
+}

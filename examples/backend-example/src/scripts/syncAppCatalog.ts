@@ -9,22 +9,23 @@
  *   pnpm run db:sync-catalog
  */
 
-import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
+import type { Resource } from '@igstack/app-catalog-backend-core'
 import {
-    connectDb,
-    disconnectDb,
-    syncAppCatalog,
+  connectDb,
+  disconnectDb,
+  syncAppCatalog,
 } from '@igstack/app-catalog-backend-core'
 import { config as loadEnv } from 'dotenv-defaults'
 
 loadEnv()
 
 // Sample app catalog data for fallback
-const sampleAppCatalog: Array<AppForCatalog> = [
+const sampleAppCatalog: Resource[] = [
   {
     id: 'car-shop-sales',
     slug: 'car-shop-sales',
     displayName: 'Car Shop Sales',
+    abbreviation: 'Sales',
     description: 'Sales management system for the car dealership',
     access: {
       type: 'ticketing',
@@ -39,6 +40,7 @@ const sampleAppCatalog: Array<AppForCatalog> = [
     id: 'billing-app',
     slug: 'billing-app',
     displayName: 'Billing App',
+    abbreviation: 'Billing',
     description: 'Invoice and billing management application',
     access: {
       type: 'self-service',
@@ -53,6 +55,7 @@ const sampleAppCatalog: Array<AppForCatalog> = [
     id: 'pet-shop-app',
     slug: 'pet-shop-app',
     displayName: 'Pet Shop App',
+    abbreviation: 'Pet Shop',
     description: 'Pet shop management and inventory system',
     access: {
       type: 'email',
@@ -73,6 +76,7 @@ const sampleAppCatalog: Array<AppForCatalog> = [
     id: 'monitoring-dashboard',
     slug: 'monitoring-dashboard',
     displayName: 'Monitoring Dashboard',
+    abbreviation: 'Monitoring',
     description: 'System monitoring and alerting dashboard',
     access: {
       type: 'documentation',
@@ -86,7 +90,7 @@ const sampleAppCatalog: Array<AppForCatalog> = [
   },
 ]
 
-async function loadAppCatalog(): Promise<Array<AppForCatalog>> {
+async function loadAppCatalog(): Promise<Resource[]> {
   try {
     const { appCatalog } = await import('../local/appCatalog.js')
     console.log('Loaded app catalog from local/appCatalog.ts')
@@ -103,7 +107,7 @@ async function main() {
 
     await connectDb()
     const catalog = await loadAppCatalog()
-    const result = await syncAppCatalog(catalog)
+    const result = await syncAppCatalog(catalog, [], [])
 
     console.log(`Sync complete! Total apps in catalog: ${result.total}`)
   } catch (error) {

@@ -1,8 +1,8 @@
-export interface EhBackendUiDefaultsInput {
-  credentialsRefs: Array<string>
+export interface AcBackendUiDefaultsInput {
+  credentialsRefs: string[]
 }
 
-export interface EhBackendCredentialInput {
+export interface AcBackendCredentialInput {
   slug: string
   desc?: string
   username: string

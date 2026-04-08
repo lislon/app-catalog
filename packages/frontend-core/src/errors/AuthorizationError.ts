@@ -3,14 +3,14 @@
  * Stores information about required permissions and provides user-friendly messages
  */
 export class AuthorizationError extends Error {
-  public readonly requiredRoles?: Array<string>
-  public readonly requiredPermissions?: Array<string>
+  public readonly requiredRoles?: string[]
+  public readonly requiredPermissions?: string[]
   public readonly resource?: string
 
   constructor(options: {
     message?: string
-    requiredRoles?: Array<string>
-    requiredPermissions?: Array<string>
+    requiredRoles?: string[]
+    requiredPermissions?: string[]
     resource?: string
   }) {
     const defaultMessage =

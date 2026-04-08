@@ -31,8 +31,8 @@ export interface Screenshot {
 }
 
 interface ScreenshotManagerProps {
-  screenshots: Array<Screenshot>
-  onScreenshotsChange: (screenshots: Array<Screenshot>) => void
+  screenshots: Screenshot[]
+  onScreenshotsChange: (screenshots: Screenshot[]) => void
   onAddScreenshot?: (file: File) => Promise<{ id: string; url: string }>
 }
 
@@ -44,7 +44,7 @@ export function ScreenshotManager({
   const [isUploading, setIsUploading] = useState(false)
   const [isDraggingOver, setIsDraggingOver] = useState(false)
   const [screenshotList, setScreenshotList] =
-    useState<Array<Screenshot>>(screenshots)
+    useState<Screenshot[]>(screenshots)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const sensors = useSensors(

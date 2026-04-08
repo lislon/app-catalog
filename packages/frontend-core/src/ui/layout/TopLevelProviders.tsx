@@ -12,6 +12,7 @@ import { LoginModal } from '~/modules/auth/ui/LoginModal'
 import { GlobalConfigProvider } from '~/modules/config/GlobalConfigContext'
 import { makePluginInterfaceForCore } from '~/modules/pluginCore/makePluginManagerContext'
 import { PluginManagerContextProvider } from '~/modules/pluginCore/PluginManagerContext'
+import { TooltipProvider } from '~/ui/tooltip'
 import { LoadingScreen } from './LoadingScreen'
 
 export interface MainLayoutProps {
@@ -20,7 +21,7 @@ export interface MainLayoutProps {
   trpcClient: TRPCClient<TRPCRouter>
 }
 
-export function TopLevelProviders({ children }: MainLayoutProps) {
+export function TopLevelProviders({ children, queryClient }: MainLayoutProps) {
   // const { data, failureCount, failureReason } = useQueryBootstrapConfig()
   const [plugins] = useState(() => [
     // Future plugins can be added here
@@ -41,23 +42,28 @@ export function TopLevelProviders({ children }: MainLayoutProps) {
       enableSystem
       disableTransitionOnChange
     >
-      <AuthModalProvider>
-        <AuthProvider>
-          <Suspense fallback={<LoadingScreen />}>
-            <GlobalConfigProvider>
-              <PluginManagerContextProvider
-                plugins={plugins}
-                pluginInterfaceForCore={pluginInterfaceForCore}
-              >
-                {children}
-                <LoginModal />
-                <TanStackRouterDevtools />
-                <ReactQueryDevtools initialIsOpen={false} />
-              </PluginManagerContextProvider>
-            </GlobalConfigProvider>
-          </Suspense>
-        </AuthProvider>
-      </AuthModalProvider>
+      <TooltipProvider>
+        <AuthModalProvider>
+          <AuthProvider>
+            <Suspense fallback={<LoadingScreen />}>
+              <GlobalConfigProvider>
+                <PluginManagerContextProvider
+                  plugins={plugins}
+                  pluginInterfaceForCore={pluginInterfaceForCore}
+                >
+                  {children}
+                  <LoginModal />
+                  <TanStackRouterDevtools />
+                  <ReactQueryDevtools
+                    initialIsOpen={false}
+                    client={queryClient}
+                  />
+                </PluginManagerContextProvider>
+              </GlobalConfigProvider>
+            </Suspense>
+          </AuthProvider>
+        </AuthModalProvider>
+      </TooltipProvider>
     </ThemeProvider>
   )
 }

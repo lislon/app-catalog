@@ -3,30 +3,30 @@ import { group, isEqual, objectify, pick } from 'radashi'
 
 export interface TableSyncParams<
   T extends object,
-  TUniqColumns extends ReadonlyArray<keyof T>,
+  TUniqColumns extends readonly (keyof T)[],
   TId extends keyof T & (string | number),
 > {
   id: TId
-  readAll: () => Promise<Array<T>>
+  readAll: () => Promise<T[]>
   writeAll: (
-    create: Array<Omit<T, TId>>,
-    update: Array<{
+    create: Omit<T, TId>[],
+    update: {
       data: Partial<T>
       where: Pick<T, FilteredKeys<T, TUniqColumns>>
-    }>,
-    deleteIds: Array<T[TId]>,
-  ) => Promise<Array<T>>
+    }[],
+    deleteIds: T[TId][],
+  ) => Promise<T[]>
   uniqColumns: TUniqColumns
 }
 
 export function tableSync<
   T extends object,
-  TUniqColumns extends ReadonlyArray<keyof T>,
+  TUniqColumns extends readonly (keyof T)[],
   TId extends keyof T & (string | number),
 >(params: TableSyncParams<T, TUniqColumns, TId>) {
   return {
     async sync<TUpsert extends Partial<T> & Pick<T, TUniqColumns[number]>>(
-      upsertRaw: Array<TUpsert>,
+      upsertRaw: TUpsert[],
     ) {
       const existingData = await params.readAll()
 
@@ -100,7 +100,7 @@ export function tableSync<
             where: pick<T, TUniqColumns>(update, params.uniqColumns),
           }
         }),
-        deletedIds as Array<T[TId]>,
+        deletedIds as T[TId][],
       )
 
       const findActual = (key: Pick<T, TUniqColumns[number]>) => {
@@ -117,7 +117,7 @@ export function tableSync<
       function getActual() {
         return [...inserted, ...(toUpdate || []), ...(unmodified || [])].map(
           (row) => findActual(row),
-        ) as Array<Pick<T, TUniqColumns[number]> & T[TId]>
+        ) as (Pick<T, TUniqColumns[number]> & T[TId])[]
       }
 
       return {
@@ -147,9 +147,6 @@ export function tableSync<
   }
 }
 
-export interface TableSyncIdBag<
-  T,
-  TUniqColumns extends ReadonlyArray<keyof T>,
-> {
+export interface TableSyncIdBag<T, TUniqColumns extends readonly (keyof T)[]> {
   findId: (key: Pick<T, TUniqColumns[number]>) => T[keyof T] | undefined
 }

@@ -53,9 +53,9 @@ export function getAuthProviders(): BetterAuthOptions['socialProviders'] {
  * AUTH_OKTA_CLIENT_SECRET=your_okta_client_secret
  * AUTH_OKTA_ISSUER=https://your-org.okta.com/oauth2/ausxb83g4wY1x09ec0h7
  */
-export function getAuthPlugins(): Array<BetterAuthPlugin> {
-  const plugins: Array<BetterAuthPlugin> = []
-  const oktaConfig: Array<ReturnType<typeof okta>> = []
+export function getAuthPlugins(): BetterAuthPlugin[] {
+  const plugins: BetterAuthPlugin[] = []
+  const oktaConfig: ReturnType<typeof okta>[] = []
 
   if (
     process.env.AUTH_OKTA_CLIENT_ID &&
@@ -76,19 +76,6 @@ export function getAuthPlugins(): Array<BetterAuthPlugin> {
   }
 
   return plugins
-}
-
-/**
- * Get admin group names from environment variables
- * Default: ['env_hopper_ui_super_admins']
- */
-export function getAdminGroups(): Array<string> {
-  const adminGroups =
-    process.env.AUTH_ADMIN_GROUPS || 'env_hopper_ui_super_admins'
-  return adminGroups
-    .split(',')
-    .map((g) => g.trim())
-    .filter(Boolean)
 }
 
 /**

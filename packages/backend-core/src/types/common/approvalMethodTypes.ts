@@ -2,22 +2,19 @@
  * Approval Method Types
  *
  * Global approval method templates that apps can link to.
- * Each method has a type (service, personTeam, custom) with type-specific config.
+ * Each method has a type (service, custom, noAccessRequired, unknown) with type-specific config.
  */
 
 // ============================================================================
 // APPROVAL METHOD TYPES (Global Templates)
 // ============================================================================
 
-export type ApprovalMethodType = 'service' | 'personTeam' | 'custom'
-
-/**
- * Contact for reaching out (not necessarily the approver)
- */
-export interface ReachOutContact {
-  displayName: string
-  contact: string // email, slack handle, etc.
-}
+export type ApprovalMethodType =
+  | 'service'
+  | 'personTeam'
+  | 'custom'
+  | 'noAccessRequired'
+  | 'unknown'
 
 /**
  * Service type config - for bots, ticketing systems, self-service portals
@@ -28,10 +25,11 @@ export interface ServiceConfig {
 }
 
 /**
- * Person/Team type config - for human approvers
+ * PersonTeam type config - for person/group-based approval
  */
 export interface PersonTeamConfig {
-  reachOutContacts?: Array<ReachOutContact>
+  personSlugs?: string[] // Person references
+  groupSlugs?: string[] // Group references
 }
 
 /**
@@ -52,18 +50,16 @@ export type ApprovalMethodConfig =
 /**
  * Approval Method - stored in DbApprovalMethod
  */
-// export interface ApprovalMethod {
-//   slug: string
-//   type: ApprovalMethodType
-//   displayName: string
-//   config?: ApprovalMethodConfig
-//   createdAt?: Date
-//   updatedAt?: Date
-// }
-
 export type ApprovalMethod = {
   slug: string
+  /**
+   * Displayed approval method
+   */
   displayName: string
+  /**
+   * Optionally - older name of approval method if there were migration in organization.
+   */
+  deprecatedAliases?: string[]
   createdAt?: Date
   updatedAt?: Date
 } & (
@@ -79,6 +75,14 @@ export type ApprovalMethod = {
       type: 'custom'
       config: CustomConfig
     }
+  | {
+      type: 'noAccessRequired'
+      config: CustomConfig
+    }
+  | {
+      type: 'unknown'
+      config: CustomConfig
+    }
 )
 
 // ============================================================================
@@ -89,17 +93,18 @@ export type ApprovalMethod = {
  * Role that can be requested for an app
  */
 export interface AppRole {
+  /**
+   * User-friendly role name.
+   */
   displayName: string
+  /**
+   * Description of role.
+   */
   description?: string
+  /**
+   * Notes for admins/approvers (Not for requestores)
+   */
   adminNotes?: string
-}
-
-/**
- * Approver contact (person who approves, may differ from reach-out contact)
- */
-export interface ApproverContact {
-  displayName: string
-  contact?: string
 }
 
 /**
@@ -111,39 +116,44 @@ export interface ApprovalUrl {
 }
 
 /**
- * Per-app approval details - stored as JSON in DbAppForCatalog
- * All comment/text-like strings are markdown
+ * Used to store ONLY instructions related to access request
  */
 export interface AppAccessRequest {
-  approvalMethodId: string // FK to DbApprovalMethod
+  /**
+   * Method of asking for access.
+   */
+  approvalMethodSlug: string // FK to DbApprovalMethod
 
-  // Common fields (all types) - markdown text
+  /**
+   * Additional comments, if no other fields are fit.
+   */
   comments?: string
+  /**
+   * A template to put into a request ask.
+   */
   requestPrompt?: string
+  /**
+   * Recommended steps post approvel to get access to specific resources.
+   */
   postApprovalInstructions?: string
 
-  // Lists
-  roles?: Array<AppRole>
-  approvers?: Array<ApproverContact>
-  urls?: Array<ApprovalUrl>
+  /**
+   * Available roles for given resource.
+   */
+  roles?: AppRole[]
 
-  // Type-specific (Person/Team only)
-  whoToReachOut?: string // markdown
+  /**
+   * Individuals that will approve request within given approval method. No need to reach them directly unless specified.
+   */
+  approverPersonSlugs?: string[] // slugs referencing Person entities
+  /**
+   * Additional instructions to get approvals
+   */
+  urls?: ApprovalUrl[]
 }
 
-// ============================================================================
-// INPUT TYPES FOR API
-// ============================================================================
+/** @deprecated Use AppAccessRequest instead (same type, new canonical name) */
+export type AccessRequest = AppAccessRequest
 
-export interface CreateApprovalMethodInput {
-  type: ApprovalMethodType
-  displayName: string
-  config?: ApprovalMethodConfig
-}
-
-export interface UpdateApprovalMethodInput {
-  id: string
-  type?: ApprovalMethodType
-  displayName?: string
-  config?: ApprovalMethodConfig
-}
+/** @deprecated Use AppRole instead (same type, new canonical name) */
+export type Role = AppRole

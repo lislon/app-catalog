@@ -1,13 +1,12 @@
-import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
-import { AppWindowIcon, EditIcon, ExternalLinkIcon, XIcon } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
-import { useUser } from '~/modules/auth/AuthContext'
+import type { Resource } from '@igstack/app-catalog-backend-core'
+import { AppWindowIcon, ExternalLinkIcon, XIcon } from 'lucide-react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Badge } from '~/ui/badge'
 import { Button } from '~/ui/button'
 import { ScrollArea } from '~/ui/scroll-area'
 import { Separator } from '~/ui/separator'
 import { useAppCatalogContext } from '~/modules/appCatalog'
-import { ExternalLink, Link } from '~/ui/link'
+import { ExternalLink } from '~/ui/link'
 import {
   Table,
   TableBody,
@@ -18,9 +17,12 @@ import {
   TableRow,
 } from '~/ui/table'
 import { ScreenshotGallery } from './ScreenshotGallery'
+import { TierVariantsSection } from './TierVariantsSection'
+import { SubResourcesSection } from './SubResourcesSection'
+import { getChildResources } from '~/modules/appCatalog/utils/resolveHelpers'
 
 export interface AppDetailModalProps {
-  app: AppForCatalog
+  app: Resource
   isOpen: boolean
   onClose: () => void
 }
@@ -29,14 +31,14 @@ function getIconUrl(iconName: string): string {
   return `/api/icons/${iconName}`
 }
 
-function AppIcon({ app }: { app: AppForCatalog }) {
+function AppIcon({ app }: { app: Resource }) {
   const [imageError, setImageError] = React.useState(false)
 
   if (app.iconName && !imageError) {
     return (
       <img
         src={getIconUrl(app.iconName)}
-        alt={`${app.displayName} icon`}
+        alt={`${app.abbreviation || app.displayName} icon`}
         className="size-16 rounded-lg object-contain"
         onError={() => setImageError(true)}
       />
@@ -50,7 +52,7 @@ function AppIcon({ app }: { app: AppForCatalog }) {
   )
 }
 
-function ScreenshotPreview({ app }: { app: AppForCatalog }) {
+function ScreenshotPreview({ app }: { app: Resource }) {
   const [imageErrors, setImageErrors] = useState<Set<string>>(() => new Set())
   const [galleryOpen, setGalleryOpen] = useState(false)
   const [initialIndex, setInitialIndex] = useState(0)
@@ -78,7 +80,7 @@ function ScreenshotPreview({ app }: { app: AppForCatalog }) {
     <>
       <div className="space-y-4">
         {screenshotIds.map((screenshotId, index) => {
-          const screenshotUrl = `/api/screenshots/${screenshotId}`
+          const screenshotUrl = `/api/screenshots/${screenshotId}?size=600`
           const hasError = imageErrors.has(screenshotId)
 
           if (hasError) {
@@ -101,7 +103,7 @@ function ScreenshotPreview({ app }: { app: AppForCatalog }) {
             >
               <img
                 src={screenshotUrl}
-                alt={`${app.displayName} screenshot ${index + 1}`}
+                alt={`${app.abbreviation || app.displayName} screenshot ${index + 1}`}
                 className="h-auto object-contain max-h-[600px]"
                 onError={() => handleImageError(screenshotId)}
               />
@@ -116,13 +118,13 @@ function ScreenshotPreview({ app }: { app: AppForCatalog }) {
         initialIndex={initialIndex}
         open={galleryOpen}
         onOpenChange={setGalleryOpen}
-        title={`${app.displayName} - Screenshots`}
+        title={`${app.abbreviation || app.displayName} - Screenshots`}
       />
     </>
   )
 }
 
-function AccessSection({ app }: { app: AppForCatalog }) {
+function AccessSection({ app }: { app: Resource }) {
   const { approvalMethods } = useAppCatalogContext()
   const { accessRequest } = app
   if (!accessRequest) {
@@ -130,7 +132,7 @@ function AccessSection({ app }: { app: AppForCatalog }) {
   }
 
   const approvalMethod = approvalMethods.find(
-    (m) => accessRequest.approvalMethodId === m.slug,
+    (m) => accessRequest.approvalMethodSlug === m.slug,
   )
   if (approvalMethod?.type !== 'service') {
     return 'not service'
@@ -184,14 +186,30 @@ function AccessSection({ app }: { app: AppForCatalog }) {
   )
 }
 
-export function AppDetailModal({ app, isOpen, onClose }: AppDetailModalProps) {
-  const user = useUser()
-  const isAuthenticated = !!user
+function TiersAndSubResources({ app }: { app: Resource }) {
+  const { resources } = useAppCatalogContext()
+  const appSubResources = useMemo(
+    () => getChildResources(resources, app.slug),
+    [resources, app.slug],
+  )
 
-  // Close on Escape key
+  return (
+    <>
+      {app.tiers && app.tiers.length > 0 && (
+        <TierVariantsSection tiers={app.tiers} />
+      )}
+      {appSubResources.length > 0 && (
+        <SubResourcesSection subResources={appSubResources} />
+      )}
+    </>
+  )
+}
+
+export function AppDetailModal({ app, isOpen, onClose }: AppDetailModalProps) {
+  // Close on Escape key — but only if no inner layer (gallery) is handling it
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && !e.defaultPrevented) {
         onClose()
       }
     }
@@ -235,21 +253,6 @@ export function AppDetailModal({ app, isOpen, onClose }: AppDetailModalProps) {
             <span className="sr-only">Close</span>
           </Button>
 
-          {/* Edit Button (Authenticated users) */}
-          {isAuthenticated && app.slug && (
-            <Button
-              variant="default"
-              size="sm"
-              asChild
-              className="absolute top-6 right-[4.5rem] z-10"
-            >
-              <Link to="/admin/app-for-catalog/$id" params={{ id: app.slug }}>
-                <EditIcon className="size-4 mr-2" />
-                Edit
-              </Link>
-            </Button>
-          )}
-
           <div className="bg-background rounded-lg shadow-2xl border border-border p-8 space-y-8">
             {/* App Details Section */}
             <div className="space-y-6">
@@ -257,7 +260,14 @@ export function AppDetailModal({ app, isOpen, onClose }: AppDetailModalProps) {
               <div className="flex items-start gap-4">
                 <AppIcon app={app} />
                 <div className="flex-1 space-y-2">
-                  <h2 className="text-3xl font-bold">{app.displayName}</h2>
+                  <h2 className="text-3xl font-bold">
+                    {app.abbreviation || app.displayName}
+                  </h2>
+                  {app.abbreviation && (
+                    <p className="text-sm text-muted-foreground">
+                      {app.displayName}
+                    </p>
+                  )}
                   {app.appUrl && (
                     <a
                       href={app.appUrl}
@@ -265,7 +275,7 @@ export function AppDetailModal({ app, isOpen, onClose }: AppDetailModalProps) {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
                     >
-                      {app.appUrl.replaceAll(/^https?:\/\//g, '')}
+                      {app.appUrl.replace(/^https?:\/\//g, '')}
                       <ExternalLinkIcon className="size-4" />
                     </a>
                   )}
@@ -283,8 +293,8 @@ export function AppDetailModal({ app, isOpen, onClose }: AppDetailModalProps) {
               {/* Access Section */}
               <AccessSection app={app} />
 
-              {/* Approval Details Section - TODO: Update to use new approval system */}
-              {/* {app.accessRequest && <AccessRequestSection accessRequest={app.accessRequest} />} */}
+              {/* Tier Variants and Sub-Resources */}
+              <TiersAndSubResources app={app} />
 
               {/* Tags */}
               {app.tags && app.tags.length > 0 && (

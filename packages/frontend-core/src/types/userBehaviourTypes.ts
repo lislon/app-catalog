@@ -84,7 +84,7 @@ export interface AppPageSlug {
 }
 
 export interface AppPageContext {
-  params: Array<AppPageContextKeyValue>
+  params: AppPageContextKeyValue[]
 }
 
 export interface AppPageContextKeyValue {

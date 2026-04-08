@@ -1,6 +1,5 @@
 import { tableSync } from '@igstack/app-catalog-table-sync'
-import type { Prisma, PrismaClient } from '@prisma/client'
-import type * as runtime from '@prisma/client/runtime/library'
+import type { Prisma, PrismaClient } from '../generated/prisma/client'
 import { mapValues, omit, pick } from 'radashi'
 
 export type ScalarKeys<TPrismaModelName extends Prisma.ModelName> =
@@ -13,7 +12,7 @@ export type ScalarFilter<TPrismaModelName extends Prisma.ModelName> = Partial<
 >
 
 export type GetOperationFns<TModel extends Prisma.ModelName> = {
-  [TOperation in keyof Prisma.TypeMap['model']['DbAppForCatalog']['operations']]: (
+  [TOperation in keyof Prisma.TypeMap['model']['DbResource']['operations']]: (
     args: Prisma.TypeMap['model'][TModel]['operations'][TOperation]['args'],
   ) => Promise<
     Prisma.TypeMap['model'][TModel]['operations'][TOperation]['result']
@@ -23,8 +22,8 @@ export type GetOperationFns<TModel extends Prisma.ModelName> = {
 export interface TableSyncParamsPrisma<
   TPrismaClient extends PrismaClient,
   TPrismaModelName extends Prisma.ModelName,
-  TUniqColumns extends ReadonlyArray<ScalarKeys<TPrismaModelName>>,
-  TRelationColumns extends ReadonlyArray<ObjectKeys<TPrismaModelName>>,
+  TUniqColumns extends readonly ScalarKeys<TPrismaModelName>[],
+  TRelationColumns extends readonly ObjectKeys<TPrismaModelName>[],
 > {
   id?: ScalarKeys<TPrismaModelName>
   prisma: TPrismaClient
@@ -36,7 +35,7 @@ export interface TableSyncParamsPrisma<
 }
 
 function getPrismaModelOperations<
-  TPrismaClient extends Omit<PrismaClient, runtime.ITXClientDenyList>,
+  TPrismaClient,
   TPrismaModelName extends Prisma.ModelName,
 >(prisma: TPrismaClient, prismaModelName: TPrismaModelName) {
   const key = (prismaModelName.slice(0, 1).toLowerCase() +
@@ -52,8 +51,8 @@ export type MakeTFromPrismaModel<TPrismaModelName extends Prisma.ModelName> =
 export function tableSyncPrisma<
   TPrismaClient extends PrismaClient,
   TPrismaModelName extends Prisma.ModelName,
-  TUniqColumns extends ReadonlyArray<ScalarKeys<TPrismaModelName>>,
-  TRelationColumns extends ReadonlyArray<ObjectKeys<TPrismaModelName>>,
+  TUniqColumns extends readonly ScalarKeys<TPrismaModelName>[],
+  TRelationColumns extends readonly ObjectKeys<TPrismaModelName>[],
   TId extends ScalarKeys<TPrismaModelName> = ScalarKeys<TPrismaModelName>,
 >(
   params: TableSyncParamsPrisma<
@@ -83,14 +82,14 @@ export function tableSyncPrisma<
             where: whereGlobal,
           }
         : {}
-      return (await prismOperations.findMany(findManyArgs)) as Array<
-        MakeTFromPrismaModel<TPrismaModelName>
-      >
+      return (await prismOperations.findMany(
+        findManyArgs,
+      )) as MakeTFromPrismaModel<TPrismaModelName>[]
     },
     writeAll: async (createData, update, deleteIds) => {
       const prismaUniqKey = params.uniqColumns.join('_')
       const relationColumnList =
-        params.relationColumns ?? ([] as Array<ObjectKeys<TPrismaModelName>>)
+        params.relationColumns ?? ([] as ObjectKeys<TPrismaModelName>[])
 
       return prisma.$transaction(async (tx) => {
         const txOps = getPrismaModelOperations(tx, prismaModelName)
@@ -148,7 +147,7 @@ export function tableSyncPrisma<
         // Check for duplicates in the data to be created
         if (createDataMapped.length > 0) {
           const uniqKeysInCreate = new Set<string>()
-          const duplicateKeys: Array<string> = []
+          const duplicateKeys: string[] = []
 
           for (const data of createDataMapped) {
             const keyParts = params.uniqColumns.map((col) => {
@@ -177,7 +176,7 @@ export function tableSyncPrisma<
           }
         }
 
-        const results: Array<MakeTFromPrismaModel<TPrismaModelName>> = []
+        const results: MakeTFromPrismaModel<TPrismaModelName>[] = []
 
         if (relationColumnList.length === 0) {
           // @ts-expect-error This is too difficult for me to come up with right types

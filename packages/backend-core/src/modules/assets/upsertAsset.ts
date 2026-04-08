@@ -1,5 +1,5 @@
 import { parseAssetMeta } from './assetUtils'
-import type { AssetType, PrismaClient } from '@prisma/client'
+import type { AssetType, PrismaClient } from '../../generated/prisma/client'
 
 export interface UpsertAssetParams {
   prisma: PrismaClient

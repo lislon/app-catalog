@@ -1,9 +1,9 @@
 import type { QueryFunctionContext } from '@tanstack/react-query'
-import type { EhRouterContext } from '~/types/types'
+import type { AcRouterContext } from '~/types/types'
 import { appCatalogFetcher } from '~/api/unsorted/appCatalogFetcher'
 
 export interface CatalogRouteLoaderCtx {
-  context: EhRouterContext
+  context: AcRouterContext
 }
 
 export async function catalogRouteLoader({
@@ -23,6 +23,9 @@ export async function catalogRouteLoader({
     signal: new AbortController().signal,
   }
 
-  // Call the query function to pre-populate cache
-  await queryFn(ctx)
+  // Call the query function and populate React Query cache
+  const data = await queryFn(ctx)
+  if (data) {
+    context.queryClient.setQueryData(['appCatalog'], data)
+  }
 }

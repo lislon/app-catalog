@@ -15,10 +15,10 @@ export interface UpsertIconInput {
  */
 export async function upsertIcon(input: UpsertIconInput) {
   const prisma = getDbClient()
-  
+
   const checksum = generateChecksum(input.content)
   const { width, height } = await getImageDimensions(input.content)
-  
+
   return prisma.dbAsset.upsert({
     where: { name: input.name },
     update: {
@@ -46,8 +46,8 @@ export async function upsertIcon(input: UpsertIconInput) {
  * Upsert multiple icons to the database.
  * This is more efficient than calling upsertIcon multiple times.
  */
-export async function upsertIcons(icons: Array<UpsertIconInput>) {
-  const results: Array<Awaited<ReturnType<typeof upsertIcon>>> = []
+export async function upsertIcons(icons: UpsertIconInput[]) {
+  const results: Awaited<ReturnType<typeof upsertIcon>>[] = []
   for (const icon of icons) {
     const result = await upsertIcon(icon)
     results.push(result)
@@ -61,7 +61,7 @@ export async function upsertIcons(icons: Array<UpsertIconInput>) {
  */
 export async function getAssetByName(name: string) {
   const prisma = getDbClient()
-  
+
   return prisma.dbAsset.findUnique({
     where: { name },
     select: {

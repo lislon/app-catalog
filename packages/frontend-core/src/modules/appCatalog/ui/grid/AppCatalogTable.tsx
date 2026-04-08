@@ -1,4 +1,4 @@
-import type { AppForCatalog } from '@igstack/app-catalog-backend-core'
+import type { Resource } from '@igstack/app-catalog-backend-core'
 import type { ColumnDef } from '@tanstack/react-table'
 import {
   flexRender,
@@ -17,16 +17,21 @@ import {
 import { getAppUrl } from './appCatalogUtils'
 
 export interface AppCatalogTableProps {
-  apps: Array<AppForCatalog>
+  apps: Resource[]
 }
 
 export function AppCatalogTable({ apps }: AppCatalogTableProps) {
-  const columns = useMemo<Array<ColumnDef<AppForCatalog>>>(
+  const columns = useMemo<ColumnDef<Resource>[]>(
     () => [
       {
         slug: 'name',
         header: 'App Name',
-        cell: ({ row }) => row.original.displayName,
+        cell: ({ row }) => (
+          <span className="font-medium">
+            {row.original.displayName}
+            {row.original.abbreviation && ` (${row.original.abbreviation})`}
+          </span>
+        ),
       },
       {
         slug: 'url',

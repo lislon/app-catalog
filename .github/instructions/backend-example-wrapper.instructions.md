@@ -16,6 +16,7 @@ applyTo: 'examples/backend-example/**'
 ## What to Avoid
 
 ❌ **Don't add business logic here**
+
 - No feature implementations
 - No core algorithms
 - No shared utilities
@@ -42,6 +43,7 @@ examples/backend-example
 ## Adding Features
 
 If you need to add a feature:
+
 1. **Check if it belongs in `packages/backend-core`** - it probably does
 2. Add the module to `packages/backend-core/src/modules/`
 3. Export it from `packages/backend-core/src/index.ts`
@@ -50,6 +52,7 @@ If you need to add a feature:
 ## Example: Adding a New Feature
 
 **Wrong (don't do this):**
+
 ```typescript
 // examples/backend-example/src/index.ts
 app.get('/api/my-feature', (req, res) => {
@@ -58,6 +61,7 @@ app.get('/api/my-feature', (req, res) => {
 ```
 
 **Right (do this):**
+
 ```typescript
 // packages/backend-core/src/modules/myFeature/
 export function createMyFeatureRouter(db: PrismaClient) { ... }
@@ -75,13 +79,15 @@ app.use(myFeatureRouter)
 Prisma is **internal to `packages/backend-core` only**. The schema lives at `packages/backend-core/prisma/schema.prisma`.
 
 **Wrong (don't do this):**
+
 ```typescript
 // examples/backend-example/src/index.ts
-import { PrismaClient } from '@prisma/client'  // ❌ FORBIDDEN
+import { PrismaClient } from '@prisma/client' // ❌ FORBIDDEN
 const db = new PrismaClient()
 ```
 
 **Right (do this):**
+
 ```typescript
 // Inject the PrismaClient from backend-core
 import { getPrismaClient } from '@igstack/app-catalog-backend-core'
@@ -93,10 +99,10 @@ If backend-core doesn't export a way to access Prisma, add an export to `package
 ## Environment Variables
 
 Configuration lives in `.env`:
+
 - Database URL
 - Auth secrets and provider credentials
 - External service keys (OpenAI, etc.)
 - Server port and URLs
 
 See `.env.example` for required variables.
-

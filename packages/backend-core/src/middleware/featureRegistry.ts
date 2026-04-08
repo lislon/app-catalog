@@ -1,52 +1,59 @@
 import type { Router } from 'express'
 import { toNodeHandler } from 'better-auth/node'
 import type {
-  EhFeatureToggles,
-  EhMiddlewareOptions,
+  AcFeatureToggles,
+  AcMiddlewareOptions,
   MiddlewareContext,
 } from './types'
 import { registerIconRestController } from '../modules/icons/iconRestController'
 import { registerAssetRestController } from '../modules/assets/assetRestController'
 import { registerScreenshotRestController } from '../modules/assets/screenshotRestController'
-import { createAdminChatHandler } from '../modules/admin/chat/createAdminChatHandler'
-import { getAssetByName } from '../modules/icons/iconService'
-import {
-  exportAsset,
-  exportCatalog,
-  importAsset,
-  importCatalog,
-  listAssets,
-} from '../modules/appCatalogAdmin/catalogBackupController'
-import multer from 'multer'
 import { createMockSessionResponse } from '../modules/auth/devMockUserUtils'
 
+/** Parse a single cookie value from the Cookie header */
+function getCookie(
+  req: { headers: { cookie?: string } },
+  name: string,
+): string | undefined {
+  const cookies = req.headers.cookie ?? ''
+  if (!cookies) return undefined
+  const match = cookies.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`))
+  return match?.[1] !== undefined ? decodeURIComponent(match[1]) : undefined
+}
+
 interface FeatureRegistration {
-  name: keyof EhFeatureToggles
+  name: keyof AcFeatureToggles
   defaultEnabled: boolean
   register: (
     router: Router,
-    options: Required<Pick<EhMiddlewareOptions, 'basePath'>> &
-      EhMiddlewareOptions,
+    options: Required<Pick<AcMiddlewareOptions, 'basePath'>> &
+      AcMiddlewareOptions,
     context: MiddlewareContext,
   ) => void
 }
 
 // Optional features that can be toggled
-const FEATURES: Array<FeatureRegistration> = [
+const FEATURES: FeatureRegistration[] = [
   {
     name: 'auth',
     defaultEnabled: true,
     register: (router, options, ctx) => {
       const basePath = options.basePath
 
+      // Dev mock cookie name — used by dev-login and session endpoints
+      const DEV_SESSION_COOKIE = 'ac-dev-session'
+
       // Explicit session endpoint handler
       router.get(
         `${basePath}/auth/session`,
         async (req, res): Promise<void> => {
           try {
-            // Check if dev mock user is configured
-            if (ctx.authConfig.devMockUser) {
-              res.json(createMockSessionResponse(ctx.authConfig.devMockUser))
+            // Check for dev mock session cookie (set by dev-login endpoint)
+            if (
+              options.auth.devMockUser &&
+              getCookie(req, DEV_SESSION_COOKIE) === '1'
+            ) {
+              res.json(createMockSessionResponse(options.auth.devMockUser))
               return
             }
 
@@ -54,9 +61,23 @@ const FEATURES: Array<FeatureRegistration> = [
               headers: req.headers as HeadersInit,
             })
             if (session) {
-              res.json(session)
+              let admin = false
+              if (ctx.isAdmin) {
+                try {
+                  admin = !!(await ctx.isAdmin(session.user, session.session, {
+                    request: req,
+                    auth: ctx.auth,
+                  }))
+                } catch {
+                  admin = false
+                }
+              }
+              res.json({ ...session, isAdmin: admin })
             } else {
-              res.status(401).json({ error: 'Not authenticated' })
+              // Return 200 with null session instead of 401 to avoid
+              // browser "Failed to load resource" console errors.
+              // The frontend checks for session.user to determine auth state.
+              res.json({ session: null, user: null, isAuthenticated: false })
             }
           } catch (error) {
             console.error('[Auth Session Error]', error)
@@ -65,52 +86,30 @@ const FEATURES: Array<FeatureRegistration> = [
         },
       )
 
+      // Dev login/logout endpoints (only when devMockUser is configured)
+      if (options.auth.devMockUser) {
+        const devMockUser = options.auth.devMockUser
+
+        router.post(`${basePath}/auth/dev-login`, (_req, res) => {
+          const mockSession = createMockSessionResponse(devMockUser)
+          res.cookie(DEV_SESSION_COOKIE, '1', {
+            httpOnly: true,
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+          })
+          res.json(mockSession)
+        })
+
+        router.post(`${basePath}/auth/dev-logout`, (_req, res) => {
+          res.clearCookie(DEV_SESSION_COOKIE, { path: '/' })
+          res.json({ ok: true })
+        })
+      }
+
       // Use toNodeHandler to adapt better-auth for Express/Node.js
       const authHandler = toNodeHandler(ctx.auth)
       router.all(`${basePath}/auth/{*any}`, authHandler)
-    },
-  },
-  {
-    name: 'adminChat',
-    defaultEnabled: false, // Only enabled if adminChat config is provided
-    register: (router, options) => {
-      if (options.adminChat) {
-        router.post(
-          `${options.basePath}/admin/chat`,
-          createAdminChatHandler(options.adminChat),
-        )
-      }
-    },
-  },
-  {
-    name: 'legacyIconEndpoint',
-    defaultEnabled: false,
-    register: (router) => {
-      // Legacy endpoint at /static/icon/:icon for backwards compatibility
-      router.get('/static/icon/:icon', async (req, res) => {
-        const { icon } = req.params
-
-        if (!icon || !/^[a-z0-9-]+$/i.test(icon)) {
-          res.status(400).send('Invalid icon name')
-          return
-        }
-
-        try {
-          const dbIcon = await getAssetByName(icon)
-
-          if (!dbIcon) {
-            res.status(404).send('Icon not found')
-            return
-          }
-
-          res.setHeader('Content-Type', dbIcon.mimeType)
-          res.setHeader('Cache-Control', 'public, max-age=86400')
-          res.send(dbIcon.content)
-        } catch (error) {
-          console.error('Error fetching icon:', error)
-          res.status(404).send('Icon not found')
-        }
-      })
     },
   },
 ]
@@ -120,8 +119,8 @@ const FEATURES: Array<FeatureRegistration> = [
  */
 export function registerFeatures(
   router: Router,
-  options: Required<Pick<EhMiddlewareOptions, 'basePath'>> &
-    EhMiddlewareOptions,
+  options: Required<Pick<AcMiddlewareOptions, 'basePath'>> &
+    AcMiddlewareOptions,
   context: MiddlewareContext,
 ): void {
   const basePath = options.basePath
@@ -143,28 +142,11 @@ export function registerFeatures(
     basePath: `${basePath}/screenshots`,
   })
 
-  // Catalog backup/restore
-  const upload = multer({ storage: multer.memoryStorage() })
-  router.get(`${basePath}/catalog/backup/export`, exportCatalog)
-  router.post(`${basePath}/catalog/backup/import`, importCatalog)
-  router.get(`${basePath}/catalog/backup/assets`, listAssets)
-  router.get(`${basePath}/catalog/backup/assets/:name`, exportAsset)
-  router.post(
-    `${basePath}/catalog/backup/assets`,
-    upload.single('file'),
-    importAsset,
-  )
-
   // Optional toggleable features
   const toggles = options.features || {}
 
   for (const feature of FEATURES) {
     const isEnabled = toggles[feature.name] ?? feature.defaultEnabled
-
-    // Special case: adminChat is only enabled if config is provided
-    if (feature.name === 'adminChat' && !options.adminChat) {
-      continue
-    }
 
     if (isEnabled) {
       feature.register(router, options, context)

@@ -2,11 +2,11 @@ import type { ColumnDef } from '@tanstack/react-table'
 
 export interface CrudListProps<TData, TCreateInput, TUpdateInput> {
   // Data
-  data: Array<TData>
+  data: TData[]
   isLoading?: boolean
 
   // Table configuration
-  columns: Array<ColumnDef<TData>>
+  columns: ColumnDef<TData>[]
   getRowId: (item: TData) => string
 
   // Dialog form - render prop pattern

@@ -1,11 +1,11 @@
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '../generated/prisma/client'
 import type { ObjectKeys, ScalarKeys } from './tableSyncPrismaAdapter'
 
 interface CommonSyncTableInfo<TPrismaModelName extends Prisma.ModelName> {
   prismaModelName: TPrismaModelName
   id?: ScalarKeys<TPrismaModelName>
-  uniqColumns: Array<ScalarKeys<TPrismaModelName>>
-  relationColumns?: Array<ObjectKeys<TPrismaModelName>>
+  uniqColumns: ScalarKeys<TPrismaModelName>[]
+  relationColumns?: ObjectKeys<TPrismaModelName>[]
 }
 
 type TableSyncMagazineType = Partial<{
@@ -13,8 +13,22 @@ type TableSyncMagazineType = Partial<{
 }>
 
 export const TABLE_SYNC_MAGAZINE = {
-  DbAppForCatalog: {
-    prismaModelName: 'DbAppForCatalog',
+  DbPerson: {
+    id: 'slug',
+    prismaModelName: 'DbPerson',
+    uniqColumns: ['slug'],
+  },
+  DbGroup: {
+    id: 'slug',
+    prismaModelName: 'DbGroup',
+    uniqColumns: ['slug'],
+  },
+  DbGroupMembership: {
+    prismaModelName: 'DbGroupMembership',
+    uniqColumns: ['groupSlug', 'personSlug'],
+  },
+  DbResource: {
+    prismaModelName: 'DbResource',
     uniqColumns: ['slug'],
   },
   DbAppTagDefinition: {
@@ -25,6 +39,15 @@ export const TABLE_SYNC_MAGAZINE = {
     id: 'slug',
     prismaModelName: 'DbApprovalMethod',
     uniqColumns: ['slug'],
+  },
+  Source: {
+    id: 'slug',
+    prismaModelName: 'Source',
+    uniqColumns: ['slug'],
+  },
+  SourceReference: {
+    prismaModelName: 'SourceReference',
+    uniqColumns: ['resourceId', 'url'],
   },
 } as const satisfies TableSyncMagazineType
 

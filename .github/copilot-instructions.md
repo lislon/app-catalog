@@ -22,7 +22,7 @@ EnvHopper is a developer tool for managing parameterized bookmarks across differ
 **Data flow:\*\***
 
 - Frontend → tRPC client → backend tRPC routes → Prisma → SQLite (dev) or PostgreSQL (prod)
-- Local IndexedDB (`EhDb`) for client-side caching via `packages/frontend-core/src/userDb/`
+- Local IndexedDB (`AcDb`) for client-side caching via `packages/frontend-core/src/userDb/`
 - TanStack Query manages server state with optimistic updates
 
 **Key integration points:**
@@ -160,7 +160,7 @@ pnpm prisma:generate                               # Regenerate Prisma client
 
 **IndexedDB local storage:**
 
-- `EhDb` class (from `userDb/EhDb.ts`) uses Dexie.js
+- `AcDb` class (from `userDb/AcDb.ts`) uses Dexie.js
 - Cache keys in `dbCacheDbKeys` for invalidation
 - Test setup clears DB via `DbMagazine` factory
 

@@ -10,7 +10,10 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@igstack/app-catalog-backend-example", "@igstack/app-catalog-frontend-example"],
+  "ignore": [
+    "@igstack/app-catalog-backend-example",
+    "@igstack/app-catalog-frontend-example"
+  ],
   "snapshot": {
     "useCalculatedVersion": true
   }

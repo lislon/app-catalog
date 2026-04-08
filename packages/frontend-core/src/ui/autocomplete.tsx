@@ -7,10 +7,10 @@ import type { ComponentProps, RefObject } from 'react'
 import { createContext, use, useImperativeHandle, useMemo, useRef } from 'react'
 import { cn } from '~/lib/utils'
 import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupButton,
-    InputGroupInput,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
 } from '~/ui/input-group'
 
 export type AutocompleteProps<TItemValue> = Omit<
@@ -21,7 +21,7 @@ export type AutocompleteProps<TItemValue> = Omit<
    * The items to be displayed in the list.
    * Can be either a flat array of items or an array of groups with items.
    */
-  items?: ReadonlyArray<TItemValue>
+  items?: readonly TItemValue[]
 }
 
 const AutocompleteAnchorContext = createContext<{
@@ -78,7 +78,9 @@ function AutocompleteClear({
   return (
     <InputGroupAddon align="inline-end">
       <AutocompletePrimitive.Clear
-        render={(renderProps) => <InputGroupButton size="icon-xs" {...renderProps} />}
+        render={(renderProps) => (
+          <InputGroupButton size="icon-xs" {...renderProps} />
+        )}
         {...props}
       >
         <XIcon />
@@ -94,14 +96,18 @@ function AutocompleteTrigger({
   return (
     <InputGroupAddon align="inline-end">
       <AutocompletePrimitive.Trigger
-        render={(renderProps) => <InputGroupButton size="icon-xs" {...renderProps} />}
+        render={(renderProps) => (
+          <InputGroupButton size="icon-xs" {...renderProps} />
+        )}
         className={cn(
           'data-popup-open:[&_svg]:rotate-180 [&_svg]:transition-transform',
           className,
         )}
         {...props}
       >
-        <AutocompleteIcon render={(iconProps) => <ChevronDownIcon {...iconProps} />} />
+        <AutocompleteIcon
+          render={(iconProps) => <ChevronDownIcon {...iconProps} />}
+        />
       </AutocompletePrimitive.Trigger>
     </InputGroupAddon>
   )
@@ -252,21 +258,20 @@ function AutocompleteStatus({
 }
 
 export {
-    Autocomplete,
-    AutocompleteClear,
-    AutocompleteCollection,
-    AutocompleteEmpty,
-    AutocompleteGroup,
-    AutocompleteGroupLabel,
-    AutocompleteIcon,
-    AutocompleteInput,
-    AutocompleteItem,
-    AutocompleteList,
-    AutocompletePopup,
-    AutocompleteRow,
-    AutocompleteSeparator,
-    AutocompleteStatus,
-    AutocompleteTrigger,
-    AutocompleteValue
+  Autocomplete,
+  AutocompleteClear,
+  AutocompleteCollection,
+  AutocompleteEmpty,
+  AutocompleteGroup,
+  AutocompleteGroupLabel,
+  AutocompleteIcon,
+  AutocompleteInput,
+  AutocompleteItem,
+  AutocompleteList,
+  AutocompletePopup,
+  AutocompleteRow,
+  AutocompleteSeparator,
+  AutocompleteStatus,
+  AutocompleteTrigger,
+  AutocompleteValue,
 }
-
