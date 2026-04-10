@@ -1,5 +1,11 @@
 # @igstack/app-catalog-frontend-build-vite
 
+## 0.4.0
+
+### Minor Changes
+
+- [`80b5114`](https://github.com/lislon/app-catalog/commit/80b511412606a0238fb856b6f34ff9188e0b6eb3) Thanks [@lislon](https://github.com/lislon)! - First stable release with full feature set: sub-resources, person/group entities, app tier variants, unified Resource model, PWA auto-update, Datadog RUM integration.
+
 ## 0.3.1-alpha-20260406011911
 
 ### Patch Changes
