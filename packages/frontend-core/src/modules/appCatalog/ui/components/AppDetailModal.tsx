@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '~/ui/table'
+import { MarkdownText } from './MarkdownText'
 import { ScreenshotGallery } from './ScreenshotGallery'
 import { TierVariantsSection } from './TierVariantsSection'
 import { SubResourcesSection } from './SubResourcesSection'
@@ -286,7 +287,9 @@ export function AppDetailModal({ app, isOpen, onClose }: AppDetailModalProps) {
               {app.description && (
                 <div className="space-y-2">
                   <div className="text-sm font-medium">Description</div>
-                  <p className="text-muted-foreground">{app.description}</p>
+                  <MarkdownText className="prose prose-sm max-w-none text-muted-foreground [&_p]:m-0">
+                    {app.description}
+                  </MarkdownText>
                 </div>
               )}
 
