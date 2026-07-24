@@ -31,6 +31,7 @@ import {
 import { AccessRequestSection } from '../components/AccessRequestSection'
 import { useUser } from '~/modules/auth'
 import { InlineEditableField } from '../components/InlineEditableField'
+import { MarkdownText } from '../components/MarkdownText'
 import { ScreenshotGallery } from '../components/ScreenshotGallery'
 import { useUpdateApp } from '../../hooks/useUpdateApp'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
@@ -395,10 +396,12 @@ function AppDetails({
               placeholder="Description"
               className="min-h-[4rem] resize-y text-sm text-muted-foreground"
             />
+          ) : app.description ? (
+            <MarkdownText className="prose prose-sm max-w-none text-sm text-muted-foreground [&_p]:m-0">
+              {app.description}
+            </MarkdownText>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              {app.description || '—'}
-            </p>
+            <p className="text-sm text-muted-foreground">—</p>
           )}
         </div>
 

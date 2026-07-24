@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '~/ui/table'
+import { MarkdownLink } from './MarkdownText'
 import { PersonBadge } from './PersonBadge'
 
 // Constants
@@ -29,24 +30,6 @@ interface AccessRequestSectionProps {
   app: Resource
   approvalMethods: AppApprovalMethod[]
 }
-
-// Component for rendering markdown links with security attributes
-const MarkdownLink = ({
-  href,
-  children,
-}: {
-  href?: string
-  children?: React.ReactNode
-}) => (
-  <a
-    href={href}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="text-primary hover:underline"
-  >
-    {children}
-  </a>
-)
 
 // Helper function for approval method icons
 function getApprovalMethodIcon(
