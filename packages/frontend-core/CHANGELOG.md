@@ -1,5 +1,11 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.5.0
+
+### Minor Changes
+
+- [#8](https://github.com/lislon/app-catalog/pull/8) [`749d9f7`](https://github.com/lislon/app-catalog/commit/749d9f7e505d0a897bdcb80a6698d0dbc3261e81) Thanks [@lislon](https://github.com/lislon)! - Render app description as markdown so links (e.g. Slack channels) are clickable. Adds a shared `MarkdownText` component used at the live detail render site (AppCatalogGrid) with secure external links, and removes the dead `AppDetailModal` component.
+
 ## 0.4.0
 
 ### Minor Changes
