@@ -44,4 +44,12 @@ describe('App deep-link routing', () => {
     })
     expect(router.state.location.pathname).toBe('/')
   })
+
+  it('ignores legacy ?app= query param (no detail opens)', async () => {
+    const { ui } = await given(magazine.full(), { initialRoute: '/?app=jira' })
+    await waitFor(() => {
+      expect(ui.catalog.getTableData().length).toBeGreaterThan(0)
+    })
+    expect(ui.catalog.isDetailPanelOpen()).toBe(false)
+  })
 })
