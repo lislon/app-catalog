@@ -33,7 +33,7 @@ describe('empty-catalog skew warning (dev-only)', () => {
     const { ui } = await given(skew)
     await waitFor(() => {
       expect(
-        warnSpy.mock.calls.some((c) =>
+        warnSpy.mock.calls.some((c: unknown[]) =>
           String(c[0]).includes('0 are top-level'),
         ),
       ).toBe(true)
@@ -48,7 +48,9 @@ describe('empty-catalog skew warning (dev-only)', () => {
       expect(ui.catalog.getTableData().length).toBeGreaterThan(0)
     })
     expect(
-      warnSpy.mock.calls.some((c) => String(c[0]).includes('0 are top-level')),
+      warnSpy.mock.calls.some((c: unknown[]) =>
+        String(c[0]).includes('0 are top-level'),
+      ),
     ).toBe(false)
   })
 })
