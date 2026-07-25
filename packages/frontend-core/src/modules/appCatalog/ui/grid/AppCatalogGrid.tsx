@@ -55,6 +55,8 @@ export interface AppCatalogGridProps {
   totalAppsCount?: number
   /** Callback to clear all filters and search */
   onClearFilters?: () => void
+  /** Called when the user closes the detail panel (Esc or X) — e.g. to navigate back to the catalog URL */
+  onClosePanel?: () => void
 }
 
 function getIconUrl(iconName: string): string {
@@ -697,6 +699,7 @@ export function AppCatalogGrid({
   searchQuery,
   totalAppsCount,
   onClearFilters,
+  onClosePanel,
 }: AppCatalogGridProps) {
   const selectedApp = selectedAppSlug
     ? apps.find((a) => a.slug === selectedAppSlug)
@@ -862,6 +865,7 @@ export function AppCatalogGrid({
 
   const handleClosePanel = () => {
     setHasUserClosed(true)
+    onClosePanel?.()
   }
 
   return (
