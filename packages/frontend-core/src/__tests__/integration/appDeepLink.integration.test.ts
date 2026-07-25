@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { waitFor } from '@testing-library/react'
+import { fireEvent, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 
 import { given } from './harness/given'
@@ -22,5 +22,26 @@ describe('App deep-link routing', () => {
     })
     // push (not replace): catalog '/' is still in history, Back returns to it
     expect(router.history.canGoBack()).toBe(true)
+  })
+
+  it('renders the catalog with nothing open for an unknown slug', async () => {
+    const { ui } = await given(magazine.full(), {
+      initialRoute: '/app/does-not-exist',
+    })
+    await waitFor(() => {
+      expect(ui.catalog.getTableData().length).toBeGreaterThan(0)
+    })
+    expect(ui.catalog.isDetailPanelOpen()).toBe(false)
+  })
+
+  it('returns to / when the detail panel is closed', async () => {
+    const { ui, router } = await given(magazine.full(), { initialRoute: '/' })
+    await ui.catalog.openApp('Jira')
+    await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
+    fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' })
+    await waitFor(() => {
+      expect(ui.catalog.isDetailPanelOpen()).toBe(false)
+    })
+    expect(router.state.location.pathname).toBe('/')
   })
 })
