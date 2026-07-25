@@ -32,6 +32,7 @@ import { GalleryTools } from '../tools/GalleryTools'
 export interface GivenResult {
   ui: UiTools
   backend: MockBackendVerifier
+  router: ReturnType<typeof createAcRouter>
 }
 
 export interface UiTools {
@@ -57,7 +58,10 @@ export async function cleanupTestResources(): Promise<void> {
   }
 }
 
-export async function given(magazine: Magazine): Promise<GivenResult> {
+export async function given(
+  magazine: Magazine,
+  opts: { initialRoute?: string } = {},
+): Promise<GivenResult> {
   // Clean up any previous resources
   await cleanupTestResources()
   resetConfigurerCounter()
@@ -126,7 +130,7 @@ export async function given(magazine: Magazine): Promise<GivenResult> {
 
   const router = createAcRouter({
     history: createMemoryHistory({
-      initialEntries: ['/catalog/apps'],
+      initialEntries: [opts.initialRoute ?? '/catalog/apps'],
     }),
     context: {
       queryClient,
@@ -187,5 +191,5 @@ export async function given(magazine: Magazine): Promise<GivenResult> {
     globalError: () => getGlobalError(),
   }
 
-  return { ui, backend }
+  return { ui, backend, router }
 }
