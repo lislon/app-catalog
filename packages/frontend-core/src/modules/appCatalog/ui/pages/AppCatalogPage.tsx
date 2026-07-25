@@ -192,6 +192,7 @@ export function AppCatalogPage({
             selectedAppSlug={selectedAppSlug}
             groupingDefinition={groupingDefinition}
             onAppClick={handleAppClick}
+            onClosePanel={() => void navigate({ to: '/' })}
             hasSearch={!!deferredSearchValue}
             searchQuery={deferredSearchValue}
             totalAppsCount={totalAppsCount}
