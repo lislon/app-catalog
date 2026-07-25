@@ -52,6 +52,25 @@ export function AppCatalogPage({
     [resources],
   )
 
+  // Dev-only skew warning: data arrived (resources > 0) but nothing is top-level
+  // (rootResources === 0). That fingerprints a frontend/backend-core version skew
+  // or a stale service worker — NOT a normal empty search/filter (those still have
+  // rootResources). Guarded to dev so prod users never see it.
+  useEffect(() => {
+    if (
+      import.meta.env.DEV &&
+      !isLoadingApps &&
+      resources.length > 0 &&
+      rootResources.length === 0
+    ) {
+      console.warn(
+        `[app-catalog] Loaded ${resources.length} resources but 0 are top-level — ` +
+          `likely a frontend/backend-core version skew or a stale service worker. ` +
+          `Check the version footer (be X / fe Y) and hard-reload.`,
+      )
+    }
+  }, [isLoadingApps, resources.length, rootResources.length])
+
   const filteredApps = useMemo(() => {
     let result = rootResources
 
