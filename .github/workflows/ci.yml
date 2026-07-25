@@ -61,6 +61,10 @@ jobs:
       - name: Version packages (alpha snapshot)
         if: github.ref == 'refs/heads/alpha'
         run: pnpm changeset version --snapshot alpha
+        env:
+          # Required by @changesets/changelog-github to resolve PR/commit links
+          # when a real changeset file is present (snapshot-only changesets skip this).
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Update lockfile (alpha)
         if: github.ref == 'refs/heads/alpha'
         run: pnpm install --no-frozen-lockfile
