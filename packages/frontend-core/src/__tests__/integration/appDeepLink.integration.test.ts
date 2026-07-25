@@ -13,4 +13,14 @@ describe('App deep-link routing', () => {
     })
     expect(ui.catalog.getTableData().length).toBeGreaterThan(0)
   })
+
+  it('navigates to /app/<slug> when selecting an app, and pushes history', async () => {
+    const { ui, router } = await given(magazine.full(), { initialRoute: '/' })
+    await ui.catalog.openApp('Jira')
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/app/jira')
+    })
+    // push (not replace): catalog '/' is still in history, Back returns to it
+    expect(router.history.canGoBack()).toBe(true)
+  })
 })
