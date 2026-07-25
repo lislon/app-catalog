@@ -5,7 +5,6 @@ import { AppCatalogLayout } from '~/modules/appCatalog/ui/layout/AppCatalogLayou
 import { AppCatalogPage } from '~/modules/appCatalog/ui/pages/AppCatalogPage'
 
 const searchSchema = z.object({
-  app: z.string().optional(),
   filterTag: z.string().optional(),
 })
 
