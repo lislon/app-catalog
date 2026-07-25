@@ -1,4 +1,5 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
+import { useNavigate } from '@tanstack/react-router'
 import { X } from 'lucide-react'
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { Button } from '~/ui/button'
@@ -13,25 +14,22 @@ import {
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { useAppCounts } from '../../hooks/useAppCounts'
-import { useUrlSyncedState } from '../../hooks/useUrlSyncedState'
 import { searchResources } from '../../utils/searchApps'
 import { OnboardingCard } from '../components/OnboardingCard'
 import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
 import { FilterBar } from '../filters/FilterBar'
 import { AppCatalogGrid } from '../grid/AppCatalogGrid'
 
-export function AppCatalogPage() {
+export function AppCatalogPage({
+  selectedSlug,
+}: { selectedSlug?: string } = {}) {
   const { resources, isLoadingApps, tagsDefinitions } = useAppCatalogContext()
   const { state: filterState, actions } = useAppCatalogFilters()
   const { getTopApps } = useAppClickHistory()
+  const navigate = useNavigate()
 
-  // URL-synced state
-  const [selectedAppSlug, setSelectedAppSlug] = useUrlSyncedState<
-    string | undefined
-  >({
-    key: 'app',
-    defaultValue: undefined,
-  })
+  // Selected app comes from the route path (/app/<slug>); undefined = nothing open
+  const selectedAppSlug = selectedSlug
 
   // Search value from context (URL-synced in AppCatalogFiltersContext)
   const searchValue = filterState.searchValue
@@ -108,19 +106,23 @@ export function AppCatalogPage() {
 
   // Auto-open details when only 1 result
   useEffect(() => {
-    if (filteredApps.length === 1 && filteredApps[0]) {
-      setSelectedAppSlug(filteredApps[0].slug)
+    if (filteredApps.length === 1 && filteredApps[0] && !selectedAppSlug) {
+      void navigate({
+        to: '/app/$slug',
+        params: { slug: filteredApps[0].slug },
+        replace: true,
+      })
     }
-  }, [filteredApps, setSelectedAppSlug])
+  }, [filteredApps, selectedAppSlug, navigate])
 
   const handleAppClick = (app: Resource) => {
-    setSelectedAppSlug(app.slug)
+    void navigate({ to: '/app/$slug', params: { slug: app.slug } })
   }
 
   const handleClearFilters = () => {
     setSearchValue('')
     actions.clearAllFilters()
-    setSelectedAppSlug(undefined)
+    void navigate({ to: '/' })
   }
 
   // Calculate total apps count (respecting showDeprecated setting)
@@ -174,7 +176,7 @@ export function AppCatalogPage() {
                   variant="outline"
                   onClick={() => {
                     setSearchValue('')
-                    setSelectedAppSlug(undefined)
+                    void navigate({ to: '/' })
                   }}
                   className="gap-2"
                 >
