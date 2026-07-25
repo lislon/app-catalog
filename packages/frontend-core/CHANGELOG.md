@@ -1,5 +1,11 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.4.0-alpha-20260725214358
+
+### Patch Changes
+
+- [#13](https://github.com/lislon/app-catalog/pull/13) [`d3d216f`](https://github.com/lislon/app-catalog/commit/d3d216f49901ee08a477a9cbb43033b1f27ddb25) Thanks [@lislon](https://github.com/lislon)! - Dev-only warning when the catalog loads resources but none are top-level (fingerprints a frontend/backend-core version skew or a stale service worker), so an empty catalog is diagnosable at a glance instead of looking like a data outage.
+
 ## 0.4.0-alpha-20260725185223
 
 ### Minor Changes
