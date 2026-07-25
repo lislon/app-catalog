@@ -1,5 +1,11 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.6.0
+
+### Minor Changes
+
+- [#11](https://github.com/lislon/app-catalog/pull/11) [`0f1f0a2`](https://github.com/lislon/app-catalog/commit/0f1f0a255ff3ad8a06cb92b6cdc9b0241c220e78) Thanks [@lislon](https://github.com/lislon)! - Add /app/<slug> deep-link routing: selecting an app navigates to a shareable path and opening that URL opens the app's detail in the full catalog. Replaces the ?app= query param.
+
 ## 0.5.0
 
 ### Minor Changes
