@@ -126,6 +126,10 @@ export interface GroupingTagValue {
 export interface VersionInfo {
   displayName: string
   url?: string
+  /** Short git SHA of the source this artifact was built from (e.g. 'a1b2c3d'). */
+  sha?: string
+  /** Link to the commit for `sha` (e.g. a GitHub commit URL). */
+  shaUrl?: string
 }
 
 export interface AppVersionInfo {

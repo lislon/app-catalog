@@ -11,6 +11,7 @@ import type { ReactNode } from 'react'
 import { createContext, use, useEffect, useMemo } from 'react'
 import { ApiQueryMagazineAppCatalog } from '~/modules/appCatalog'
 import { useUiSettings } from '~/context/UiSettingsContext'
+import { mergeFrontendBuildId } from '~/modules/appCatalog/context/mergeFrontendBuildId'
 
 export interface AppCatalogContextIface {
   resources: Resource[]
@@ -44,17 +45,10 @@ export function AppCatalogProvider({ children }: AppCatalogProviderProps) {
       approvalMethods: data?.approvalMethods ?? [],
       persons: data?.persons ?? [],
       groups: data?.groups ?? [],
-      versions: {
-        ...data?.versions,
-        ...(uiSettings.frontendBuildId && {
-          frontend: {
-            displayName:
-              uiSettings.frontendBuildId === 'local'
-                ? 'local'
-                : `#${uiSettings.frontendBuildId}`,
-          },
-        }),
-      },
+      versions: mergeFrontendBuildId(
+        data?.versions ?? {},
+        uiSettings.frontendBuildId,
+      ),
     }),
     [
       data?.approvalMethods,

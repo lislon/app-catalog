@@ -18,12 +18,27 @@ export function getBuildPipelineUrl(): string | undefined {
   return process.env.BUILD_PIPELINE_URL
 }
 
+/** First 7 chars of a git SHA, or undefined when absent. */
+export function shortSha(sha?: string | null): string | undefined {
+  return sha ? sha.slice(0, 7) : undefined
+}
+
+/** Build a commit URL from a repo homepage + full/short SHA. */
+export function getCommitUrl(
+  homepage: string | undefined,
+  sha: string | undefined,
+): string | undefined {
+  if (!homepage || !sha) return undefined
+  return `${homepage.replace(/\/$/, '')}/commit/${sha}`
+}
+
 /**
- * Gets frontend package version from node_modules
+ * Reads `version`, `gitHead` (baked at publish time), and `homepage` from an
+ * installed package.json under node_modules.
  */
-export function getFrontendPackageVersion(
+export function getPackageMeta(
   packageName: string = '@igstack/app-catalog-frontend-core',
-): string | null {
+): { version: string | null; gitHead: string | null; homepage: string | null } {
   try {
     const pkgPath = join(
       process.cwd(),
@@ -32,14 +47,27 @@ export function getFrontendPackageVersion(
       'package.json',
     )
     const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'))
-    return pkg.version || null
+    return {
+      version: pkg.version ?? null,
+      gitHead: pkg.gitHead ?? null,
+      homepage: pkg.homepage ?? null,
+    }
   } catch (error) {
     console.warn(
-      `[versionUtils] Failed to read frontend version from ${packageName}:`,
+      `[versionUtils] Failed to read package meta from ${packageName}:`,
       error,
     )
-    return null
+    return { version: null, gitHead: null, homepage: null }
   }
+}
+
+/**
+ * Gets frontend package version from node_modules
+ */
+export function getFrontendPackageVersion(
+  packageName: string = '@igstack/app-catalog-frontend-core',
+): string | null {
+  return getPackageMeta(packageName).version
 }
 
 /**
@@ -63,12 +91,17 @@ export function getVersionInfo(options?: {
     ...(pipelineUrl && { url: pipelineUrl }),
   }
 
-  // Frontend version from package.json
-  const frontendVersion = getFrontendPackageVersion(
-    options?.frontendPackageName,
-  )
-  if (frontendVersion) {
-    versions.frontend = { displayName: frontendVersion }
+  // Frontend version + git SHA from package.json (SHA baked at publish time)
+  const feMeta = getPackageMeta(options?.frontendPackageName)
+  if (feMeta.version) {
+    const sha = shortSha(feMeta.gitHead)
+    versions.frontend = {
+      displayName: feMeta.version,
+      ...(sha && {
+        sha,
+        shaUrl: getCommitUrl(feMeta.homepage ?? undefined, sha),
+      }),
+    }
   }
 
   // Log for debugging CI/CD
