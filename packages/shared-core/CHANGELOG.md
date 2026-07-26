@@ -1,5 +1,7 @@
 # @igstack/app-catalog-shared-core
 
+## 0.4.0-alpha-20260726003135
+
 ## 0.4.0-alpha-20260725214358
 
 ## 0.4.0-alpha-20260725185223
