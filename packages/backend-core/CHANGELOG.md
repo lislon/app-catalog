@@ -1,5 +1,15 @@
 # @igstack/app-catalog-backend-core
 
+## 0.4.0-alpha-20260726003135
+
+### Patch Changes
+
+- [#14](https://github.com/lislon/app-catalog/pull/14) [`e217812`](https://github.com/lislon/app-catalog/commit/e217812b08b70a1e3397e433477e28347359d77a) Thanks [@lislon](https://github.com/lislon)! - Surface git SHA + commit URL in version info; footer FE line now shows the frontend-core version, its git SHA (linked to the commit), and the build pipeline id together instead of the pipeline id overwriting the version.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260726003135
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260726003135
+
 ## 0.4.0-alpha-20260725214358
 
 ### Patch Changes
