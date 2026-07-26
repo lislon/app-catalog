@@ -27,6 +27,27 @@ import {
 } from '~/ui/dropdown-menu'
 import { Skeleton } from '~/ui/skeleton'
 
+function ShaSuffix({ version }: { version: VersionInfo }) {
+  if (!version.sha) return null
+  if (version.shaUrl) {
+    return (
+      <>
+        {' '}
+        <a
+          href={version.shaUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-muted-foreground hover:text-primary"
+          onClick={(e) => e.stopPropagation()}
+        >
+          ({version.sha})
+        </a>
+      </>
+    )
+  }
+  return <span className="text-muted-foreground"> ({version.sha})</span>
+}
+
 function VersionItem({
   label,
   version,
@@ -34,28 +55,30 @@ function VersionItem({
   label: string
   version: VersionInfo
 }) {
-  if (version.url) {
-    return (
-      <a
-        href={version.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-xs text-primary hover:text-primary/80 transition-colors font-medium"
-        onClick={(e) => e.stopPropagation()}
-        title={label}
-      >
-        {label}: {version.displayName}
-      </a>
-    )
-  }
+  // Outer element is a <span> (not <a>) so the optional SHA link can be a
+  // sibling anchor without producing invalid nested <a> markup.
   return (
     <span className="text-xs text-muted-foreground" title={label}>
-      {label}: {version.displayName}
+      {label}:{' '}
+      {version.url ? (
+        <a
+          href={version.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary hover:text-primary/80 transition-colors font-medium"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {version.displayName}
+        </a>
+      ) : (
+        version.displayName
+      )}
+      <ShaSuffix version={version} />
     </span>
   )
 }
 
-function VersionDisplay({ versions }: { versions: AppVersionInfo }) {
+export function VersionDisplay({ versions }: { versions: AppVersionInfo }) {
   const isLocal =
     versions.backend?.displayName === 'local' && !versions.coreVersion
 

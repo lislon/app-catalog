@@ -71,6 +71,9 @@ jobs:
       - name: Build packages (alpha)
         if: github.ref == 'refs/heads/alpha'
         run: pnpm run build:all
+      - name: Bake git SHA into package.json (alpha)
+        if: github.ref == 'refs/heads/alpha'
+        run: node scripts/write-git-sha.mjs "${{ github.sha }}"
       - name: Publish to @alpha tag
         if: github.ref == 'refs/heads/alpha'
         run: pnpm changeset publish --tag alpha --no-git-tag
