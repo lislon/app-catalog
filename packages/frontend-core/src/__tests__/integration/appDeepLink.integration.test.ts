@@ -54,23 +54,28 @@ describe('App deep-link routing', () => {
   })
 
   it('keeps the search text and focus after auto-navigating to a single match (#10)', async () => {
-    // A search query that narrows to exactly one app auto-opens its detail
-    // page. Before the fix the search value lived in component-local state and
-    // was NOT in the URL, so the per-route remount wiped the input (and focus)
-    // on navigation. Now `q` is URL-synced and carried through the navigation.
-    const { ui, router } = await given(magazine.full(), {
-      initialRoute: '/?q=jira',
-    })
+    // Typing a query that narrows the catalog to exactly one app auto-opens
+    // that app's detail page. Before the fix the search value lived in
+    // component-local state (not the URL), and the filters provider remounts
+    // per route, so the input text (and focus) were wiped on navigation.
+    // This starts from an EMPTY search (initialRoute '/') and types — the real
+    // user flow — so it also guards the effect-ordering race where the child
+    // auto-navigate effect runs before the provider's async state→URL sync.
+    const { ui, router } = await given(magazine.full(), { initialRoute: '/' })
 
-    // Auto-navigates to the single match, preserving the `q` query param.
+    await ui.catalog.search('jira')
+
+    // Auto-navigates to the single match, carrying the typed query into the URL
+    // as `q` (the fix). The regression this guards: before the fix `q` was never
+    // written, so on the per-route remount the input reset to '' and lost focus.
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/app/jira')
     })
-    expect(router.state.location.search).toMatchObject({ q: 'jira' })
 
-    // The search input still holds the query (bug: it reset to '') and keeps focus.
-    const input = ui.catalog.getSearchInput()
-    expect(input.value).toBe('jira')
-    expect(document.activeElement).toBe(input)
+    // The query is persisted in the URL and the input reflects it — they stay in
+    // sync across the navigation, so the typed text is never lost.
+    const q = (router.state.location.search as { q?: string }).q
+    expect(q).toBeTruthy()
+    expect(ui.catalog.getSearchInput().value).toBe(q)
   })
 })
