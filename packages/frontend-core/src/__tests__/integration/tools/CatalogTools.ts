@@ -36,9 +36,14 @@ export class CatalogTools {
    * Type into the search input.
    */
   async search(text: string): Promise<void> {
-    const input = screen.getByRole('searchbox')
+    const input = this.getSearchInput()
     await this.user.clear(input)
     await this.user.type(input, text)
+  }
+
+  /** The catalog search input. */
+  getSearchInput(): HTMLInputElement {
+    return screen.getByLabelText<HTMLInputElement>('Search apps')
   }
 
   /**

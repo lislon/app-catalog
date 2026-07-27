@@ -123,19 +123,26 @@ export function AppCatalogPage({
     searchValue: deferredSearchValue,
   })
 
-  // Auto-open details when only 1 result
+  // Auto-open details when only 1 result. Preserve existing search params
+  // (e.g. the `q` search query) so the search input and focus survive the
+  // navigation — otherwise the params are dropped and the query is lost (#10).
   useEffect(() => {
     if (filteredApps.length === 1 && filteredApps[0] && !selectedAppSlug) {
       void navigate({
         to: '/app/$slug',
         params: { slug: filteredApps[0].slug },
+        search: (prev) => prev,
         replace: true,
       })
     }
   }, [filteredApps, selectedAppSlug, navigate])
 
   const handleAppClick = (app: Resource) => {
-    void navigate({ to: '/app/$slug', params: { slug: app.slug } })
+    void navigate({
+      to: '/app/$slug',
+      params: { slug: app.slug },
+      search: (prev) => prev,
+    })
   }
 
   const handleClearFilters = () => {
