@@ -1,5 +1,17 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.4.0-alpha-20260727044221
+
+### Patch Changes
+
+- [#17](https://github.com/lislon/app-catalog/pull/17) [`115acd1`](https://github.com/lislon/app-catalog/commit/115acd121ec1a7a0c4abe0af6fdf8187a40ba8d8) Thanks [@lislon](https://github.com/lislon)! - Fix `useAuth must be used within AuthProvider` on the root route's fallback
+  components. The `pendingComponent` (`LoadingScreen`) and `notFoundComponent`
+  (`NotFoundError`) render `MainLayout → Header → useAuth()` but the router
+  renders these fallbacks outside the app's provider tree. They are now wrapped
+  in `TopLevelProvidersForErrors`, so any unknown URL (deterministic) and slow
+  cold-load pending states (intermittent) no longer crash — they render the
+  clean 404 / loading UI instead.
+
 ## 0.4.0-alpha-20260726003135
 
 ### Patch Changes
