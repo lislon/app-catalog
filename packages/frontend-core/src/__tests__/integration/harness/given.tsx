@@ -174,7 +174,14 @@ export async function given(
       const hasTanstackError = document.body.textContent.includes(
         'Something went wrong',
       )
-      if (!hasAlert && !hasTable && !hasSearchbox && !hasTanstackError) {
+      const hasNotFound = document.body.textContent.includes('404 Not Found')
+      if (
+        !hasAlert &&
+        !hasTable &&
+        !hasSearchbox &&
+        !hasTanstackError &&
+        !hasNotFound
+      ) {
         throw new Error('Still loading...')
       }
     },
