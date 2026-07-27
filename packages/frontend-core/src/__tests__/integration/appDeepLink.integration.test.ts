@@ -52,4 +52,25 @@ describe('App deep-link routing', () => {
     })
     expect(ui.catalog.isDetailPanelOpen()).toBe(false)
   })
+
+  it('keeps the search text and focus after auto-navigating to a single match (#10)', async () => {
+    // A search query that narrows to exactly one app auto-opens its detail
+    // page. Before the fix the search value lived in component-local state and
+    // was NOT in the URL, so the per-route remount wiped the input (and focus)
+    // on navigation. Now `q` is URL-synced and carried through the navigation.
+    const { ui, router } = await given(magazine.full(), {
+      initialRoute: '/?q=jira',
+    })
+
+    // Auto-navigates to the single match, preserving the `q` query param.
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/app/jira')
+    })
+    expect(router.state.location.search).toMatchObject({ q: 'jira' })
+
+    // The search input still holds the query (bug: it reset to '') and keeps focus.
+    const input = ui.catalog.getSearchInput()
+    expect(input.value).toBe('jira')
+    expect(document.activeElement).toBe(input)
+  })
 })
