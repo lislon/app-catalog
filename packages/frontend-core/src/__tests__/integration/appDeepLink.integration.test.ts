@@ -78,4 +78,18 @@ describe('App deep-link routing', () => {
     expect(q).toBeTruthy()
     expect(ui.catalog.getSearchInput().value).toBe(q)
   })
+
+  it('populates the search input from ?q= on the app detail route (#10 read path)', async () => {
+    // The detail route must NOT strip `q` from the URL: landing on /app/<slug>
+    // with a query must repopulate the search input. This is what was actually
+    // broken — the route had no validateSearch schema, so `q` was dropped.
+    const { ui } = await given(magazine.full(), {
+      initialRoute: '/app/jira?q=jira',
+    })
+
+    await waitFor(() => {
+      expect(ui.catalog.isDetailPanelOpen()).toBe(true)
+    })
+    expect(ui.catalog.getSearchInput().value).toBe('jira')
+  })
 })
