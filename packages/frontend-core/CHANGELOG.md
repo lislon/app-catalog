@@ -1,5 +1,16 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.4.0-alpha-20260727205627
+
+### Patch Changes
+
+- [#22](https://github.com/lislon/app-catalog/pull/22) [`d369f89`](https://github.com/lislon/app-catalog/commit/d369f8936d859698bd1404ba924fb11d33987e80) Thanks [@lislon](https://github.com/lislon)! - Fix the app detail route (`/app/$slug`) stripping the `q` search param. The
+  route had no `validateSearch` schema, so TanStack Router dropped unknown params
+  on navigation — including the URL-synced search query. That defeated the #10
+  fix in the real router: `q` never survived the auto-navigation, so the search
+  input still cleared. Added a `validateSearch` schema declaring `q` and the other
+  URL-synced filter params (`filterTag`, `recent`, `filters`, `deprecated`).
+
 ## 0.4.0-alpha-20260727202703
 
 ### Patch Changes
