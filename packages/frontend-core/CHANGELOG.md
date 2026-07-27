@@ -1,5 +1,36 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.6.3
+
+### Patch Changes
+
+- [#23](https://github.com/lislon/app-catalog/pull/23) [`7c46b42`](https://github.com/lislon/app-catalog/commit/7c46b422cc1a18dbb6129c093e160b631cb5c608) Thanks [@lislon](https://github.com/lislon)! - Fix search input losing text and focus when it auto-navigates to a single
+  match. Typing a query that narrows the catalog to one app auto-opens that app's
+  detail page, but the search value lived in component-local state (not the URL)
+  and the filters provider remounts per route — so the input and keyboard focus
+  were wiped on navigation. The search query is now URL-synced (`q` param) and
+  carried through the auto-navigation, so the input stays populated and focused.
+
+  Also fixes a latent bug in `useUrlSyncedState`: it only synced state→URL when
+  the param was already present at mount, so a value first set from its default
+  (e.g. the first keystroke in an empty search) never reached the URL. The
+  existing in-sync equality check already prevents default-value pollution, so
+  the redundant init gate was removed.
+
+- [#23](https://github.com/lislon/app-catalog/pull/23) [`1a5a8f8`](https://github.com/lislon/app-catalog/commit/1a5a8f8e2e35561cdff18d0d41a0f126d3f80c48) Thanks [@lislon](https://github.com/lislon)! - Fix the search input still resetting when typing into an empty search and the
+  query narrows to a single app. The auto-navigate effect runs before the filters
+  provider's async state→URL sync, so at navigation time the URL did not yet hold
+  the `q` param and it was carried through as empty. The current search value is
+  now injected directly into the auto-navigation's search params, so the typed
+  query lands in the URL and the input stays populated across the route change.
+
+- [#23](https://github.com/lislon/app-catalog/pull/23) [`411886a`](https://github.com/lislon/app-catalog/commit/411886ad102dde98d77b73cf20406b30fb171369) Thanks [@lislon](https://github.com/lislon)! - Fix the app detail route (`/app/$slug`) stripping the `q` search param. The
+  route had no `validateSearch` schema, so TanStack Router dropped unknown params
+  on navigation — including the URL-synced search query. That defeated the #10
+  fix in the real router: `q` never survived the auto-navigation, so the search
+  input still cleared. Added a `validateSearch` schema declaring `q` and the other
+  URL-synced filter params (`filterTag`, `recent`, `filters`, `deprecated`).
+
 ## 0.6.2
 
 ### Patch Changes
