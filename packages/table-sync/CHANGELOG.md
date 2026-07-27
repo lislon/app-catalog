@@ -1,5 +1,7 @@
 # @igstack/app-catalog-table-sync
 
+## 0.4.0-alpha-20260727202703
+
 ## 0.4.0-alpha-20260727200037
 
 ## 0.4.0-alpha-20260727044221
