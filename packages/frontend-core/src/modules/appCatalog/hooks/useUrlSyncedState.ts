@@ -1,5 +1,5 @@
 import { useNavigate, useRouter, useSearch } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 /**
  * Options for useUrlSyncedState hook
@@ -52,25 +52,20 @@ export function useUrlSyncedState<T>({
   const router = useRouter()
   const search = useSearch({ strict: false })
 
-  // Track whether we've initialized from URL
-  const isInitializedRef = useRef(false)
-
   // Initialize state from URL on mount (once only)
   const [state, setState] = useState<T>(() => {
     const urlValue = (search as Record<string, unknown>)[key]
     if (urlValue !== undefined) {
-      const decodedValue = decode ? decode(String(urlValue)) : (urlValue as T)
-      isInitializedRef.current = true
-      return decodedValue
+      return decode ? decode(String(urlValue)) : (urlValue as T)
     }
     return defaultValue
   })
 
-  // Sync state to URL (async side effect)
+  // Sync state to URL (async side effect). The equality check below is what
+  // prevents redundant writes / URL pollution from default values — so state
+  // changes made from the default (e.g. the first keystroke in an empty search)
+  // are still persisted to the URL and survive navigation/remounts.
   useEffect(() => {
-    // Don't sync until after initialization
-    if (!isInitializedRef.current) return
-
     // Encode state value for URL
     const encodedValue = encode ? encode(state) : (state as string | undefined)
 
