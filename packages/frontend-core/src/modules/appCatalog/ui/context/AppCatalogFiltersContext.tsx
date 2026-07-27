@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { createContext, use, useMemo, useState } from 'react'
+import { createContext, use, useMemo } from 'react'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useUrlSyncedState } from '../../hooks/useUrlSyncedState'
 import {
@@ -100,8 +100,15 @@ export function AppCatalogFiltersProvider({
     encode: encodeFiltersParam,
   })
 
-  // Search value is NOT synced to URL
-  const [searchValue, setSearchValue] = useState<string>('')
+  // Search value is synced to URL (key `q`) so it survives navigation —
+  // e.g. auto-opening an app's detail page when the query narrows to one match
+  // (the filters provider is mounted per-route and remounts on navigation).
+  const [searchValue, setSearchValue] = useUrlSyncedState<string>({
+    key: 'q',
+    defaultValue: '',
+    decode: (value) => value,
+    encode: (value) => (value === '' ? undefined : value),
+  })
 
   const [showDeprecated, setShowDeprecated] = useUrlSyncedState({
     key: 'deprecated',
