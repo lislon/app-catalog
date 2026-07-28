@@ -1,5 +1,16 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.7.0
+
+### Minor Changes
+
+- [#32](https://github.com/lislon/app-catalog/pull/32) [`e8c1172`](https://github.com/lislon/app-catalog/commit/e8c11721a2eaf62a3f398fcc0baa3e1b047f23fd) Thanks [@lislon](https://github.com/lislon)! - Add a "Service Desks" view. A compact "Apps | Service Desks" segmented toggle in
+  the header (no added height) switches between the app catalog (/) and a new
+  /service-desks route. The Service Desks page lists all service-desk approval
+  methods (type 'service') in a searchable table, each with a link that opens its
+  portal in a new tab. Data rides in on the existing app-catalog query — no
+  backend change.
+
 ## 0.6.5
 
 ### Patch Changes
