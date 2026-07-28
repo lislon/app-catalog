@@ -1,5 +1,17 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.4.0-alpha-20260728153301
+
+### Patch Changes
+
+- [#28](https://github.com/lislon/app-catalog/pull/28) [`3495bc0`](https://github.com/lislon/app-catalog/commit/3495bc04d14653ccfbf470d17d017c455318b125) Thanks [@lislon](https://github.com/lislon)! - Fix the deprecated-app "View replacement" link (and deep links) rendering a
+  blank panel. Navigating to /app/<slug> now resolves the open app from the full
+  resource set, and the catalog renders the detail panel even when the current
+  search/filters would otherwise show an empty state. Previously the panel
+  resolved the open app only from the filtered list, so a replacement (or any
+  deep-linked app) not matching the active search changed the URL but showed
+  nothing. "Hard navigation" now behaves like typing the URL in the browser.
+
 ## 0.4.0-alpha-20260728040254
 
 ### Patch Changes
