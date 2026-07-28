@@ -701,8 +701,15 @@ export function AppCatalogGrid({
   onClearFilters,
   onClosePanel,
 }: AppCatalogGridProps) {
+  // Full, unfiltered resource set — the detail panel must resolve the open app
+  // from this, not only from the filtered `apps`. Navigating to /app/<slug>
+  // (e.g. a deprecated app's "View replacement" link, or any deep link) should
+  // render that app like typing the URL in the browser, regardless of the
+  // active search/filters (#12).
+  const { resources: allResourcesForDetail } = useAppCatalogContext()
   const selectedApp = selectedAppSlug
-    ? apps.find((a) => a.slug === selectedAppSlug)
+    ? (apps.find((a) => a.slug === selectedAppSlug) ??
+      allResourcesForDetail.find((a) => a.slug === selectedAppSlug))
     : null
 
   const groupedApps = groupApps(apps, groupingDefinition, hasSearch)
