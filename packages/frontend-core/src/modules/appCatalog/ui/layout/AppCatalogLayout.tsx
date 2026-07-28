@@ -4,6 +4,7 @@ import type { TRPCClient } from '@trpc/client'
 import { useUiSettings } from '~/context/UiSettingsContext'
 import { AppCatalogProvider } from '~/modules/appCatalog/context/AppCatalogContext'
 import { AppCatalogFiltersProvider } from '~/modules/appCatalog/ui/context/AppCatalogFiltersContext'
+import { ViewToggle } from '~/modules/appCatalog/ui/components/ViewToggle'
 import { MainLayout } from '~/ui/layout/MainLayout'
 import { TopLevelProviders } from '~/ui/layout/TopLevelProviders'
 
@@ -29,7 +30,7 @@ export function AppCatalogLayout({
         <AppCatalogFiltersProvider
           filterableTagPrefixes={filterableTagPrefixes}
         >
-          <MainLayout headerMiddle={headerMiddle}>
+          <MainLayout headerMiddle={headerMiddle ?? <ViewToggle />}>
             {/* <Breadcrumb className="pb-4">*/}
             {/*  <BreadcrumbList>*/}
             {/*    <BreadcrumbItem>*/}

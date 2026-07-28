@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as LayoutServiceDesksRouteImport } from './routes/_layout/service-desks'
 import { Route as LayoutLoginRouteImport } from './routes/_layout/login'
 import { Route as LayoutAppSlugRouteImport } from './routes/_layout/app.$slug'
 import { Route as LayoutCatalogAppsIndexRouteImport } from './routes/_layout/catalog.apps.index'
@@ -29,6 +30,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
+} as any)
+const LayoutServiceDesksRoute = LayoutServiceDesksRouteImport.update({
+  id: '/service-desks',
+  path: '/service-desks',
+  getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutLoginRoute = LayoutLoginRouteImport.update({
   id: '/login',
@@ -49,12 +55,14 @@ const LayoutCatalogAppsIndexRoute = LayoutCatalogAppsIndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
   '/login': typeof LayoutLoginRoute
+  '/service-desks': typeof LayoutServiceDesksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/app/$slug': typeof LayoutAppSlugRoute
   '/catalog/apps/': typeof LayoutCatalogAppsIndexRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LayoutLoginRoute
+  '/service-desks': typeof LayoutServiceDesksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/': typeof LayoutIndexRoute
   '/app/$slug': typeof LayoutAppSlugRoute
@@ -64,6 +72,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_layout': typeof LayoutRouteWithChildren
   '/_layout/login': typeof LayoutLoginRoute
+  '/_layout/service-desks': typeof LayoutServiceDesksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/app/$slug': typeof LayoutAppSlugRoute
@@ -71,13 +80,26 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/auth/callback' | '/app/$slug' | '/catalog/apps/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/service-desks'
+    | '/auth/callback'
+    | '/app/$slug'
+    | '/catalog/apps/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/auth/callback' | '/' | '/app/$slug' | '/catalog/apps'
+  to:
+    | '/login'
+    | '/service-desks'
+    | '/auth/callback'
+    | '/'
+    | '/app/$slug'
+    | '/catalog/apps'
   id:
     | '__root__'
     | '/_layout'
     | '/_layout/login'
+    | '/_layout/service-desks'
     | '/auth/callback'
     | '/_layout/'
     | '/_layout/app/$slug'
@@ -112,6 +134,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_layout/service-desks': {
+      id: '/_layout/service-desks'
+      path: '/service-desks'
+      fullPath: '/service-desks'
+      preLoaderRoute: typeof LayoutServiceDesksRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/login': {
       id: '/_layout/login'
       path: '/login'
@@ -138,6 +167,7 @@ declare module '@tanstack/react-router' {
 
 interface LayoutRouteChildren {
   LayoutLoginRoute: typeof LayoutLoginRoute
+  LayoutServiceDesksRoute: typeof LayoutServiceDesksRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutAppSlugRoute: typeof LayoutAppSlugRoute
   LayoutCatalogAppsIndexRoute: typeof LayoutCatalogAppsIndexRoute
@@ -145,6 +175,7 @@ interface LayoutRouteChildren {
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutLoginRoute: LayoutLoginRoute,
+  LayoutServiceDesksRoute: LayoutServiceDesksRoute,
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutAppSlugRoute: LayoutAppSlugRoute,
   LayoutCatalogAppsIndexRoute: LayoutCatalogAppsIndexRoute,
