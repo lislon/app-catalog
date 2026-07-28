@@ -230,7 +230,7 @@ export function AppCatalogPage({
       )}
 
       <div className="flex-1 min-h-0">
-        {filteredApps.length === 0 ? (
+        {filteredApps.length === 0 && !selectedAppSlug ? (
           <Empty>
             <EmptyHeader>
               <EmptyMedia variant="icon">
