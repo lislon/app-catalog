@@ -52,41 +52,81 @@ export function AppCatalogPage({
     [resources],
   )
 
-  const filteredApps = useMemo(() => {
-    let result = rootResources
-
-    // Step 1: Filter deprecated apps (if not showing them)
-    if (!filterState.showDeprecated) {
-      result = result.filter((app) => !app.deprecated)
+  // Dev-only skew warning: data arrived (resources > 0) but nothing is top-level
+  // (rootResources === 0). That fingerprints a frontend/backend-core version skew
+  // or a stale service worker — NOT a normal empty search/filter (those still have
+  // rootResources). Guarded to dev so prod users never see it.
+  useEffect(() => {
+    if (
+      import.meta.env.DEV &&
+      !isLoadingApps &&
+      resources.length > 0 &&
+      rootResources.length === 0
+    ) {
+      console.warn(
+        `[app-catalog] Loaded ${resources.length} resources but 0 are top-level — ` +
+          `likely a frontend/backend-core version skew or a stale service worker. ` +
+          `Check the version footer (be X / fe Y) and hard-reload.`,
+      )
     }
+  }, [isLoadingApps, resources.length, rootResources.length])
 
-    // Step 2: Apply recent mode or tag filters
-    if (filterState.recentMode) {
-      // Filter to top 10 most clicked apps
-      result = result.filter((app) => topAppSlugs.includes(app.slug))
-    } else if (Object.keys(filterState.tagFilters).length > 0) {
-      // Apply tag filters (AND condition)
-      result = result.filter((app) => {
-        return Object.entries(filterState.tagFilters).every(
-          ([prefix, value]) => {
-            const fullTag = `${prefix}:${value}`
-            return app.tags?.some(
-              (tag) => tag.toLowerCase() === fullTag.toLowerCase(),
-            )
-          },
-        )
-      })
-    }
-
-    // Step 3: Apply search (using deferred value)
-    // Pass all resources so children contribute to parent scoring
+  const { filteredApps, didDeprecatedFallback } = useMemo(() => {
     const childResources = resources.filter((r) => r.parentSlug)
-    result = searchResources(
-      [...result, ...childResources],
-      deferredSearchValue,
+
+    // Apply recent mode / tag filters / search over a base set of root apps.
+    const runPipeline = (base: typeof rootResources) => {
+      let result = base
+
+      // Apply recent mode or tag filters
+      if (filterState.recentMode) {
+        // Filter to top 10 most clicked apps
+        result = result.filter((app) => topAppSlugs.includes(app.slug))
+      } else if (Object.keys(filterState.tagFilters).length > 0) {
+        // Apply tag filters (AND condition)
+        result = result.filter((app) => {
+          return Object.entries(filterState.tagFilters).every(
+            ([prefix, value]) => {
+              const fullTag = `${prefix}:${value}`
+              return app.tags?.some(
+                (tag) => tag.toLowerCase() === fullTag.toLowerCase(),
+              )
+            },
+          )
+        })
+      }
+
+      // Apply search (using deferred value). Pass all resources so children
+      // contribute to parent scoring.
+      return searchResources(
+        [...result, ...childResources],
+        deferredSearchValue,
+      )
+    }
+
+    // Matches among non-deprecated ("active") apps only.
+    const activeMatches = runPipeline(
+      rootResources.filter((app) => !app.deprecated),
     )
 
-    return result
+    // #11: derive the fallback purely from the data (not the toggle), so it
+    // stays stable after the toggle auto-enables below — otherwise the notice
+    // would flicker off as soon as showDeprecated flips to true.
+    // Fallback applies when there's a query, no active matches, but deprecated
+    // apps DO match.
+    const hasQuery = deferredSearchValue.trim() !== ''
+    if (hasQuery && activeMatches.length === 0) {
+      const allMatches = runPipeline(rootResources)
+      if (allMatches.length > 0) {
+        return { filteredApps: allMatches, didDeprecatedFallback: true }
+      }
+    }
+
+    // Normal display: include deprecated only when the toggle is on.
+    const result = filterState.showDeprecated
+      ? runPipeline(rootResources)
+      : activeMatches
+    return { filteredApps: result, didDeprecatedFallback: false }
   }, [
     rootResources,
     resources,
@@ -96,6 +136,15 @@ export function AppCatalogPage({
     filterState.showDeprecated,
     topAppSlugs,
   ])
+
+  // #11: when the search fell back to deprecated results, enable the
+  // "Show Deprecated Apps" toggle so the state is visible and consistent.
+  // Runs as an effect (not in render) to avoid a side effect during useMemo.
+  useEffect(() => {
+    if (didDeprecatedFallback && !filterState.showDeprecated) {
+      actions.setShowDeprecated(true)
+    }
+  }, [didDeprecatedFallback, filterState.showDeprecated, actions])
 
   // Calculate counts for FilterBar
   const { allCount, recentCount, deprecatedCount } = useAppCounts({
@@ -168,6 +217,17 @@ export function AppCatalogPage({
           apps={rootResources}
         />
       </div>
+
+      {didDeprecatedFallback && (
+        <div
+          role="status"
+          className="shrink-0 px-1 pb-2 text-sm text-muted-foreground"
+        >
+          {`No active apps${
+            searchValue ? ` for "${searchValue}"` : ''
+          } — showing deprecated matches.`}
+        </div>
+      )}
 
       <div className="flex-1 min-h-0">
         {filteredApps.length === 0 ? (
