@@ -1,5 +1,16 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.4.0-alpha-20260728040254
+
+### Patch Changes
+
+- [#25](https://github.com/lislon/app-catalog/pull/25) [`5e2b1e7`](https://github.com/lislon/app-catalog/commit/5e2b1e7229a9d207c07298ee792777f8e18e759c) Thanks [@lislon](https://github.com/lislon)! - Search now falls back to deprecated apps when there are no active matches. If a
+  search query returns zero non-deprecated results but deprecated apps match, the
+  catalog shows those deprecated matches, displays a "showing deprecated matches"
+  notice, and auto-enables the "Show Deprecated Apps" toggle so the state is
+  visible and consistent. When the query has active matches, deprecated apps stay
+  hidden as before; when nothing matches at all, the normal empty state shows.
+
 ## 0.4.0-alpha-20260727205627
 
 ### Patch Changes
