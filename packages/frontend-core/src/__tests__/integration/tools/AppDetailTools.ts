@@ -127,6 +127,18 @@ export class AppDetailTools {
     },
   }
 
+  /** Click the "View replacement: <App>" link in a deprecated app's panel. */
+  async clickViewReplacement(): Promise<void> {
+    const btn = screen.getByRole('button', { name: /View replacement:/i })
+    await this.user.click(btn)
+  }
+
+  /** The title shown in the currently open detail panel (empty if none). */
+  getOpenTitle(): string {
+    const panel = this.getPanel()
+    return panel.querySelector('.text-2xl')?.textContent.trim() ?? ''
+  }
+
   private getPanel(): HTMLElement {
     const closeButton = screen.queryByLabelText('Close details panel')
     if (!closeButton) {
