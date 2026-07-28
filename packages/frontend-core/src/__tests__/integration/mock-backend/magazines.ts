@@ -38,6 +38,12 @@ function fullMagazine(
       displayName: 'IT Help Desk',
       config: { url: 'https://helpdesk.example.com' },
     })
+    backendCfg.withApprovalMethod({
+      slug: 'ux-app-helpdesk',
+      type: 'service',
+      displayName: 'UX App Helpdesk',
+      config: { url: 'https://uxdesk.example.com' },
+    })
     const managerApproval = backendCfg.withApprovalMethod({
       slug: 'manager-approval',
       type: 'custom',
