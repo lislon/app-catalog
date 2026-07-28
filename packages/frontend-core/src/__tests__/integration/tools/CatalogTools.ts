@@ -93,6 +93,25 @@ export class CatalogTools {
     return !!screen.queryByLabelText('Close details panel')
   }
 
+  /** Whether the "Show Deprecated Apps" toggle is currently checked. */
+  isShowDeprecatedChecked(): boolean {
+    const cb = screen.getByRole('checkbox', { name: /Show Deprecated Apps/i })
+    return (
+      cb.getAttribute('aria-checked') === 'true' ||
+      cb.getAttribute('data-state') === 'checked'
+    )
+  }
+
+  /** Whether the "showing deprecated matches" fallback notice is visible. */
+  hasDeprecatedFallbackNotice(): boolean {
+    return !!screen.queryByText(/showing deprecated matches/i)
+  }
+
+  /** Whether the "No apps found" empty state is visible. */
+  isEmptyStateVisible(): boolean {
+    return !!screen.queryByText(/No apps found/i)
+  }
+
   /**
    * Whether the onboarding/welcome card is visible.
    */
