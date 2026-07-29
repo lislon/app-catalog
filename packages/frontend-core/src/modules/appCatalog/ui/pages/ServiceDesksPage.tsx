@@ -58,10 +58,18 @@ export function ServiceDesksPage() {
             <TableBody>
               {desks.map((desk) => {
                 const url = desk.config.url
+                const description = desk.config.description
                 return (
                   <TableRow key={desk.slug}>
-                    <TableCell className="font-medium">
-                      {desk.displayName}
+                    <TableCell className="font-medium align-top">
+                      <span data-testid="service-desk-name">
+                        {desk.displayName}
+                      </span>
+                      {description && (
+                        <span className="block text-xs font-normal text-muted-foreground">
+                          {description}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {url ? (
@@ -69,11 +77,11 @@ export function ServiceDesksPage() {
                           href={url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-primary hover:underline"
+                          className="inline-flex items-center gap-1 text-primary hover:underline break-all"
                           title={url}
                         >
-                          Open
-                          <ExternalLink className="size-3" />
+                          {url.replace(/^https?:\/\//, '')}
+                          <ExternalLink className="size-3 shrink-0" />
                         </a>
                       ) : (
                         <span className="text-muted-foreground">—</span>
