@@ -22,6 +22,7 @@ export type ApprovalMethodType =
 export interface ServiceConfig {
   url?: string // Service URL (clickable in UI)
   icon?: string // Icon identifier
+  description?: string // Optional human description of the service desk (shown as subtext in the Service Desks view)
 }
 
 /**
