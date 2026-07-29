@@ -19,7 +19,10 @@ function serviceDeskTable(): HTMLElement {
 function deskNames(): string[] {
   const rows = within(serviceDeskTable()).getAllByRole('row')
   return rows
-    .map((r) => within(r).queryAllByRole('cell')[0]?.textContent.trim() ?? '')
+    .map(
+      (r) =>
+        within(r).queryByTestId('service-desk-name')?.textContent.trim() ?? '',
+    )
     .filter(Boolean)
 }
 
@@ -47,6 +50,34 @@ describe('Service Desks view (#9)', () => {
     const link = within(itRow).getByRole('link')
     expect(link).toHaveAttribute('href', 'https://helpdesk.example.com')
     expect(link).toHaveAttribute('target', '_blank')
+    // The link shows the full URL without the scheme, not generic "Open" text.
+    expect(link).toHaveTextContent('helpdesk.example.com')
+    expect(link).not.toHaveTextContent('Open')
+    expect(link).not.toHaveTextContent('https://')
+  })
+
+  it('shows the service desk description as subtext when present', async () => {
+    await given(magazine.full(), {
+      initialRoute: '/service-desks',
+    })
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Search service desks')).toBeInTheDocument()
+    })
+
+    // IT Help Desk has a description; it renders in the same name cell as subtext.
+    const itRow = within(serviceDeskTable())
+      .getAllByRole('row')
+      .find((r) => r.textContent.includes('IT Help Desk'))!
+    const nameCell = within(itRow).getAllByRole('cell')[0]
+    expect(nameCell).toHaveTextContent('IT Infrastructure support desk')
+
+    // UX App Helpdesk has no description — its name cell shows only the name.
+    const uxRow = within(serviceDeskTable())
+      .getAllByRole('row')
+      .find((r) => r.textContent.includes('UX App Helpdesk'))!
+    const uxNameCell = within(uxRow).getAllByRole('cell')[0]!
+    expect(uxNameCell.textContent.trim()).toBe('UX App Helpdesk')
   })
 
   it('filters the desks by search', async () => {
