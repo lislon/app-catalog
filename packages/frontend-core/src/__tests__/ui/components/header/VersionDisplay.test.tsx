@@ -27,7 +27,7 @@ describe('VersionDisplay footer', () => {
       'href',
       'https://github.com/lislon/app-catalog/commit/abc1234',
     )
-    // Backend line carries the natera SHA suffix
+    // Backend line carries the deployment SHA suffix
     expect(screen.getByText(/#12345 \(deadbee\)/)).toBeInTheDocument()
   })
 

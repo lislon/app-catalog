@@ -42,10 +42,10 @@ function fullMagazine(
       },
     })
     backendCfg.withApprovalMethod({
-      slug: 'ux-app-helpdesk',
+      slug: 'ops-helpdesk',
       type: 'service',
-      displayName: 'UX App Helpdesk',
-      config: { url: 'https://uxdesk.example.com' },
+      displayName: 'Ops Helpdesk',
+      config: { url: 'https://opsdesk.example.com' },
     })
     const managerApproval = backendCfg.withApprovalMethod({
       slug: 'manager-approval',
