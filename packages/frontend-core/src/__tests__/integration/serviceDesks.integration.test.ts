@@ -47,6 +47,10 @@ describe('Service Desks view (#9)', () => {
     const link = within(itRow).getByRole('link')
     expect(link).toHaveAttribute('href', 'https://helpdesk.example.com')
     expect(link).toHaveAttribute('target', '_blank')
+    // The link shows the full URL without the scheme, not generic "Open" text.
+    expect(link).toHaveTextContent('helpdesk.example.com')
+    expect(link).not.toHaveTextContent('Open')
+    expect(link).not.toHaveTextContent('https://')
   })
 
   it('filters the desks by search', async () => {
