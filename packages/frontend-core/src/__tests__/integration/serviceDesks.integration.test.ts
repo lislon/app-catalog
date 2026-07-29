@@ -113,4 +113,13 @@ describe('Service Desks view (#9)', () => {
     })
     expect(screen.getByLabelText('Search service desks')).toBeInTheDocument()
   })
+
+  it('autofocuses the search input when the view loads (parity with Apps)', async () => {
+    await given(magazine.full(), {
+      initialRoute: '/service-desks',
+    })
+
+    const search = await screen.findByLabelText('Search service desks')
+    await waitFor(() => expect(search).toHaveFocus())
+  })
 })
