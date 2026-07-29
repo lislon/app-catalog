@@ -1,5 +1,15 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.7.1
+
+### Patch Changes
+
+- [#35](https://github.com/lislon/app-catalog/pull/35) [`0d990e0`](https://github.com/lislon/app-catalog/commit/0d990e092ed31d1517add9dfbe851f357a202365) Thanks [@lislon](https://github.com/lislon)! - Gallery: clicking the fullscreen image now exits fullscreen, making zoom a
+  reversible click toggle. Previously the only way out of the zoomed view was the
+  ✕ button or Escape. The fullscreen image gets a `cursor-zoom-out` affordance and
+  `role="button"` / `aria-label="Zoom out"`; the ✕ button and Escape handler are
+  unchanged.
+
 ## 0.7.0
 
 ### Minor Changes
