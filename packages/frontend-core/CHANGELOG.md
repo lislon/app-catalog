@@ -1,5 +1,13 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.4.0-alpha-20260729145918
+
+### Patch Changes
+
+- [#42](https://github.com/lislon/app-catalog/pull/42) [`eafd7a5`](https://github.com/lislon/app-catalog/commit/eafd7a5516bb2a901daa973de4753fa34a38722c) Thanks [@lislon](https://github.com/lislon)! - Service Desks view: autofocus the search input when the view loads, matching the
+  Apps view. Switching to the Service Desks tab now places the cursor in the search
+  box so users can type immediately.
+
 ## 0.4.0-alpha-20260729145014
 
 ### Patch Changes
