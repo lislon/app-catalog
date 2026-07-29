@@ -447,8 +447,8 @@ git commit -m "chore: changeset for /app/<slug> deep-link routing (minor)"
 Follow the `push-and-check` skill:
 
 1. Push `feat/app-deep-link-routing` → open PR into `alpha` → merge → `@alpha` publishes.
-2. Bump/rebuild `app-catalog-natera` on a branch → **verify on sra-dev-01** in the browser: navigate to `/app/testrail`, confirm detail opens + full catalog present; select an app and confirm URL becomes `/app/<slug>`; Back returns to previous app; `/app/unknown` shows catalog with nothing open.
-3. Promote to prod: `alpha`→`main` PR (source + changeset), merge changesets "version packages" PR to publish `@latest`, then natera `master` auto-deploys to prod. Verify on app-catalog.nateralab.com.
+2. Bump/rebuild the company deployment on a branch → **verify on the staging site** in the browser: navigate to `/app/testrail`, confirm detail opens + full catalog present; select an app and confirm URL becomes `/app/<slug>`; Back returns to previous app; `/app/unknown` shows catalog with nothing open.
+3. Promote to prod: `alpha`→`main` PR (source + changeset), merge changesets "version packages" PR to publish `@latest`, then the company deployment's `master` auto-deploys to prod. Verify on the production site.
 
 ## Out of scope (follow-up spec)
 
