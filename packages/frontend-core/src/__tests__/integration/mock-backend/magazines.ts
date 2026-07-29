@@ -36,7 +36,10 @@ function fullMagazine(
       slug: 'it-helpdesk',
       type: 'service',
       displayName: 'IT Help Desk',
-      config: { url: 'https://helpdesk.example.com' },
+      config: {
+        url: 'https://helpdesk.example.com',
+        description: 'IT Infrastructure support desk',
+      },
     })
     backendCfg.withApprovalMethod({
       slug: 'ux-app-helpdesk',
