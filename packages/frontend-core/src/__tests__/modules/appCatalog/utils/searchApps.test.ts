@@ -50,14 +50,14 @@ describe('searchResources', () => {
   describe('child resource search', () => {
     const childResources: Resource[] = [
       makeChildResource({
-        slug: 'aws-natera-pipelines-dev',
-        displayName: 'natera-pipelines-biomarkers-ici-dev',
+        slug: 'aws-acme-pipelines-dev',
+        displayName: 'acme-pipelines-biomarkers-ici-dev',
         parentSlug: 'aws-console',
-        aliases: ['043902793406'],
+        aliases: ['000000000001'],
       }),
       makeChildResource({
-        slug: 'aws-natera-infosec-dev',
-        displayName: 'natera-infosec-dev',
+        slug: 'aws-acme-infosec-dev',
+        displayName: 'acme-infosec-dev',
         parentSlug: 'aws-console',
         aliases: [],
       }),
@@ -72,13 +72,13 @@ describe('searchResources', () => {
     })
 
     it('finds app by child resource alias (account ID)', () => {
-      const results = searchResources(allResources, '043902793406')
+      const results = searchResources(allResources, '000000000001')
       expect(results).toHaveLength(1)
       expect(results[0]!.slug).toBe('aws-console')
     })
 
     it('does not match child resources when none provided', () => {
-      const results = searchResources(apps, '043902793406')
+      const results = searchResources(apps, '000000000001')
       expect(results).toHaveLength(0)
     })
 

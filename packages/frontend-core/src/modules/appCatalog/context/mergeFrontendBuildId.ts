@@ -1,7 +1,7 @@
 import type { AppVersionInfo } from '@igstack/app-catalog-backend-core'
 
 /**
- * Merge the (natera-agnostic) frontend build id into the backend-provided
+ * Merge the (company-agnostic) frontend build id into the backend-provided
  * version info's `frontend` slot.
  *
  * The build id is baked into the deployed JS bundle at build time (e.g. a CI
