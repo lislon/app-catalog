@@ -230,10 +230,13 @@ export function Gallery({
             <img
               src={currentImage.url}
               alt={currentImage.alt}
-              className="max-w-full h-auto"
+              className="max-w-full h-auto cursor-zoom-out"
+              onClick={() => setFullscreen(false)}
               onLoad={() => handleImageLoad(currentIndex)}
               onError={() => handleImageError(currentIndex)}
               style={{ opacity: imageState === 'loaded' ? 1 : 0 }}
+              role="button"
+              aria-label="Zoom out"
             />
           </div>
         )}
