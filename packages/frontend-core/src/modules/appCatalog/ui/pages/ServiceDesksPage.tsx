@@ -35,8 +35,10 @@ export function ServiceDesksPage() {
     <div className="flex flex-col flex-1 min-h-0 gap-4">
       <InputGroup className="max-w-sm">
         <InputGroupInput
+          autoFocus
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          onFocus={(e) => e.target.select()}
           placeholder="Search service desks by name…"
           aria-label="Search service desks"
         />
