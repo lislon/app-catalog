@@ -1,5 +1,14 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.8.0
+
+### Minor Changes
+
+- [#38](https://github.com/lislon/app-catalog/pull/38) [`847e5f9`](https://github.com/lislon/app-catalog/commit/847e5f9dfe1e903100f7a76cf92eec79e84d3c57) Thanks [@lislon](https://github.com/lislon)! - Service Desks view: show an optional description as muted subtext under each
+  service desk's name. Adds an optional `description` field to the service
+  approval-method config (`ServiceConfig.description`); the Service Desks table
+  renders it beneath the name when present.
+
 ## 0.7.1
 
 ### Patch Changes
