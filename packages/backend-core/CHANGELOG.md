@@ -1,5 +1,20 @@
 # @igstack/app-catalog-backend-core
 
+## 0.4.0-alpha-20260729112817
+
+### Minor Changes
+
+- [#37](https://github.com/lislon/app-catalog/pull/37) [`b966cfc`](https://github.com/lislon/app-catalog/commit/b966cfccd3dc2ec8a9e76afe10c0ff6d31c70485) Thanks [@lislon](https://github.com/lislon)! - Service Desks view: show an optional description as muted subtext under each
+  service desk's name. Adds an optional `description` field to the service
+  approval-method config (`ServiceConfig.description`); the Service Desks table
+  renders it beneath the name when present.
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260729112817
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260729112817
+
 ## 0.4.0-alpha-20260728193854
 
 ### Patch Changes
