@@ -8,7 +8,7 @@ import { magazine } from './mock-backend/magazines'
 
 // #9: a header toggle (Apps | Service Desks) + a /service-desks route showing a
 // searchable table of all type:'service' approval methods with open links.
-// magazine.full() seeds two service desks (IT Help Desk, UX App Helpdesk) and
+// magazine.full() seeds two service desks (IT Help Desk, Ops Helpdesk) and
 // two custom methods (Manager Approval, Self-Service) which must NOT appear.
 
 function serviceDeskTable(): HTMLElement {
@@ -38,7 +38,7 @@ describe('Service Desks view (#9)', () => {
 
     const names = deskNames()
     expect(names).toContain('IT Help Desk')
-    expect(names).toContain('UX App Helpdesk')
+    expect(names).toContain('Ops Helpdesk')
     // custom-type methods are not service desks
     expect(names).not.toContain('Manager Approval')
     expect(names).not.toContain('Self-Service')
@@ -72,12 +72,12 @@ describe('Service Desks view (#9)', () => {
     const nameCell = within(itRow).getAllByRole('cell')[0]
     expect(nameCell).toHaveTextContent('IT Infrastructure support desk')
 
-    // UX App Helpdesk has no description — its name cell shows only the name.
+    // Ops Helpdesk has no description — its name cell shows only the name.
     const uxRow = within(serviceDeskTable())
       .getAllByRole('row')
-      .find((r) => r.textContent.includes('UX App Helpdesk'))!
+      .find((r) => r.textContent.includes('Ops Helpdesk'))!
     const uxNameCell = within(uxRow).getAllByRole('cell')[0]!
-    expect(uxNameCell.textContent.trim()).toBe('UX App Helpdesk')
+    expect(uxNameCell.textContent.trim()).toBe('Ops Helpdesk')
   })
 
   it('filters the desks by search', async () => {
@@ -86,13 +86,13 @@ describe('Service Desks view (#9)', () => {
       initialRoute: '/service-desks',
     })
 
-    await waitFor(() => expect(deskNames()).toContain('UX App Helpdesk'))
+    await waitFor(() => expect(deskNames()).toContain('Ops Helpdesk'))
 
-    await user.type(screen.getByLabelText('Search service desks'), 'UX')
+    await user.type(screen.getByLabelText('Search service desks'), 'Ops')
 
     await waitFor(() => {
       const names = deskNames()
-      expect(names).toContain('UX App Helpdesk')
+      expect(names).toContain('Ops Helpdesk')
       expect(names).not.toContain('IT Help Desk')
     })
   })
