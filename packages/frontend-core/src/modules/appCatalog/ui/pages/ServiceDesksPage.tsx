@@ -58,10 +58,18 @@ export function ServiceDesksPage() {
             <TableBody>
               {desks.map((desk) => {
                 const url = desk.config.url
+                const description = desk.config.description
                 return (
                   <TableRow key={desk.slug}>
-                    <TableCell className="font-medium">
-                      {desk.displayName}
+                    <TableCell className="font-medium align-top">
+                      <span data-testid="service-desk-name">
+                        {desk.displayName}
+                      </span>
+                      {description && (
+                        <span className="block text-xs font-normal text-muted-foreground">
+                          {description}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {url ? (
