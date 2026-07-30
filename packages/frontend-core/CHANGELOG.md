@@ -1,5 +1,22 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.9.0
+
+### Minor Changes
+
+- [#48](https://github.com/lislon/app-catalog/pull/48) [`ed5e3ee`](https://github.com/lislon/app-catalog/commit/ed5e3eeca8520a24714eb48c8c5a9a9cbaf63291) Thanks [@lislon](https://github.com/lislon)! - Backend-computed freshness on the app detail view. Each resource now carries a
+  `freshness: { lastCheckedAt, isStale }` (derived server-side from the source
+  scan's last-checked/next-check dates); the detail view renders a muted
+  "Last checked …" line after Sources, with a subtle "· may be out of date" note
+  when the entry is stale. The frontend does no date math.
+
+### Patch Changes
+
+- [#48](https://github.com/lislon/app-catalog/pull/48) [`ed5e3ee`](https://github.com/lislon/app-catalog/commit/ed5e3eeca8520a24714eb48c8c5a9a9cbaf63291) Thanks [@lislon](https://github.com/lislon)! - Redirect `/app/<alias>` to the canonical `/app/<slug>`. When an app's slug
+  changes, its old slug can be listed in `aliases[]`; visiting the old URL now
+  redirects (client-side, replace) to the canonical app instead of showing a
+  blank catalog.
+
 ## 0.8.1
 
 ### Patch Changes
