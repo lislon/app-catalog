@@ -1,5 +1,11 @@
 # @igstack/app-catalog-shared-core
 
+## 0.4.0-alpha-20260730170821
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
 ## 0.4.0-alpha-20260729145918
 
 ## 0.4.0-alpha-20260729145014
