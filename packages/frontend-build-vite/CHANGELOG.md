@@ -1,5 +1,7 @@
 # @igstack/app-catalog-frontend-build-vite
 
+## 0.4.0-alpha-20260730182101
+
 ## 0.4.0-alpha-20260730170821
 
 ### Patch Changes
