@@ -38,6 +38,7 @@ import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation'
 import { highlightText } from '../../utils/searchApps'
+import { formatRelativeTime } from '../../utils/formatRelativeTime'
 import { TierVariantsSection } from '../components/TierVariantsSection'
 import { SubResourcesSection } from '../components/SubResourcesSection'
 import { getChildResources } from '../../utils/resolveHelpers'
@@ -603,6 +604,19 @@ function AppDetails({
             </ul>
           )}
         </div>
+
+        {/* Freshness: muted "last checked" line, rarely-needed metadata. The
+            backend owns the semantic (freshness.isStale); we only render. */}
+        {app.freshness?.lastCheckedAt && (
+          <p className="mt-4 text-xs text-muted-foreground">
+            <span title={app.freshness.lastCheckedAt}>
+              Last checked {formatRelativeTime(app.freshness.lastCheckedAt)}
+            </span>
+            {app.freshness.isStale && (
+              <span className="italic opacity-75"> · may be out of date</span>
+            )}
+          </p>
+        )}
       </div>
 
       {/* Screenshot Gallery Dialog */}

@@ -40,6 +40,17 @@ export interface SourceReference {
 }
 
 /**
+ * Backend-computed freshness of an entry's source data. See
+ * `modules/appCatalog/freshness.ts` for how it is derived.
+ */
+export interface Freshness {
+  /** ISO-8601 timestamp the app's sources were last verified, or null if never. */
+  lastCheckedAt: string | null
+  /** True when the entry is overdue for a re-check by more than the grace period. */
+  isStale: boolean
+}
+
+/**
  * Resource entry in the catalog (application or sub-resource).
  * Unified model: applications have no parentSlug; sub-resources have parentSlug.
  */
@@ -93,6 +104,20 @@ export interface Resource {
   accessComments?: string
   /** Arbitrary extra data */
   extra?: Record<string, unknown>
+  /**
+   * Backend-computed freshness of this entry's source data (OUTPUT — set by the
+   * serializer on the served Resource). The frontend renders it directly (no
+   * calculation): show `lastCheckedAt`, and a muted "may be out of date" note
+   * when `isStale`. Omitted when the app has never been scanned.
+   */
+  freshness?: Freshness
+  /**
+   * Raw freshness timestamps (INPUT — supplied by the company sync from its scan
+   * metadata, persisted to the DB). Not served to the frontend; the serializer
+   * derives `freshness` from these. ISO-8601 strings.
+   */
+  lastCheckedAt?: string | null
+  nextCheckAfter?: string | null
 }
 
 // Derived catalog data returned by backend
