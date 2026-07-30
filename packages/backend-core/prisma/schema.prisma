@@ -164,6 +164,10 @@ model DbResource {
   accessComments             String?
   /// [SubResourceExtra]
   extra                      Json?
+  // Freshness (autoupdate scan): when sources were last verified and when the
+  // next check is due. Nullable — apps that have never been scanned carry null.
+  lastCheckedAt              DateTime?
+  nextCheckAfter             DateTime?
   createdAt                  DateTime          @default(now())
   updatedAt                  DateTime          @updatedAt
 
