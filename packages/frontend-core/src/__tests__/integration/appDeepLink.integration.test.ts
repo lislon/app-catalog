@@ -79,6 +79,29 @@ describe('App deep-link routing', () => {
     expect(ui.catalog.getSearchInput().value).toBe(q)
   })
 
+  it('redirects /app/<alias> to the canonical /app/<slug> (replace, no back entry)', async () => {
+    // #22: when an app is renamed, its old slug is preserved in aliases[].
+    // Hitting the old URL should land the user on the canonical app, not a
+    // blank catalog, and must use replace (so Back doesn't bounce to the alias).
+    const { ui, router } = await given(
+      magazine.full(({ backendCfg }) => {
+        backendCfg.withApp({
+          slug: 'cluster-operations',
+          displayName: 'Cluster Operations',
+          aliases: ['prod-ops-tool'],
+        })
+      }),
+      { initialRoute: '/app/prod-ops-tool' },
+    )
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/app/cluster-operations')
+    })
+    expect(ui.catalog.isDetailPanelOpen()).toBe(true)
+    // replace, not push: the alias URL must not be a Back target
+    expect(router.history.canGoBack()).toBe(false)
+  })
+
   it('populates the search input from ?q= on the app detail route (#10 read path)', async () => {
     // The detail route must NOT strip `q` from the URL: landing on /app/<slug>
     // with a query must repopulate the search input. This is what was actually
