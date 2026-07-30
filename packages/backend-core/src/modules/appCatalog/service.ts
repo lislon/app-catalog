@@ -14,6 +14,7 @@ import type {
 import type { Group, Person } from '../../types/common/personGroupTypes'
 import { omit } from 'radashi'
 import { parseSourceSlug } from '../../utils/parseSourceSlug'
+import { computeFreshness } from './freshness'
 
 /** Prisma query result for DbResource with sourceRefs included (used by rowToResource) */
 type ResourceRowWithSourceRefs = Prisma.DbResourceGetPayload<{
@@ -157,6 +158,10 @@ function rowToResource(row: ResourceRowWithSourceRefs): Resource {
     : undefined
   const tiers =
     row.tiers == null ? undefined : (row.tiers as unknown as Resource['tiers'])
+  const freshness = computeFreshness(
+    row.lastCheckedAt ? row.lastCheckedAt.toISOString() : null,
+    row.nextCheckAfter ? row.nextCheckAfter.toISOString() : null,
+  )
 
   return {
     id: row.id,
@@ -191,6 +196,8 @@ function rowToResource(row: ResourceRowWithSourceRefs): Resource {
     extra: row.extra
       ? (row.extra as unknown as Record<string, unknown>)
       : undefined,
+    // Only surface freshness once the app has actually been scanned.
+    freshness: freshness.lastCheckedAt ? freshness : undefined,
   }
 }
 

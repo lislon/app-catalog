@@ -307,6 +307,12 @@ export async function syncAppCatalog(
         accessMaintainerGroupSlugs: resource.accessMaintainerGroupSlugs ?? [],
         accessComments: resource.accessComments ?? null,
         extra: resource.extra ?? null,
+        lastCheckedAt: resource.lastCheckedAt
+          ? new Date(resource.lastCheckedAt)
+          : null,
+        nextCheckAfter: resource.nextCheckAfter
+          ? new Date(resource.nextCheckAfter)
+          : null,
       }
     })
 
