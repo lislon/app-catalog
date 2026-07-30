@@ -173,6 +173,27 @@ export function AppCatalogPage({
     }
   }, [filteredApps, selectedAppSlug, navigate, searchValue])
 
+  // #22: alias → canonical redirect. When an app is renamed its old slug is
+  // kept in `aliases[]`. If the URL slug matches no canonical slug but does
+  // match some app's alias, redirect (replace) to that app's canonical slug so
+  // old bookmarks resolve instead of showing a blank catalog. Guard on a real
+  // canonical miss so we never fight the normal detail-open path. Note: this is
+  // a client-side SPA redirect (replace), not an HTTP 301 — see ig-umbrella#22.
+  useEffect(() => {
+    if (!selectedAppSlug || resources.length === 0) return
+    const canonical = resources.some((r) => r.slug === selectedAppSlug)
+    if (canonical) return
+    const aliased = resources.find((r) => r.aliases?.includes(selectedAppSlug))
+    if (aliased) {
+      void navigate({
+        to: '/app/$slug',
+        params: { slug: aliased.slug },
+        search: (prev) => prev,
+        replace: true,
+      })
+    }
+  }, [selectedAppSlug, resources, navigate])
+
   const handleAppClick = (app: Resource) => {
     void navigate({
       to: '/app/$slug',
