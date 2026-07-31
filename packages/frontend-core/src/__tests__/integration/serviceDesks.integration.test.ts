@@ -123,3 +123,39 @@ describe('Service Desks view (#9)', () => {
     await waitFor(() => expect(search).toHaveFocus())
   })
 })
+
+// #23: the header "Apps" tab must stay active while viewing an app-detail route
+// (/app/<slug>) — the detail panel is part of the Apps view. Previously the Apps
+// link was active only on the exact "/" route, so /app/quicksight highlighted
+// neither tab.
+describe('ViewToggle active tab (#23)', () => {
+  const appsTab = () => screen.getByRole('link', { name: 'Apps' })
+  const deskTab = () => screen.getByRole('link', { name: 'Service Desks' })
+
+  it('activates the Apps tab on an app-detail route (/app/$slug)', async () => {
+    await given(magazine.full(), { initialRoute: '/app/jira' })
+
+    await waitFor(() =>
+      expect(appsTab()).toHaveAttribute('aria-current', 'page'),
+    )
+    expect(deskTab()).not.toHaveAttribute('aria-current')
+  })
+
+  it('activates the Apps tab on the root route', async () => {
+    await given(magazine.full(), { initialRoute: '/' })
+
+    await waitFor(() =>
+      expect(appsTab()).toHaveAttribute('aria-current', 'page'),
+    )
+    expect(deskTab()).not.toHaveAttribute('aria-current')
+  })
+
+  it('activates only Service Desks on the /service-desks route', async () => {
+    await given(magazine.full(), { initialRoute: '/service-desks' })
+
+    await waitFor(() =>
+      expect(deskTab()).toHaveAttribute('aria-current', 'page'),
+    )
+    expect(appsTab()).not.toHaveAttribute('aria-current')
+  })
+})
