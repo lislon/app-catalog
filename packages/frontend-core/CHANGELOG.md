@@ -1,5 +1,14 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.9.1
+
+### Patch Changes
+
+- [#51](https://github.com/lislon/app-catalog/pull/51) [`ded2a26`](https://github.com/lislon/app-catalog/commit/ded2a267311d802b41520dbed0b6197537c61f41) Thanks [@lislon](https://github.com/lislon)! - Keep the header "Apps" tab active while viewing an app-detail route
+  (`/app/<slug>`). Previously the toggle used an exact match on `/`, so on
+  `/app/<slug>` neither "Apps" nor "Service Desks" was highlighted (#23). The
+  active segment is now derived from the current pathname.
+
 ## 0.9.0
 
 ### Minor Changes
