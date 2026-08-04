@@ -1,5 +1,19 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.9.2
+
+### Patch Changes
+
+- [#54](https://github.com/lislon/app-catalog/pull/54) [`43bfedd`](https://github.com/lislon/app-catalog/commit/43bfeddcb3ffb1eda3b95f1b3534d1687cc6cd07) Thanks [@lislon](https://github.com/lislon)! - Render internal cross-reference links in catalog markdown as in-app router
+  navigation. A relative `[Name](/app/<slug>)` link in a description/comment now
+  navigates within the catalog via the TanStack router (same tab, no full
+  reload) instead of opening a new browser tab, so entries can cross-link each
+  other with plain markdown (#25). The slug is validated against the loaded
+  resources (canonical slug or a known alias) — an unknown slug renders as plain
+  text rather than a dead link, and the link gets `aria-current="page"` when it
+  points at the currently open app. External http/https links are unchanged
+  (still open in a new tab with `noopener noreferrer`).
+
 ## 0.9.1
 
 ### Patch Changes
