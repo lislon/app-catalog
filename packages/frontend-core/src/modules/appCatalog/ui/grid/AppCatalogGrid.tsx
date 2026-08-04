@@ -500,7 +500,7 @@ function AppDetails({
                       key={isDraft ? 'draft' : `${index}-${url}`}
                       className="flex items-center gap-2 text-xs"
                     >
-                      <span className="text-muted-foreground shrink-0">
+                      <span className="text-muted-foreground shrink-0 tabular-nums">
                         {index + 1}.
                       </span>
                       <InlineEditableField
@@ -584,7 +584,7 @@ function AppDetails({
             <ul className="space-y-2">
               {sourceUrls.map((url, index) => (
                 <li key={index} className="flex items-center gap-2 text-xs">
-                  <span className="text-muted-foreground shrink-0">
+                  <span className="text-muted-foreground shrink-0 tabular-nums">
                     {index + 1}.
                   </span>
                   {url ? (
