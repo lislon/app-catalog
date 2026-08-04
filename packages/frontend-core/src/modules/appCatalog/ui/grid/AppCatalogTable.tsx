@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '~/ui/table'
+import { markdownToPlainText } from '../../utils/markdownToPlainText'
 import { getAppUrl } from './appCatalogUtils'
 
 export interface AppCatalogTableProps {
@@ -43,7 +44,9 @@ export function AppCatalogTable({ apps }: AppCatalogTableProps) {
         header: 'Description',
         cell: ({ row }) => (
           <div className="max-w-md line-clamp-2">
-            {row.original.description}
+            {row.original.description
+              ? markdownToPlainText(row.original.description)
+              : null}
           </div>
         ),
       },
