@@ -178,7 +178,7 @@ export function AppCatalogPage({
   // match some app's alias, redirect (replace) to that app's canonical slug so
   // old bookmarks resolve instead of showing a blank catalog. Guard on a real
   // canonical miss so we never fight the normal detail-open path. Note: this is
-  // a client-side SPA redirect (replace), not an HTTP 301 — see ig-umbrella#22.
+  // a client-side SPA redirect (replace), not an HTTP 301 — see #22.
   useEffect(() => {
     if (!selectedAppSlug || resources.length === 0) return
     const canonical = resources.some((r) => r.slug === selectedAppSlug)
