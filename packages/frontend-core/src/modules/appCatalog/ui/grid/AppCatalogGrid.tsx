@@ -38,6 +38,7 @@ import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation'
 import { highlightText } from '../../utils/searchApps'
+import { markdownToPlainText } from '../../utils/markdownToPlainText'
 import { formatRelativeTime } from '../../utils/formatRelativeTime'
 import { TierVariantsSection } from '../components/TierVariantsSection'
 import { SubResourcesSection } from '../components/SubResourcesSection'
@@ -829,7 +830,11 @@ export function AppCatalogGrid({
           <div>
             <span className="text-sm text-muted-foreground line-clamp-2">
               <HighlightedText
-                text={row.original.description || '—'}
+                text={
+                  row.original.description
+                    ? markdownToPlainText(row.original.description)
+                    : '—'
+                }
                 searchQuery={searchQuery}
               />
             </span>
