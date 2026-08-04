@@ -1,5 +1,17 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.9.4
+
+### Patch Changes
+
+- [#60](https://github.com/lislon/app-catalog/pull/60) [`bed4657`](https://github.com/lislon/app-catalog/commit/bed465709379f99ef7c42ab185b9fc9e6ad924f3) Thanks [@lislon](https://github.com/lislon)! - Left-align the numbered "Sources" list in the app-detail panel. The list item
+  markers ("1.", "2.", …) are shrink-wrapped spans; in a proportional font the
+  glyph "2" is wider than "1", so the text on later rows started a few pixels to
+  the right of the first and the list stopped reading as left-aligned. The marker
+  spans now use `tabular-nums` so every digit is equal-width and all rows share
+  the same left edge (applied to both the read-only and admin-editable
+  renderings).
+
 ## 0.9.3
 
 ### Patch Changes
