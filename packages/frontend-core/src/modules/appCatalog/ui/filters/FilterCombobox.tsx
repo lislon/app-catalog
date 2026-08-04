@@ -12,6 +12,7 @@ import {
 } from '~/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '~/ui/popover'
 import type { TagOption } from '../context/AppCatalogFiltersContext'
+import { markdownToPlainText } from '../../utils/markdownToPlainText'
 
 interface FilterComboboxProps {
   /** Filter prefix (e.g., "category") */
@@ -114,7 +115,7 @@ export function FilterCombobox({
                         </div>
                         {option.description && (
                           <span className="text-xs text-muted-foreground">
-                            {option.description}
+                            {markdownToPlainText(option.description)}
                           </span>
                         )}
                       </div>

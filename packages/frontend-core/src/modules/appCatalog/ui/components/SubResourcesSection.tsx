@@ -21,6 +21,7 @@ import {
 } from '~/ui/select'
 import { useAppCatalogContext } from '~/modules/appCatalog'
 import { getGroupBySlug } from '~/modules/appCatalog/utils/resolveHelpers'
+import { markdownToPlainText } from '~/modules/appCatalog/utils/markdownToPlainText'
 
 interface SubResourcesSectionProps {
   subResources: Resource[]
@@ -172,7 +173,7 @@ export function SubResourcesSection({
                       )}
                       {sr.description && (
                         <div className="text-xs text-muted-foreground mt-0.5">
-                          {sr.description}
+                          {markdownToPlainText(sr.description)}
                         </div>
                       )}
                     </TableCell>
