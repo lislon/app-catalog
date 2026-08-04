@@ -2,7 +2,7 @@
  * Reduce a short markdown string to its visible plain text.
  *
  * Descriptions may contain markdown — notably cross-reference links like
- * `[Signatera Portal](/app/signatera-portal)` (#25). The detail panel renders
+ * `[Example Portal](/app/example-portal)` (#25). The detail panel renders
  * those as interactive links via {@link MarkdownText}, but in compact / clamped
  * surfaces (grid list preview, table row, filter combobox, sub-resources) an
  * interactive link would break `line-clamp` and can't be reliably highlighted
