@@ -1,5 +1,18 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.4.0-alpha-20260805180712
+
+### Patch Changes
+
+- [#66](https://github.com/lislon/app-catalog/pull/66) [`197e6e3`](https://github.com/lislon/app-catalog/commit/197e6e343fd1bc351d50b10a9660da9eb42a5ea3) Thanks [@lislon](https://github.com/lislon)! - Keep the catalog search text out of the URL. The search box previously synced
+  its value to a `?q=` query param, so opening or sharing an app link carried the
+  search term along (`/app/<slug>?q=<search>`), cluttering the deep link. The
+  search value now persists in `sessionStorage` instead, so it still survives the
+  per-route remount of the filters provider — including the auto-navigation to a
+  single match, where the input text must not be lost — while shared and
+  bookmarked links stay clean `/app/<slug>` (or `/`). Incoming legacy `?q=` links
+  are stripped from the URL on load via a `stripSearchParams` search middleware.
+
 ## 0.4.0-alpha-20260805143647
 
 ### Patch Changes
