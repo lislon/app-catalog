@@ -14,8 +14,11 @@ describe('Deprecated app "View replacement" link (#12)', () => {
     // Deep-link straight onto the deprecated Old Tool with an active search of
     // "old tool" — which does NOT match "New Tool", so the replacement is
     // absent from the filtered list (the exact condition that broke the link).
+    // The search is seeded via sessionStorage (#27) — it no longer rides in the
+    // URL as `?q=`.
     const { ui, router } = await given(magazine.full(), {
-      initialRoute: '/app/old-tool?q=old%20tool',
+      initialRoute: '/app/old-tool',
+      seedSearch: 'old tool',
     })
 
     await waitFor(() => {
@@ -41,7 +44,8 @@ describe('Deprecated app "View replacement" link (#12)', () => {
     // Hard navigation: /app/<slug> should render the app regardless of a
     // non-matching active search (browser-URL-like behavior).
     const { ui } = await given(magazine.full(), {
-      initialRoute: '/app/jira?q=zzz-no-match-zzz',
+      initialRoute: '/app/jira',
+      seedSearch: 'zzz-no-match-zzz',
     })
 
     await waitFor(() => {
