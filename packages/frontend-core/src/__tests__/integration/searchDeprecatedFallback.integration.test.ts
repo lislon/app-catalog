@@ -11,10 +11,12 @@ import { magazine } from './mock-backend/magazines'
 // "Old Tool" (slug old-tool) that is the only match for "old tool".
 describe('Search fallback to deprecated apps (#11)', () => {
   it('shows deprecated matches + notice + enables the toggle when 0 active results', async () => {
-    // Seed the query via the URL (`q`) to avoid the jsdom useDeferredValue +
-    // userEvent typing race. "old tool" matches ONLY the deprecated "Old Tool".
+    // Seed the query via sessionStorage to avoid the jsdom useDeferredValue +
+    // userEvent typing race (#27 removed `?q=` from the URL). "old tool" matches
+    // ONLY the deprecated "Old Tool".
     const { ui } = await given(magazine.full(), {
-      initialRoute: '/?q=old%20tool',
+      initialRoute: '/',
+      seedSearch: 'old tool',
     })
 
     // The fallback surfaces the deprecated match, shows the notice, and the
@@ -27,7 +29,10 @@ describe('Search fallback to deprecated apps (#11)', () => {
   })
 
   it('does not force deprecated results when the query has an active match', async () => {
-    const { ui } = await given(magazine.full(), { initialRoute: '/?q=Jira' })
+    const { ui } = await given(magazine.full(), {
+      initialRoute: '/',
+      seedSearch: 'Jira',
+    })
 
     await waitFor(() => {
       const names = ui.catalog.getTableData().map((r) => r.name)
@@ -40,7 +45,8 @@ describe('Search fallback to deprecated apps (#11)', () => {
 
   it('keeps the normal empty state when nothing matches at all', async () => {
     const { ui } = await given(magazine.full(), {
-      initialRoute: '/?q=zzz-nothing-matches-zzz',
+      initialRoute: '/',
+      seedSearch: 'zzz-nothing-matches-zzz',
     })
 
     await waitFor(() => {
