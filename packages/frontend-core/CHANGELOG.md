@@ -1,5 +1,13 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.9.5
+
+### Patch Changes
+
+- [#64](https://github.com/lislon/app-catalog/pull/64) [`c8d3f77`](https://github.com/lislon/app-catalog/commit/c8d3f771950f8a88ba8cd7945553d4b92d9f5fcf) Thanks [@lislon](https://github.com/lislon)! - Fix stray `0` appearing in the catalog grid when a search matches no apps. The
+  numeric `&&`-gated "Clear filters" row now uses `(totalAppsCount ?? 0) > apps.length`
+  so it can never render a bare number as a React text node.
+
 ## 0.9.4
 
 ### Patch Changes
