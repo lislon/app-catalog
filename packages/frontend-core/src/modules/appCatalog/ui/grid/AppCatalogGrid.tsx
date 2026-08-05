@@ -990,25 +990,23 @@ export function AppCatalogGrid({
               ))}
 
               {/* Clear Filters Row */}
-              {totalAppsCount &&
-                totalAppsCount > apps.length &&
-                onClearFilters && (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="px-4 py-8 text-center"
+              {(totalAppsCount ?? 0) > apps.length && onClearFilters && (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="px-4 py-8 text-center"
+                  >
+                    <Button
+                      variant="outline"
+                      onClick={onClearFilters}
+                      className="gap-2"
                     >
-                      <Button
-                        variant="outline"
-                        onClick={onClearFilters}
-                        className="gap-2"
-                      >
-                        <X className="h-4 w-4" />
-                        Clear filters to show all apps ({totalAppsCount})
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                )}
+                      <X className="h-4 w-4" />
+                      Clear filters to show all apps ({totalAppsCount})
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
