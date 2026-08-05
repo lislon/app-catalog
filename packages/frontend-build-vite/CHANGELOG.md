@@ -1,5 +1,7 @@
 # @igstack/app-catalog-frontend-build-vite
 
+## 0.4.0-alpha-20260805180712
+
 ## 0.4.0-alpha-20260805143647
 
 ## 0.4.0-alpha-20260804214537
