@@ -153,25 +153,21 @@ export function AppCatalogPage({
     searchValue: deferredSearchValue,
   })
 
-  // Auto-open details when only 1 result. Carry the *current* search value into
-  // the URL (`q`) as part of this navigation so the search input and focus
-  // survive the route change (#10). We must inject `searchValue` explicitly
-  // rather than rely on `(prev) => prev`: this child effect runs before the
-  // provider's async state→URL sync effect, so at nav time the URL does not yet
-  // hold `q` and the query would otherwise be lost on remount.
+  // Auto-open details when only 1 result. The search value persists in
+  // sessionStorage (see AppCatalogFiltersContext), so it survives this route
+  // change and the provider's remount on its own — we no longer carry it into
+  // the URL as `q` (#27, replacing the #10 URL workaround). Preserve any other
+  // (still-URL-synced) filter params via `(prev) => prev`.
   useEffect(() => {
     if (filteredApps.length === 1 && filteredApps[0] && !selectedAppSlug) {
       void navigate({
         to: '/app/$slug',
         params: { slug: filteredApps[0].slug },
-        search: (prev) => ({
-          ...prev,
-          q: searchValue === '' ? undefined : searchValue,
-        }),
+        search: (prev) => prev,
         replace: true,
       })
     }
-  }, [filteredApps, selectedAppSlug, navigate, searchValue])
+  }, [filteredApps, selectedAppSlug, navigate])
 
   // #22: alias → canonical redirect. When an app is renamed its old slug is
   // kept in `aliases[]`. If the URL slug matches no canonical slug but does
