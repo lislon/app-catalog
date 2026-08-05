@@ -173,4 +173,23 @@ describe('App Catalog Integration', () => {
     expect(error.message).toBeTruthy()
     expect(error.element).toBeInTheDocument()
   })
+
+  // Regression: stray "0" must not appear when search matches nothing (#30)
+  it('does not render stray zero when search yields no results', async () => {
+    const { ui } = await given(magazine.full())
+
+    await ui.catalog.search('zzz-no-match-guaranteed')
+
+    await waitFor(() => {
+      expect(ui.catalog.isEmptyStateVisible()).toBe(true)
+    })
+
+    const table = document.querySelector('table')
+    const tableText = table?.textContent ?? ''
+    // A bare "0" from the numeric-&& leak would appear as a standalone text node
+    expect(tableText.replace(/\s/g, '')).not.toMatch(/^0$/)
+    expect(document.body.textContent).not.toMatch(
+      /(?<![\d])0(?![\d]).*clear filters/i,
+    )
+  })
 })
