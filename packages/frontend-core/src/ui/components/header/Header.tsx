@@ -142,7 +142,9 @@ export function Header({ middle }: HeaderProps) {
           <div className="flex items-center gap-2">
             <AppCatalogLogo className="h-16 w-16" />
             <div className="flex flex-col">
-              <span className="text-lg font-bold">App Catalog</span>
+              <span className="font-serif text-lg font-semibold">
+                App Catalog
+              </span>
               {appCatalogContextMaybe?.versions && (
                 <VersionDisplay versions={appCatalogContextMaybe.versions} />
               )}
