@@ -99,6 +99,7 @@ export async function parseAssetMeta(
     tiff: 'image/tiff',
     gif: 'image/gif',
     heif: 'image/heif',
+    svg: 'image/svg+xml',
     raw: 'application/octet-stream',
   }
 
