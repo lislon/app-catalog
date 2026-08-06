@@ -87,6 +87,16 @@ export class CatalogTools {
   }
 
   /**
+   * The secondary "open in new tab" launch link for a row, by app name.
+   * Returns null if the row has no launch link.
+   */
+  getLaunchLink(name: string): HTMLAnchorElement | null {
+    return screen.queryByLabelText<HTMLAnchorElement>(
+      `Open ${name} in a new tab`,
+    )
+  }
+
+  /**
    * Whether the right detail panel is currently visible.
    */
   isDetailPanelOpen(): boolean {

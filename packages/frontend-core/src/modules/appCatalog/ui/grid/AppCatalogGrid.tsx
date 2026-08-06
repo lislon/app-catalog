@@ -742,6 +742,9 @@ export function AppCatalogGrid({
     onAppClick,
   })
 
+  // Launch history for the secondary "open in new tab" action on each row.
+  const { recordClick: recordLaunch } = useAppClickHistory()
+
   // Build a map of parentSlug -> matched child resource displayName for search annotation
   const { resources: allResources2 } = useAppCatalogContext()
   const matchedSubResourceMap = React.useMemo(() => {
@@ -847,8 +850,36 @@ export function AppCatalogGrid({
           </div>
         ),
       },
+      {
+        // Secondary "launch" action (#31): the primary row click opens the
+        // detail panel (how to get access); this quiet ↗ button is the fast
+        // "I just want the URL" jump. stopPropagation so it doesn't also open
+        // the panel. Only shown when the resource has a URL.
+        id: 'launch',
+        header: '',
+        cell: ({ row }) =>
+          row.original.appUrl ? (
+            <a
+              href={row.original.appUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Open ${row.original.displayName} in a new tab`}
+              title={`Open ${row.original.displayName}`}
+              onClick={(e) => {
+                e.stopPropagation()
+                recordLaunch(row.original.slug)
+              }}
+              className="inline-flex size-8 items-center justify-center rounded-full border text-muted-foreground opacity-0 transition-opacity hover:border-primary hover:text-primary group-hover:opacity-100 focus-visible:opacity-100"
+            >
+              <ExternalLink className="size-4" />
+            </a>
+          ) : null,
+        meta: {
+          className: 'w-[56px] text-right',
+        },
+      },
     ],
-    [searchQuery, matchedSubResourceMap],
+    [searchQuery, matchedSubResourceMap, recordLaunch],
   )
 
   // Create a single table instance with all apps
@@ -963,7 +994,7 @@ export function AppCatalogGrid({
                         }}
                         onClick={() => handleAppClick(row.original)}
                         className={cn(
-                          'border-b cursor-pointer transition-colors',
+                          'group border-b cursor-pointer transition-colors',
                           selectedApp?.id === row.original.id
                             ? 'bg-blue-100 dark:bg-blue-950 hover:bg-blue-200 dark:hover:bg-blue-900'
                             : 'hover:bg-muted/30',

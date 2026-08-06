@@ -1,52 +1,59 @@
 /* @import url(./modules/resourceJump/ui/JumpMainButton.css); */
 @import 'tailwindcss';
+/* Warm, crafted type to match the hand-drawn logo (see issue #31 redesign):
+   Fraunces = characterful display serif, Nunito Sans = friendly readable body. */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Nunito+Sans:wght@400;500;600;700;800&display=swap');
 /* Other module imports this css, and we need to tell tailwind to scan our tsx files */
 @source ".";
 
 /* @import 'tw-animate-css'; */
 
 @layer base {
+  /* Warm "crayon" palette derived from the hand-drawn app-catalog logo
+     (orange #dc6827, amber #eca832, coral #e4724a, blue #3782c2, green #65a443)
+     on a cream paper background. Replaces the previous generic purple theme
+     that read as an AI template. See issue #31. */
   :root {
-    --background: oklch(0.9842 0.0034 247.8575);
-    --foreground: oklch(0.2795 0.0368 260.031);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.2795 0.0368 260.031);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.2795 0.0368 260.031);
-    --primary: oklch(0.5854 0.2041 277.1173);
-    --primary-foreground: oklch(1 0 0);
-    --secondary: oklch(0.9276 0.0058 264.5313);
-    --secondary-foreground: oklch(0.3729 0.0306 259.7328);
-    --muted: oklch(0.967 0.0029 264.5419);
-    --muted-foreground: oklch(0.551 0.0234 264.3637);
-    --accent: oklch(0.9299 0.0334 272.7879);
-    --accent-foreground: oklch(0.3729 0.0306 259.7328);
+    --background: oklch(0.9825 0.0125 84); /* warm cream paper */
+    --foreground: oklch(0.28 0.02 55); /* warm near-black ink */
+    --card: oklch(0.995 0.004 84);
+    --card-foreground: oklch(0.28 0.02 55);
+    --popover: oklch(0.995 0.004 84);
+    --popover-foreground: oklch(0.28 0.02 55);
+    --primary: oklch(0.62 0.17 45); /* logo orange #dc6827 */
+    --primary-foreground: oklch(0.99 0.01 84);
+    --secondary: oklch(0.94 0.018 80); /* warm sunk panel */
+    --secondary-foreground: oklch(0.36 0.03 55);
+    --muted: oklch(0.955 0.012 82);
+    --muted-foreground: oklch(0.52 0.025 60);
+    --accent: oklch(0.93 0.05 70); /* soft amber accent */
+    --accent-foreground: oklch(0.36 0.04 55);
     --destructive: oklch(0.6368 0.2078 25.3313);
     --destructive-foreground: oklch(1 0 0);
-    --border: oklch(0.8717 0.0093 258.3382);
-    --input: oklch(0.8717 0.0093 258.3382);
-    --ring: oklch(0.5854 0.2041 277.1173);
-    --chart-1: oklch(0.5854 0.2041 277.1173);
-    --chart-2: oklch(0.5106 0.2301 276.9656);
-    --chart-3: oklch(0.4568 0.2146 277.0229);
-    --chart-4: oklch(0.3984 0.1773 277.3662);
-    --chart-5: oklch(0.3588 0.1354 278.6973);
-    --sidebar: oklch(0.967 0.0029 264.5419);
-    --sidebar-foreground: oklch(0.2795 0.0368 260.031);
-    --sidebar-primary: oklch(0.5854 0.2041 277.1173);
-    --sidebar-primary-foreground: oklch(1 0 0);
-    --sidebar-accent: oklch(0.9299 0.0334 272.7879);
-    --sidebar-accent-foreground: oklch(0.3729 0.0306 259.7328);
-    --sidebar-border: oklch(0.8717 0.0093 258.3382);
-    --sidebar-ring: oklch(0.5854 0.2041 277.1173);
+    --border: oklch(0.9 0.018 80); /* warm hairline */
+    --input: oklch(0.9 0.018 80);
+    --ring: oklch(0.62 0.17 45);
+    --chart-1: oklch(0.62 0.17 45); /* orange */
+    --chart-2: oklch(0.62 0.14 230); /* blue #3782c2 */
+    --chart-3: oklch(0.68 0.14 135); /* green #65a443 */
+    --chart-4: oklch(0.75 0.14 75); /* amber #eca832 */
+    --chart-5: oklch(0.66 0.15 20); /* coral #e4724a */
+    --sidebar: oklch(0.955 0.012 82);
+    --sidebar-foreground: oklch(0.28 0.02 55);
+    --sidebar-primary: oklch(0.62 0.17 45);
+    --sidebar-primary-foreground: oklch(0.99 0.01 84);
+    --sidebar-accent: oklch(0.93 0.05 70);
+    --sidebar-accent-foreground: oklch(0.36 0.04 55);
+    --sidebar-border: oklch(0.9 0.018 80);
+    --sidebar-ring: oklch(0.62 0.17 45);
     --font-sans:
-      ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+      'Nunito Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
       'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-    --font-serif: Merriweather, serif;
+    --font-serif: 'Fraunces', Georgia, serif;
     --font-mono:
       ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
       'Courier New', monospace;
-    --radius: 0.5rem;
+    --radius: 0.875rem; /* rounder corners to match the friendly logo */
     --shadow-2xs: 0px 4px 8px -1px hsl(0 0% 0% / 0.05);
     --shadow-xs: 0px 4px 8px -1px hsl(0 0% 0% / 0.05);
     --shadow-sm:
@@ -73,44 +80,44 @@
     --eh-context-border: #ff7926;
   }
 
-  /* https://tweakcn.com/editor/theme */
+  /* Warm-dark equivalent of the crayon palette (see issue #31). */
   .dark {
-    --background: hsl(212.29deg 18.32% 13.93%);
-    --foreground: oklch(0.9288 0.0126 255.5078);
-    --card: oklch(0.2795 0.0368 260.031);
-    --card-foreground: oklch(0.9288 0.0126 255.5078);
-    --popover: oklch(0.2795 0.0368 260.031);
-    --popover-foreground: oklch(0.9288 0.0126 255.5078);
-    --primary: oklch(0.6801 0.1583 276.9349);
-    --primary-foreground: oklch(0.2077 0.0398 265.7549);
-    --secondary: oklch(0.3351 0.0331 260.912);
-    --secondary-foreground: oklch(0.8717 0.0093 258.3382);
-    --muted: oklch(0.2795 0.0368 260.031);
-    --muted-foreground: oklch(0.7137 0.0192 261.3246);
-    --accent: oklch(0.3729 0.0306 259.7328);
-    --accent-foreground: oklch(0.8717 0.0093 258.3382);
+    --background: oklch(0.19 0.012 60); /* warm charcoal, not blue-gray */
+    --foreground: oklch(0.93 0.012 84);
+    --card: oklch(0.23 0.014 58);
+    --card-foreground: oklch(0.93 0.012 84);
+    --popover: oklch(0.23 0.014 58);
+    --popover-foreground: oklch(0.93 0.012 84);
+    --primary: oklch(0.7 0.16 48); /* brightened logo orange for dark */
+    --primary-foreground: oklch(0.2 0.012 55);
+    --secondary: oklch(0.3 0.016 58);
+    --secondary-foreground: oklch(0.9 0.012 84);
+    --muted: oklch(0.26 0.014 58);
+    --muted-foreground: oklch(0.72 0.018 70);
+    --accent: oklch(0.34 0.03 60);
+    --accent-foreground: oklch(0.9 0.012 84);
     --destructive: oklch(0.6368 0.2078 25.3313);
     --destructive-foreground: oklch(0.2077 0.0398 265.7549);
-    --border: oklch(0.4461 0.0263 256.8018);
-    --input: oklch(0.4461 0.0263 256.8018);
-    --ring: oklch(0.6801 0.1583 276.9349);
-    --chart-1: oklch(0.6801 0.1583 276.9349);
-    --chart-2: oklch(0.5854 0.2041 277.1173);
-    --chart-3: oklch(0.5106 0.2301 276.9656);
-    --chart-4: oklch(0.4568 0.2146 277.0229);
-    --chart-5: oklch(0.3984 0.1773 277.3662);
-    --sidebar: oklch(0.2795 0.0368 260.031);
-    --sidebar-foreground: oklch(0.9288 0.0126 255.5078);
-    --sidebar-primary: oklch(0.6801 0.1583 276.9349);
-    --sidebar-primary-foreground: oklch(0.2077 0.0398 265.7549);
-    --sidebar-accent: oklch(0.3729 0.0306 259.7328);
-    --sidebar-accent-foreground: oklch(0.8717 0.0093 258.3382);
-    --sidebar-border: oklch(0.4461 0.0263 256.8018);
-    --sidebar-ring: oklch(0.6801 0.1583 276.9349);
+    --border: oklch(0.36 0.016 58);
+    --input: oklch(0.36 0.016 58);
+    --ring: oklch(0.7 0.16 48);
+    --chart-1: oklch(0.7 0.16 48);
+    --chart-2: oklch(0.66 0.13 230);
+    --chart-3: oklch(0.7 0.14 135);
+    --chart-4: oklch(0.78 0.14 75);
+    --chart-5: oklch(0.68 0.15 20);
+    --sidebar: oklch(0.23 0.014 58);
+    --sidebar-foreground: oklch(0.93 0.012 84);
+    --sidebar-primary: oklch(0.7 0.16 48);
+    --sidebar-primary-foreground: oklch(0.2 0.012 55);
+    --sidebar-accent: oklch(0.34 0.03 60);
+    --sidebar-accent-foreground: oklch(0.9 0.012 84);
+    --sidebar-border: oklch(0.36 0.016 58);
+    --sidebar-ring: oklch(0.7 0.16 48);
     --font-sans:
-      ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+      'Nunito Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
       'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-    --font-serif: Merriweather, serif;
+    --font-serif: 'Fraunces', Georgia, serif;
     --font-mono:
       ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
       'Courier New', monospace;

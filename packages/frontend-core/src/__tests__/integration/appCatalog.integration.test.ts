@@ -71,6 +71,83 @@ describe('App Catalog Integration', () => {
     expect(appData.description).toBe('A test application')
   })
 
+  // Access UX (#31): "no access required" must be stated, not implied by a
+  // blank section. Previously a noAccessRequired/custom method rendered nothing.
+  it('states "open to everyone" for a no-access-required app', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        const method = backendCfg.withApprovalMethod({
+          type: 'noAccessRequired',
+          displayName: 'No Approval Needed',
+          config: {},
+        })
+        backendCfg.withApp({
+          displayName: 'Open App',
+          description: 'Anyone can use it',
+          accessRequest: { approvalMethodSlug: method.slug },
+        })
+      }),
+    )
+
+    await ui.catalog.openApp('Open App')
+    const access = ui.app.getAccessText()
+    expect(access).not.toBeNull()
+    expect(access!.toLowerCase()).toContain('no request')
+  })
+
+  // Access UX (#31): an undocumented method must route the user to the owner,
+  // never leave a blank/dead access section.
+  it('offers a fallback when the access process is undocumented', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        const method = backendCfg.withApprovalMethod({
+          type: 'unknown',
+          displayName: 'Unknown',
+          config: {},
+        })
+        backendCfg.withApp({
+          displayName: 'Mystery App',
+          description: 'Access process not written down',
+          accessRequest: { approvalMethodSlug: method.slug },
+        })
+      }),
+    )
+
+    await ui.catalog.openApp('Mystery App')
+    const access = ui.app.getAccessText()
+    expect(access).not.toBeNull()
+    expect(access!.toLowerCase()).toContain('not')
+  })
+
+  // Access UX (#31): each row has a secondary "open in new tab" launch action
+  // (the primary click opens detail). The launch link points at the app URL and
+  // must not also open the detail panel.
+  it('offers a secondary launch link on rows that has the app url', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        backendCfg.withApp({
+          displayName: 'Launchable App',
+          description: 'Has a url',
+          appUrl: 'https://launch.example.com',
+        })
+        // Second app so the single-result auto-open doesn't fire.
+        backendCfg.withApp({
+          displayName: 'Other App',
+          description: 'No url here',
+        })
+      }),
+    )
+
+    const link = ui.catalog.getLaunchLink('Launchable App')
+    expect(link).not.toBeNull()
+    expect(link!.getAttribute('href')).toBe('https://launch.example.com')
+    expect(link!.getAttribute('target')).toBe('_blank')
+    // The row without a URL has no launch link.
+    expect(ui.catalog.getLaunchLink('Other App')).toBeNull()
+    // Launch link is a secondary action — it does not open the detail panel.
+    expect(ui.catalog.isDetailPanelOpen()).toBe(false)
+  })
+
   // Test 5: Returning user — cached data + no onboarding + backend down
   it('returning user sees cached apps even when backend is unavailable', async () => {
     suppressConsole([/TRPC Error/, /Failed to fetch/])
