@@ -1,6 +1,6 @@
 {
   "name": "@igstack/app-catalog-frontend-build-vite",
-  "version": "0.4.0-alpha-20260805180712",
+  "version": "0.4.0-alpha-20260806002251",
   "description": "Vite build config for App Catalog frontend",
   "homepage": "https://github.com/lislon/app-catalog",
   "repository": {
@@ -63,5 +63,5 @@
   "engines": {
     "node": ">=16"
   },
-  "gitHead": "197e6e343fd1bc351d50b10a9660da9eb42a5ea3"
+  "gitHead": "f81663d144c9f4beb71d0390ac0a20483b86562e"
 }
