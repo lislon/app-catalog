@@ -113,6 +113,19 @@ export class AppDetailTools {
     return { total, visible, names }
   }
 
+  /**
+   * Read the "How to get access" section text from the detail panel.
+   * Returns null if the section is not present.
+   */
+  getAccessText(): string | null {
+    const panel = this.getPanel()
+    const heading = this.findHeading(panel, 'How to get access')
+    if (!heading) return null
+    // The section is the heading plus its following content wrapper.
+    const container = heading.parentElement ?? heading
+    return container.textContent.trim()
+  }
+
   screenshots = {
     /**
      * Click the screenshot preview to open the gallery modal.

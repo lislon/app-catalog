@@ -153,9 +153,37 @@ export function AccessRequestSection({
   // Early return if no access request
   if (!accessRequest) return null
 
+  // Access UX (#31): some methods carry no clickable target — `noAccessRequired`
+  // (open), `unknown` (undocumented), and bare `custom` with no comments. The
+  // old UI rendered nothing for `custom`, leaving a blank/dead section. Instead
+  // surface an explicit, actionable line so the user is never stranded:
+  //  - open  → "No request needed — just open it."
+  //  - unknown / undocumented custom → route them to the owner (shown below).
+  const isOpen = approvalMethod?.type === 'noAccessRequired'
+  const hasWrittenSteps = Boolean(
+    accessRequest.requestPrompt || accessRequest.comments,
+  )
+  const isUndocumented =
+    approvalMethod?.type === 'unknown' ||
+    (approvalMethod?.type === 'custom' && !hasWrittenSteps)
+
   return (
     <div className="mt-6 space-y-4">
-      <h3 className="text-sm font-medium">Access Request</h3>
+      <h3 className="text-sm font-medium">How to get access</h3>
+
+      {isOpen && (
+        <p className="text-sm">
+          <span className="font-medium text-primary">Open to everyone</span> —
+          no request needed, just open it.
+        </p>
+      )}
+
+      {isUndocumented && (
+        <p className="text-sm text-muted-foreground">
+          The access process for this resource is not documented yet. Contact
+          the owner (below) to find out how to request access.
+        </p>
+      )}
 
       {/* Approval Method */}
       {approvalMethod && approvalMethod.type !== 'custom' && (
