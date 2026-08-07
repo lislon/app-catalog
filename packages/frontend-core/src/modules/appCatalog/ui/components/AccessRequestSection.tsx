@@ -168,20 +168,21 @@ export function AccessRequestSection({
     (approvalMethod?.type === 'custom' && !hasWrittenSteps)
 
   return (
-    <div className="mt-6 space-y-4">
-      <h3 className="text-sm font-medium">How to get access</h3>
+    <div className="mt-6 rounded-lg border-[1.5px] border-primary/40 bg-primary/[0.03] p-4 space-y-4">
+      <h3 className="text-sm font-semibold text-foreground">
+        How to get access
+      </h3>
 
       {isOpen && (
-        <p className="text-sm">
-          <span className="font-medium text-primary">Open to everyone</span> —
-          no request needed, just open it.
+        <p className="text-sm font-medium text-primary">
+          ✓ Open to everyone — no request needed. Just open it.
         </p>
       )}
 
       {isUndocumented && (
         <p className="text-sm text-muted-foreground">
-          The access process for this resource is not documented yet. Contact
-          the owner (below) to find out how to request access.
+          Access process not documented yet — contact the owner below to find
+          out.
         </p>
       )}
 

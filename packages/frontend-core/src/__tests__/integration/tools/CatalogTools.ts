@@ -129,9 +129,12 @@ export class CatalogTools {
     return !!screen.queryByText(/showing deprecated matches/i)
   }
 
-  /** Whether the "No apps found" empty state is visible. */
+  /** Whether the "No apps found" empty state or search-morph "No results for" is visible. */
   isEmptyStateVisible(): boolean {
-    return !!screen.queryByText(/No apps found/i)
+    return (
+      !!screen.queryByText(/No apps found/i) ||
+      !!screen.queryByText(/No results for/i)
+    )
   }
 
   /**
