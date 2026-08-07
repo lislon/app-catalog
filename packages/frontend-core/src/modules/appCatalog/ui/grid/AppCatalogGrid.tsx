@@ -334,10 +334,11 @@ function AppDetails({
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => recordClick(app.slug)}
-                    className="inline-flex items-center gap-1 rounded-md py-1 text-sm text-blue-600 hover:bg-accent/30 hover:underline dark:text-blue-400 transition-all"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:border-primary hover:text-primary transition-all"
+                    title="Open app in new tab (secondary — see access info below)"
                   >
                     {app.appUrl.replace(/https?:\/\//g, '')}
-                    <ExternalLink className="size-3.5 shrink-0 opacity-40 transition-opacity" />
+                    <ExternalLink className="size-3 shrink-0 opacity-60" />
                   </a>
                 ) : (
                   <span className="text-muted-foreground">—</span>
@@ -388,6 +389,9 @@ function AppDetails({
             )
           })()}
 
+        {/* Access Request Section — hero of the detail, shown before description */}
+        <AccessRequestSection app={app} approvalMethods={approvalMethods} />
+
         {/* Description */}
         <div className="mt-6">
           <h3 className="mb-2 text-sm font-medium">Description</h3>
@@ -429,9 +433,6 @@ function AppDetails({
             </div>
           </div>
         )}
-
-        {/* Access Request Section */}
-        <AccessRequestSection app={app} approvalMethods={approvalMethods} />
 
         {/* Owner — who is responsible for this resource. Distinct from the
             access approver (who decides access requests); see domain model. */}
