@@ -1,5 +1,19 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.4.0-alpha-20260807003952
+
+### Patch Changes
+
+- [#69](https://github.com/lislon/app-catalog/pull/69) [`59a609d`](https://github.com/lislon/app-catalog/commit/59a609dd7e6cb17350737ec7a97b2a98af406305) Thanks [@lislon](https://github.com/lislon)! - Make the display serif actually render and surface the resource owner. The warm
+  theme defined a Fraunces display-serif token but nothing loaded the webfont or
+  applied it, so headings fell back to the system sans. Load Fraunces + Nunito
+  Sans via a real stylesheet link and apply the serif to the key display headings
+  (the wordmark, the app detail title, group headers, and the onboarding title).
+
+  Also render an **Owner** row in the app detail — "who is responsible for this
+  resource" — from `ownerPersonSlug`, kept visually distinct from the access
+  approver (who decides access requests), per the domain model.
+
 ## 0.4.0-alpha-20260806002918
 
 ### Minor Changes
