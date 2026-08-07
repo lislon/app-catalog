@@ -29,6 +29,8 @@ import {
   TableRow,
 } from '~/ui/table'
 import { AccessRequestSection } from '../components/AccessRequestSection'
+import { AccessPrerequisiteChain } from '../components/AccessPrerequisiteChain'
+import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
 import { PersonBadge } from '../components/PersonBadge'
 import { useUser } from '~/modules/auth'
 import { InlineEditableField } from '../components/InlineEditableField'
@@ -174,6 +176,10 @@ function AppScreenshot({ app }: { app: Resource }) {
 
 function TiersAndSubResourcesPanel({ app }: { app: Resource }) {
   const { resources } = useAppCatalogContext()
+  // #38 item C: the active catalog search term. When the user reached this app
+  // by searching something that matched a child, seed the sub-resource filter
+  // with it so the matched child is revealed.
+  const { state: filterState } = useAppCatalogFilters()
   const appSubResources = React.useMemo(
     () => getChildResources(resources, app.slug),
     [resources, app.slug],
@@ -188,14 +194,17 @@ function TiersAndSubResourcesPanel({ app }: { app: Resource }) {
       )}
       {appSubResources.length > 0 && (
         <div className="mt-6">
-          <SubResourcesSection subResources={appSubResources} />
+          <SubResourcesSection
+            subResources={appSubResources}
+            initialSearch={filterState.searchValue}
+          />
         </div>
       )}
     </>
   )
 }
 
-function AppDetails({
+export function AppDetails({
   app,
   onAppClick,
   onClosePanel,
@@ -388,6 +397,10 @@ function AppDetails({
               </div>
             )
           })()}
+
+        {/* Two-step access (#38 D): for a nested resource, show the parent-first
+            prerequisite chain before this resource's own access instructions. */}
+        <AccessPrerequisiteChain resource={app} onOpenParent={onAppClick} />
 
         {/* Access Request Section — hero of the detail, shown before description */}
         <AccessRequestSection app={app} approvalMethods={approvalMethods} />

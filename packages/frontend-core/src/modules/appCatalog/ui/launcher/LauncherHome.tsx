@@ -167,6 +167,16 @@ function SearchResultsList({
     [apps, searchValue],
   )
 
+  // #11 deprecated fallback: when EVERY match is a deprecated app (i.e. there
+  // are no active matches for the query, only deprecated ones), surface a
+  // notice so the user understands why they're seeing archived tools. The
+  // deprecated apps are already in `results` because the launcher feeds search
+  // the full resource set; this just labels the situation.
+  const didDeprecatedFallback = useMemo(
+    () => results.length > 0 && results.every((r) => Boolean(r.deprecated)),
+    [results],
+  )
+
   // Reset focus when results change
   useEffect(() => {
     setFocusedIndex(-1)
@@ -201,6 +211,17 @@ function SearchResultsList({
           ? `No results for "${searchValue}"`
           : `${results.length} result${results.length === 1 ? '' : 's'}`}
       </div>
+
+      {/* #11: deprecated-only fallback notice */}
+      {didDeprecatedFallback && (
+        <div
+          role="status"
+          className="text-[13px] text-muted-foreground mb-2 px-1"
+        >
+          No active apps for &quot;{searchValue}&quot; — showing deprecated
+          matches.
+        </div>
+      )}
 
       {/* Results */}
       <div

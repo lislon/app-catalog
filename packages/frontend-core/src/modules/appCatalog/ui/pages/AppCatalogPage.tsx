@@ -20,6 +20,7 @@ import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
 import { FilterBar } from '../filters/FilterBar'
 import { AppCatalogGrid } from '../grid/AppCatalogGrid'
 import { LauncherHome } from '../launcher/LauncherHome'
+import { LauncherDetailPanel } from '../launcher/LauncherDetailPanel'
 
 export function AppCatalogPage({
   selectedSlug,
@@ -154,13 +155,22 @@ export function AppCatalogPage({
     searchValue: deferredSearchValue,
   })
 
-  // Auto-open details when only 1 result. The search value persists in
-  // sessionStorage (see AppCatalogFiltersContext), so it survives this route
-  // change and the provider's remount on its own — we no longer carry it into
-  // the URL as `q` (#27, replacing the #10 URL workaround). Preserve any other
-  // (still-URL-synced) filter params via `(prev) => prev`.
+  // Auto-open details when only 1 result — ONLY in the legacy grid path
+  // (recent/tag filters active). In the launcher (#38) typing shows the
+  // search-morph results list; auto-navigating to /app/<slug> on a single
+  // match would yank the user out of the launcher into the old grid+panel
+  // (reported bug: searching "biom" jumped straight to an app-detail page).
+  // The morph already renders the single match as a keyboard-selectable row —
+  // the user presses ↵ or clicks to open it.
+  const legacyGridActive =
+    filterState.recentMode || Object.keys(filterState.tagFilters).length > 0
   useEffect(() => {
-    if (filteredApps.length === 1 && filteredApps[0] && !selectedAppSlug) {
+    if (
+      legacyGridActive &&
+      filteredApps.length === 1 &&
+      filteredApps[0] &&
+      !selectedAppSlug
+    ) {
       void navigate({
         to: '/app/$slug',
         params: { slug: filteredApps[0].slug },
@@ -168,7 +178,7 @@ export function AppCatalogPage({
         replace: true,
       })
     }
-  }, [filteredApps, selectedAppSlug, navigate])
+  }, [legacyGridActive, filteredApps, selectedAppSlug, navigate])
 
   // #22: alias → canonical redirect. When an app is renamed its old slug is
   // kept in `aliases[]`. If the URL slug matches no canonical slug but does
@@ -203,15 +213,22 @@ export function AppCatalogPage({
     if (app.appUrl) window.open(app.appUrl, '_blank', 'noopener,noreferrer')
   }
 
-  // Adaptive-home launcher (#38, increment 2): shown when there is no active
-  // tag/recent filter and nothing is selected. When the user types a search
-  // query, LauncherHome stays mounted and shows the search-morph results list
-  // instead of the discovery spine. The old grid only renders when a structural
-  // filter (recentMode or tagFilters) is active.
+  // Adaptive-home launcher (#38): shown whenever no structural filter
+  // (recentMode / tagFilters) is active. A selected app no longer forces the
+  // old grid — instead the launcher stays as the backdrop and the app detail
+  // renders in a slide-over panel (#38 item B). The legacy grid+split-pane is
+  // reserved for the recent/tag filter views.
   const showLauncherHome =
-    !selectedAppSlug &&
-    !filterState.recentMode &&
-    Object.keys(filterState.tagFilters).length === 0
+    !filterState.recentMode && Object.keys(filterState.tagFilters).length === 0
+
+  // The app whose detail slide-over is open over the launcher backdrop.
+  const launcherSelectedApp = useMemo(
+    () =>
+      selectedAppSlug
+        ? (resources.find((r) => r.slug === selectedAppSlug) ?? null)
+        : null,
+    [selectedAppSlug, resources],
+  )
 
   const handleClearFilters = () => {
     setSearchValue('')
@@ -256,6 +273,15 @@ export function AppCatalogPage({
           onLaunch={handleLaunch}
           totalCount={totalAppsCount}
         />
+        {/* #38 item B: app detail as a slide-over over the launcher backdrop,
+            instead of dropping into the old grid + split-pane. */}
+        {launcherSelectedApp && (
+          <LauncherDetailPanel
+            app={launcherSelectedApp}
+            onClose={() => void navigate({ to: '/' })}
+            onAppClick={handleAppClick}
+          />
+        )}
       </div>
     )
   }
