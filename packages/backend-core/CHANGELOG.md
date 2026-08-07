@@ -1,5 +1,15 @@
 # @igstack/app-catalog-backend-core
 
+## 0.10.1
+
+### Patch Changes
+
+- [#75](https://github.com/lislon/app-catalog/pull/75) [`7671137`](https://github.com/lislon/app-catalog/commit/767113714d7ca32fd8ff11d73389ee926b13c10b) Thanks [@lislon](https://github.com/lislon)! - Pin @ai-sdk/provider-utils to 4.0.41 to fix broken pnpm install caused by ai@6.0.246 declaring a non-existent version 4.0.42.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.10.1
+  - @igstack/app-catalog-table-sync@0.10.1
+
 ## 0.10.0
 
 ### Patch Changes
