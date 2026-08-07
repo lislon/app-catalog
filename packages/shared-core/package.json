@@ -1,6 +1,6 @@
 {
   "name": "@igstack/app-catalog-shared-core",
-  "version": "0.4.0-alpha-20260807050147",
+  "version": "0.4.0-alpha-20260807053627",
   "description": "Shared core utilities for App Catalog",
   "homepage": "https://github.com/lislon/app-catalog",
   "repository": {
@@ -53,5 +53,5 @@
   "engines": {
     "node": ">=16"
   },
-  "gitHead": "d29c2be3c564b06f5aade4e8a7550460195d7c77"
+  "gitHead": "b4a108d13dd00024e0a8fe2a19a0bcc6b833f230"
 }
