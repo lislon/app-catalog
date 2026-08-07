@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '~/lib/utils'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { markdownToPlainText } from '../../utils/markdownToPlainText'
+import { AttributionFooter } from './AttributionFooter'
 import { ResourceIcon } from './ResourceIcon'
 import { searchResources } from '../../utils/searchApps'
 
@@ -16,8 +17,11 @@ import { searchResources } from '../../utils/searchApps'
  * off to the results view (increment 2 refines the morph).
  */
 
-const typeLabel = (t?: string): string => {
-  if (!t || t === 'application') return 'App'
+// Type pill text. Plain "application" resources are the common case and don't
+// need a badge (the user asked not to show a bare "App" badge); only surface a
+// pill for distinctive types (database, cloud, service, …).
+const typeLabel = (t?: string): string | null => {
+  if (!t || t === 'application') return null
   return t.charAt(0).toUpperCase() + t.slice(1)
 }
 
@@ -49,13 +53,16 @@ function LaunchButton({
   className?: string
 }) {
   if (!app.appUrl) return null
+  // Show the destination URL on hover (user ask) — the native title tooltip
+  // reveals where the ↗ jumps to, e.g. "Open → console.aws.amazon.com".
+  const prettyUrl = app.appUrl.replace(/^https?:\/\//, '')
   return (
     <a
       href={app.appUrl}
       target="_blank"
       rel="noopener noreferrer"
-      title={`Open ${app.displayName} in a new tab`}
-      aria-label={`Open ${app.displayName} in a new tab`}
+      title={`Open → ${prettyUrl}`}
+      aria-label={`Open ${app.displayName} in a new tab (${prettyUrl})`}
       onClick={(e) => {
         e.stopPropagation()
         onLaunch(app)
@@ -134,9 +141,11 @@ function ResourceRow({
           New
         </span>
       )}
-      <span className="text-[12px] text-muted-foreground bg-muted rounded-full px-2.5 py-0.5 whitespace-nowrap">
-        {typeLabel(app.type)}
-      </span>
+      {typeLabel(app.type) && (
+        <span className="text-[12px] text-muted-foreground bg-muted rounded-full px-2.5 py-0.5 whitespace-nowrap">
+          {typeLabel(app.type)}
+        </span>
+      )}
       <LaunchButton app={app} onLaunch={onLaunch} className="size-8" />
     </button>
   )
@@ -166,6 +175,28 @@ function SearchResultsList({
     () => searchResources(apps, searchValue),
     [apps, searchValue],
   )
+
+  // For each result, the child/sub-resources of it that themselves match the
+  // query — so a parent surfaced only via its children (e.g. AWS Console via a
+  // "biom" account) tells the user WHICH sub-resources matched, instead of an
+  // unexplained parent. Keyed by parent slug.
+  const matchedChildrenByParent = useMemo(() => {
+    const q = searchValue.trim().toLowerCase()
+    const map = new Map<string, Resource[]>()
+    if (!q) return map
+    const resultSlugs = new Set(results.map((r) => r.slug))
+    for (const r of apps) {
+      if (!r.parentSlug || !resultSlugs.has(r.parentSlug)) continue
+      const hay = `${r.displayName} ${r.abbreviation ?? ''} ${(
+        r.aliases ?? []
+      ).join(' ')} ${r.description ?? ''}`.toLowerCase()
+      if (!hay.includes(q)) continue
+      const list = map.get(r.parentSlug) ?? []
+      list.push(r)
+      map.set(r.parentSlug, list)
+    }
+    return map
+  }, [apps, results, searchValue])
 
   // #11 deprecated fallback: when EVERY match is a deprecated app (i.e. there
   // are no active matches for the query, only deprecated ones), surface a
@@ -262,10 +293,27 @@ function SearchResultsList({
                   {markdownToPlainText(app.description)}
                 </span>
               )}
+              {(() => {
+                const kids = matchedChildrenByParent.get(app.slug)
+                if (!kids || kids.length === 0) return null
+                const names = kids.map((k) => k.displayName)
+                const shown = names.slice(0, 3).join(', ')
+                const extra =
+                  names.length > 3 ? ` +${names.length - 3} more` : ''
+                return (
+                  <span className="mt-0.5 block text-[12px] text-primary truncate">
+                    Matched {kids.length} sub-resource
+                    {kids.length === 1 ? '' : 's'}: {shown}
+                    {extra}
+                  </span>
+                )
+              })()}
             </span>
-            <span className="text-[11.5px] text-muted-foreground bg-muted rounded-full px-2.5 py-0.5 whitespace-nowrap shrink-0">
-              {typeLabel(app.type)}
-            </span>
+            {typeLabel(app.type) && (
+              <span className="text-[11.5px] text-muted-foreground bg-muted rounded-full px-2.5 py-0.5 whitespace-nowrap shrink-0">
+                {typeLabel(app.type)}
+              </span>
+            )}
             <LaunchButton
               app={app}
               onLaunch={onLaunch}
@@ -490,6 +538,8 @@ export function LauncherHome({
               </div>
             </div>
           </section>
+
+          <AttributionFooter />
         </>
       )}
     </div>

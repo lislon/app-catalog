@@ -8,7 +8,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { AppWindow, ExternalLink, Plus, Trash2, X } from 'lucide-react'
+import { AppWindow, Clock, ExternalLink, Plus, Trash2, X } from 'lucide-react'
 import React, { useState } from 'react'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { cn } from '~/lib/utils'
@@ -353,6 +353,26 @@ export function AppDetails({
                   <span className="text-muted-foreground">—</span>
                 )}
               </div>
+              {/* Freshness date near the header (this is the same signal that
+                  drives "New this week"), so the date is visible in the card
+                  itself, not only in the muted footer. */}
+              {app.freshness?.lastCheckedAt && (
+                <div className="mt-1 px-3">
+                  <span
+                    className="inline-flex items-center gap-1 text-xs text-muted-foreground"
+                    title={app.freshness.lastCheckedAt}
+                  >
+                    <Clock className="size-3" />
+                    Updated {formatRelativeTime(app.freshness.lastCheckedAt)}
+                    {app.freshness.isStale && (
+                      <span className="italic opacity-75">
+                        {' '}
+                        · may be out of date
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -633,18 +653,7 @@ export function AppDetails({
           )}
         </div>
 
-        {/* Freshness: muted "last checked" line, rarely-needed metadata. The
-            backend owns the semantic (freshness.isStale); we only render. */}
-        {app.freshness?.lastCheckedAt && (
-          <p className="mt-4 text-xs text-muted-foreground">
-            <span title={app.freshness.lastCheckedAt}>
-              Last checked {formatRelativeTime(app.freshness.lastCheckedAt)}
-            </span>
-            {app.freshness.isStale && (
-              <span className="italic opacity-75"> · may be out of date</span>
-            )}
-          </p>
-        )}
+        {/* Freshness now shown near the header (see "Updated …" above). */}
       </div>
 
       {/* Screenshot Gallery Dialog */}
