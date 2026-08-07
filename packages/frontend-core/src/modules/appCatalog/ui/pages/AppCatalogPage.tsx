@@ -235,15 +235,21 @@ export function AppCatalogPage({
   // Use first tag definition for grouping
   const groupingDefinition = tagsDefinitions[0]
 
-  // Adaptive-home launcher view (#38, increment 1+2): the discovery spine
-  // or the search-morph results list (handled inside LauncherHome).
+  // Adaptive-home launcher view (#38): the discovery spine or the search-morph
+  // results list (handled inside LauncherHome). Owns vertical scroll —
+  // MainLayout is h-screen/overflow-hidden, so the launcher must scroll
+  // internally to reveal the full Browse-all list as the user scrolls.
   if (showLauncherHome) {
     return (
-      <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <LauncherHome
           apps={rootResources.filter(
             (a) => filterState.showDeprecated || !a.deprecated,
           )}
+          // All resources incl. children — so search matches sub-resources
+          // (e.g. an AWS account) and surfaces their parent, preserving the
+          // existing cross-sub-resource search behavior.
+          allResources={resources}
           searchValue={searchValue}
           onSearchChange={setSearchValue}
           onAppClick={handleAppClick}

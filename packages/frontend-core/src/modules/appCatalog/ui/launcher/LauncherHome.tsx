@@ -24,6 +24,13 @@ const typeLabel = (t?: string): string => {
 export interface LauncherHomeProps {
   /** All root (non-child) resources, already filtered for deprecated per settings. */
   apps: Resource[]
+  /**
+   * All resources INCLUDING children/sub-resources. Passed to search so a query
+   * matching a sub-resource (e.g. an AWS account, an alias/account ID) surfaces
+   * its parent — preserving the existing cross-sub-resource search behavior.
+   * Falls back to `apps` when omitted.
+   */
+  allResources?: Resource[]
   searchValue: string
   onSearchChange: (v: string) => void
   onAppClick: (app: Resource) => void
@@ -206,6 +213,7 @@ function SearchResultsList({
             key={app.slug}
             type="button"
             role="option"
+            title={`View ${app.displayName}`}
             aria-selected={focusedIndex === i}
             onMouseEnter={() => setFocusedIndex(i)}
             onClick={() => onAppClick(app)}
@@ -258,6 +266,7 @@ function SearchResultsList({
 
 export function LauncherHome({
   apps,
+  allResources,
   searchValue,
   onSearchChange,
   onAppClick,
@@ -348,7 +357,7 @@ export function LauncherHome({
       {/* Search morph: when typing, show compact results list instead of the discovery spine */}
       {isSearching && (
         <SearchResultsList
-          apps={apps}
+          apps={allResources ?? apps}
           searchValue={searchValue}
           onAppClick={onAppClick}
           onLaunch={onLaunch}
