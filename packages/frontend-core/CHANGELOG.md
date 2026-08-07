@@ -1,5 +1,18 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.12.0
+
+### Minor Changes
+
+- [#81](https://github.com/lislon/app-catalog/pull/81) [`6fce45e`](https://github.com/lislon/app-catalog/commit/6fce45e4c5cd01b4871864e20f4661ff6dd2ebf2) Thanks [@lislon](https://github.com/lislon)! - Launcher detail & home polish: app detail now opens as a centered, wide modal
+  card (was a right slide-over) with the access block as the hero and a two-step
+  "parent access first" banner for nested resources. Search results annotate
+  which sub-resources matched a query and reveal the matched child on open.
+  Person chips expose both name and email in a popover so you can copy either.
+  Adds a header "Updated …" freshness line, a URL-on-hover launch affordance,
+  drops the redundant "App" type badge, and an optional attribution footer
+  (`UiSettings.attribution`).
+
 ## 0.11.0
 
 ### Minor Changes
