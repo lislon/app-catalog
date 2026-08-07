@@ -29,12 +29,15 @@ export function LauncherDetailPanel({
         onClick={onClose}
         className="fixed inset-0 -z-10 bg-black/40 backdrop-blur-[2px] animate-in fade-in"
       />
-      {/* centered card */}
+      {/* centered card — wide enough for data tables (sub-resources have 5
+          columns incl. "Access Contacts"/"AWS Account" that wrapped at 760px);
+          prose inside AppDetails is width-capped separately so it stays
+          readable. Caps at 94vw so it never touches the edges. */}
       <div
         role="dialog"
         aria-modal="true"
         aria-label={`${app.displayName} details`}
-        className="relative w-full max-w-[760px] my-auto rounded-[var(--radius)] border border-border bg-background shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full max-w-[min(1120px,94vw)] my-auto rounded-[var(--radius)] border border-border bg-background shadow-2xl animate-in fade-in zoom-in-95 duration-200"
       >
         <div className="max-h-[85vh] overflow-y-auto px-6 py-5 sm:px-8 sm:py-7">
           <AppDetails
