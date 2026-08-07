@@ -53,7 +53,7 @@ export function OnboardingCard({
       </Button>
 
       <div className="pr-10">
-        <h2 className="text-lg font-bold mb-2">{title}</h2>
+        <h2 className="font-serif text-lg font-semibold mb-2">{title}</h2>
         <p className="text-muted-foreground mb-3 text-sm">{description}</p>
 
         <div className="bg-muted/50 rounded-lg p-3">

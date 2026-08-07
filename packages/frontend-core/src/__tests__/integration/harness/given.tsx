@@ -25,6 +25,7 @@ import { MockBackendVerifier } from './MockBackendVerifier'
 import { getGlobalError } from '../tools/ErrorTools'
 import type { GlobalError } from '../tools/ErrorTools'
 import { browserState } from '../tools/BrowserState'
+import { SEARCH_STORAGE_KEY } from '~/modules/appCatalog/hooks/useSessionSyncedState'
 import { CatalogTools } from '../tools/CatalogTools'
 import { AppDetailTools } from '../tools/AppDetailTools'
 import { GalleryTools } from '../tools/GalleryTools'
@@ -60,7 +61,7 @@ export async function cleanupTestResources(): Promise<void> {
 
 export async function given(
   magazine: Magazine,
-  opts: { initialRoute?: string } = {},
+  opts: { initialRoute?: string; seedSearch?: string } = {},
 ): Promise<GivenResult> {
   // Clean up any previous resources
   await cleanupTestResources()
@@ -90,6 +91,13 @@ export async function given(
   }
   for (const [key, value] of browserStateCfg.localStorageItems) {
     localStorage.setItem(key, value)
+  }
+
+  // Seed the persisted catalog search (#27): simulates a returning user who had
+  // typed a query before navigating. Backs the same sessionStorage key the
+  // provider reads, so the search input repopulates without any `?q=` in the URL.
+  if (opts.seedSearch !== undefined) {
+    sessionStorage.setItem(SEARCH_STORAGE_KEY, opts.seedSearch)
   }
 
   // 5. Build network catalog from backend service, then apply overrides

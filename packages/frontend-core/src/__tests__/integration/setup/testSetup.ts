@@ -19,6 +19,7 @@ afterEach(async () => {
   cleanup()
   await cleanupTestResources()
   localStorage.clear()
+  sessionStorage.clear()
 })
 
 // Mock window.matchMedia — required by embla-carousel in jsdom environment

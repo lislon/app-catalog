@@ -200,7 +200,7 @@ Expected: clean.
 
 ```bash
 git add src/routes/_layout/app.\$slug.tsx src/modules/appCatalog/ui/pages/AppCatalogPage.tsx src/__tests__/integration/appDeepLink.integration.test.ts src/__tests__/integration/harness/given.tsx src/routeTree.gen.ts
-git commit -m "feat: add /app/<slug> route opening app detail (#3)"
+git commit -m "feat: add /app/<slug> route opening app detail (ig-umbrella#3)"
 ```
 
 ---

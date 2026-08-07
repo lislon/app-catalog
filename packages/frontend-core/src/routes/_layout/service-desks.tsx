@@ -1,9 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 import { z } from 'zod'
 import { appCatalogRouteLoader } from '~/modules/appCatalog/routeLoader'
 import { AppCatalogLayout } from '~/modules/appCatalog/ui/layout/AppCatalogLayout'
 import { ServiceDesksPage } from '~/modules/appCatalog/ui/pages/ServiceDesksPage'
 
+// #27: `q` kept declared for legacy links but stripped from the URL (search
+// text lives in sessionStorage now).
 const searchSchema = z.object({
   q: z.string().optional(),
 })
@@ -11,6 +13,7 @@ const searchSchema = z.object({
 export const Route = createFileRoute('/_layout/service-desks')({
   component: RouteComponent,
   validateSearch: searchSchema,
+  search: { middlewares: [stripSearchParams(['q'])] },
   async loader() {
     const appCatalogLoader = await appCatalogRouteLoader()
     return { appCatalogLoader }

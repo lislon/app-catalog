@@ -3,6 +3,10 @@ import { createContext, use, useMemo } from 'react'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useUrlSyncedState } from '../../hooks/useUrlSyncedState'
 import {
+  SEARCH_STORAGE_KEY,
+  useSessionSyncedState,
+} from '../../hooks/useSessionSyncedState'
+import {
   decodeFiltersParam,
   encodeFiltersParam,
 } from '../../utils/filterHelpers'
@@ -100,11 +104,13 @@ export function AppCatalogFiltersProvider({
     encode: encodeFiltersParam,
   })
 
-  // Search value is synced to URL (key `q`) so it survives navigation —
-  // e.g. auto-opening an app's detail page when the query narrows to one match
-  // (the filters provider is mounted per-route and remounts on navigation).
-  const [searchValue, setSearchValue] = useUrlSyncedState<string>({
-    key: 'q',
+  // Search value persists in sessionStorage (not the URL) so it survives the
+  // per-route remount of this provider — e.g. auto-opening an app's detail page
+  // when the query narrows to one match (#10) — WITHOUT leaking `?q=` into every
+  // shared/bookmarked app link (#27). The synchronous store read/write also
+  // removes the effect-ordering race the URL sync had (#10).
+  const [searchValue, setSearchValue] = useSessionSyncedState<string>({
+    key: SEARCH_STORAGE_KEY,
     defaultValue: '',
     decode: (value) => value,
     encode: (value) => (value === '' ? undefined : value),

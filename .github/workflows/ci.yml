@@ -35,6 +35,18 @@ jobs:
           fetch-depth: 0
       - name: Setup Tools
         uses: tanstack/config/.github/setup@main
+      - name: Ensure npm supports OIDC trusted publishing (>=11.5.1)
+        if: github.ref == 'refs/heads/alpha' || github.ref == 'refs/heads/main'
+        run: |
+          need="11.5.1"
+          have="$(npm --version)"
+          echo "npm $have (need >= $need for OIDC trusted publishing)"
+          lowest="$(printf '%s\n%s\n' "$need" "$have" | sort -V | head -1)"
+          if [ "$lowest" != "$need" ]; then
+            echo "npm too old, upgrading..."
+            npm install -g npm@latest
+            npm --version
+          fi
       - name: Generate Prisma files for backend-core
         run: pnpm run prisma:generate
       - name: Run Tests
@@ -76,7 +88,10 @@ jobs:
         run: node scripts/write-git-sha.mjs "${{ github.sha }}"
       - name: Publish to @alpha tag
         if: github.ref == 'refs/heads/alpha'
-        run: pnpm changeset publish --tag alpha --no-git-tag
+        # Publish via the npm CLI so npm's OIDC trusted-publishing is used
+        # (no NPM_TOKEN). pnpm packs each package (rewriting workspace:* to
+        # concrete versions); npm publishes the tarballs with provenance.
+        run: node scripts/publish-oidc.mjs --tag alpha
       - name: Commit version changes (alpha)
         if: github.ref == 'refs/heads/alpha'
         run: |
