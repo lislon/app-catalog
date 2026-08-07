@@ -1,6 +1,6 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
-import { Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Check, Copy, Search } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Badge } from '~/ui/badge'
 import { Input } from '~/ui/input'
 import {
@@ -54,6 +54,40 @@ function getTierDisplayLabel(tierSlug: string): string {
   return tierSlug
 }
 
+function CopyAccountIdButton({ accountId }: { accountId: string }) {
+  const [copied, setCopied] = useState(false)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [])
+
+  const handleCopy = useCallback(() => {
+    void navigator.clipboard.writeText(accountId).then(() => {
+      setCopied(true)
+      timeoutRef.current = setTimeout(() => setCopied(false), 1500)
+    })
+  }, [accountId])
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="flex items-center gap-1 font-mono text-xs text-muted-foreground hover:text-foreground transition-colors group"
+      title="Copy account ID"
+    >
+      <span>{accountId}</span>
+      {copied ? (
+        <Check className="size-3 text-green-500 shrink-0" />
+      ) : (
+        <Copy className="size-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+      )}
+    </button>
+  )
+}
+
 export function SubResourcesSection({
   subResources,
 }: SubResourcesSectionProps) {
@@ -82,7 +116,12 @@ export function SubResourcesSection({
         (sr) =>
           sr.displayName.toLowerCase().includes(q) ||
           (sr.aliases ?? []).some((a) => a.toLowerCase().includes(q)) ||
-          (sr.description?.toLowerCase().includes(q) ?? false),
+          (sr.description?.toLowerCase().includes(q) ?? false) ||
+          (
+            (sr.extra as Record<string, unknown>).awsAccountId as
+              | string
+              | undefined
+          )?.includes(q) === true,
       )
     }
 
@@ -136,13 +175,14 @@ export function SubResourcesSection({
               <TableHead className="w-[80px]">Tier</TableHead>
               <TableHead>Owner</TableHead>
               <TableHead>Access Contacts</TableHead>
+              <TableHead className="w-[140px]">AWS Account</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={5}
                   className="text-center text-muted-foreground py-8"
                 >
                   No resources match your filters
@@ -202,6 +242,18 @@ export function SubResourcesSection({
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      {(() => {
+                        const accountId = (
+                          sr.extra as Record<string, unknown> | null | undefined
+                        )?.awsAccountId as string | undefined
+                        return accountId ? (
+                          <CopyAccountIdButton accountId={accountId} />
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )
+                      })()}
                     </TableCell>
                   </TableRow>
                 )
