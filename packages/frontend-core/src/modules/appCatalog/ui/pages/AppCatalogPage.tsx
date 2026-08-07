@@ -203,12 +203,13 @@ export function AppCatalogPage({
     if (app.appUrl) window.open(app.appUrl, '_blank', 'noopener,noreferrer')
   }
 
-  // Adaptive-home launcher (#38): shown on the bare catalog view — no search
-  // text, no tag/recent filters, and nothing selected. Search + detail keep the
-  // existing grid/panel path so all prior behavior is preserved.
+  // Adaptive-home launcher (#38, increment 2): shown when there is no active
+  // tag/recent filter and nothing is selected. When the user types a search
+  // query, LauncherHome stays mounted and shows the search-morph results list
+  // instead of the discovery spine. The old grid only renders when a structural
+  // filter (recentMode or tagFilters) is active.
   const showLauncherHome =
     !selectedAppSlug &&
-    deferredSearchValue.trim() === '' &&
     !filterState.recentMode &&
     Object.keys(filterState.tagFilters).length === 0
 
@@ -234,7 +235,8 @@ export function AppCatalogPage({
   // Use first tag definition for grouping
   const groupingDefinition = tagsDefinitions[0]
 
-  // Adaptive-home launcher view (#38, increment 1): the discovery spine.
+  // Adaptive-home launcher view (#38, increment 1+2): the discovery spine
+  // or the search-morph results list (handled inside LauncherHome).
   if (showLauncherHome) {
     return (
       <div className="flex flex-col flex-1 min-h-0">
