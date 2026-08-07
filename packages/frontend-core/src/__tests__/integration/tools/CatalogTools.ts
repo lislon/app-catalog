@@ -11,24 +11,33 @@ export class CatalogTools {
 
   /**
    * Click an app row by display name.
+   * Works against both the table/grid view and the launcher home (#38), which
+   * renders app rows as buttons rather than a <table>.
    * Throws with list of visible apps if name not found.
    */
   async openApp(name: string): Promise<void> {
     const table = this.getCatalogTable()
-    if (!table) throw new Error('No catalog table found')
-    const rows = within(table).getAllByRole('row')
-
-    for (const row of rows) {
-      const nameEl = row.querySelector('.font-medium')
-      if (nameEl?.textContent.trim() === name) {
-        await this.user.click(row)
+    if (table) {
+      const rows = within(table).getAllByRole('row')
+      for (const row of rows) {
+        const nameEl = row.querySelector('.font-medium')
+        if (nameEl?.textContent.trim() === name) {
+          await this.user.click(row)
+          return
+        }
+      }
+    } else {
+      // Launcher home: rows are buttons titled "View <name>".
+      const btn = screen.queryByTitle(`View ${name}`)
+      if (btn) {
+        await this.user.click(btn)
         return
       }
     }
 
     const visibleNames = this.getTableData().map((r) => r.name)
     throw new Error(
-      `App "${name}" not found in table. Visible apps: [${visibleNames.join(', ')}]`,
+      `App "${name}" not found. Visible apps: [${visibleNames.join(', ')}]`,
     )
   }
 
@@ -63,7 +72,10 @@ export class CatalogTools {
           `Cannot read table — global error on page: ${bodyText.slice(0, 500)}`,
         )
       }
-      throw new Error('No table found on page')
+      // Launcher home (#38): no <table>; read the app row buttons instead.
+      const launcherRows = this.getLauncherRows()
+      if (launcherRows.length > 0) return launcherRows
+      throw new Error('No table or launcher rows found on page')
     }
 
     const rows = within(table).getAllByRole('row')
@@ -127,6 +139,30 @@ export class CatalogTools {
    */
   isOnboardingVisible(): boolean {
     return !!screen.queryByText('Welcome to App Catalog')
+  }
+
+  /**
+   * Read app rows from the launcher home (#38): buttons titled "View <name>".
+   * Name is the first `.font-semibold`/`.font-bold` span; description the
+   * `.text-muted-foreground` span. Deduped by name (an app can appear both in
+   * "Your apps" and "Browse all").
+   */
+  private getLauncherRows(): TableRow[] {
+    const buttons = Array.from(
+      document.querySelectorAll<HTMLElement>('button[title^="View "]'),
+    )
+    const seen = new Set<string>()
+    const result: TableRow[] = []
+    for (const btn of buttons) {
+      const name = (btn.getAttribute('title') ?? '')
+        .replace(/^View\s+/, '')
+        .trim()
+      if (!name || seen.has(name)) continue
+      seen.add(name)
+      const descEl = btn.querySelector('.text-muted-foreground')
+      result.push({ name, description: descEl?.textContent.trim() ?? '' })
+    }
+    return result
   }
 
   /**

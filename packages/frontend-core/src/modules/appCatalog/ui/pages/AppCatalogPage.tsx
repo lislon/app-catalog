@@ -19,6 +19,7 @@ import { OnboardingCard } from '../components/OnboardingCard'
 import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
 import { FilterBar } from '../filters/FilterBar'
 import { AppCatalogGrid } from '../grid/AppCatalogGrid'
+import { LauncherHome } from '../launcher/LauncherHome'
 
 export function AppCatalogPage({
   selectedSlug,
@@ -198,6 +199,19 @@ export function AppCatalogPage({
     })
   }
 
+  const handleLaunch = (app: Resource) => {
+    if (app.appUrl) window.open(app.appUrl, '_blank', 'noopener,noreferrer')
+  }
+
+  // Adaptive-home launcher (#38): shown on the bare catalog view — no search
+  // text, no tag/recent filters, and nothing selected. Search + detail keep the
+  // existing grid/panel path so all prior behavior is preserved.
+  const showLauncherHome =
+    !selectedAppSlug &&
+    deferredSearchValue.trim() === '' &&
+    !filterState.recentMode &&
+    Object.keys(filterState.tagFilters).length === 0
+
   const handleClearFilters = () => {
     setSearchValue('')
     actions.clearAllFilters()
@@ -219,6 +233,24 @@ export function AppCatalogPage({
 
   // Use first tag definition for grouping
   const groupingDefinition = tagsDefinitions[0]
+
+  // Adaptive-home launcher view (#38, increment 1): the discovery spine.
+  if (showLauncherHome) {
+    return (
+      <div className="flex flex-col flex-1 min-h-0">
+        <LauncherHome
+          apps={rootResources.filter(
+            (a) => filterState.showDeprecated || !a.deprecated,
+          )}
+          searchValue={searchValue}
+          onSearchChange={setSearchValue}
+          onAppClick={handleAppClick}
+          onLaunch={handleLaunch}
+          totalCount={totalAppsCount}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
