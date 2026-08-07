@@ -1,6 +1,6 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
 import { ArrowUpRight, Search } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '~/lib/utils'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { markdownToPlainText } from '../../utils/markdownToPlainText'
@@ -326,6 +326,19 @@ export function LauncherHome({
   const browseRight = browse.filter((_, i) => i % 2 === 1)
 
   const isSearching = searchValue.trim() !== ''
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  // ⌘K / Ctrl+K focuses the hero search box from anywhere on the page.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        searchRef.current?.focus()
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
 
   return (
     <div className="mx-auto w-full max-w-[1000px] pb-24">
@@ -347,9 +360,18 @@ export function LauncherHome({
               placeholder="Search apps, databases, cloud accounts, account IDs…"
               autoComplete="off"
               autoFocus
+              ref={searchRef}
               aria-label="Search apps"
               className="flex-1 bg-transparent border-0 outline-none text-[16px] text-foreground placeholder:text-muted-foreground"
             />
+            {!isSearching && (
+              <kbd className="hidden sm:inline-flex items-center gap-0.5 text-[11px] text-muted-foreground/60 border border-muted-foreground/20 rounded px-1.5 py-0.5 font-mono shrink-0">
+                {typeof navigator !== 'undefined' &&
+                navigator.platform.includes('Mac')
+                  ? '⌘K'
+                  : 'Ctrl+K'}
+              </kbd>
+            )}
           </div>
         </div>
       </div>
