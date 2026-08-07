@@ -19,6 +19,8 @@ import { OnboardingCard } from '../components/OnboardingCard'
 import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
 import { FilterBar } from '../filters/FilterBar'
 import { AppCatalogGrid } from '../grid/AppCatalogGrid'
+import { LauncherHome } from '../launcher/LauncherHome'
+import { LauncherDetailPanel } from '../launcher/LauncherDetailPanel'
 
 export function AppCatalogPage({
   selectedSlug,
@@ -153,32 +155,37 @@ export function AppCatalogPage({
     searchValue: deferredSearchValue,
   })
 
-  // Auto-open details when only 1 result. Carry the *current* search value into
-  // the URL (`q`) as part of this navigation so the search input and focus
-  // survive the route change (#10). We must inject `searchValue` explicitly
-  // rather than rely on `(prev) => prev`: this child effect runs before the
-  // provider's async state→URL sync effect, so at nav time the URL does not yet
-  // hold `q` and the query would otherwise be lost on remount.
+  // Auto-open details when only 1 result — ONLY in the legacy grid path
+  // (recent/tag filters active). In the launcher (#38) typing shows the
+  // search-morph results list; auto-navigating to /app/<slug> on a single
+  // match would yank the user out of the launcher into the old grid+panel
+  // (reported bug: searching "biom" jumped straight to an app-detail page).
+  // The morph already renders the single match as a keyboard-selectable row —
+  // the user presses ↵ or clicks to open it.
+  const legacyGridActive =
+    filterState.recentMode || Object.keys(filterState.tagFilters).length > 0
   useEffect(() => {
-    if (filteredApps.length === 1 && filteredApps[0] && !selectedAppSlug) {
+    if (
+      legacyGridActive &&
+      filteredApps.length === 1 &&
+      filteredApps[0] &&
+      !selectedAppSlug
+    ) {
       void navigate({
         to: '/app/$slug',
         params: { slug: filteredApps[0].slug },
-        search: (prev) => ({
-          ...prev,
-          q: searchValue === '' ? undefined : searchValue,
-        }),
+        search: (prev) => prev,
         replace: true,
       })
     }
-  }, [filteredApps, selectedAppSlug, navigate, searchValue])
+  }, [legacyGridActive, filteredApps, selectedAppSlug, navigate])
 
   // #22: alias → canonical redirect. When an app is renamed its old slug is
   // kept in `aliases[]`. If the URL slug matches no canonical slug but does
   // match some app's alias, redirect (replace) to that app's canonical slug so
   // old bookmarks resolve instead of showing a blank catalog. Guard on a real
   // canonical miss so we never fight the normal detail-open path. Note: this is
-  // a client-side SPA redirect (replace), not an HTTP 301 — see #22.
+  // a client-side SPA redirect (replace), not an HTTP 301 — see ig-umbrella#22.
   useEffect(() => {
     if (!selectedAppSlug || resources.length === 0) return
     const canonical = resources.some((r) => r.slug === selectedAppSlug)
@@ -202,6 +209,27 @@ export function AppCatalogPage({
     })
   }
 
+  const handleLaunch = (app: Resource) => {
+    if (app.appUrl) window.open(app.appUrl, '_blank', 'noopener,noreferrer')
+  }
+
+  // Adaptive-home launcher (#38): shown whenever no structural filter
+  // (recentMode / tagFilters) is active. A selected app no longer forces the
+  // old grid — instead the launcher stays as the backdrop and the app detail
+  // renders in a slide-over panel (#38 item B). The legacy grid+split-pane is
+  // reserved for the recent/tag filter views.
+  const showLauncherHome =
+    !filterState.recentMode && Object.keys(filterState.tagFilters).length === 0
+
+  // The app whose detail slide-over is open over the launcher backdrop.
+  const launcherSelectedApp = useMemo(
+    () =>
+      selectedAppSlug
+        ? (resources.find((r) => r.slug === selectedAppSlug) ?? null)
+        : null,
+    [selectedAppSlug, resources],
+  )
+
   const handleClearFilters = () => {
     setSearchValue('')
     actions.clearAllFilters()
@@ -223,6 +251,40 @@ export function AppCatalogPage({
 
   // Use first tag definition for grouping
   const groupingDefinition = tagsDefinitions[0]
+
+  // Adaptive-home launcher view (#38): the discovery spine or the search-morph
+  // results list (handled inside LauncherHome). Owns vertical scroll —
+  // MainLayout is h-screen/overflow-hidden, so the launcher must scroll
+  // internally to reveal the full Browse-all list as the user scrolls.
+  if (showLauncherHome) {
+    return (
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <LauncherHome
+          apps={rootResources.filter(
+            (a) => filterState.showDeprecated || !a.deprecated,
+          )}
+          // All resources incl. children — so search matches sub-resources
+          // (e.g. an AWS account) and surfaces their parent, preserving the
+          // existing cross-sub-resource search behavior.
+          allResources={resources}
+          searchValue={searchValue}
+          onSearchChange={setSearchValue}
+          onAppClick={handleAppClick}
+          onLaunch={handleLaunch}
+          totalCount={totalAppsCount}
+        />
+        {/* #38 item B: app detail as a slide-over over the launcher backdrop,
+            instead of dropping into the old grid + split-pane. */}
+        {launcherSelectedApp && (
+          <LauncherDetailPanel
+            app={launcherSelectedApp}
+            onClose={() => void navigate({ to: '/' })}
+            onAppClick={handleAppClick}
+          />
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
