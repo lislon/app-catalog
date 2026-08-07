@@ -15,6 +15,12 @@ export class GalleryTools {
   }
 
   isOpen(): boolean {
-    return !!document.querySelector('[role="dialog"]')
+    // Detect the SCREENSHOT gallery specifically — not just any [role="dialog"]
+    // (the app detail card is also a dialog now, #38). The gallery is the only
+    // dialog with next/prev navigation controls.
+    return !!(
+      screen.queryByRole('button', { name: /next/i }) &&
+      screen.queryByRole('button', { name: /prev/i })
+    )
   }
 }

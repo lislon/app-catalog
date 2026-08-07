@@ -11,7 +11,7 @@ const DAY = 24 * 60 * 60 * 1000
 const iso = (msAgo: number) => new Date(Date.now() - msAgo).toISOString()
 
 describe('App freshness line', () => {
-  it('shows a muted "Last checked" line when the app has freshness', async () => {
+  it('shows an "Updated" freshness line when the app has freshness', async () => {
     const { ui } = await given(
       magazine.full(({ backendCfg }) => {
         backendCfg.withApp({
@@ -24,7 +24,7 @@ describe('App freshness line', () => {
     )
 
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
-    expect(screen.getByText(/Last checked/i)).toBeInTheDocument()
+    expect(screen.getByText(/Updated/i)).toBeInTheDocument()
     // fresh → no stale note
     expect(screen.queryByText(/may be out of date/i)).toBeNull()
   })
@@ -58,6 +58,6 @@ describe('App freshness line', () => {
     )
 
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
-    expect(screen.queryByText(/Last checked/i)).toBeNull()
+    expect(screen.queryByText(/Updated/i)).toBeNull()
   })
 })

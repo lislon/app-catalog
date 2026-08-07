@@ -1,12 +1,15 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
-import { useEffect } from 'react'
 import { AppDetails } from '../grid/AppCatalogGrid'
 
 /**
- * Slide-over detail panel for the launcher (#38, item B). Renders the rich
- * AppDetails (access-hero, sub-resources, tiers — increments 3/4) as a right
- * slide-over over the launcher backdrop, matching the option-a prototype,
- * instead of dropping the user into the old grid + resizable split-pane.
+ * Centered detail card for the launcher (#38, item B). Renders the rich
+ * AppDetails (access-hero, sub-resources, tiers) as a large centered modal card
+ * over the launcher backdrop, instead of the old grid + resizable split-pane.
+ *
+ * Escape handling: this component does NOT globally bind Escape. Escape-to-close
+ * is owned by AppDetails' own key handling (which first closes an open
+ * screenshot gallery, then closes the card), so pressing Esc inside the gallery
+ * returns to the card — not all the way to the home page (#38 Esc-stacking bug).
  */
 export function LauncherDetailPanel({
   app,
@@ -17,39 +20,33 @@ export function LauncherDetailPanel({
   onClose: () => void
   onAppClick?: (app: Resource) => void
 }) {
-  // Close on Escape.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
-
   return (
-    <>
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-6 md:p-10">
       {/* scrim */}
       <button
         type="button"
         aria-label="Close details panel"
         onClick={onClose}
-        className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px] animate-in fade-in"
+        className="fixed inset-0 -z-10 bg-black/40 backdrop-blur-[2px] animate-in fade-in"
       />
-      {/* panel */}
-      <aside
+      {/* centered card — wide enough for data tables (sub-resources have 5
+          columns incl. "Access Contacts"/"AWS Account" that wrapped at 760px);
+          prose inside AppDetails is width-capped separately so it stays
+          readable. Caps at 94vw so it never touches the edges. */}
+      <div
         role="dialog"
         aria-modal="true"
         aria-label={`${app.displayName} details`}
-        className="fixed right-0 top-0 z-50 h-full w-[min(560px,100%)] bg-background shadow-2xl border-l border-border flex flex-col animate-in slide-in-from-right duration-200"
+        className="relative w-full max-w-[min(1120px,94vw)] my-auto rounded-[var(--radius)] border border-border bg-background shadow-2xl animate-in fade-in zoom-in-95 duration-200"
       >
-        <div className="overflow-y-auto flex-1 px-6 py-5">
+        <div className="max-h-[85vh] overflow-y-auto px-6 py-5 sm:px-8 sm:py-7">
           <AppDetails
             app={app}
             onAppClick={onAppClick}
             onClosePanel={onClose}
           />
         </div>
-      </aside>
-    </>
+      </div>
+    </div>
   )
 }

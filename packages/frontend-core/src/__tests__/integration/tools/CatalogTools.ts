@@ -103,8 +103,10 @@ export class CatalogTools {
    * Returns null if the row has no launch link.
    */
   getLaunchLink(name: string): HTMLAnchorElement | null {
+    // The launch link's aria-label starts with "Open <name> in a new tab" and
+    // may append the destination URL, e.g. "… in a new tab (foo.example.com)".
     return screen.queryByLabelText<HTMLAnchorElement>(
-      `Open ${name} in a new tab`,
+      new RegExp(`^Open ${name} in a new tab`),
     )
   }
 
