@@ -1,5 +1,11 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.10.0
+
+### Minor Changes
+
+- [#72](https://github.com/lislon/app-catalog/pull/72) [`329d1bb`](https://github.com/lislon/app-catalog/commit/329d1bbc8e983a1e36a3bd5cfceeaf398ce4088b) Thanks [@lislon](https://github.com/lislon)! - Add optional AWS Account ID column to sub-resources table. Shows `extra.awsAccountId` with copy-to-clipboard when present; degrades to "—" when absent. Account ID also included in search filter.
+
 ## 0.9.5
 
 ### Patch Changes
