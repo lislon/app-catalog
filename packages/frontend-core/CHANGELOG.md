@@ -1,5 +1,18 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.11.0
+
+### Minor Changes
+
+- [#79](https://github.com/lislon/app-catalog/pull/79) [`53b9880`](https://github.com/lislon/app-catalog/commit/53b9880710cf90adf491e159d2acf9f800272c66) Thanks [@lislon](https://github.com/lislon)! - feat: adaptive launcher UI — discovery spine, search-morph, details-first, two-step access, sub-resource reveal (#38)
+
+  Adaptive home with Your apps / New this week / Browse all sections.
+  Search morphs into a keyboard-navigable results list (↑↓/↵/Esc).
+  Primary click opens the detail slide-over (details-first UX); launch is quiet ↗.
+  Two-step access prerequisite chain for sub-resources.
+  Sub-resource reveal: open parent and seed the sub-resource search filter.
+  ⌘K/Ctrl+K shortcut to focus the hero search.
+
 ## 0.10.1
 
 ## 0.10.0
