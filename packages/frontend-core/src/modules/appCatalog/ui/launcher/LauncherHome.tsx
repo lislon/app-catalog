@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '~/lib/utils'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { markdownToPlainText } from '../../utils/markdownToPlainText'
+import { AttributionFooter } from './AttributionFooter'
 import { ResourceIcon } from './ResourceIcon'
 import { searchResources } from '../../utils/searchApps'
 
@@ -537,6 +538,8 @@ export function LauncherHome({
               </div>
             </div>
           </section>
+
+          <AttributionFooter />
         </>
       )}
     </div>
