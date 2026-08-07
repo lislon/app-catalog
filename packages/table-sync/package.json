@@ -1,6 +1,6 @@
 {
   "name": "@igstack/app-catalog-table-sync",
-  "version": "0.4.0-alpha-20260807041139",
+  "version": "0.4.0-alpha-20260807050147",
   "description": "Database table sync utilities for App Catalog",
   "homepage": "https://github.com/lislon/app-catalog",
   "repository": {
@@ -52,5 +52,5 @@
   "engines": {
     "node": ">=16"
   },
-  "gitHead": "264efdecb33bb4af79acb219a61b739217a06645"
+  "gitHead": "d29c2be3c564b06f5aade4e8a7550460195d7c77"
 }
