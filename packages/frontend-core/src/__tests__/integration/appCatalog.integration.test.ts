@@ -229,6 +229,35 @@ describe('App Catalog Integration', () => {
     expect(subResources!.names).toContain('acct-staging')
   })
 
+  it('surfaces the parent app when searching for a sub-resource name (#38)', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        const app = backendCfg.withApp({
+          slug: 'aws-console',
+          displayName: 'AWS Console',
+          description: 'Cloud management console',
+        })
+        backendCfg.withSubResource({
+          appSlug: app.slug,
+          displayName: 'acct-payments-prod',
+          tier: 'prod',
+        })
+        backendCfg.withApp({
+          slug: 'unrelated',
+          displayName: 'Unrelated Tool',
+          description: 'Nothing to do with the query',
+        })
+      }),
+    )
+
+    // Query matches only a sub-resource name; the parent app must appear in the
+    // launcher search-morph results (cross-sub-resource search preserved).
+    await ui.catalog.search('acct-payments-prod')
+    const names = ui.catalog.getTableData().map((r) => r.name)
+    expect(names).toContain('AWS Console')
+    expect(names).not.toContain('Unrelated Tool')
+  })
+
   // Test 4: Malformed Response — HTML Instead of JSON
   it('shows error when backend returns HTML instead of JSON', async () => {
     suppressConsole([
