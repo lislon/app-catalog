@@ -25,6 +25,14 @@ import { markdownToPlainText } from '~/modules/appCatalog/utils/markdownToPlainT
 
 interface SubResourcesSectionProps {
   subResources: Resource[]
+  /**
+   * Initial filter text (#38 item C). When the user reached this app by
+   * searching a term that matched a sub-resource, seed the sub-resource filter
+   * with that term so the matched child is revealed instead of buried in a
+   * long list (e.g. searching "biom" → open AWS Console → the biomarker
+   * account is pre-filtered). Only applied when it actually matches a child.
+   */
+  initialSearch?: string
 }
 
 function getTierBadgeVariant(
@@ -90,9 +98,22 @@ function CopyAccountIdButton({ accountId }: { accountId: string }) {
 
 export function SubResourcesSection({
   subResources,
+  initialSearch,
 }: SubResourcesSectionProps) {
   const { groups } = useAppCatalogContext()
-  const [search, setSearch] = useState('')
+  // Seed the filter with the incoming query ONLY if it matches a child, so we
+  // reveal the matched sub-resource without hiding everything on a non-match.
+  const seededSearch = useMemo(() => {
+    const q = initialSearch?.trim().toLowerCase()
+    if (!q) return ''
+    const hit = subResources.some(
+      (sr) =>
+        sr.displayName.toLowerCase().includes(q) ||
+        (sr.aliases ?? []).some((a) => a.toLowerCase().includes(q)),
+    )
+    return hit ? initialSearch!.trim() : ''
+  }, [initialSearch, subResources])
+  const [search, setSearch] = useState(seededSearch)
   const [tierFilter, setTierFilter] = useState<string>('all')
 
   const uniqueTiers = useMemo(() => {

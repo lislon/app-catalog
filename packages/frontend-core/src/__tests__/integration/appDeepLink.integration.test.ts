@@ -53,35 +53,35 @@ describe('App deep-link routing', () => {
     expect(ui.catalog.isDetailPanelOpen()).toBe(false)
   })
 
-  it('keeps the search text after auto-navigating to a single match, without leaking ?q into the URL (#10, #27)', async () => {
-    // A search that narrows the catalog to exactly one app auto-opens that
-    // app's detail page. The filters provider is mounted per-route and remounts
-    // on navigation, so component-local search state would be wiped. #10
-    // originally worked around this by persisting `q` in the URL; #27 removes
-    // `q` from the URL and instead backs the search value with sessionStorage -
-    // so the text survives the remount WITHOUT polluting the shared link.
+  it('a single search match stays in the launcher morph — no auto-jump to /app (#38)', async () => {
+    // Regression (#38): a search narrowing to exactly one app used to auto-open
+    // that app's detail route, which — with the launcher — yanked the user out
+    // of the search-morph into the old grid+panel (reported: typing "biom"
+    // jumped straight to an app-detail page). The morph now shows the single
+    // match as a selectable row; the user opts in (click / ↵) to open it.
     //
-    // We seed the search via sessionStorage (a returning user who typed a query
-    // before this render) rather than driving keystrokes: the jsdom
-    // `userEvent.type` + `useDeferredValue` combination drops characters
-    // non-deterministically, which is orthogonal to what this test guards. The
-    // seeded value exercises the same remount-survival path.
+    // Seed via sessionStorage (returning user who typed before this render):
+    // jsdom userEvent.type + useDeferredValue drops characters, orthogonal here.
     const { ui, router } = await given(magazine.full(), {
       initialRoute: '/',
       seedSearch: 'jira',
     })
 
-    // Auto-navigates to the single match...
+    // Stays on the launcher home — NO auto-navigation to the detail route.
+    await waitFor(() => {
+      expect(ui.catalog.getTableData().length).toBeGreaterThan(0)
+    })
+    expect(router.state.location.pathname).toBe('/')
+    expect(ui.catalog.getTableData().map((r) => r.name)).toContain('Jira')
+    // Search text preserved (sessionStorage-backed), no ?q leak.
+    expect(ui.catalog.getSearchInput().value).toBe('jira')
+    expect((router.state.location.search as { q?: string }).q).toBeUndefined()
+
+    // Opting in (click) opens the detail.
+    await ui.catalog.openApp('Jira')
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/app/jira')
     })
-
-    // ...but the URL is CLEAN - no `?q=` leaked into the shareable link (#27).
-    expect((router.state.location.search as { q?: string }).q).toBeUndefined()
-    expect(router.state.location.href).toBe('/app/jira')
-    // ...and the search text is still in the input (preserved via sessionStorage),
-    // so the #10 guarantee (search not lost on auto-navigate) holds.
-    expect(ui.catalog.getSearchInput().value).toBe('jira')
   })
 
   it('strips a legacy ?q= from the URL on the app detail route (#27)', async () => {

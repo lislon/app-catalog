@@ -5,12 +5,14 @@ import '@testing-library/jest-dom/vitest'
 import { given } from './harness/given'
 import { magazine } from './mock-backend/magazines'
 
-// #11: when a search returns 0 non-deprecated results, fall back to including
-// deprecated apps — show them, surface a notice, and auto-enable the
-// "Show Deprecated Apps" toggle. `magazine.full()` includes a deprecated app
-// "Old Tool" (slug old-tool) that is the only match for "old tool".
+// #11: when a search returns 0 non-deprecated results, fall back to showing
+// deprecated matches and surface a notice. In the launcher search-morph (#38)
+// there is no separate "Show Deprecated Apps" toggle (a grid-era control) —
+// the morph searches the full set and only labels the deprecated-only case.
+// `magazine.full()` includes a deprecated app "Old Tool" (slug old-tool) that
+// is the only match for "old tool".
 describe('Search fallback to deprecated apps (#11)', () => {
-  it('shows deprecated matches + notice + enables the toggle when 0 active results', async () => {
+  it('shows deprecated matches + notice when 0 active results', async () => {
     // Seed the query via sessionStorage to avoid the jsdom useDeferredValue +
     // userEvent typing race (#27 removed `?q=` from the URL). "old tool" matches
     // ONLY the deprecated "Old Tool".
@@ -19,16 +21,14 @@ describe('Search fallback to deprecated apps (#11)', () => {
       seedSearch: 'old tool',
     })
 
-    // The fallback surfaces the deprecated match, shows the notice, and the
-    // "Show Deprecated Apps" toggle is auto-enabled.
+    // The fallback surfaces the deprecated match and shows the notice.
     await waitFor(() => {
       expect(ui.catalog.hasDeprecatedFallbackNotice()).toBe(true)
     })
     expect(ui.catalog.getTableData().map((r) => r.name)).toContain('Old Tool')
-    expect(ui.catalog.isShowDeprecatedChecked()).toBe(true)
   })
 
-  it('does not force deprecated results when the query has an active match', async () => {
+  it('does not show the fallback notice when the query has an active match', async () => {
     const { ui } = await given(magazine.full(), {
       initialRoute: '/',
       seedSearch: 'Jira',
@@ -38,9 +38,8 @@ describe('Search fallback to deprecated apps (#11)', () => {
       const names = ui.catalog.getTableData().map((r) => r.name)
       expect(names).toContain('Jira')
     })
-    // Active match exists → no fallback, no notice, toggle stays off.
+    // Active match exists → no deprecated-fallback notice.
     expect(ui.catalog.hasDeprecatedFallbackNotice()).toBe(false)
-    expect(ui.catalog.isShowDeprecatedChecked()).toBe(false)
   })
 
   it('keeps the normal empty state when nothing matches at all', async () => {
