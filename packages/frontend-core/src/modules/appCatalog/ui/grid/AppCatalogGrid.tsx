@@ -29,6 +29,9 @@ import {
   TableRow,
 } from '~/ui/table'
 import { AccessRequestSection } from '../components/AccessRequestSection'
+import { AccessPrerequisiteChain } from '../components/AccessPrerequisiteChain'
+import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
+import { PersonBadge } from '../components/PersonBadge'
 import { useUser } from '~/modules/auth'
 import { InlineEditableField } from '../components/InlineEditableField'
 import { MarkdownText } from '../components/MarkdownText'
@@ -173,6 +176,10 @@ function AppScreenshot({ app }: { app: Resource }) {
 
 function TiersAndSubResourcesPanel({ app }: { app: Resource }) {
   const { resources } = useAppCatalogContext()
+  // #38 item C: the active catalog search term. When the user reached this app
+  // by searching something that matched a child, seed the sub-resource filter
+  // with it so the matched child is revealed.
+  const { state: filterState } = useAppCatalogFilters()
   const appSubResources = React.useMemo(
     () => getChildResources(resources, app.slug),
     [resources, app.slug],
@@ -187,14 +194,17 @@ function TiersAndSubResourcesPanel({ app }: { app: Resource }) {
       )}
       {appSubResources.length > 0 && (
         <div className="mt-6">
-          <SubResourcesSection subResources={appSubResources} />
+          <SubResourcesSection
+            subResources={appSubResources}
+            initialSearch={filterState.searchValue}
+          />
         </div>
       )}
     </>
   )
 }
 
-function AppDetails({
+export function AppDetails({
   app,
   onAppClick,
   onClosePanel,
@@ -269,7 +279,7 @@ function AppDetails({
             <AppIcon app={app} className="size-16" />
             <div className="-mx-3 flex-1 min-w-0">
               <div className="flex items-center gap-2 px-3">
-                <div className="text-2xl font-semibold min-w-0">
+                <div className="font-serif text-2xl font-semibold min-w-0">
                   {app.abbreviation
                     ? `${app.displayName} (${app.abbreviation})`
                     : app.displayName}
@@ -333,10 +343,11 @@ function AppDetails({
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => recordClick(app.slug)}
-                    className="inline-flex items-center gap-1 rounded-md py-1 text-sm text-blue-600 hover:bg-accent/30 hover:underline dark:text-blue-400 transition-all"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:border-primary hover:text-primary transition-all"
+                    title="Open app in new tab (secondary — see access info below)"
                   >
                     {app.appUrl.replace(/https?:\/\//g, '')}
-                    <ExternalLink className="size-3.5 shrink-0 opacity-40 transition-opacity" />
+                    <ExternalLink className="size-3 shrink-0 opacity-60" />
                   </a>
                 ) : (
                   <span className="text-muted-foreground">—</span>
@@ -387,6 +398,13 @@ function AppDetails({
             )
           })()}
 
+        {/* Two-step access (#38 D): for a nested resource, show the parent-first
+            prerequisite chain before this resource's own access instructions. */}
+        <AccessPrerequisiteChain resource={app} onOpenParent={onAppClick} />
+
+        {/* Access Request Section — hero of the detail, shown before description */}
+        <AccessRequestSection app={app} approvalMethods={approvalMethods} />
+
         {/* Description */}
         <div className="mt-6">
           <h3 className="mb-2 text-sm font-medium">Description</h3>
@@ -429,8 +447,17 @@ function AppDetails({
           </div>
         )}
 
-        {/* Access Request Section */}
-        <AccessRequestSection app={app} approvalMethods={approvalMethods} />
+        {/* Owner — who is responsible for this resource. Distinct from the
+            access approver (who decides access requests); see domain model. */}
+        {app.ownerPersonSlug && (
+          <div className="mt-6">
+            <h3 className="mb-1 text-sm font-medium">Owner</h3>
+            <p className="mb-2 text-xs text-muted-foreground">
+              Who is responsible for this resource
+            </p>
+            <PersonBadge slug={app.ownerPersonSlug} />
+          </div>
+        )}
 
         {/* Tier Variants and Sub-Resources */}
         <TiersAndSubResourcesPanel app={app} />
@@ -742,6 +769,9 @@ export function AppCatalogGrid({
     onAppClick,
   })
 
+  // Launch history for the secondary "open in new tab" action on each row.
+  const { recordClick: recordLaunch } = useAppClickHistory()
+
   // Build a map of parentSlug -> matched child resource displayName for search annotation
   const { resources: allResources2 } = useAppCatalogContext()
   const matchedSubResourceMap = React.useMemo(() => {
@@ -847,8 +877,36 @@ export function AppCatalogGrid({
           </div>
         ),
       },
+      {
+        // Secondary "launch" action (#31): the primary row click opens the
+        // detail panel (how to get access); this quiet ↗ button is the fast
+        // "I just want the URL" jump. stopPropagation so it doesn't also open
+        // the panel. Only shown when the resource has a URL.
+        id: 'launch',
+        header: '',
+        cell: ({ row }) =>
+          row.original.appUrl ? (
+            <a
+              href={row.original.appUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Open ${row.original.displayName} in a new tab`}
+              title={`Open ${row.original.displayName}`}
+              onClick={(e) => {
+                e.stopPropagation()
+                recordLaunch(row.original.slug)
+              }}
+              className="inline-flex size-8 items-center justify-center rounded-full border text-muted-foreground opacity-0 transition-opacity hover:border-primary hover:text-primary group-hover:opacity-100 focus-visible:opacity-100"
+            >
+              <ExternalLink className="size-4" />
+            </a>
+          ) : null,
+        meta: {
+          className: 'w-[56px] text-right',
+        },
+      },
     ],
-    [searchQuery, matchedSubResourceMap],
+    [searchQuery, matchedSubResourceMap, recordLaunch],
   )
 
   // Create a single table instance with all apps
@@ -937,7 +995,7 @@ export function AppCatalogGrid({
                       className="px-4 py-6 sticky top-[49px] bg-muted/90 backdrop-blur z-10"
                     >
                       <div className="flex items-center justify-center">
-                        <span className="font-bold text-lg tracking-widest uppercase leading-loose text-muted-foreground">
+                        <span className="font-serif font-semibold text-lg tracking-widest uppercase leading-loose text-muted-foreground">
                           {group.groupName}
                         </span>
                       </div>
@@ -963,7 +1021,7 @@ export function AppCatalogGrid({
                         }}
                         onClick={() => handleAppClick(row.original)}
                         className={cn(
-                          'border-b cursor-pointer transition-colors',
+                          'group border-b cursor-pointer transition-colors',
                           selectedApp?.id === row.original.id
                             ? 'bg-blue-100 dark:bg-blue-950 hover:bg-blue-200 dark:hover:bg-blue-900'
                             : 'hover:bg-muted/30',

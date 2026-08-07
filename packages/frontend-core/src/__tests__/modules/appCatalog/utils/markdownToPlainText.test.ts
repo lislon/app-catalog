@@ -3,14 +3,14 @@ import { markdownToPlainText } from '~/modules/appCatalog/utils/markdownToPlainT
 
 // #25 regression: markdown-bearing text fields (descriptions) are rendered raw
 // in compact/clamped surfaces (grid list preview, table row, filter combobox,
-// sub-resources). Link syntax like `[Example Portal](/app/example-portal)`
+// sub-resources). Link syntax like `[Signatera Portal](/app/signatera-portal)`
 // leaked as literal text. In clamped previews we strip markdown to its visible
 // text so nothing leaks and `line-clamp` / search highlighting keep working.
 describe('markdownToPlainText', () => {
   it('reduces an internal link to just its text', () => {
     expect(
-      markdownToPlainText('See [Example Portal](/app/example-portal) too'),
-    ).toBe('See Example Portal too')
+      markdownToPlainText('See [Signatera Portal](/app/signatera-portal) too'),
+    ).toBe('See Signatera Portal too')
   })
 
   it('reduces an external link to just its text', () => {
@@ -22,9 +22,9 @@ describe('markdownToPlainText', () => {
   it('handles multiple links in one string', () => {
     expect(
       markdownToPlainText(
-        '[Example Portal](/app/example-portal) and [Portal B](/app/portal-b)',
+        '[Signatera Portal](/app/signatera-portal) and [Prospera Portal](/app/prospera-portal)',
       ),
-    ).toBe('Example Portal and Portal B')
+    ).toBe('Signatera Portal and Prospera Portal')
   })
 
   it('strips image syntax to its alt text', () => {
