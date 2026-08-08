@@ -1,6 +1,7 @@
 import { PrismaClient } from '../generated/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
+import { buildPgSslConfig } from './sslConfig'
 
 let prismaClient: PrismaClient | null = null
 let pool: pg.Pool | null = null
@@ -19,8 +20,15 @@ export function getDbClient(): PrismaClient {
       )
     }
 
-    // Prisma 7 with adapter: Create pg pool and wrap with adapter
-    pool = new pg.Pool({ connectionString: databaseUrl })
+    // Prisma 7 with adapter: Create pg pool and wrap with adapter.
+    // SSL comes from PGSSLMODE/PGSSLROOTCERT via our helper (node-postgres
+    // doesn't honor those correctly for a connection-string pool — see
+    // buildPgSslConfig).
+    const ssl = buildPgSslConfig()
+    pool = new pg.Pool({
+      connectionString: databaseUrl,
+      ...(ssl === undefined ? {} : { ssl }),
+    })
     const adapter = new PrismaPg(pool)
 
     prismaClient = new PrismaClient({ adapter })

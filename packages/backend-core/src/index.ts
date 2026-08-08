@@ -59,6 +59,7 @@ export {
 
 // Database utilities
 export {
+  buildPgSslConfig,
   connectDb,
   disconnectDb,
   getDbClient,
