@@ -1,5 +1,6 @@
 // Database connection
 export { connectDb, disconnectDb, getDbClient, setDbClient } from './client'
+export { buildPgSslConfig } from './sslConfig'
 
 // Table sync utilities
 export {
