@@ -3,6 +3,7 @@ import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
 import type { AcDatabaseConfig } from './types'
 import { setDbClient } from '../db/client'
+import { buildPgSslConfig } from '../db/sslConfig'
 
 /**
  * Formats a database connection URL from structured config.
@@ -37,8 +38,14 @@ export class AcDatabaseManager {
     if (!this.client) {
       const datasourceUrl = formatConnectionUrl(this.config)
 
-      // Prisma 7 with adapter: Create pg pool and wrap with adapter
-      this.pool = new pg.Pool({ connectionString: datasourceUrl })
+      // Prisma 7 with adapter: Create pg pool and wrap with adapter.
+      // SSL from PGSSLMODE/PGSSLROOTCERT via buildPgSslConfig (node-postgres
+      // doesn't apply those correctly to a connection-string pool).
+      const ssl = buildPgSslConfig()
+      this.pool = new pg.Pool({
+        connectionString: datasourceUrl,
+        ...(ssl === undefined ? {} : { ssl }),
+      })
       const adapter = new PrismaPg(this.pool)
 
       this.client = new PrismaClient({
