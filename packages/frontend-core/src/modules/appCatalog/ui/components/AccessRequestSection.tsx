@@ -240,7 +240,7 @@ export function AccessRequestSection({
 
       {/* Comments */}
       {accessRequest.comments && (
-        <div className="text-sm text-muted-foreground prose prose-sm max-w-none [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">
+        <div className="text-sm text-muted-foreground prose prose-sm max-w-none">
           <ReactMarkdown components={{ a: MarkdownLink }}>
             {accessRequest.comments}
           </ReactMarkdown>
@@ -326,7 +326,7 @@ export function AccessRequestSection({
               Post-Approval Instructions
             </AccordionTrigger>
             <AccordionContent className="pb-3">
-              <div className="text-sm text-muted-foreground prose prose-sm max-w-none [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">
+              <div className="text-sm text-muted-foreground prose prose-sm max-w-none">
                 <ReactMarkdown components={{ a: MarkdownLink }}>
                   {accessRequest.postApprovalInstructions}
                 </ReactMarkdown>
