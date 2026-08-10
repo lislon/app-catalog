@@ -1,5 +1,11 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.13.2
+
+### Patch Changes
+
+- [#90](https://github.com/lislon/app-catalog/pull/90) [`f9c635b`](https://github.com/lislon/app-catalog/commit/f9c635b32f55a4ce9ba7ada684f27a9cbbc40660) Thanks [@lislon](https://github.com/lislon)! - Fix list marker styles in markdown prose blocks — Tailwind preflight resets list-style to none; add explicit list-decimal/list-disc utilities so numbered and bulleted lists render correctly in access request comments and post-approval instructions.
+
 ## 0.13.1
 
 ### Patch Changes
