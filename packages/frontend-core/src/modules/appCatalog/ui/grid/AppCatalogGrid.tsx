@@ -343,11 +343,14 @@ export function AppDetails({
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => recordClick(app.slug)}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:border-primary hover:text-primary transition-all"
-                    title="Open app in new tab (secondary — see access info below)"
+                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
+                    aria-label={'Open ' + app.displayName}
                   >
-                    {app.appUrl.replace(/https?:\/\//g, '')}
-                    <ExternalLink className="size-3 shrink-0 opacity-60" />
+                    <ExternalLink className="size-3.5 shrink-0" />
+                    Open{' '}
+                    <span className="max-w-[240px] truncate text-primary-foreground/70 text-xs font-normal">
+                      {app.appUrl.replace(/https?:\/\//g, '')}
+                    </span>
                   </a>
                 ) : (
                   <span className="text-muted-foreground">—</span>
