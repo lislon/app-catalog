@@ -148,6 +148,36 @@ describe('App Catalog Integration', () => {
     expect(ui.catalog.isDetailPanelOpen()).toBe(false)
   })
 
+  // Detail card UX (#45): the detail panel shows a prominent primary "Open" button
+  // with the destination URL visible alongside it.
+  it('shows a prominent primary Open button with URL in the app detail card', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        backendCfg.withApp({
+          displayName: 'Website App',
+          description: 'Has a website',
+          appUrl: 'https://example.natera.com/app',
+        })
+        backendCfg.withApp({
+          displayName: 'No URL App',
+          description: 'No url',
+        })
+      }),
+    )
+
+    await ui.catalog.openApp('Website App')
+    const btn = ui.app.getOpenButton()
+    expect(btn).not.toBeNull()
+    expect(btn!.getAttribute('href')).toBe('https://example.natera.com/app')
+    expect(btn!.getAttribute('target')).toBe('_blank')
+    // The URL is shown in the button (stripped of protocol).
+    expect(btn!.textContent).toContain('example.natera.com/app')
+
+    // An app without appUrl shows no Open button.
+    await ui.catalog.openApp('No URL App')
+    expect(ui.app.getOpenButton()).toBeNull()
+  })
+
   // Test 5: Returning user — cached data + no onboarding + backend down
   it('returning user sees cached apps even when backend is unavailable', async () => {
     suppressConsole([/TRPC Error/, /Failed to fetch/])
