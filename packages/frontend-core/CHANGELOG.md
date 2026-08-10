@@ -1,5 +1,11 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.13.1
+
+### Patch Changes
+
+- [#86](https://github.com/lislon/app-catalog/pull/86) [`85440ab`](https://github.com/lislon/app-catalog/commit/85440ab59c392602cfeb815049a6ad7b8c83278d) Thanks [@lislon](https://github.com/lislon)! - Promote the primary launch button to app detail card header. Replaces the muted chip link with a filled primary button that shows "Open → <url>" so users see the destination before clicking.
+
 ## 0.13.0
 
 ## 0.12.0
