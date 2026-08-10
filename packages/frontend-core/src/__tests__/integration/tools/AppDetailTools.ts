@@ -152,6 +152,17 @@ export class AppDetailTools {
     return panel.querySelector('.text-2xl')?.textContent.trim() ?? ''
   }
 
+  /**
+   * The prominent primary "Open" button in the app detail card.
+   * Returns the anchor element when the app has an appUrl, null otherwise.
+   */
+  getOpenButton(): HTMLAnchorElement | null {
+    const panel = this.getPanel()
+    return (
+      panel.querySelector<HTMLAnchorElement>('[aria-label^="Open "]') ?? null
+    )
+  }
+
   private getPanel(): HTMLElement {
     const closeButton = screen.queryByLabelText('Close details panel')
     if (!closeButton) {
