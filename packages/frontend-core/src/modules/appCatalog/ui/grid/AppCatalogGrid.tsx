@@ -53,6 +53,7 @@ import { markdownToPlainText } from '../../utils/markdownToPlainText'
 import { formatRelativeTime } from '../../utils/formatRelativeTime'
 import { TierVariantsSection } from '../components/TierVariantsSection'
 import { SubResourcesSection } from '../components/SubResourcesSection'
+import { SubResourceDetailPanel } from '../components/SubResourceDetailPanel'
 import { getChildResources } from '../../utils/resolveHelpers'
 
 export interface AppCatalogGridProps {
@@ -70,6 +71,12 @@ export interface AppCatalogGridProps {
   onClearFilters?: () => void
   /** Called when the user closes the detail panel (Esc or X) — e.g. to navigate back to the catalog URL */
   onClosePanel?: () => void
+  /** Currently selected subresource slug */
+  selectedSubSlug?: string
+  /** Called when user clicks a sub-row */
+  onSubClick?: (parentSlug: string, subSlug: string) => void
+  /** Called when user clicks Back in sub detail */
+  onBackToParent?: () => void
 }
 
 function getIconUrl(iconName: string): string {
@@ -773,16 +780,21 @@ export function AppCatalogGrid({
   totalAppsCount,
   onClearFilters,
   onClosePanel,
+  selectedSubSlug,
+  onSubClick,
+  onBackToParent,
 }: AppCatalogGridProps) {
   // Full, unfiltered resource set — the detail panel must resolve the open app
   // from this, not only from the filtered `apps`. Navigating to /app/<slug>
   // (e.g. a deprecated app's "View replacement" link, or any deep link) should
   // render that app like typing the URL in the browser, regardless of the
-  // active search/filters (#12).
-  const { resources: allResourcesForDetail } = useAppCatalogContext()
+  // active search/filters (#12). Also provides approvalMethods for sub-resource panel.
+  const { resources: allResources2, approvalMethods } = useAppCatalogContext()
+
   const selectedApp = selectedAppSlug
     ? (apps.find((a) => a.slug === selectedAppSlug) ??
-      allResourcesForDetail.find((a) => a.slug === selectedAppSlug))
+      allResources2.find((a) => a.slug === selectedAppSlug && !a.parentSlug) ??
+      null)
     : null
 
   const groupedApps = groupApps(apps, groupingDefinition, hasSearch)
@@ -803,10 +815,8 @@ export function AppCatalogGrid({
   // Launch history for the secondary "open in new tab" action on each row.
   const { recordClick: recordLaunch } = useAppClickHistory()
 
-  // Build a map of parentSlug -> matched child resource displayName for search annotation
-  const { resources: allResources2 } = useAppCatalogContext()
-  const matchedSubResourceMap = React.useMemo(() => {
-    const map = new Map<string, string>()
+  const matchedSubResourcesMap = React.useMemo(() => {
+    const map = new Map<string, Resource[]>()
     if (!searchQuery?.trim() || allResources2.length === 0) return map
     const queryTerms = searchQuery
       .trim()
@@ -818,7 +828,6 @@ export function AppCatalogGrid({
 
     for (const r of allResources2) {
       if (!r.parentSlug) continue
-      if (map.has(r.parentSlug)) continue
       const nameMatch = allTermsMatch(r.displayName.toLowerCase())
       const aliasMatch = (r.aliases ?? []).some((a) =>
         allTermsMatch(a.toLowerCase()),
@@ -827,11 +836,22 @@ export function AppCatalogGrid({
         ? allTermsMatch(r.description.toLowerCase())
         : false
       if (nameMatch || aliasMatch || descMatch) {
-        map.set(r.parentSlug, r.displayName)
+        if (!map.has(r.parentSlug)) {
+          map.set(r.parentSlug, [])
+        }
+        map.get(r.parentSlug)!.push(r)
       }
     }
     return map
   }, [searchQuery, allResources2])
+
+  // Track expanded parent slugs for sub-resource rows; reset when search changes
+  const [expandedParentSlugs, setExpandedParentSlugs] = React.useState<
+    Set<string>
+  >(() => new Set())
+  React.useEffect(() => {
+    setExpandedParentSlugs(new Set())
+  }, [searchQuery])
 
   // Define columns
   const columns = React.useMemo<ColumnDef<Resource>[]>(
@@ -899,12 +919,55 @@ export function AppCatalogGrid({
                 searchQuery={searchQuery}
               />
             </span>
-            {matchedSubResourceMap.get(row.original.slug) && (
-              <div className="text-xs text-primary mt-0.5">
-                Matched sub-resource:{' '}
-                {matchedSubResourceMap.get(row.original.slug)}
-              </div>
-            )}
+            {/* matched subs: expandable indented rows */}
+            {(matchedSubResourcesMap.get(row.original.slug)?.length ?? 0) > 0 &&
+              (() => {
+                const matchedSubs = matchedSubResourcesMap.get(
+                  row.original.slug,
+                )!
+                const COLLAPSED_LIMIT = 5
+                const isExpanded = expandedParentSlugs.has(row.original.slug)
+                const visibleSubs = isExpanded
+                  ? matchedSubs
+                  : matchedSubs.slice(0, COLLAPSED_LIMIT)
+                const hiddenCount = matchedSubs.length - COLLAPSED_LIMIT
+                return (
+                  <div className="mt-1 space-y-0.5">
+                    {visibleSubs.map((sub) => (
+                      <button
+                        key={sub.slug}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onSubClick?.(row.original.slug, sub.slug)
+                        }}
+                        className={cn(
+                          'flex items-center gap-1.5 text-xs pl-3 border-l-2 w-full text-left py-0.5 rounded-sm hover:bg-accent/50 transition-colors',
+                          selectedSubSlug === sub.slug
+                            ? 'border-primary text-primary font-medium'
+                            : 'border-muted-foreground/30 text-muted-foreground hover:text-foreground',
+                        )}
+                      >
+                        <span>{sub.displayName}</span>
+                      </button>
+                    ))}
+                    {!isExpanded && hiddenCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setExpandedParentSlugs(
+                            (prev) => new Set([...prev, row.original.slug]),
+                          )
+                        }}
+                        className="text-xs pl-3 border-l-2 border-muted-foreground/30 text-muted-foreground hover:text-primary w-full text-left py-0.5"
+                      >
+                        ... {hiddenCount} more
+                      </button>
+                    )}
+                  </div>
+                )
+              })()}
           </div>
         ),
       },
@@ -937,7 +1000,15 @@ export function AppCatalogGrid({
         },
       },
     ],
-    [searchQuery, matchedSubResourceMap, recordLaunch],
+    [
+      searchQuery,
+      matchedSubResourcesMap,
+      expandedParentSlugs,
+      selectedSubSlug,
+      onSubClick,
+      setExpandedParentSlugs,
+      recordLaunch,
+    ],
   )
 
   // Create a single table instance with all apps
@@ -1113,24 +1184,47 @@ export function AppCatalogGrid({
             className="overflow-hidden"
           >
             <div className="h-full overflow-y-auto border-l bg-background pl-4">
-              {selectedApp ? (
-                <div className="relative">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-4 right-4 z-10 hover:bg-accent"
-                    onClick={handleClosePanel}
-                    aria-label="Close details panel"
-                  >
-                    <X className="h-5 w-5" />
-                  </Button>
-                  <AppDetails
-                    app={selectedApp}
-                    onAppClick={onAppClick}
-                    onClosePanel={handleClosePanel}
-                  />
-                </div>
-              ) : null}
+              {/* selectedApp is non-null here; isPanelOpen guards this block */}
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-4 right-4 z-10 hover:bg-accent"
+                  onClick={handleClosePanel}
+                  aria-label="Close details panel"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+                {/* eslint-disable-next-line @typescript-eslint/no-unnecessary-condition */}
+                {selectedApp &&
+                  (() => {
+                    const app = selectedApp
+                    const selectedSub = selectedSubSlug
+                      ? allResources2.find(
+                          (r) =>
+                            r.slug === selectedSubSlug &&
+                            r.parentSlug === app.slug,
+                        )
+                      : null
+                    if (selectedSub != null) {
+                      return (
+                        <SubResourceDetailPanel
+                          subResource={selectedSub}
+                          parent={app}
+                          approvalMethods={approvalMethods}
+                          onBack={onBackToParent ?? (() => undefined)}
+                        />
+                      )
+                    }
+                    return (
+                      <AppDetails
+                        app={selectedApp}
+                        onAppClick={onAppClick}
+                        onClosePanel={handleClosePanel}
+                      />
+                    )
+                  })()}
+              </div>
             </div>
           </ResizablePanel>
         </>

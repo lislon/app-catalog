@@ -1,7 +1,13 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useRouter, useSearch } from '@tanstack/react-router'
 import { X } from 'lucide-react'
-import { useDeferredValue, useEffect, useMemo, useState } from 'react'
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import { Button } from '~/ui/button'
 import {
   Empty,
@@ -34,6 +40,35 @@ export function AppCatalogPage({
   const selectedAppSlug = selectedSlug
 
   // Search value from context (URL-synced in AppCatalogFiltersContext)
+  const search = useSearch({ strict: false })
+  const selectedSubSlug = search.sub
+
+  const router = useRouter()
+
+  const handleSubClick = useCallback(
+    (parentSlug: string, subSlug: string) => {
+      const currentPath = router.state.location.pathname
+      void navigate({
+        to: currentPath,
+        search: {
+          ...router.state.location.search,
+          app: parentSlug,
+          sub: subSlug,
+        },
+      })
+    },
+    [navigate, router],
+  )
+
+  const handleBackToParent = useCallback(() => {
+    const currentPath = router.state.location.pathname
+    const { sub: _sub, ...restSearch } = router.state.location.search as Record<
+      string,
+      string
+    >
+    void navigate({ to: currentPath, search: restSearch })
+  }, [navigate, router])
+
   const searchValue = filterState.searchValue
   const setSearchValue = actions.setSearchValue
 
@@ -346,11 +381,14 @@ export function AppCatalogPage({
           <AppCatalogGrid
             apps={filteredApps}
             selectedAppSlug={selectedAppSlug}
+            selectedSubSlug={selectedSubSlug}
             groupingDefinition={groupingDefinition}
             onAppClick={handleAppClick}
             onClosePanel={() => void navigate({ to: '/' })}
+            onSubClick={handleSubClick}
+            onBackToParent={handleBackToParent}
             hasSearch={!!deferredSearchValue}
-            searchQuery={deferredSearchValue}
+            searchQuery={searchValue}
             totalAppsCount={totalAppsCount}
             onClearFilters={handleClearFilters}
           />

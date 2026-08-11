@@ -163,6 +163,52 @@ export class AppDetailTools {
     )
   }
 
+  /**
+   * Get sub-resource detail panel data when a sub-resource is selected.
+   * Returns null if the sub-resource detail panel is not shown.
+   */
+  getSubResourceDetail(): {
+    subResourceName: string
+    hasStep1: boolean
+    hasStep2: boolean
+    backButtonLabel: string | null
+  } | null {
+    const panel = document.querySelector<HTMLElement>(
+      '[aria-label^="Back to "]',
+    )
+    if (!panel) return null
+
+    const backButtonEl = document.querySelector<HTMLElement>(
+      '[aria-label^="Back to "]',
+    )
+    const backButtonLabel = backButtonEl?.getAttribute('aria-label') ?? null
+
+    // Sub-resource name: h2 in the detail panel area
+    const h2 = document.querySelector('h2.text-xl')
+    const subResourceName = (h2?.textContent ?? '').trim()
+
+    // Step badges: circles with "1" and "2" text
+    const stepBadges = Array.from(
+      document.querySelectorAll<HTMLElement>('span.rounded-full'),
+    )
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    const getText = (el: HTMLElement) => (el.textContent ?? '').trim()
+    const hasStep1 = stepBadges.some((el) => getText(el) === '1')
+    const hasStep2 = stepBadges.some((el) => getText(el) === '2')
+
+    return { subResourceName, hasStep1, hasStep2, backButtonLabel }
+  }
+
+  async clickBackToParent(): Promise<void> {
+    const backButton = document.querySelector<HTMLButtonElement>(
+      '[aria-label^="Back to "]',
+    )
+    if (!backButton) {
+      throw new Error('Back-to-parent button not found in detail panel')
+    }
+    await this.user.click(backButton)
+  }
+
   private getPanel(): HTMLElement {
     const closeButton = screen.queryByLabelText('Close details panel')
     if (!closeButton) {
