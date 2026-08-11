@@ -45,6 +45,21 @@ describe('App freshness line', () => {
     expect(screen.getByText(/may be out of date/i)).toBeInTheDocument()
   })
 
+  it('shows "Added" date before Sources when createdAt is present (#55)', async () => {
+    const { ui } = await given(
+      magazine.full(({ backendCfg }) => {
+        backendCfg.withApp({
+          slug: 'dated-app',
+          displayName: 'Dated App',
+          createdAt: iso(30 * DAY),
+        })
+      }),
+      { initialRoute: '/app/dated-app' },
+    )
+    await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
+    expect(screen.getByText(/Added/i)).toBeInTheDocument()
+  })
+
   it('shows no freshness line when the app was never scanned', async () => {
     const { ui } = await given(
       magazine.full(({ backendCfg }) => {
