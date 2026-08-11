@@ -118,6 +118,8 @@ export interface Resource {
    */
   lastCheckedAt?: string | null
   nextCheckAfter?: string | null
+  /** ISO-8601 timestamp of when this entry was first created in the catalog DB. */
+  createdAt?: string
 }
 
 // Derived catalog data returned by backend
