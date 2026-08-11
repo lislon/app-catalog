@@ -1,5 +1,6 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
 import { X } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 import { AppDetails } from '../grid/AppCatalogGrid'
 
 /**
@@ -21,6 +22,14 @@ export function LauncherDetailPanel({
   onClose: () => void
   onAppClick?: (app: Resource) => void
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+
+  // Focus the dialog on mount so Esc hotkeys fire immediately, even when
+  // the card was opened by a mouse click (which leaves focus on the grid row).
+  useEffect(() => {
+    dialogRef.current?.focus()
+  }, [])
+
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-6 md:p-10">
       {/* scrim */}
@@ -35,10 +44,12 @@ export function LauncherDetailPanel({
           prose inside AppDetails is width-capped separately so it stays
           readable. Caps at 94vw so it never touches the edges. */}
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={`${app.displayName} details`}
-        className="relative w-full max-w-[min(1120px,94vw)] my-auto rounded-[var(--radius)] border border-border bg-background shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+        tabIndex={-1}
+        className="relative w-full max-w-[min(1120px,94vw)] my-auto rounded-[var(--radius)] border border-border bg-background shadow-2xl animate-in fade-in zoom-in-95 duration-200 outline-none"
       >
         <button
           type="button"
