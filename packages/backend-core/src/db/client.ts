@@ -24,10 +24,17 @@ export function getDbClient(): PrismaClient {
     // SSL comes from PGSSLMODE/PGSSLROOTCERT via our helper (node-postgres
     // doesn't honor those correctly for a connection-string pool — see
     // buildPgSslConfig).
+    //
+    // Schema isolation for preview envs (#44): when DB_SCHEMA is set (e.g.
+    // "preview_feat-my-branch"), inject `search_path` via the pool options.
+    // node-postgres ignores Prisma's ?schema= URL param so we must use
+    // `options: '-c search_path=<schema>'` instead.
     const ssl = buildPgSslConfig()
+    const dbSchema = process.env.DB_SCHEMA
     pool = new pg.Pool({
       connectionString: databaseUrl,
       ...(ssl === undefined ? {} : { ssl }),
+      ...(dbSchema ? { options: `-c search_path=${dbSchema}` } : {}),
     })
     const adapter = new PrismaPg(pool)
 
