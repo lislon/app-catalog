@@ -1,5 +1,15 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.4.0-alpha-20260811142024
+
+### Minor Changes
+
+- [#103](https://github.com/lislon/app-catalog/pull/103) [`c8cc18b`](https://github.com/lislon/app-catalog/commit/c8cc18b92fb3ac921a892fadad0a384e63fc57bc) Thanks [@lislon](https://github.com/lislon)! - UI improvements: search highlight, Added date, clear search button, close card button
+  - Highlight matched query text in search result app names and subresource names
+  - Show "Added N ago" date before Sources in app detail cards (backend: expose createdAt)
+  - Clear (×) button in search input when text is present
+  - Close (×) button on app card dialog
+
 ## 0.4.0-alpha-20260811053337
 
 ### Patch Changes
