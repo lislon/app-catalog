@@ -156,7 +156,7 @@ describe('App Catalog Integration', () => {
         backendCfg.withApp({
           displayName: 'Website App',
           description: 'Has a website',
-          appUrl: 'https://example.natera.com/app',
+          appUrl: 'https://tools.example.com/launch',
         })
         backendCfg.withApp({
           displayName: 'No URL App',
@@ -168,10 +168,10 @@ describe('App Catalog Integration', () => {
     await ui.catalog.openApp('Website App')
     const btn = ui.app.getOpenButton()
     expect(btn).not.toBeNull()
-    expect(btn!.getAttribute('href')).toBe('https://example.natera.com/app')
+    expect(btn!.getAttribute('href')).toBe('https://tools.example.com/launch')
     expect(btn!.getAttribute('target')).toBe('_blank')
     // The URL is shown in the button (stripped of protocol).
-    expect(btn!.textContent).toContain('example.natera.com/app')
+    expect(btn!.textContent).toContain('tools.example.com/launch')
 
     // An app without appUrl shows no Open button.
     await ui.catalog.openApp('No URL App')
@@ -383,13 +383,13 @@ describe('App Catalog Integration', () => {
         for (let i = 1; i <= 7; i++) {
           backendCfg.withSubResource({
             appSlug: app.slug,
-            slug: `biomarkers-${i}`,
-            displayName: `Natera Biomarkers ${i}`,
+            slug: `acct-data-${i}`,
+            displayName: `Data Account ${i}`,
           })
         }
       }),
     )
-    await ui.catalog.search('biomarkers')
+    await ui.catalog.search('Data Account')
     await waitFor(() => {
       const subRows = ui.catalog.getSubResourceRows()
       expect(subRows).not.toBeNull()
@@ -409,13 +409,13 @@ describe('App Catalog Integration', () => {
         for (let i = 1; i <= 7; i++) {
           backendCfg.withSubResource({
             appSlug: app.slug,
-            slug: `biomarkers-${i}`,
-            displayName: `Natera Biomarkers ${i}`,
+            slug: `acct-data-${i}`,
+            displayName: `Data Account ${i}`,
           })
         }
       }),
     )
-    await ui.catalog.search('biomarkers')
+    await ui.catalog.search('Data Account')
     await waitFor(() => {
       expect(ui.catalog.getSubResourceRows()).not.toBeNull()
     })
@@ -447,8 +447,8 @@ describe('App Catalog Integration', () => {
         })
         backendCfg.withSubResource({
           appSlug: app.slug,
-          slug: 'biomarkers-prod',
-          displayName: 'Natera Biomarkers Prod',
+          slug: 'acct-data-prod',
+          displayName: 'Data Account Prod',
           accessRequest: {
             approvalMethodSlug: subMethod.slug,
             comments: 'Contact account owner for account-level permissions',
@@ -456,17 +456,17 @@ describe('App Catalog Integration', () => {
         })
       }),
     )
-    await ui.catalog.search('biomarkers')
+    await ui.catalog.search('Data Account')
     await waitFor(() => {
       expect(ui.catalog.getSubResourceRows()).not.toBeNull()
     })
-    await ui.catalog.clickSubResource('Natera Biomarkers Prod')
+    await ui.catalog.clickSubResource('Data Account Prod')
     await waitFor(() => {
       expect(ui.app.getSubResourceDetail()).not.toBeNull()
     })
     const detail = ui.app.getSubResourceDetail()
     expect(detail).not.toBeNull()
-    expect(detail!.subResourceName).toBe('Natera Biomarkers Prod')
+    expect(detail!.subResourceName).toBe('Data Account Prod')
     expect(detail!.hasStep1).toBe(true)
     expect(detail!.hasStep2).toBe(true)
     expect(detail!.backButtonLabel).toBe('Back to AWS Console')
@@ -487,16 +487,16 @@ describe('App Catalog Integration', () => {
         })
         backendCfg.withSubResource({
           appSlug: app.slug,
-          slug: 'biomarkers-prod',
-          displayName: 'Natera Biomarkers Prod',
+          slug: 'acct-data-prod',
+          displayName: 'Data Account Prod',
         })
       }),
     )
-    await ui.catalog.search('biomarkers')
+    await ui.catalog.search('Data Account')
     await waitFor(() => {
       expect(ui.catalog.getSubResourceRows()).not.toBeNull()
     })
-    await ui.catalog.clickSubResource('Natera Biomarkers Prod')
+    await ui.catalog.clickSubResource('Data Account Prod')
     await waitFor(() => {
       expect(ui.app.getSubResourceDetail()).not.toBeNull()
     })
