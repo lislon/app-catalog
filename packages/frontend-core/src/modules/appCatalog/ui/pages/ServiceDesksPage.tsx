@@ -62,31 +62,59 @@ export function ServiceDesksPage() {
                 const url = desk.config.url
                 const description = desk.config.description
                 return (
-                  <TableRow key={desk.slug}>
+                  <TableRow
+                    key={desk.slug}
+                    className={
+                      url ? 'cursor-pointer hover:bg-muted/50' : undefined
+                    }
+                    onClick={
+                      url
+                        ? () =>
+                            window.open(url, '_blank', 'noopener,noreferrer')
+                        : undefined
+                    }
+                  >
                     <TableCell className="font-medium align-top">
-                      <span data-testid="service-desk-name">
-                        {desk.displayName}
-                      </span>
-                      {description && (
-                        <span className="block text-xs font-normal text-muted-foreground">
-                          {description}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
                       {url ? (
                         <a
                           href={url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-primary hover:underline break-all"
+                          className="hover:text-primary hover:underline"
+                          data-testid="service-desk-name"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {desk.displayName}
+                        </a>
+                      ) : (
+                        <span data-testid="service-desk-name">
+                          {desk.displayName}
+                        </span>
+                      )}
+                      {description && (
+                        <span className="block text-xs font-normal text-muted-foreground">
+                          {description}
+                        </span>
+                      )}
+                      {url && (
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-0.5 inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary hover:underline"
                           title={url}
+                          onClick={(e) => e.stopPropagation()}
                         >
                           {url.replace(/^https?:\/\//, '')}
                           <ExternalLink className="size-3 shrink-0" />
                         </a>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs">
+                      {url ? (
+                        <ExternalLink className="size-4 text-primary/50" />
                       ) : (
-                        <span className="text-muted-foreground">—</span>
+                        <span>—</span>
                       )}
                     </TableCell>
                   </TableRow>
