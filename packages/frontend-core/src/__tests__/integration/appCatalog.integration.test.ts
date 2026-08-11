@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fireEvent, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 
 import { given } from './harness/given'
@@ -504,5 +504,57 @@ describe('App Catalog Integration', () => {
     // After going back, the sub detail should be gone and parent detail shown
     expect(ui.app.getSubResourceDetail()).toBeNull()
     expect(ui.catalog.isDetailPanelOpen()).toBe(true)
+  })
+
+  it('shows Step 1 / Step 2 badges for two-step access apps (#56)', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        const method = backendCfg.withApprovalMethod({
+          type: 'service',
+          displayName: 'Natero Bot',
+          config: { url: 'https://natero.example.com' },
+        })
+        backendCfg.withApp({
+          displayName: 'Two-Step App',
+          accessRequest: {
+            approvalMethodSlug: method.slug,
+            requestPrompt: 'Give me access to Two-Step App',
+            postApprovalInstructions: 'Contact the owner to complete setup.',
+          },
+        })
+        backendCfg.withApp({ displayName: 'Other App' })
+      }),
+    )
+    await ui.catalog.openApp('Two-Step App')
+    await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
+    expect(screen.getByText('Step 1')).toBeInTheDocument()
+    expect(screen.getByText('Step 2')).toBeInTheDocument()
+    expect(
+      screen.getByText('Contact the owner to complete setup.'),
+    ).toBeInTheDocument()
+  })
+
+  it('hides Step labels for single-step apps (#56)', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        const method = backendCfg.withApprovalMethod({
+          type: 'service',
+          displayName: 'Natero Bot',
+          config: { url: 'https://natero.example.com' },
+        })
+        backendCfg.withApp({
+          displayName: 'Single-Step App',
+          accessRequest: {
+            approvalMethodSlug: method.slug,
+            requestPrompt: 'Give me access',
+          },
+        })
+        backendCfg.withApp({ displayName: 'Other App' })
+      }),
+    )
+    await ui.catalog.openApp('Single-Step App')
+    await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
+    expect(screen.queryByText('Step 1')).not.toBeInTheDocument()
+    expect(screen.queryByText('Step 2')).not.toBeInTheDocument()
   })
 })
