@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fireEvent, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 
 import { given } from './harness/given'
@@ -39,6 +39,18 @@ describe('App deep-link routing', () => {
     await ui.catalog.openApp('Jira')
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
     fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' })
+    await waitFor(() => {
+      expect(ui.catalog.isDetailPanelOpen()).toBe(false)
+    })
+    expect(router.state.location.pathname).toBe('/')
+  })
+
+  it('closes the detail panel when the × close button is clicked (#59)', async () => {
+    const { ui, router } = await given(magazine.full(), { initialRoute: '/' })
+    await ui.catalog.openApp('Jira')
+    await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
+    const closeBtn = screen.getByRole('button', { name: /^Close$/i })
+    fireEvent.click(closeBtn)
     await waitFor(() => {
       expect(ui.catalog.isDetailPanelOpen()).toBe(false)
     })
