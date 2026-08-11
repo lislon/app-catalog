@@ -371,4 +371,138 @@ describe('App Catalog Integration', () => {
       ).not.toBeInTheDocument()
     })
   })
+
+  it('shows expandable subresource rows under parent in search results', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        const app = backendCfg.withApp({
+          slug: 'aws-console',
+          displayName: 'AWS Console',
+          description: 'Cloud management console',
+        })
+        for (let i = 1; i <= 7; i++) {
+          backendCfg.withSubResource({
+            appSlug: app.slug,
+            slug: `biomarkers-${i}`,
+            displayName: `Natera Biomarkers ${i}`,
+          })
+        }
+      }),
+    )
+    await ui.catalog.search('biomarkers')
+    await waitFor(() => {
+      const subRows = ui.catalog.getSubResourceRows()
+      expect(subRows).not.toBeNull()
+      expect(subRows!.visible).toBe(5)
+      expect(subRows!.total).toBe(7)
+      expect(subRows!.hasExpandRow).toBe(true)
+    })
+  })
+
+  it('expand "...N more" row reveals all subresources', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        const app = backendCfg.withApp({
+          slug: 'aws-console',
+          displayName: 'AWS Console',
+        })
+        for (let i = 1; i <= 7; i++) {
+          backendCfg.withSubResource({
+            appSlug: app.slug,
+            slug: `biomarkers-${i}`,
+            displayName: `Natera Biomarkers ${i}`,
+          })
+        }
+      }),
+    )
+    await ui.catalog.search('biomarkers')
+    await waitFor(() => {
+      expect(ui.catalog.getSubResourceRows()).not.toBeNull()
+    })
+    await ui.catalog.expandSubResources()
+    const subRows = ui.catalog.getSubResourceRows()
+    expect(subRows!.visible).toBe(7)
+    expect(subRows!.hasExpandRow).toBe(false)
+  })
+
+  it('clicking subresource row shows its detail with two-step access', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        const parentMethod = backendCfg.withApprovalMethod({
+          type: 'service',
+          displayName: 'IT Help Desk',
+          config: { url: 'https://helpdesk.example.com' },
+        })
+        const subMethod = backendCfg.withApprovalMethod({
+          type: 'custom',
+          displayName: 'Account Owner',
+        })
+        const app = backendCfg.withApp({
+          slug: 'aws-console',
+          displayName: 'AWS Console',
+          accessRequest: {
+            approvalMethodSlug: parentMethod.slug,
+            comments: 'Request AWS IAM access via IT Help Desk',
+          },
+        })
+        backendCfg.withSubResource({
+          appSlug: app.slug,
+          slug: 'biomarkers-prod',
+          displayName: 'Natera Biomarkers Prod',
+          accessRequest: {
+            approvalMethodSlug: subMethod.slug,
+            comments: 'Contact account owner for account-level permissions',
+          },
+        })
+      }),
+    )
+    await ui.catalog.search('biomarkers')
+    await waitFor(() => {
+      expect(ui.catalog.getSubResourceRows()).not.toBeNull()
+    })
+    await ui.catalog.clickSubResource('Natera Biomarkers Prod')
+    await waitFor(() => {
+      expect(ui.app.getSubResourceDetail()).not.toBeNull()
+    })
+    const detail = ui.app.getSubResourceDetail()
+    expect(detail).not.toBeNull()
+    expect(detail!.subResourceName).toBe('Natera Biomarkers Prod')
+    expect(detail!.hasStep1).toBe(true)
+    expect(detail!.hasStep2).toBe(true)
+    expect(detail!.backButtonLabel).toBe('Back to AWS Console')
+  })
+
+  it('back button from subresource detail returns to parent view', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        const method = backendCfg.withApprovalMethod({
+          type: 'service',
+          displayName: 'IT Help Desk',
+          config: { url: 'https://helpdesk.example.com' },
+        })
+        const app = backendCfg.withApp({
+          slug: 'aws-console',
+          displayName: 'AWS Console',
+          accessRequest: { approvalMethodSlug: method.slug },
+        })
+        backendCfg.withSubResource({
+          appSlug: app.slug,
+          slug: 'biomarkers-prod',
+          displayName: 'Natera Biomarkers Prod',
+        })
+      }),
+    )
+    await ui.catalog.search('biomarkers')
+    await waitFor(() => {
+      expect(ui.catalog.getSubResourceRows()).not.toBeNull()
+    })
+    await ui.catalog.clickSubResource('Natera Biomarkers Prod')
+    await waitFor(() => {
+      expect(ui.app.getSubResourceDetail()).not.toBeNull()
+    })
+    await ui.app.clickBackToParent()
+    // After going back, the sub detail should be gone and parent detail shown
+    expect(ui.app.getSubResourceDetail()).toBeNull()
+    expect(ui.catalog.isDetailPanelOpen()).toBe(true)
+  })
 })

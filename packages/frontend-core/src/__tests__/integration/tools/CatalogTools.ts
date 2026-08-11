@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 export interface TableRow {
@@ -168,6 +168,80 @@ export class CatalogTools {
       result.push({ name, description: descEl?.textContent.trim() ?? '' })
     }
     return result
+  }
+
+  /**
+   * Get expandable subresource rows shown under parents in search results.
+   * Returns null if no sub-rows are visible.
+   */
+  getSubResourceRows(): {
+    visible: number
+    total: number
+    hasExpandRow: boolean
+    names: string[]
+  } | null {
+    const subButtons = Array.from(
+      document.querySelectorAll<HTMLButtonElement>(
+        'button[class*="border-l-2"]',
+      ),
+    )
+    if (subButtons.length === 0) return null
+
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    const getText = (el: HTMLButtonElement) => (el.textContent ?? '').trim()
+    const isExpandRow = (el: HTMLButtonElement) => getText(el).startsWith('...')
+
+    const expandButton = subButtons.find(isExpandRow)
+    const hasExpandRow = !!expandButton
+
+    let hiddenCount = 0
+    if (expandButton) {
+      const match = /\d+/.exec(getText(expandButton))
+      hiddenCount = match?.[0] ? parseInt(match[0], 10) : 0
+    }
+
+    const visibleSubs = subButtons.filter((b) => !isExpandRow(b))
+
+    return {
+      visible: visibleSubs.length,
+      total: visibleSubs.length + hiddenCount,
+      hasExpandRow,
+      names: visibleSubs.map((b) => getText(b)),
+    }
+  }
+
+  async clickSubResource(displayName: string): Promise<void> {
+    const subButtons = Array.from(
+      document.querySelectorAll<HTMLButtonElement>(
+        'button[class*="border-l-2"]',
+      ),
+    )
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    const getText = (el: HTMLButtonElement) => (el.textContent ?? '').trim()
+    const target = subButtons.find(
+      (b) =>
+        getText(b) === displayName && !getText(b).trimStart().startsWith('...'),
+    )
+    if (!target) {
+      throw new Error(
+        `Sub-resource "${displayName}" not found in search result rows`,
+      )
+    }
+    await this.user.click(target)
+  }
+
+  async expandSubResources(): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    const getText = (el: HTMLButtonElement) => (el.textContent ?? '').trim()
+    const expandButtons = Array.from(
+      document.querySelectorAll<HTMLButtonElement>(
+        'button[class*="border-l-2"]',
+      ),
+    ).filter((b) => getText(b).trimStart().startsWith('...'))
+    if (expandButtons.length === 0) {
+      throw new Error('No expand ("...N more") button found')
+    }
+    await this.user.click(expandButtons[0]!)
   }
 
   /**
