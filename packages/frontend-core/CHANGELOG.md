@@ -1,5 +1,11 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.13.3
+
+### Patch Changes
+
+- [#95](https://github.com/lislon/app-catalog/pull/95) [`d06d6db`](https://github.com/lislon/app-catalog/commit/d06d6db8553d4391b04f5f6d7587aa102a98fcad) Thanks [@lislon](https://github.com/lislon)! - Fix markdown prose list rendering — add .prose ol/ul rules to index.css so list markers compile into the published dist bundle (Tailwind v4 JIT doesn't compile utility classes from published npm dist TSX).
+
 ## 0.13.2
 
 ### Patch Changes
