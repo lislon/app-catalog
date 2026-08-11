@@ -16,6 +16,7 @@ export type { AcStaticControllerContract } from './server/acStaticControllerCont
 // backend-only
 
 export type { Resource } from './types/common/appCatalogTypes'
+export { getResourcesFromPrisma } from './modules/appCatalog/service.js'
 export * from './types/index'
 
 // Auth
