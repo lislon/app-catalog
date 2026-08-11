@@ -15,6 +15,7 @@ const searchSchema = z.object({
   filters: z.string().optional(),
   deprecated: z.string().optional(),
   q: z.string().optional(),
+  sub: z.string().optional(),
 })
 
 export const Route = createFileRoute('/_layout/app/$slug')({
