@@ -1,5 +1,11 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.4.0-alpha-20260811181653
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
 ## 0.4.0-alpha-20260811154702
 
 ### Patch Changes
