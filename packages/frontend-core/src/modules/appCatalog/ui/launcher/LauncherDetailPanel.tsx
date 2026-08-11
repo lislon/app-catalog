@@ -1,4 +1,5 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
+import { X } from 'lucide-react'
 import { AppDetails } from '../grid/AppCatalogGrid'
 
 /**
@@ -39,6 +40,14 @@ export function LauncherDetailPanel({
         aria-label={`${app.displayName} details`}
         className="relative w-full max-w-[min(1120px,94vw)] my-auto rounded-[var(--radius)] border border-border bg-background shadow-2xl animate-in fade-in zoom-in-95 duration-200"
       >
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 rounded-full p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+        >
+          <X className="size-4" />
+        </button>
         <div className="max-h-[85vh] overflow-y-auto px-6 py-5 sm:px-8 sm:py-7">
           <AppDetails
             app={app}
