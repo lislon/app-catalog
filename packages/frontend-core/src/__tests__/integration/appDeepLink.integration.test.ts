@@ -45,6 +45,17 @@ describe('App deep-link routing', () => {
     expect(router.state.location.pathname).toBe('/')
   })
 
+  it('Esc closes card opened by mouse click (#53 bug 1)', async () => {
+    const { ui, router } = await given(magazine.full(), { initialRoute: '/' })
+    // Open via click (mouse, not keyboard nav)
+    await ui.catalog.openApp('Jira')
+    await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
+    // Esc should close — no "dead click" needed
+    fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' })
+    await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(false))
+    expect(router.state.location.pathname).toBe('/')
+  })
+
   it('closes the detail panel when the × close button is clicked (#59)', async () => {
     const { ui, router } = await given(magazine.full(), { initialRoute: '/' })
     await ui.catalog.openApp('Jira')
