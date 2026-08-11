@@ -198,6 +198,7 @@ function rowToResource(row: ResourceRowWithSourceRefs): Resource {
       : undefined,
     // Only surface freshness once the app has actually been scanned.
     freshness: freshness.lastCheckedAt ? freshness : undefined,
+    createdAt: row.createdAt.toISOString(),
   }
 }
 
