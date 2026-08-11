@@ -1,5 +1,5 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
-import { useNavigate, useRouter, useSearch } from '@tanstack/react-router'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import { X } from 'lucide-react'
 import {
   useCallback,
@@ -43,31 +43,31 @@ export function AppCatalogPage({
   const search = useSearch({ strict: false })
   const selectedSubSlug = search.sub
 
-  const router = useRouter()
-
   const handleSubClick = useCallback(
     (parentSlug: string, subSlug: string) => {
-      const currentPath = router.state.location.pathname
       void navigate({
-        to: currentPath,
-        search: {
-          ...router.state.location.search,
-          app: parentSlug,
-          sub: subSlug,
-        },
+        to: '/app/$slug',
+        params: { slug: parentSlug },
+        search: (prev) => ({ ...prev, sub: subSlug }),
       })
     },
-    [navigate, router],
+    [navigate],
   )
 
   const handleBackToParent = useCallback(() => {
-    const currentPath = router.state.location.pathname
-    const { sub: _sub, ...restSearch } = router.state.location.search as Record<
-      string,
-      string
-    >
-    void navigate({ to: currentPath, search: restSearch })
-  }, [navigate, router])
+    // Return to parent app detail, clearing the sub-resource selection.
+    // selectedAppSlug is the parent slug (set by the /app/$slug route).
+    if (selectedAppSlug) {
+      void navigate({
+        to: '/app/$slug',
+        params: { slug: selectedAppSlug },
+        search: (prev) => {
+          const { sub: _sub, ...rest } = prev as Record<string, string>
+          return rest
+        },
+      })
+    }
+  }, [navigate, selectedAppSlug])
 
   const searchValue = filterState.searchValue
   const setSearchValue = actions.setSearchValue
@@ -249,12 +249,15 @@ export function AppCatalogPage({
   }
 
   // Adaptive-home launcher (#38): shown whenever no structural filter
-  // (recentMode / tagFilters) is active. A selected app no longer forces the
-  // old grid — instead the launcher stays as the backdrop and the app detail
-  // renders in a slide-over panel (#38 item B). The legacy grid+split-pane is
-  // reserved for the recent/tag filter views.
+  // (recentMode / tagFilters / active search) is active. A selected app no longer
+  // forces the old grid — instead the launcher stays as the backdrop and the app
+  // detail renders in a slide-over panel (#38 item B). The legacy grid+split-pane
+  // is used for recent/tag filter views AND for active search (so expandable
+  // sub-resource rows and query highlighting in AppCatalogGrid are visible).
   const showLauncherHome =
-    !filterState.recentMode && Object.keys(filterState.tagFilters).length === 0
+    !filterState.recentMode &&
+    Object.keys(filterState.tagFilters).length === 0 &&
+    !deferredSearchValue.trim()
 
   // The app whose detail slide-over is open over the launcher backdrop.
   const launcherSelectedApp = useMemo(
