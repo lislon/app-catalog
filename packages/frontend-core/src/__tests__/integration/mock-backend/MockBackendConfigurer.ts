@@ -79,6 +79,8 @@ export class MockBackendConfigurer {
       parentSlug: appSlug,
       tier: overrides.tier,
       ownerPersonSlug: overrides.ownerPersonSlug,
+      accessRequest: overrides.accessRequest,
+      description: overrides.description,
     }
     this.db.upsertResource(resource)
     return resource
