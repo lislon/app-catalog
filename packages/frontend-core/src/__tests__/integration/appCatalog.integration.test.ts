@@ -329,6 +329,23 @@ describe('App Catalog Integration', () => {
     )
   })
 
+  it('highlights matched query text in search result app names (#57)', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        backendCfg.withApp({ displayName: 'Kubernetes Platform' })
+        backendCfg.withApp({ displayName: 'Other Tool' })
+      }),
+    )
+
+    await ui.catalog.search('kube')
+
+    await waitFor(() => {
+      const marks = document.querySelectorAll('mark')
+      const markTexts = [...marks].map((m) => String(m.textContent))
+      expect(markTexts.some((t) => t.toLowerCase().includes('kube'))).toBe(true)
+    })
+  })
+
   it('clear (×) button appears when search has text and clears on click (#54)', async () => {
     const { ui } = await given(magazine.full())
 

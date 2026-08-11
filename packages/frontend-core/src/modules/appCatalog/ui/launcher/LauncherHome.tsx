@@ -7,6 +7,7 @@ import { markdownToPlainText } from '../../utils/markdownToPlainText'
 import { AttributionFooter } from './AttributionFooter'
 import { ResourceIcon } from './ResourceIcon'
 import { searchResources } from '../../utils/searchApps'
+import { Highlight } from '../components/Highlight'
 
 /**
  * Adaptive-home discovery spine (issue #38, increment 1) — matches the
@@ -281,10 +282,10 @@ function SearchResultsList({
             <ResourceIcon app={app} size={40} />
             <span className="flex-1 min-w-0">
               <span className="block text-[14px] font-semibold truncate">
-                {app.displayName}
+                <Highlight text={app.displayName} query={searchValue} />
                 {app.abbreviation && app.abbreviation !== app.displayName && (
                   <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">
-                    ({app.abbreviation})
+                    (<Highlight text={app.abbreviation} query={searchValue} />)
                   </span>
                 )}
               </span>
@@ -296,14 +297,18 @@ function SearchResultsList({
               {(() => {
                 const kids = matchedChildrenByParent.get(app.slug)
                 if (!kids || kids.length === 0) return null
-                const names = kids.map((k) => k.displayName)
-                const shown = names.slice(0, 3).join(', ')
-                const extra =
-                  names.length > 3 ? ` +${names.length - 3} more` : ''
+                const shown = kids.slice(0, 3)
+                const extra = kids.length > 3 ? ` +${kids.length - 3} more` : ''
                 return (
                   <span className="mt-0.5 block text-[12px] text-primary truncate">
                     Matched {kids.length} sub-resource
-                    {kids.length === 1 ? '' : 's'}: {shown}
+                    {kids.length === 1 ? '' : 's'}:{' '}
+                    {shown.map((k, idx) => (
+                      <span key={k.slug}>
+                        {idx > 0 && ', '}
+                        <Highlight text={k.displayName} query={searchValue} />
+                      </span>
+                    ))}
                     {extra}
                   </span>
                 )
