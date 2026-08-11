@@ -1,5 +1,11 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.4.0-alpha-20260811154702
+
+### Patch Changes
+
+- [#108](https://github.com/lislon/app-catalog/pull/108) [`da24c9b`](https://github.com/lislon/app-catalog/commit/da24c9bb9c8d68e10f005cfc51f6f1c9bb0b6801) Thanks [@lislon](https://github.com/lislon)! - Fix Esc key on mouse-opened app card; gallery Esc no longer clears search
+
 ## 0.4.0-alpha-20260811152919
 
 ### Patch Changes
