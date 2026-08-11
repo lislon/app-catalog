@@ -166,6 +166,10 @@ export function AccessRequestSection({
   const isUndocumented =
     approvalMethod?.type === 'unknown' ||
     (approvalMethod?.type === 'custom' && !hasWrittenSteps)
+  // Two-step: has a primary request action AND follow-up post-approval steps
+  const isTwoStep = Boolean(
+    hasWrittenSteps && accessRequest.postApprovalInstructions,
+  )
 
   return (
     <div className="mt-6 rounded-lg border-[1.5px] border-primary/40 bg-primary/[0.03] p-4 space-y-4">
@@ -184,6 +188,15 @@ export function AccessRequestSection({
           Access process not documented yet — contact the owner below to find
           out.
         </p>
+      )}
+
+      {isTwoStep && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-primary bg-primary/10 rounded-full px-2.5 py-0.5">
+            Step 1
+          </span>
+          <span className="text-xs text-muted-foreground">Request access</span>
+        </div>
       )}
 
       {/* Approval Method */}
@@ -315,26 +328,45 @@ export function AccessRequestSection({
         </div>
       )}
 
-      {/* Post-Approval Instructions - Collapsible (secondary info) */}
-      {accessRequest.postApprovalInstructions && (
-        <Accordion type="single" collapsible>
-          <AccordionItem
-            value="post-approval"
-            className="border rounded-lg px-4"
-          >
-            <AccordionTrigger className="text-sm hover:no-underline py-3">
-              Post-Approval Instructions
-            </AccordionTrigger>
-            <AccordionContent className="pb-3">
-              <div className="text-sm text-muted-foreground prose prose-sm max-w-none">
-                <ReactMarkdown components={{ a: MarkdownLink }}>
-                  {accessRequest.postApprovalInstructions}
-                </ReactMarkdown>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      )}
+      {/* Post-Approval Instructions */}
+      {accessRequest.postApprovalInstructions &&
+        (isTwoStep ? (
+          // Two-step apps: show Step 2 prominently, always expanded
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-primary bg-primary/10 rounded-full px-2.5 py-0.5">
+                Step 2
+              </span>
+              <span className="text-xs text-muted-foreground">
+                After approval
+              </span>
+            </div>
+            <div className="text-sm text-muted-foreground prose prose-sm max-w-none [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">
+              <ReactMarkdown components={{ a: MarkdownLink }}>
+                {accessRequest.postApprovalInstructions}
+              </ReactMarkdown>
+            </div>
+          </div>
+        ) : (
+          // Single-step apps: keep collapsible accordion (secondary info)
+          <Accordion type="single" collapsible>
+            <AccordionItem
+              value="post-approval"
+              className="border rounded-lg px-4"
+            >
+              <AccordionTrigger className="text-sm hover:no-underline py-3">
+                Post-Approval Instructions
+              </AccordionTrigger>
+              <AccordionContent className="pb-3">
+                <div className="text-sm text-muted-foreground prose prose-sm max-w-none [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">
+                  <ReactMarkdown components={{ a: MarkdownLink }}>
+                    {accessRequest.postApprovalInstructions}
+                  </ReactMarkdown>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        ))}
     </div>
   )
 }
