@@ -1,5 +1,19 @@
 # @igstack/app-catalog-backend-core
 
+## 0.15.0
+
+### Patch Changes
+
+- [#116](https://github.com/lislon/app-catalog/pull/116) [`61e6e66`](https://github.com/lislon/app-catalog/commit/61e6e66587c9b420b4a9fc118f0f76e0b923c962) Thanks [@lislon](https://github.com/lislon)! - UI improvements batch: clear search, Added date, two-step access badges, MCP export
+  - Clear (×) button in search input when text is present
+  - "Added N ago" date shown before Sources in app detail cards (backend: expose createdAt)
+  - Step 1 / Step 2 badges for two-step access apps (postApprovalInstructions + requestPrompt)
+  - Export getResourcesFromPrisma from backend-core public API (for MCP server)
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.15.0
+  - @igstack/app-catalog-table-sync@0.15.0
+
 ## 0.14.1
 
 ### Patch Changes
