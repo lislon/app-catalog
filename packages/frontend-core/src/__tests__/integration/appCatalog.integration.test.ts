@@ -328,4 +328,30 @@ describe('App Catalog Integration', () => {
       /(?<![\d])0(?![\d]).*clear filters/i,
     )
   })
+
+  it('clear (×) button appears when search has text and clears on click (#54)', async () => {
+    const { ui } = await given(magazine.full())
+
+    // Before typing: no clear button
+    expect(
+      document.querySelector('[aria-label="Clear search"]'),
+    ).not.toBeInTheDocument()
+
+    // After typing: clear button appears
+    await ui.catalog.search('jira')
+    await waitFor(() => {
+      expect(
+        document.querySelector('[aria-label="Clear search"]'),
+      ).toBeInTheDocument()
+    })
+
+    // Click × — input clears, button disappears
+    fireEvent.click(document.querySelector('[aria-label="Clear search"]')!)
+    await waitFor(() => {
+      expect(ui.catalog.getSearchInput().value).toBe('')
+      expect(
+        document.querySelector('[aria-label="Clear search"]'),
+      ).not.toBeInTheDocument()
+    })
+  })
 })

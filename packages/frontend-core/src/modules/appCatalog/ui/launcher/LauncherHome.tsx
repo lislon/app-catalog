@@ -1,5 +1,5 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
-import { ArrowUpRight, Search } from 'lucide-react'
+import { ArrowUpRight, Search, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '~/lib/utils'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
@@ -433,7 +433,19 @@ export function LauncherHome({
               aria-label="Search apps"
               className="flex-1 bg-transparent border-0 outline-none text-[16px] text-foreground placeholder:text-muted-foreground"
             />
-            {!isSearching && (
+            {isSearching ? (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => {
+                  onSearchChange('')
+                  searchRef.current?.focus()
+                }}
+                className="shrink-0 rounded-full p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              >
+                <X className="size-4" />
+              </button>
+            ) : (
               <kbd className="hidden sm:inline-flex items-center gap-0.5 text-[11px] text-muted-foreground/60 border border-muted-foreground/20 rounded px-1.5 py-0.5 font-mono shrink-0">
                 {typeof navigator !== 'undefined' &&
                 navigator.platform.includes('Mac')
