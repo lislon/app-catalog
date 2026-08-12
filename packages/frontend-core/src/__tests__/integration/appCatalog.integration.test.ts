@@ -18,7 +18,7 @@ describe('App Catalog Integration', () => {
   it('navigate screenshots then escape back to list view', async () => {
     const { ui } = await given(magazine.full())
 
-    await ui.catalog.openApp('Jira')
+    await ui.catalog.openApp('TaskFlow')
     await ui.app.screenshots.open()
 
     await waitFor(() => {
@@ -45,7 +45,7 @@ describe('App Catalog Integration', () => {
         const approvalMethod = backendCfg.withApprovalMethod({
           type: 'service',
           displayName: 'Help Desk',
-          config: { url: 'https://helpdesk.example.com' },
+          config: { url: 'https://support.example.com' },
         })
         backendCfg.withApp({
           displayName: 'My Custom App',
@@ -194,8 +194,8 @@ describe('App Catalog Integration', () => {
 
     const tableData = ui.catalog.getTableData()
     expect(tableData.length).toBe(5)
-    expect(tableData.map((r) => r.name)).toContain('Jira')
-    expect(tableData.map((r) => r.name)).toContain('Slack')
+    expect(tableData.map((r) => r.name)).toContain('TaskFlow')
+    expect(tableData.map((r) => r.name)).toContain('TeamChat')
   })
 
   // Test 3: Network Error — Connection Reset
@@ -355,7 +355,7 @@ describe('App Catalog Integration', () => {
     ).not.toBeInTheDocument()
 
     // After typing: clear button appears
-    await ui.catalog.search('jira')
+    await ui.catalog.search('taskflow')
     await waitFor(() => {
       expect(
         document.querySelector('[aria-label="Clear search"]'),
@@ -430,8 +430,8 @@ describe('App Catalog Integration', () => {
       magazine.custom(({ backendCfg }) => {
         const parentMethod = backendCfg.withApprovalMethod({
           type: 'service',
-          displayName: 'IT Help Desk',
-          config: { url: 'https://helpdesk.example.com' },
+          displayName: 'Support Portal',
+          config: { url: 'https://support.example.com' },
         })
         const subMethod = backendCfg.withApprovalMethod({
           type: 'custom',
@@ -442,7 +442,7 @@ describe('App Catalog Integration', () => {
           displayName: 'AWS Console',
           accessRequest: {
             approvalMethodSlug: parentMethod.slug,
-            comments: 'Request AWS IAM access via IT Help Desk',
+            comments: 'Submit a support ticket to request access',
           },
         })
         backendCfg.withSubResource({
@@ -477,8 +477,8 @@ describe('App Catalog Integration', () => {
       magazine.custom(({ backendCfg }) => {
         const method = backendCfg.withApprovalMethod({
           type: 'service',
-          displayName: 'IT Help Desk',
-          config: { url: 'https://helpdesk.example.com' },
+          displayName: 'Support Portal',
+          config: { url: 'https://support.example.com' },
         })
         const app = backendCfg.withApp({
           slug: 'aws-console',

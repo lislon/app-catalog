@@ -31,12 +31,12 @@ describe('Search fallback to deprecated apps (#11)', () => {
   it('does not show the fallback notice when the query has an active match', async () => {
     const { ui } = await given(magazine.full(), {
       initialRoute: '/',
-      seedSearch: 'Jira',
+      seedSearch: 'TaskFlow',
     })
 
     await waitFor(() => {
       const names = ui.catalog.getTableData().map((r) => r.name)
-      expect(names).toContain('Jira')
+      expect(names).toContain('TaskFlow')
     })
     // Active match exists → no deprecated-fallback notice.
     expect(ui.catalog.hasDeprecatedFallbackNotice()).toBe(false)
