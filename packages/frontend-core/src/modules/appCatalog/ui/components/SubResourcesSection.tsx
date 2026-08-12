@@ -29,7 +29,7 @@ interface SubResourcesSectionProps {
    * Initial filter text (#38 item C). When the user reached this app by
    * searching a term that matched a sub-resource, seed the sub-resource filter
    * with that term so the matched child is revealed instead of buried in a
-   * long list (e.g. searching "biom" → open AWS Console → the biomarker
+   * long list (e.g. searching "data" → open Cloud Console → the matching
    * account is pre-filtered). Only applied when it actually matches a child.
    */
   initialSearch?: string

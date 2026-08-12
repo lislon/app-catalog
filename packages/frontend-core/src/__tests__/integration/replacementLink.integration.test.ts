@@ -44,13 +44,13 @@ describe('Deprecated app "View replacement" link (#12)', () => {
     // Hard navigation: /app/<slug> should render the app regardless of a
     // non-matching active search (browser-URL-like behavior).
     const { ui } = await given(magazine.full(), {
-      initialRoute: '/app/jira',
+      initialRoute: '/app/taskflow',
       seedSearch: 'zzz-no-match-zzz',
     })
 
     await waitFor(() => {
       expect(ui.catalog.isDetailPanelOpen()).toBe(true)
     })
-    expect(ui.app.getOpenTitle()).toContain('Jira')
+    expect(ui.app.getOpenTitle()).toContain('TaskFlow')
   })
 })

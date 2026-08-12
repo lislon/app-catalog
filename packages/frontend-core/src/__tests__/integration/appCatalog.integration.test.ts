@@ -18,7 +18,7 @@ describe('App Catalog Integration', () => {
   it('navigate screenshots then escape back to list view', async () => {
     const { ui } = await given(magazine.full())
 
-    await ui.catalog.openApp('Jira')
+    await ui.catalog.openApp('TaskFlow')
     await ui.app.screenshots.open()
 
     await waitFor(() => {
@@ -45,7 +45,7 @@ describe('App Catalog Integration', () => {
         const approvalMethod = backendCfg.withApprovalMethod({
           type: 'service',
           displayName: 'Help Desk',
-          config: { url: 'https://helpdesk.example.com' },
+          config: { url: 'https://support.example.com' },
         })
         backendCfg.withApp({
           displayName: 'My Custom App',
@@ -156,7 +156,7 @@ describe('App Catalog Integration', () => {
         backendCfg.withApp({
           displayName: 'Website App',
           description: 'Has a website',
-          appUrl: 'https://example.natera.com/app',
+          appUrl: 'https://tools.example.com/launch',
         })
         backendCfg.withApp({
           displayName: 'No URL App',
@@ -168,10 +168,10 @@ describe('App Catalog Integration', () => {
     await ui.catalog.openApp('Website App')
     const btn = ui.app.getOpenButton()
     expect(btn).not.toBeNull()
-    expect(btn!.getAttribute('href')).toBe('https://example.natera.com/app')
+    expect(btn!.getAttribute('href')).toBe('https://tools.example.com/launch')
     expect(btn!.getAttribute('target')).toBe('_blank')
     // The URL is shown in the button (stripped of protocol).
-    expect(btn!.textContent).toContain('example.natera.com/app')
+    expect(btn!.textContent).toContain('tools.example.com/launch')
 
     // An app without appUrl shows no Open button.
     await ui.catalog.openApp('No URL App')
@@ -194,8 +194,8 @@ describe('App Catalog Integration', () => {
 
     const tableData = ui.catalog.getTableData()
     expect(tableData.length).toBe(5)
-    expect(tableData.map((r) => r.name)).toContain('Jira')
-    expect(tableData.map((r) => r.name)).toContain('Slack')
+    expect(tableData.map((r) => r.name)).toContain('TaskFlow')
+    expect(tableData.map((r) => r.name)).toContain('TeamChat')
   })
 
   // Test 3: Network Error — Connection Reset
@@ -355,7 +355,7 @@ describe('App Catalog Integration', () => {
     ).not.toBeInTheDocument()
 
     // After typing: clear button appears
-    await ui.catalog.search('jira')
+    await ui.catalog.search('taskflow')
     await waitFor(() => {
       expect(
         document.querySelector('[aria-label="Clear search"]'),
@@ -383,13 +383,13 @@ describe('App Catalog Integration', () => {
         for (let i = 1; i <= 7; i++) {
           backendCfg.withSubResource({
             appSlug: app.slug,
-            slug: `biomarkers-${i}`,
-            displayName: `Natera Biomarkers ${i}`,
+            slug: `acct-data-${i}`,
+            displayName: `Data Account ${i}`,
           })
         }
       }),
     )
-    await ui.catalog.search('biomarkers')
+    await ui.catalog.search('Data Account')
     await waitFor(() => {
       const subRows = ui.catalog.getSubResourceRows()
       expect(subRows).not.toBeNull()
@@ -409,13 +409,13 @@ describe('App Catalog Integration', () => {
         for (let i = 1; i <= 7; i++) {
           backendCfg.withSubResource({
             appSlug: app.slug,
-            slug: `biomarkers-${i}`,
-            displayName: `Natera Biomarkers ${i}`,
+            slug: `acct-data-${i}`,
+            displayName: `Data Account ${i}`,
           })
         }
       }),
     )
-    await ui.catalog.search('biomarkers')
+    await ui.catalog.search('Data Account')
     await waitFor(() => {
       expect(ui.catalog.getSubResourceRows()).not.toBeNull()
     })
@@ -430,8 +430,8 @@ describe('App Catalog Integration', () => {
       magazine.custom(({ backendCfg }) => {
         const parentMethod = backendCfg.withApprovalMethod({
           type: 'service',
-          displayName: 'IT Help Desk',
-          config: { url: 'https://helpdesk.example.com' },
+          displayName: 'Support Portal',
+          config: { url: 'https://support.example.com' },
         })
         const subMethod = backendCfg.withApprovalMethod({
           type: 'custom',
@@ -442,13 +442,13 @@ describe('App Catalog Integration', () => {
           displayName: 'AWS Console',
           accessRequest: {
             approvalMethodSlug: parentMethod.slug,
-            comments: 'Request AWS IAM access via IT Help Desk',
+            comments: 'Submit a support ticket to request access',
           },
         })
         backendCfg.withSubResource({
           appSlug: app.slug,
-          slug: 'biomarkers-prod',
-          displayName: 'Natera Biomarkers Prod',
+          slug: 'acct-data-prod',
+          displayName: 'Data Account Prod',
           accessRequest: {
             approvalMethodSlug: subMethod.slug,
             comments: 'Contact account owner for account-level permissions',
@@ -456,17 +456,17 @@ describe('App Catalog Integration', () => {
         })
       }),
     )
-    await ui.catalog.search('biomarkers')
+    await ui.catalog.search('Data Account')
     await waitFor(() => {
       expect(ui.catalog.getSubResourceRows()).not.toBeNull()
     })
-    await ui.catalog.clickSubResource('Natera Biomarkers Prod')
+    await ui.catalog.clickSubResource('Data Account Prod')
     await waitFor(() => {
       expect(ui.app.getSubResourceDetail()).not.toBeNull()
     })
     const detail = ui.app.getSubResourceDetail()
     expect(detail).not.toBeNull()
-    expect(detail!.subResourceName).toBe('Natera Biomarkers Prod')
+    expect(detail!.subResourceName).toBe('Data Account Prod')
     expect(detail!.hasStep1).toBe(true)
     expect(detail!.hasStep2).toBe(true)
     expect(detail!.backButtonLabel).toBe('Back to AWS Console')
@@ -477,8 +477,8 @@ describe('App Catalog Integration', () => {
       magazine.custom(({ backendCfg }) => {
         const method = backendCfg.withApprovalMethod({
           type: 'service',
-          displayName: 'IT Help Desk',
-          config: { url: 'https://helpdesk.example.com' },
+          displayName: 'Support Portal',
+          config: { url: 'https://support.example.com' },
         })
         const app = backendCfg.withApp({
           slug: 'aws-console',
@@ -487,16 +487,16 @@ describe('App Catalog Integration', () => {
         })
         backendCfg.withSubResource({
           appSlug: app.slug,
-          slug: 'biomarkers-prod',
-          displayName: 'Natera Biomarkers Prod',
+          slug: 'acct-data-prod',
+          displayName: 'Data Account Prod',
         })
       }),
     )
-    await ui.catalog.search('biomarkers')
+    await ui.catalog.search('Data Account')
     await waitFor(() => {
       expect(ui.catalog.getSubResourceRows()).not.toBeNull()
     })
-    await ui.catalog.clickSubResource('Natera Biomarkers Prod')
+    await ui.catalog.clickSubResource('Data Account Prod')
     await waitFor(() => {
       expect(ui.app.getSubResourceDetail()).not.toBeNull()
     })

@@ -32,19 +32,19 @@ function fullMagazine(
     const { backendCfg, browserStateCfg } = ctx
 
     // Approval methods — all 3 types
-    const helpdesk = backendCfg.withApprovalMethod({
-      slug: 'it-helpdesk',
+    const supportPortal = backendCfg.withApprovalMethod({
+      slug: 'it-support',
       type: 'service',
-      displayName: 'IT Help Desk',
+      displayName: 'Support Portal',
       config: {
-        url: 'https://helpdesk.example.com',
-        description: 'IT Infrastructure support desk',
+        url: 'https://support.example.com',
+        description: 'General IT support desk',
       },
     })
     backendCfg.withApprovalMethod({
-      slug: 'ops-helpdesk',
+      slug: 'ops-support',
       type: 'service',
-      displayName: 'Ops Helpdesk',
+      displayName: 'Ops Portal',
       config: { url: 'https://opsdesk.example.com' },
     })
     const managerApproval = backendCfg.withApprovalMethod({
@@ -91,25 +91,25 @@ function fullMagazine(
 
     // Apps
     backendCfg.withApp({
-      slug: 'jira',
-      displayName: 'Jira',
+      slug: 'taskflow',
+      displayName: 'TaskFlow',
       description: 'Project tracking and issue management',
       tags: ['category:project-management', 'team:engineering'],
-      screenshotIds: ['ss-jira-1', 'ss-jira-2', 'ss-jira-3'],
-      appUrl: 'https://jira.example.com',
+      screenshotIds: ['ss-taskflow-1', 'ss-taskflow-2', 'ss-taskflow-3'],
+      appUrl: 'https://taskflow.example.com',
       accessRequest: {
-        approvalMethodSlug: helpdesk.slug,
+        approvalMethodSlug: supportPortal.slug,
         comments: 'Submit a ticket',
       },
     })
 
     backendCfg.withApp({
-      slug: 'slack',
-      displayName: 'Slack',
+      slug: 'teamchat',
+      displayName: 'TeamChat',
       description: 'Team messaging and collaboration',
       tags: ['category:communication', 'team:platform'],
-      screenshotIds: ['ss-slack-1'],
-      appUrl: 'https://slack.example.com',
+      screenshotIds: ['ss-teamchat-1'],
+      appUrl: 'https://teamchat.example.com',
     })
 
     const newTool = backendCfg.withApp({
@@ -183,10 +183,10 @@ function singleMagazine(postConfigure?: Magazine): Magazine {
     const { backendCfg } = ctx
 
     const method = backendCfg.withApprovalMethod({
-      slug: 'it-helpdesk',
+      slug: 'it-support',
       type: 'service',
-      displayName: 'IT Help Desk',
-      config: { url: 'https://helpdesk.example.com' },
+      displayName: 'Support Portal',
+      config: { url: 'https://support.example.com' },
     })
 
     backendCfg.withTag({
@@ -203,12 +203,12 @@ function singleMagazine(postConfigure?: Magazine): Magazine {
     })
 
     backendCfg.withApp({
-      slug: 'jira',
-      displayName: 'Jira',
+      slug: 'taskflow',
+      displayName: 'TaskFlow',
       description: 'Project tracking and issue management',
       tags: ['category:project-management'],
-      screenshotIds: ['screenshot-jira-1', 'screenshot-jira-2'],
-      appUrl: 'https://jira.example.com',
+      screenshotIds: ['screenshot-taskflow-1', 'screenshot-taskflow-2'],
+      appUrl: 'https://taskflow.example.com',
       accessRequest: {
         approvalMethodSlug: method.slug,
         comments: 'Submit a ticket to IT',
