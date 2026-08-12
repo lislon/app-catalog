@@ -227,7 +227,7 @@ export const magazine = {
   /** No apps, no tags, no approval methods */
   empty: (() => {}) satisfies Magazine,
 
-  /** 1 app (Jira), 1 tag, 1 approval method — accepts optional post-configurer */
+  /** 1 app (TaskFlow), 1 tag, 1 approval method — accepts optional post-configurer */
   single: (postConfigure?: Magazine) => singleMagazine(postConfigure),
 
   /** Full catalog, first-time user — accepts optional post-configurer */
