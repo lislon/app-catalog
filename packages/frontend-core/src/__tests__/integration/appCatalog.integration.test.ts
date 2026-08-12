@@ -18,7 +18,7 @@ describe('App Catalog Integration', () => {
   it('navigate screenshots then escape back to list view', async () => {
     const { ui } = await given(magazine.full())
 
-    await ui.catalog.openApp('Jira')
+    await ui.catalog.openApp('TaskFlow')
     await ui.app.screenshots.open()
 
     await waitFor(() => {
@@ -45,7 +45,7 @@ describe('App Catalog Integration', () => {
         const approvalMethod = backendCfg.withApprovalMethod({
           type: 'service',
           displayName: 'Help Desk',
-          config: { url: 'https://helpdesk.example.com' },
+          config: { url: 'https://support.example.com' },
         })
         backendCfg.withApp({
           displayName: 'My Custom App',
@@ -156,7 +156,7 @@ describe('App Catalog Integration', () => {
         backendCfg.withApp({
           displayName: 'Website App',
           description: 'Has a website',
-          appUrl: 'https://example.natera.com/app',
+          appUrl: 'https://tools.example.com/app',
         })
         backendCfg.withApp({
           displayName: 'No URL App',
@@ -168,10 +168,10 @@ describe('App Catalog Integration', () => {
     await ui.catalog.openApp('Website App')
     const btn = ui.app.getOpenButton()
     expect(btn).not.toBeNull()
-    expect(btn!.getAttribute('href')).toBe('https://example.natera.com/app')
+    expect(btn!.getAttribute('href')).toBe('https://tools.example.com/app')
     expect(btn!.getAttribute('target')).toBe('_blank')
     // The URL is shown in the button (stripped of protocol).
-    expect(btn!.textContent).toContain('example.natera.com/app')
+    expect(btn!.textContent).toContain('tools.example.com/app')
 
     // An app without appUrl shows no Open button.
     await ui.catalog.openApp('No URL App')
@@ -194,8 +194,8 @@ describe('App Catalog Integration', () => {
 
     const tableData = ui.catalog.getTableData()
     expect(tableData.length).toBe(5)
-    expect(tableData.map((r) => r.name)).toContain('Jira')
-    expect(tableData.map((r) => r.name)).toContain('Slack')
+    expect(tableData.map((r) => r.name)).toContain('TaskFlow')
+    expect(tableData.map((r) => r.name)).toContain('TeamChat')
   })
 
   // Test 3: Network Error — Connection Reset
@@ -355,7 +355,7 @@ describe('App Catalog Integration', () => {
     ).not.toBeInTheDocument()
 
     // After typing: clear button appears
-    await ui.catalog.search('jira')
+    await ui.catalog.search('taskflow')
     await waitFor(() => {
       expect(
         document.querySelector('[aria-label="Clear search"]'),

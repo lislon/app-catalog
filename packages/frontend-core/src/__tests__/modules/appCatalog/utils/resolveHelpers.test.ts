@@ -39,7 +39,7 @@ describe('getAccessPrerequisiteChain (#38 two-step access)', () => {
   it('returns the access-bearing parent for a nested resource', () => {
     const parent = r({
       slug: 'aws-console',
-      accessRequest: { approvalMethodSlug: 'it-helpdesk' },
+      accessRequest: { approvalMethodSlug: 'it-support' },
     })
     const child = r({ slug: 'acct-prod', parentSlug: 'aws-console' })
     const chain = getAccessPrerequisiteChain([parent, child], child)

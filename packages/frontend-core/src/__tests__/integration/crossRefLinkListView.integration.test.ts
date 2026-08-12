@@ -5,7 +5,7 @@ import { given } from './harness/given'
 import { magazine } from './mock-backend/magazines'
 
 // #25 regression: descriptions now carry markdown cross-reference links like
-// `[Signatera Portal](/app/signatera-portal)`. The detail panel renders them
+// `[GenomicsApp](/app/genomics-app)`. The detail panel renders them
 // as real links, but the COMPACT surfaces (grid list preview / table row) show
 // `description` as plain text, so the raw markdown syntax leaked to users.
 // In clamped previews we render the visible text only — no bracket/paren
@@ -13,10 +13,10 @@ import { magazine } from './mock-backend/magazines'
 describe('Cross-reference links do not leak raw markdown in the list view (#25)', () => {
   const withCrossRefApp = magazine.full(({ backendCfg }) => {
     backendCfg.withApp({
-      slug: 'natera-portals-ish',
+      slug: 'internal-portals',
       displayName: 'Portals Hub',
       description:
-        'See [Signatera Portal](/app/signatera-portal) and [Prospera Portal](/app/prospera-portal).',
+        'See [GenomicsApp](/app/genomics-app) and [DataApp](/app/data-app).',
     })
   })
 
@@ -30,20 +30,20 @@ describe('Cross-reference links do not leak raw markdown in the list view (#25)'
     expect(row).toBeDefined()
 
     // The clamped preview shows the visible text…
-    expect(row!.description).toContain('Signatera Portal')
-    expect(row!.description).toContain('Prospera Portal')
+    expect(row!.description).toContain('GenomicsApp')
+    expect(row!.description).toContain('DataApp')
     // …and NEVER leaks the raw markdown link syntax.
     expect(row!.description).not.toContain('](/app/')
-    expect(row!.description).not.toContain('[Signatera Portal]')
+    expect(row!.description).not.toContain('[GenomicsApp]')
   })
 
   it('does not render an interactive link inside the clamped list preview', async () => {
     await given(withCrossRefApp)
     await waitFor(() => {
-      expect(screen.getByText(/See Signatera Portal and/)).toBeInTheDocument()
+      expect(screen.getByText(/See GenomicsApp and/)).toBeInTheDocument()
     })
     // A clamped preview must not carry a navigational link that could break the
     // clamp/layout — the interactive cross-links live in the detail panel.
-    expect(screen.queryByRole('link', { name: 'Signatera Portal' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'GenomicsApp' })).toBeNull()
   })
 })
