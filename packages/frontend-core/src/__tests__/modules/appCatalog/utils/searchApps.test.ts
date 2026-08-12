@@ -25,8 +25,8 @@ function makeChildResource(
 describe('searchResources', () => {
   const apps: Resource[] = [
     makeApp({
-      slug: 'jira',
-      displayName: 'Jira',
+      slug: 'taskflow',
+      displayName: 'TaskFlow',
       description: 'Issue tracker',
     }),
     makeApp({
@@ -34,7 +34,11 @@ describe('searchResources', () => {
       displayName: 'AWS Console',
       description: 'Cloud management',
     }),
-    makeApp({ slug: 'slack', displayName: 'Slack', description: 'Messaging' }),
+    makeApp({
+      slug: 'teamchat',
+      displayName: 'TeamChat',
+      description: 'Messaging',
+    }),
   ]
 
   it('returns all root apps when query is empty', () => {
@@ -42,16 +46,16 @@ describe('searchResources', () => {
   })
 
   it('finds app by displayName', () => {
-    const results = searchResources(apps, 'jira')
+    const results = searchResources(apps, 'taskflow')
     expect(results).toHaveLength(1)
-    expect(results[0]!.slug).toBe('jira')
+    expect(results[0]!.slug).toBe('taskflow')
   })
 
   describe('child resource search', () => {
     const childResources: Resource[] = [
       makeChildResource({
         slug: 'aws-acme-pipelines-dev',
-        displayName: 'acme-pipelines-biomarkers-ici-dev',
+        displayName: 'acme-pipelines-data-pipeline-dev',
         parentSlug: 'aws-console',
         aliases: ['000000000001'],
       }),
@@ -66,7 +70,7 @@ describe('searchResources', () => {
     const allResources = [...apps, ...childResources]
 
     it('finds app by child resource displayName', () => {
-      const results = searchResources(allResources, 'pipelines biomarkers')
+      const results = searchResources(allResources, 'pipelines data-pipeline')
       expect(results).toHaveLength(1)
       expect(results[0]!.slug).toBe('aws-console')
     })

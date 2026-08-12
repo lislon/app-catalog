@@ -7,7 +7,9 @@ import { magazine } from './mock-backend/magazines'
 
 describe('App deep-link routing', () => {
   it('opens the app detail when navigating directly to /app/<slug>', async () => {
-    const { ui } = await given(magazine.full(), { initialRoute: '/app/jira' })
+    const { ui } = await given(magazine.full(), {
+      initialRoute: '/app/taskflow',
+    })
     await waitFor(() => {
       expect(ui.catalog.isDetailPanelOpen()).toBe(true)
     })
@@ -16,9 +18,9 @@ describe('App deep-link routing', () => {
 
   it('navigates to /app/<slug> when selecting an app, and pushes history', async () => {
     const { ui, router } = await given(magazine.full(), { initialRoute: '/' })
-    await ui.catalog.openApp('Jira')
+    await ui.catalog.openApp('TaskFlow')
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/app/jira')
+      expect(router.state.location.pathname).toBe('/app/taskflow')
     })
     // push (not replace): catalog '/' is still in history, Back returns to it
     expect(router.history.canGoBack()).toBe(true)
@@ -36,7 +38,7 @@ describe('App deep-link routing', () => {
 
   it('returns to / when the detail panel is closed', async () => {
     const { ui, router } = await given(magazine.full(), { initialRoute: '/' })
-    await ui.catalog.openApp('Jira')
+    await ui.catalog.openApp('TaskFlow')
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
     fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' })
     await waitFor(() => {
@@ -48,7 +50,7 @@ describe('App deep-link routing', () => {
   it('Esc closes card opened by mouse click (#53 bug 1)', async () => {
     const { ui, router } = await given(magazine.full(), { initialRoute: '/' })
     // Open via click (mouse, not keyboard nav)
-    await ui.catalog.openApp('Jira')
+    await ui.catalog.openApp('TaskFlow')
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
     // Esc should close — no "dead click" needed
     fireEvent.keyDown(document, { key: 'Escape', code: 'Escape' })
@@ -58,7 +60,7 @@ describe('App deep-link routing', () => {
 
   it('closes the detail panel when the × close button is clicked (#59)', async () => {
     const { ui, router } = await given(magazine.full(), { initialRoute: '/' })
-    await ui.catalog.openApp('Jira')
+    await ui.catalog.openApp('TaskFlow')
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
     const closeBtn = screen.getByRole('button', { name: /^Close$/i })
     fireEvent.click(closeBtn)
@@ -87,7 +89,7 @@ describe('App deep-link routing', () => {
     // jsdom userEvent.type + useDeferredValue drops characters, orthogonal here.
     const { ui, router } = await given(magazine.full(), {
       initialRoute: '/',
-      seedSearch: 'jira',
+      seedSearch: 'taskflow',
     })
 
     // Stays on the launcher home — NO auto-navigation to the detail route.
@@ -95,33 +97,33 @@ describe('App deep-link routing', () => {
       expect(ui.catalog.getTableData().length).toBeGreaterThan(0)
     })
     expect(router.state.location.pathname).toBe('/')
-    expect(ui.catalog.getTableData().map((r) => r.name)).toContain('Jira')
+    expect(ui.catalog.getTableData().map((r) => r.name)).toContain('TaskFlow')
     // Search text preserved (sessionStorage-backed), no ?q leak.
-    expect(ui.catalog.getSearchInput().value).toBe('jira')
+    expect(ui.catalog.getSearchInput().value).toBe('taskflow')
     expect((router.state.location.search as { q?: string }).q).toBeUndefined()
 
     // Opting in (click) opens the detail.
-    await ui.catalog.openApp('Jira')
+    await ui.catalog.openApp('TaskFlow')
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/app/jira')
+      expect(router.state.location.pathname).toBe('/app/taskflow')
     })
   })
 
   it('strips a legacy ?q= from the URL on the app detail route (#27)', async () => {
-    // Old shared links may still carry `?q=` (e.g. /app/jira?q=jira). `q` is
+    // Old shared links may still carry `?q=` (e.g. /app/taskflow?q=taskflow). `q` is
     // still declared in the route search schema (so it validates), but the
     // route's `stripSearchParams(['q'])` middleware rewrites the URL to a clean
-    // /app/jira on load. We no longer read `q` from the URL, so a bare deep-link
+    // /app/taskflow on load. We no longer read `q` from the URL, so a bare deep-link
     // doesn't repopulate the input from the query string.
     const { ui, router } = await given(magazine.full(), {
-      initialRoute: '/app/jira?q=jira',
+      initialRoute: '/app/taskflow?q=taskflow',
     })
 
     await waitFor(() => {
       expect(ui.catalog.isDetailPanelOpen()).toBe(true)
     })
-    expect(router.state.location.pathname).toBe('/app/jira')
-    expect(router.state.location.href).toBe('/app/jira')
+    expect(router.state.location.pathname).toBe('/app/taskflow')
+    expect(router.state.location.href).toBe('/app/taskflow')
     expect((router.state.location.search as { q?: string }).q).toBeUndefined()
   })
 
@@ -154,14 +156,14 @@ describe('App deep-link routing', () => {
     // store as a returning user would have (typed a search, then navigated), and
     // assert the detail route restores it with no `q` in the URL.
     const { ui, router } = await given(magazine.full(), {
-      initialRoute: '/app/jira',
-      seedSearch: 'jira',
+      initialRoute: '/app/taskflow',
+      seedSearch: 'taskflow',
     })
 
     await waitFor(() => {
       expect(ui.catalog.isDetailPanelOpen()).toBe(true)
     })
-    expect(ui.catalog.getSearchInput().value).toBe('jira')
+    expect(ui.catalog.getSearchInput().value).toBe('taskflow')
     expect((router.state.location.search as { q?: string }).q).toBeUndefined()
   })
 })

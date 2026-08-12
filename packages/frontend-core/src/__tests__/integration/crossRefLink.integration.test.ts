@@ -16,7 +16,7 @@ describe('Cross-reference links between app entries (#25)', () => {
       slug: 'portals-hub',
       displayName: 'Portals Hub',
       description:
-        'See the [Jira](/app/jira) entry and the external [docs](https://example.com/docs). Also [Ghost](/app/no-such-app) which does not exist.',
+        'See the [TaskFlow](/app/taskflow) entry and the external [docs](https://example.com/docs). Also [Ghost](/app/no-such-app) which does not exist.',
     })
   })
 
@@ -28,22 +28,22 @@ describe('Cross-reference links between app entries (#25)', () => {
       expect(ui.catalog.isDetailPanelOpen()).toBe(true)
     })
 
-    const jiraLink = screen.getByRole('link', { name: 'Jira' })
+    const taskflowLink = screen.getByRole('link', { name: 'TaskFlow' })
     // Internal link must NOT open a new tab.
-    expect(jiraLink).not.toHaveAttribute('target', '_blank')
+    expect(taskflowLink).not.toHaveAttribute('target', '_blank')
     // It points at the router path (rendered as an href).
-    expect(jiraLink).toHaveAttribute('href', '/app/jira')
+    expect(taskflowLink).toHaveAttribute('href', '/app/taskflow')
 
     const user = userEvent.setup()
-    await user.click(jiraLink)
+    await user.click(taskflowLink)
 
-    // In-app navigation: the router path changes and Jira's detail opens,
+    // In-app navigation: the router path changes and TaskFlow's detail opens,
     // without a full page reload / new tab.
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/app/jira')
+      expect(router.state.location.pathname).toBe('/app/taskflow')
     })
     await waitFor(() => {
-      expect(ui.app.getOpenTitle()).toContain('Jira')
+      expect(ui.app.getOpenTitle()).toContain('TaskFlow')
     })
   })
 
