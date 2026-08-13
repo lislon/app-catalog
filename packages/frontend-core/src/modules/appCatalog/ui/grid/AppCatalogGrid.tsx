@@ -540,10 +540,20 @@ export function AppDetails({
             {app.freshness?.lastCheckedAt && (
               <span
                 className="inline-flex items-center gap-1 text-xs text-muted-foreground"
-                title={app.freshness.lastCheckedAt}
+                title={
+                  app.freshness.lastContentChangeAt
+                    ? `Content last changed ${app.freshness.lastContentChangeAt} · last checked ${app.freshness.lastCheckedAt}`
+                    : `Last checked ${app.freshness.lastCheckedAt}`
+                }
               >
                 <Clock className="size-3" />
-                Updated {formatRelativeTime(app.freshness.lastCheckedAt)}
+                {/* "Updated" means the content changed, not that a check ran -
+                    entries predating the field have none, so fall back. */}
+                Updated{' '}
+                {formatRelativeTime(
+                  app.freshness.lastContentChangeAt ??
+                    app.freshness.lastCheckedAt,
+                )}
                 {app.freshness.isStale && (
                   <span className="italic opacity-75">
                     {' '}
