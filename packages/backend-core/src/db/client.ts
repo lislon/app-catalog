@@ -14,9 +14,13 @@ let pool: pg.Pool | null = null
  * talks to the core database must go through here - one that skips it silently
  * lands in `public` and reads the shared canonical tables.
  */
-export function buildPgSchemaOptions(
-  schema: string | undefined = process.env.DB_SCHEMA,
-): { options?: string } {
+export function buildPgSchemaOptions(configuredSchema?: string): {
+  options?: string
+} {
+  // DB_SCHEMA is set per deployment, so it outranks a schema baked into the app
+  // config - otherwise a config that names `public` would pin a preview env back
+  // to the shared tables it was meant to be isolated from.
+  const schema = process.env.DB_SCHEMA || configuredSchema
   return schema ? { options: `-c search_path=${schema}` } : {}
 }
 

@@ -2,10 +2,15 @@
  * Unit tests for schema-per-branch DB isolation (#44).
  * Tests the logic that maps DB_SCHEMA env → pg pool options.
  */
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { buildPgSchemaOptions } from '../db/client'
 
 const original = process.env.DB_SCHEMA
+
+beforeEach(() => {
+  // The helper reads the env directly, so each case states its own world.
+  delete process.env.DB_SCHEMA
+})
 
 afterEach(() => {
   if (original === undefined) delete process.env.DB_SCHEMA
@@ -42,10 +47,18 @@ describe('DB_SCHEMA schema-per-branch isolation (#44)', () => {
     })
   })
 
-  it('prefers an explicitly configured schema over the env var', () => {
+  it('lets DB_SCHEMA override a schema from the app config', () => {
+    // The deployment knows it is a preview; the config server does not, and its
+    // baked `public` would otherwise undo the isolation.
     process.env.DB_SCHEMA = 'preview_from-env'
-    expect(buildPgSchemaOptions('configured')).toEqual({
-      options: '-c search_path=configured',
+    expect(buildPgSchemaOptions('public')).toEqual({
+      options: '-c search_path=preview_from-env',
+    })
+  })
+
+  it('uses the configured schema when DB_SCHEMA is unset', () => {
+    expect(buildPgSchemaOptions('public')).toEqual({
+      options: '-c search_path=public',
     })
   })
 })
