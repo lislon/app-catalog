@@ -1,5 +1,21 @@
 # @igstack/app-catalog-backend-core
 
+## 0.4.0-alpha-20260813153122
+
+### Patch Changes
+
+- [#129](https://github.com/lislon/app-catalog/pull/129) [`5e5ecb0`](https://github.com/lislon/app-catalog/commit/5e5ecb03dd295bcecb141405acd55064729fb2e3) Thanks [@lislon](https://github.com/lislon)! - Apply the preview-env schema to the pool the app actually uses
+
+  `DB_SCHEMA` was only honoured by `getDbClient()`, but the middleware builds its
+  own pool and calls `setDbClient()` with it — so the schema was dropped and every
+  schema-isolated deployment silently read the shared `public` tables. A preview
+  env whose schema had been migrated ahead of `public` then failed its startup
+  catalog sync with "the column does not exist in the current database".
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260813153122
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260813153122
+
 ## 0.4.0-alpha-20260813065159
 
 ### Minor Changes
