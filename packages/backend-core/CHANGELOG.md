@@ -1,5 +1,19 @@
 # @igstack/app-catalog-backend-core
 
+## 0.4.0-alpha-20260813154215
+
+### Patch Changes
+
+- [#130](https://github.com/lislon/app-catalog/pull/130) [`2f1ea8a`](https://github.com/lislon/app-catalog/commit/2f1ea8a375f82d8ea39fbbb1df30c7d57b7d2a07) Thanks [@lislon](https://github.com/lislon)! - Let `DB_SCHEMA` outrank a schema baked into the app config
+
+  A deployment knows it is a schema-isolated preview; the config server does not,
+  and a config naming `public` would pin the pool straight back to the shared
+  tables the preview was meant to be isolated from.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260813154215
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260813154215
+
 ## 0.4.0-alpha-20260813153122
 
 ### Patch Changes
