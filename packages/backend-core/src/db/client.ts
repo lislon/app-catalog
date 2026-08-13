@@ -7,6 +7,20 @@ let prismaClient: PrismaClient | null = null
 let pool: pg.Pool | null = null
 
 /**
+ * `search_path` startup options for a schema-isolated deployment.
+ *
+ * node-postgres ignores Prisma's `?schema=` URL parameter, so a preview env's
+ * schema has to be injected as a connection option instead. Every pool that
+ * talks to the core database must go through here - one that skips it silently
+ * lands in `public` and reads the shared canonical tables.
+ */
+export function buildPgSchemaOptions(
+  schema: string | undefined = process.env.DB_SCHEMA,
+): { options?: string } {
+  return schema ? { options: `-c search_path=${schema}` } : {}
+}
+
+/**
  * Gets the internal Prisma client instance.
  * Creates one if it doesn't exist.
  */
@@ -25,16 +39,12 @@ export function getDbClient(): PrismaClient {
     // doesn't honor those correctly for a connection-string pool — see
     // buildPgSslConfig).
     //
-    // Schema isolation for preview envs (#44): when DB_SCHEMA is set (e.g.
-    // "preview_feat-my-branch"), inject `search_path` via the pool options.
-    // node-postgres ignores Prisma's ?schema= URL param so we must use
-    // `options: '-c search_path=<schema>'` instead.
+    // Schema isolation for preview envs (#44): see buildPgSchemaOptions.
     const ssl = buildPgSslConfig()
-    const dbSchema = process.env.DB_SCHEMA
     pool = new pg.Pool({
       connectionString: databaseUrl,
       ...(ssl === undefined ? {} : { ssl }),
-      ...(dbSchema ? { options: `-c search_path=${dbSchema}` } : {}),
+      ...buildPgSchemaOptions(),
     })
     const adapter = new PrismaPg(pool)
 
