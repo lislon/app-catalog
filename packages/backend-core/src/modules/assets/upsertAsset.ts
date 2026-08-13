@@ -27,6 +27,14 @@ export async function upsertAsset({
   })
 
   if (existing) {
+    // Reusing the stored binary must not keep a mimeType we no longer derive:
+    // rows written by an older, wrong derivation would never be corrected.
+    if (existing.mimeType !== mimeType) {
+      await prisma.dbAsset.update({
+        where: { id: existing.id },
+        data: { mimeType },
+      })
+    }
     return existing.id
   }
 
