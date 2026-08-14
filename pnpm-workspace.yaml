@@ -71,6 +71,6 @@ catalog:
   zod: ^4.3.5
 
 overrides:
-  '@ai-sdk/provider-utils': 4.0.41
+  '@ai-sdk/provider-utils': 4.0.45
 
 linkWorkspacePackages: true
