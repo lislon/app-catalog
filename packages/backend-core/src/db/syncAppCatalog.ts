@@ -296,6 +296,8 @@ export async function syncAppCatalog(
         screenshotIds: resource.screenshotIds ?? [],
         deprecated: resource.deprecated ?? null,
         aiPrompt: resource.aiPrompt ?? null,
+        // aiMemory intentionally excluded from bulk sync — it is AI-owned and
+        // preserved across restarts. Static-config values are seeded below (if DB is null).
         urlIssues: resource.urlIssues ?? [],
         tiers: resource.tiers ?? null,
         // Fields from former SubResource
@@ -364,6 +366,26 @@ export async function syncAppCatalog(
       prisma,
       ...TABLE_SYNC_MAGAZINE.SourceReference,
     }).sync(allSourceRefs)
+
+    // Seed aiMemory only for resources where the static config provides an initial value
+    // and the DB currently has none. This preserves AI-written updates across restarts.
+    const resourcesWithAiMemorySeed = sortedResources.filter(
+      (r) => r.aiMemory != null && r.aiMemory.trim() !== '',
+    )
+    if (resourcesWithAiMemorySeed.length > 0) {
+      for (const resource of resourcesWithAiMemorySeed) {
+        const slug =
+          resource.slug ||
+          resource.displayName
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+        await prisma.dbResource.updateMany({
+          where: { slug, aiMemory: null },
+          data: { aiMemory: resource.aiMemory },
+        })
+      }
+    }
 
     // Get actual synced data to calculate stats
     const actual = result.getActual()

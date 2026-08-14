@@ -1,5 +1,6 @@
 import {
   getAppCatalogData,
+  updateAiMemory as updateAiMemoryService,
   updateApp as updateAppService,
 } from '../modules/appCatalog/service'
 import type { AppCatalogData } from '../types'
@@ -52,6 +53,16 @@ export function createTrpcRouter(
         .input(updateAppInputSchema)
         .mutation(async ({ input }): Promise<Resource> => {
           return updateAppService(input)
+        }),
+      updateAiMemory: publicProcedure
+        .input(
+          z.object({
+            id: z.string(),
+            aiMemory: z.string().nullable(),
+          }),
+        )
+        .mutation(async ({ input }): Promise<Resource> => {
+          return updateAiMemoryService(input)
         }),
     }),
 
