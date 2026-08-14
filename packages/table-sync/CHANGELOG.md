@@ -1,5 +1,7 @@
 # @igstack/app-catalog-table-sync
 
+## 0.4.0-alpha-20260814233321
+
 ## 0.4.0-alpha-20260814035133
 
 ### Patch Changes
