@@ -89,6 +89,8 @@ export interface Resource {
   }
   /** Agent-facing prompt guiding how to maintain this app's data */
   aiPrompt?: string
+  /** AI-owned scratchpad: strategies, gotchas, scripts, retros accumulated per app */
+  aiMemory?: string
   /** URL health issues detected by automated scanning */
   urlIssues?: string[]
   /** Optional tier variants (e.g., prod/dev) with per-tier URLs and access */

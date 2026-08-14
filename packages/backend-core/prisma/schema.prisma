@@ -147,6 +147,7 @@ model DbResource {
   /// [AppDeprecation] - Deprecation info with optional replacement slug
   deprecated                 Json?
   aiPrompt                   String?
+  aiMemory                   String?
   urlIssues                  String[]          @default([])
   /// [TierVariant[]]
   tiers                      Json?
