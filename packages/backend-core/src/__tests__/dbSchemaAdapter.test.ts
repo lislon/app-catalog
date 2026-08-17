@@ -38,6 +38,7 @@ vi.mock('../generated/prisma/client', () => ({
 }))
 
 const original = process.env.DB_SCHEMA
+const originalUrl = process.env.AC_CORE_DATABASE_URL
 
 beforeEach(() => {
   vi.resetModules()
@@ -49,6 +50,8 @@ beforeEach(() => {
 afterEach(() => {
   if (original === undefined) delete process.env.DB_SCHEMA
   else process.env.DB_SCHEMA = original
+  if (originalUrl === undefined) delete process.env.AC_CORE_DATABASE_URL
+  else process.env.AC_CORE_DATABASE_URL = originalUrl
 })
 
 const adapterSchema = () => adapterCtor.mock.calls[0]?.[1]
@@ -107,6 +110,9 @@ describe('preview-env schema reaches the Prisma adapter (#82)', () => {
     getDbClient()
 
     expect(poolOptions()).toBeUndefined()
-    expect(adapterSchema()).toEqual({ schema: undefined })
+    // Not toEqual({ schema: undefined }) - that also passes for {}, and an
+    // explicit undefined is what keeps the adapter on its own default.
+    expect(adapterSchema()).toHaveProperty('schema', undefined)
+    expect(adapterSchema()?.schema).toBeUndefined()
   })
 })

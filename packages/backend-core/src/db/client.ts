@@ -71,20 +71,37 @@ export function createCorePrismaClient(params: {
   return { client, pool: newPool, schema }
 }
 
+/** Postgres NAMEDATALEN - 1: identifiers are truncated to this many bytes. */
+const PG_MAX_IDENTIFIER_BYTES = 63
+
+/**
+ * How Postgres will have stored an identifier this long.
+ *
+ * A schema name over the limit is truncated identically wherever it appears - at
+ * CREATE SCHEMA and in `search_path` alike - so the isolation still holds and
+ * current_schema() merely reports the shortened name. Comparing raw strings would
+ * fail a correctly isolated deployment, so compare what Postgres kept.
+ */
+function truncateIdentifier(name: string): string {
+  const bytes = Buffer.from(name, 'utf8')
+  if (bytes.length <= PG_MAX_IDENTIFIER_BYTES) return name
+  return bytes.subarray(0, PG_MAX_IDENTIFIER_BYTES).toString('utf8')
+}
+
 /**
  * Fails a deployment that believes it is schema-isolated but is not.
  *
- * Only speaks up when DB_SCHEMA is set - a plain deployment has no isolation to
- * verify and must never be able to crash-loop on this check. The case worth
- * catching is a missing schema: Postgres silently skips a `search_path` entry
- * that does not exist and falls through to `public`, which is the shared-catalog
- * corruption this is here to prevent.
+ * Speaks up whenever a schema was resolved at all - the same resolution feeds the
+ * pool's `search_path`, so the expectation and the connection can never disagree
+ * by construction, and a deployment that configures isolation without setting
+ * DB_SCHEMA is checked too. The case worth catching is a missing schema: Postgres
+ * silently skips a `search_path` entry that does not exist and falls through to
+ * `public`, which is the shared-catalog corruption this is here to prevent.
  */
 export async function verifyDbSchema(
   poolToCheck: pg.Pool,
   configuredSchema?: string,
 ): Promise<void> {
-  const expected = process.env.DB_SCHEMA
   const resolved = resolveDbSchema(configuredSchema)
   const result = await poolToCheck.query<{ schema: string | null }>(
     'SELECT current_schema() AS schema',
@@ -93,12 +110,12 @@ export async function verifyDbSchema(
   console.log(
     `[db] core schema: resolved=${resolved ?? '(none)'} current_schema=${actual ?? '(none)'}`,
   )
-  if (!expected) return
-  if (actual !== expected) {
+  if (!resolved) return
+  if (actual !== truncateIdentifier(resolved)) {
     throw new Error(
-      `DB_SCHEMA is "${expected}" but the database resolved current_schema() to "${actual}". ` +
-        `The schema is most likely missing, so every query would fall through to the shared ` +
-        `catalog tables. Migrate this schema before starting the app.`,
+      `The configured schema is "${resolved}" but the database resolved current_schema() to ` +
+        `"${actual}". The schema is most likely missing, so every query would fall through to ` +
+        `the shared catalog tables. Migrate this schema before starting the app.`,
     )
   }
 }

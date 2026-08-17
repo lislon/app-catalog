@@ -37,7 +37,11 @@ export function createPrismaDatabaseClient(prisma: {
     },
     getTables: async () => {
       const tables = await prisma.$queryRawUnsafe<{ tablename: string }[]>(
-        `SELECT tablename FROM pg_tables WHERE schemaname = 'public'`,
+        // current_schema() - not a hardcoded 'public' - because the DML these
+        // tools go on to run is unqualified and therefore resolves through
+        // search_path. A schema-isolated deployment would otherwise be told
+        // about tables it cannot see.
+        `SELECT tablename FROM pg_tables WHERE schemaname = current_schema()`,
       )
       return tables.map((t) => t.tablename)
     },
@@ -51,7 +55,7 @@ export function createPrismaDatabaseClient(prisma: {
       >(
         `SELECT column_name, data_type, is_nullable
          FROM information_schema.columns
-         WHERE table_name = '${tableName}' AND table_schema = 'public'`,
+         WHERE table_name = '${tableName}' AND table_schema = current_schema()`,
       )
       return columns.map((c) => ({
         name: c.column_name,
