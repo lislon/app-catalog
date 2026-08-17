@@ -59,14 +59,18 @@ export {
 
 // Database utilities
 export {
+  buildPgSchemaOptions,
   buildPgSslConfig,
   connectDb,
+  createCorePrismaClient,
   disconnectDb,
   getDbClient,
+  resolveDbSchema,
   setDbClient,
   syncAppCatalog,
   TABLE_SYNC_MAGAZINE,
   tableSyncPrisma,
+  verifyDbSchema,
   type MakeTFromPrismaModel,
   type ObjectKeys,
   type ScalarFilter,
