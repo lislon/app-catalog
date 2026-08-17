@@ -1,5 +1,66 @@
 # @igstack/app-catalog-backend-core
 
+## 0.13.0
+
+### Minor Changes
+
+- [`79a86cb`](https://github.com/lislon/app-catalog/commit/79a86cb6d4c32c0265f865317c7b6b858383b7d7) Thanks [@lislon](https://github.com/lislon)! - Add `buildPgSslConfig()` and apply it when creating the pg pool, so DB TLS is
+  driven by `PGSSLMODE`/`PGSSLROOTCERT` correctly. node-postgres does not honor
+  those on a connection-string pool (it maps `verify-full` to a bare `ssl:true`
+  and ignores the CA), so a server cert signed by a private CA (e.g. AWS RDS)
+  could not be verified. The helper builds the `ssl` object explicitly:
+  verify-full validates CA chain + hostname; verify-ca skips hostname;
+  require/prefer validate when a CA is given; no-verify encrypts without
+  validation; disable/unset leaves SSL off. Exported for downstream reuse.
+
+### Patch Changes
+
+- [#134](https://github.com/lislon/app-catalog/pull/134) [`e6faea0`](https://github.com/lislon/app-catalog/commit/e6faea0c2765e557f6c8240927ebc73a6af9c874) Thanks [@lislon](https://github.com/lislon)! - Route Prisma's own queries to the preview-env schema
+
+  A `search_path` on the pool was necessary but not sufficient: Prisma 7 driver
+  adapters qualify every table name with the schema the adapter reports, so a
+  client built as `new PrismaPg(pool)` emits `"public"."DbResource"` no matter what
+  the pool's `current_schema()` resolves to. Every schema-isolated deployment
+  therefore kept reading — and re-syncing over — the shared `public` catalog, while
+  its own schema sat migrated and empty.
+
+  Core connections now go through a single `createCorePrismaClient` factory that
+  applies both halves (pool `search_path` + adapter `schema`), so a call site can
+  no longer opt out by accident; the AI-tools client, which had neither, is fixed
+  by the same change. `connect()` additionally logs the schema Prisma resolved and,
+  when `DB_SCHEMA` is set, fails fast if the database resolved `current_schema()`
+  to something else — Postgres silently skips a missing `search_path` entry and
+  falls through to `public`, which is exactly the corruption worth crashing on.
+
+- [#134](https://github.com/lislon/app-catalog/pull/134) [`e6faea0`](https://github.com/lislon/app-catalog/commit/e6faea0c2765e557f6c8240927ebc73a6af9c874) Thanks [@lislon](https://github.com/lislon)! - Follow-ups to the schema-isolation fix, from code review:
+  - The admin chat tools listed tables and columns from a hardcoded `public` while the
+    SQL they go on to run resolves through `search_path`. They now describe
+    `current_schema()`, so an isolated deployment is no longer told about tables it
+    cannot see.
+  - `verifyDbSchema()` compared the configured schema to `current_schema()` as raw
+    strings. Postgres truncates identifiers to 63 bytes, so a long schema name failed
+    the check on a deployment that was in fact correctly isolated. It now compares the
+    name Postgres kept.
+  - `verifyDbSchema()` armed only on the `DB_SCHEMA` environment variable, so a
+    deployment isolated through config alone was never checked. It now arms on the
+    resolved schema, which is the same value that feeds the pool's `search_path`.
+
+- [#127](https://github.com/lislon/app-catalog/pull/127) [`3af01e8`](https://github.com/lislon/app-catalog/commit/3af01e8a1ad18a300e1c7c651b9145a464fa42ce) Thanks [@lislon](https://github.com/lislon)! - Serve SVG assets as `image/svg+xml`. `sharp` reports `format === 'svg'`, but
+  `formatToMime` had no `svg` key, so `parseAssetMeta()` fell through to the
+  `image/${format}` fallback and produced the invalid `image/svg`. Behind a
+  `X-Content-Type-Options: nosniff` proxy, browsers refuse to render such a
+  response in an `<img>`, so SVG icons silently fell back to placeholder UI.
+
+  `upsertAsset()` now also rewrites the stored `mimeType` when it no longer matches
+  the freshly-derived one. It reuses an existing row by name to avoid duplicating
+  the binary, and previously returned early without touching the metadata — so rows
+  written by the old derivation could never be corrected, not even by a re-sync.
+  The rewrite is idempotent and repairs stale rows on the next sync.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.13.0
+  - @igstack/app-catalog-table-sync@0.13.0
+
 ## 0.12.0
 
 ### Patch Changes
