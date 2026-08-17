@@ -102,6 +102,22 @@ describe('verifyDbSchema fail-fast (#82)', () => {
     ).resolves.toBeUndefined()
   })
 
+  it('checks a deployment isolated by config alone, without DB_SCHEMA', async () => {
+    await expect(
+      verifyDbSchema(poolReturning('public'), 'preview_feat-my-branch'),
+    ).rejects.toThrow(/current_schema\(\) to "public"/)
+  })
+
+  it('accepts the name Postgres kept when the schema is over 63 bytes', async () => {
+    // CREATE SCHEMA and search_path truncate identically, so a long branch slug
+    // is still isolated - failing it here would crash-loop a healthy preview env.
+    const long = 'preview_' + 'b'.repeat(70)
+    process.env.DB_SCHEMA = long
+    await expect(
+      verifyDbSchema(poolReturning(long.slice(0, 63))),
+    ).resolves.toBeUndefined()
+  })
+
   it('throws when a missing schema falls the connection through to public', async () => {
     // Postgres skips a search_path entry that does not exist, which would let a
     // preview env quietly read and overwrite the shared catalog.
