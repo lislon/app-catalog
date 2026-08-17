@@ -3,7 +3,11 @@
  * Tests the logic that maps DB_SCHEMA env → pg pool options.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { buildPgSchemaOptions } from '../db/client'
+import {
+  buildPgSchemaOptions,
+  resolveDbSchema,
+  verifyDbSchema,
+} from '../db/client'
 
 const original = process.env.DB_SCHEMA
 
@@ -60,5 +64,50 @@ describe('DB_SCHEMA schema-per-branch isolation (#44)', () => {
     expect(buildPgSchemaOptions('public')).toEqual({
       options: '-c search_path=public',
     })
+  })
+})
+
+describe('resolveDbSchema', () => {
+  it('is undefined when nothing configures a schema', () => {
+    expect(resolveDbSchema()).toBeUndefined()
+    expect(resolveDbSchema('')).toBeUndefined()
+  })
+
+  it('prefers DB_SCHEMA over the configured schema', () => {
+    process.env.DB_SCHEMA = 'preview_from-env'
+    expect(resolveDbSchema('public')).toBe('preview_from-env')
+  })
+
+  it('falls back to the configured schema', () => {
+    expect(resolveDbSchema('public')).toBe('public')
+  })
+})
+
+describe('verifyDbSchema fail-fast (#82)', () => {
+  const poolReturning = (schema: string | null) =>
+    ({
+      query: async () => ({ rows: [{ schema }] }),
+    }) as unknown as Parameters<typeof verifyDbSchema>[0]
+
+  it('stays quiet for a deployment with no isolation to verify', async () => {
+    await expect(
+      verifyDbSchema(poolReturning('public')),
+    ).resolves.toBeUndefined()
+  })
+
+  it('passes when the database resolves the expected schema', async () => {
+    process.env.DB_SCHEMA = 'preview_feat-my-branch'
+    await expect(
+      verifyDbSchema(poolReturning('preview_feat-my-branch')),
+    ).resolves.toBeUndefined()
+  })
+
+  it('throws when a missing schema falls the connection through to public', async () => {
+    // Postgres skips a search_path entry that does not exist, which would let a
+    // preview env quietly read and overwrite the shared catalog.
+    process.env.DB_SCHEMA = 'preview_feat-my-branch'
+    await expect(verifyDbSchema(poolReturning('public'))).rejects.toThrow(
+      /current_schema\(\) to "public"/,
+    )
   })
 })
