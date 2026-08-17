@@ -1,5 +1,14 @@
 // Database connection
-export { connectDb, disconnectDb, getDbClient, setDbClient } from './client'
+export {
+  buildPgSchemaOptions,
+  connectDb,
+  createCorePrismaClient,
+  disconnectDb,
+  getDbClient,
+  resolveDbSchema,
+  setDbClient,
+  verifyDbSchema,
+} from './client'
 export { buildPgSslConfig } from './sslConfig'
 
 // Table sync utilities

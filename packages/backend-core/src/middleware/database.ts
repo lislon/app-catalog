@@ -1,9 +1,11 @@
-import { PrismaClient } from '../generated/prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
-import pg from 'pg'
+import type { PrismaClient } from '../generated/prisma/client'
+import type pg from 'pg'
 import type { AcDatabaseConfig } from './types'
-import { buildPgSchemaOptions, setDbClient } from '../db/client'
-import { buildPgSslConfig } from '../db/sslConfig'
+import {
+  createCorePrismaClient,
+  setDbClient,
+  verifyDbSchema,
+} from '../db/client'
 
 /**
  * Formats a database connection URL from structured config.
@@ -36,31 +38,19 @@ export class AcDatabaseManager {
    */
   getClient(): PrismaClient {
     if (!this.client) {
-      const datasourceUrl = formatConnectionUrl(this.config)
-
-      // Prisma 7 with adapter: Create pg pool and wrap with adapter.
-      // SSL from PGSSLMODE/PGSSLROOTCERT via buildPgSslConfig (node-postgres
-      // doesn't apply those correctly to a connection-string pool).
-      // This pool - not getDbClient()'s - is the one the app ends up using, so
-      // the preview-env schema has to be applied here as well. The `?schema=`
-      // in datasourceUrl is inert: node-postgres drops unknown URL params.
-      const ssl = buildPgSslConfig()
-      this.pool = new pg.Pool({
-        connectionString: datasourceUrl,
-        ...(ssl === undefined ? {} : { ssl }),
-        ...buildPgSchemaOptions(
-          'url' in this.config ? undefined : this.config.schema,
-        ),
-      })
-      const adapter = new PrismaPg(this.pool)
-
-      this.client = new PrismaClient({
-        adapter,
+      // This client - not getDbClient()'s - is the one the app ends up using.
+      // The `?schema=` in the url is inert (node-postgres drops unknown URL
+      // params), so the schema has to travel via createCorePrismaClient.
+      const created = createCorePrismaClient({
+        connectionString: formatConnectionUrl(this.config),
+        configuredSchema: this.configuredSchema(),
         log:
           process.env.NODE_ENV === 'development'
             ? ['warn', 'error']
             : ['warn', 'error'],
       })
+      this.pool = created.pool
+      this.client = created.client
 
       // Bridge with existing backend-core getDbClient() usage
       setDbClient(this.client)
@@ -71,6 +61,7 @@ export class AcDatabaseManager {
   async connect(): Promise<void> {
     const client = this.getClient()
     await client.$connect()
+    if (this.pool) await verifyDbSchema(this.pool, this.configuredSchema())
   }
 
   async disconnect(): Promise<void> {
@@ -82,5 +73,9 @@ export class AcDatabaseManager {
       await this.pool.end()
       this.pool = null
     }
+  }
+
+  private configuredSchema(): string | undefined {
+    return 'url' in this.config ? undefined : this.config.schema
   }
 }

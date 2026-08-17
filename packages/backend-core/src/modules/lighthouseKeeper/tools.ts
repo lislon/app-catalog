@@ -1,8 +1,6 @@
 import type { Tool } from 'ai'
 import { z } from 'zod'
-import { PrismaClient } from '../../generated/prisma/client'
-import { PrismaPg } from '@prisma/adapter-pg'
-import pg from 'pg'
+import { createCorePrismaClient } from '../../db/client'
 import type { AcDatabaseConfig } from '../../middleware/types.js'
 
 // ============================================================================
@@ -27,10 +25,11 @@ function getDatabaseUrl(config: AcDatabaseConfig): string {
 export function createAppCatalogAITools(
   databaseConfig: AcDatabaseConfig,
 ): Record<string, Tool> {
-  const databaseUrl = getDatabaseUrl(databaseConfig)
-  const pool = new pg.Pool({ connectionString: databaseUrl })
-  const adapter = new PrismaPg(pool)
-  const prisma = new PrismaClient({ adapter })
+  const { client: prisma } = createCorePrismaClient({
+    connectionString: getDatabaseUrl(databaseConfig),
+    configuredSchema:
+      'url' in databaseConfig ? undefined : databaseConfig.schema,
+  })
 
   const getAppCardSchema = z.object({
     slug: z.string().describe('The app slug to fetch'),
