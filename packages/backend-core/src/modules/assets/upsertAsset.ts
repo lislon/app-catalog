@@ -21,15 +21,31 @@ export async function upsertAsset({
     originalFilename,
   })
 
-  // If an asset with the same checksum already exists, reuse it instead of storing duplicate binary.
   const existing = await prisma.dbAsset.findUnique({
     where: { name },
   })
 
   if (existing) {
-    // Reusing the stored binary must not keep a mimeType we no longer derive:
-    // rows written by an older, wrong derivation would never be corrected.
-    if (existing.mimeType !== mimeType) {
+    // The checksum is the source of truth for whether the underlying bytes
+    // changed. Reusing the stored binary on a checksum match must not keep a
+    // mimeType we no longer derive: rows written by an older, wrong
+    // derivation would never be corrected otherwise. A checksum mismatch
+    // means the file on disk was replaced with different content (e.g. an
+    // SVG swapped for a PNG) — the whole row must be rewritten, not just
+    // mimeType, or the new bytes are silently discarded forever.
+    if (existing.checksum !== checksum) {
+      await prisma.dbAsset.update({
+        where: { id: existing.id },
+        data: {
+          content: new Uint8Array(buffer),
+          checksum,
+          fileSize,
+          width,
+          height,
+          mimeType,
+        },
+      })
+    } else if (existing.mimeType !== mimeType) {
       await prisma.dbAsset.update({
         where: { id: existing.id },
         data: { mimeType },
