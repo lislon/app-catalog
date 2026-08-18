@@ -1,5 +1,15 @@
 # @igstack/app-catalog-backend-core
 
+## 0.4.0-alpha-20260818210825
+
+### Patch Changes
+
+- [#137](https://github.com/lislon/app-catalog/pull/137) [`e5cf160`](https://github.com/lislon/app-catalog/commit/e5cf1607bc698e8db5abf30adc72343523e2831f) Thanks [@lislon](https://github.com/lislon)! - Fix `upsertAsset` silently discarding new binary content when an asset row with the same name already exists. Previously, only `mimeType` was ever patched on an existing row — replacing an icon or screenshot file on disk (same app slug, same derived asset name) had no effect on future syncs, no matter how many times the app redeployed. Now the stored `checksum` is compared against the freshly computed one; on a mismatch the whole row (`content`, `checksum`, `fileSize`, `width`, `height`, `mimeType`) is rewritten together.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260818210825
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260818210825
+
 ## 0.4.0-alpha-20260818041444
 
 ### Patch Changes
