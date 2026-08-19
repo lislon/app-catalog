@@ -1,5 +1,28 @@
 # @igstack/app-catalog-backend-core
 
+## 0.4.0-alpha-20260819143830
+
+### Patch Changes
+
+- [#138](https://github.com/lislon/app-catalog/pull/138) [`e716071`](https://github.com/lislon/app-catalog/commit/e71607116650683285735e47b8b547814102b43d) Thanks [@lislon](https://github.com/lislon)! - Revalidate icon, asset and screenshot binaries instead of caching them for a day
+
+  These URLs are keyed by row id or by name, and `upsertAsset` replaces content in
+  place rather than inserting a new row — so the bytes behind a given URL can
+  change. With `Cache-Control: public, max-age=86400` a browser that had already
+  loaded an icon kept serving the old artwork from its disk cache for up to 24
+  hours after the replacement shipped, which reads as "the deploy did not work".
+
+  The three binary routes now send an `ETag` derived from the stored checksum (plus
+  the resize parameter, where one applies) together with
+  `Cache-Control: public, max-age=0, must-revalidate`, and answer a matching
+  `If-None-Match` with `304` before doing any image work. Unchanged content still
+  costs a single conditional request with no body, and a replacement is visible on
+  the next request.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260819143830
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260819143830
+
 ## 0.4.0-alpha-20260818210825
 
 ### Patch Changes

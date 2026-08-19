@@ -1,6 +1,6 @@
 {
   "name": "@igstack/app-catalog-backend-core",
-  "version": "0.4.0-alpha-20260818210825",
+  "version": "0.4.0-alpha-20260819143830",
   "description": "Backend core library for App Catalog",
   "homepage": "https://github.com/lislon/app-catalog",
   "repository": {
@@ -95,5 +95,5 @@
       "./package.json": "./package.json"
     }
   },
-  "gitHead": "e5cf1607bc698e8db5abf30adc72343523e2831f"
+  "gitHead": "e71607116650683285735e47b8b547814102b43d"
 }
