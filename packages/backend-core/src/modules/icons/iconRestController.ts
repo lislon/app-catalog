@@ -3,6 +3,10 @@ import multer from 'multer'
 import { createHash } from 'node:crypto'
 import { getDbClient } from '../../db'
 import { getExtensionFromFilename, getExtensionFromMimeType } from './iconUtils'
+import {
+  isNotModified,
+  setRevalidatingCacheHeaders,
+} from '../assets/assetCache'
 
 // Configure multer for memory storage
 const upload = multer({
@@ -112,6 +116,7 @@ export function registerIconRestController(
           content: true,
           mimeType: true,
           name: true,
+          checksum: true,
         },
       })
 
@@ -120,10 +125,15 @@ export function registerIconRestController(
         return
       }
 
+      const etag = setRevalidatingCacheHeaders(res, icon.checksum)
+      if (isNotModified(req, etag)) {
+        res.status(304).end()
+        return
+      }
+
       // Set appropriate headers
       res.setHeader('Content-Type', icon.mimeType)
       res.setHeader('Content-Disposition', `inline; filename="${icon.name}"`)
-      res.setHeader('Cache-Control', 'public, max-age=86400') // Cache for 1 day
 
       // Send binary content
       res.send(icon.content)

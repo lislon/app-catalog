@@ -1,6 +1,7 @@
 import type { Request, Response, Router } from 'express'
 import sharp from 'sharp'
 import { getDbClient } from '../../db'
+import { isNotModified, setRevalidatingCacheHeaders } from './assetCache'
 
 export interface ScreenshotRestControllerConfig {
   /**
@@ -133,11 +134,23 @@ export function registerScreenshotRestController(
           content: true,
           mimeType: true,
           name: true,
+          checksum: true,
         },
       })
 
       if (!screenshot) {
         res.status(404).json({ error: 'Screenshot not found' })
+        return
+      }
+
+      // Answered before resizing, so an unchanged screenshot costs no image work.
+      const etag = setRevalidatingCacheHeaders(
+        res,
+        screenshot.checksum,
+        targetSize && targetSize > 0 ? `s${targetSize}` : undefined,
+      )
+      if (isNotModified(req, etag)) {
+        res.status(304).end()
         return
       }
 
@@ -164,7 +177,6 @@ export function registerScreenshotRestController(
         'Content-Disposition',
         `inline; filename="${screenshot.name}"`,
       )
-      res.setHeader('Cache-Control', 'public, max-age=86400') // Cache for 1 day
 
       // Send binary content
       res.send(content)
