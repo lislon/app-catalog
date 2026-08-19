@@ -1,5 +1,5 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
-import { ArrowUpRight, Search } from 'lucide-react'
+import { ArrowUpRight, Search, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '~/lib/utils'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
@@ -7,6 +7,7 @@ import { markdownToPlainText } from '../../utils/markdownToPlainText'
 import { AttributionFooter } from './AttributionFooter'
 import { ResourceIcon } from './ResourceIcon'
 import { searchResources } from '../../utils/searchApps'
+import { Highlight } from '../components/Highlight'
 
 /**
  * Adaptive-home discovery spine (issue #38, increment 1) — matches the
@@ -281,10 +282,10 @@ function SearchResultsList({
             <ResourceIcon app={app} size={40} />
             <span className="flex-1 min-w-0">
               <span className="block text-[14px] font-semibold truncate">
-                {app.displayName}
+                <Highlight text={app.displayName} query={searchValue} />
                 {app.abbreviation && app.abbreviation !== app.displayName && (
                   <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">
-                    ({app.abbreviation})
+                    (<Highlight text={app.abbreviation} query={searchValue} />)
                   </span>
                 )}
               </span>
@@ -296,14 +297,18 @@ function SearchResultsList({
               {(() => {
                 const kids = matchedChildrenByParent.get(app.slug)
                 if (!kids || kids.length === 0) return null
-                const names = kids.map((k) => k.displayName)
-                const shown = names.slice(0, 3).join(', ')
-                const extra =
-                  names.length > 3 ? ` +${names.length - 3} more` : ''
+                const shown = kids.slice(0, 3)
+                const extra = kids.length > 3 ? ` +${kids.length - 3} more` : ''
                 return (
                   <span className="mt-0.5 block text-[12px] text-primary truncate">
                     Matched {kids.length} sub-resource
-                    {kids.length === 1 ? '' : 's'}: {shown}
+                    {kids.length === 1 ? '' : 's'}:{' '}
+                    {shown.map((k, idx) => (
+                      <span key={k.slug}>
+                        {idx > 0 && ', '}
+                        <Highlight text={k.displayName} query={searchValue} />
+                      </span>
+                    ))}
                     {extra}
                   </span>
                 )
@@ -433,7 +438,19 @@ export function LauncherHome({
               aria-label="Search apps"
               className="flex-1 bg-transparent border-0 outline-none text-[16px] text-foreground placeholder:text-muted-foreground"
             />
-            {!isSearching && (
+            {isSearching ? (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => {
+                  onSearchChange('')
+                  searchRef.current?.focus()
+                }}
+                className="shrink-0 rounded-full p-1 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              >
+                <X className="size-4" />
+              </button>
+            ) : (
               <kbd className="hidden sm:inline-flex items-center gap-0.5 text-[11px] text-muted-foreground/60 border border-muted-foreground/20 rounded px-1.5 py-0.5 font-mono shrink-0">
                 {typeof navigator !== 'undefined' &&
                 navigator.platform.includes('Mac')
