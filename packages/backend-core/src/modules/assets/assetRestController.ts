@@ -4,6 +4,7 @@ import sharp from 'sharp'
 import { getDbClient } from '../../db'
 import { getImageFormat, isRasterImage, resizeImage } from './assetUtils'
 import { upsertAsset } from './upsertAsset'
+import { isNotModified, setRevalidatingCacheHeaders } from './assetCache'
 
 // Configure multer for memory storage
 const upload = multer({
@@ -106,6 +107,7 @@ export function registerAssetRestController(
           name: true,
           width: true,
           height: true,
+          checksum: true,
         },
       })
 
@@ -129,6 +131,17 @@ export function registerAssetRestController(
         Number.isFinite(width) &&
         width > 0
 
+      // Answered before resizing, so an unchanged asset costs no image work.
+      const etag = setRevalidatingCacheHeaders(
+        res,
+        asset.checksum,
+        shouldResize ? `w${width}` : undefined,
+      )
+      if (isNotModified(req, etag)) {
+        res.status(304).end()
+        return
+      }
+
       if (shouldResize) {
         const fmt = getImageFormat(asset.mimeType) || 'jpeg'
         const buf = await resizeImage(
@@ -144,7 +157,6 @@ export function registerAssetRestController(
       // Set appropriate headers
       res.setHeader('Content-Type', outMime)
       res.setHeader('Content-Disposition', `inline; filename="${asset.name}"`)
-      res.setHeader('Cache-Control', 'public, max-age=86400') // Cache for 1 day
 
       // Send binary content (resized if requested)
       res.send(outBuffer)
@@ -204,6 +216,7 @@ export function registerAssetRestController(
             name: true,
             width: true,
             height: true,
+            checksum: true,
           },
         })
 
@@ -228,6 +241,17 @@ export function registerAssetRestController(
           !!width &&
           Number.isFinite(width) &&
           width > 0
+
+        // Answered before resizing, so an unchanged asset costs no image work.
+        const etag = setRevalidatingCacheHeaders(
+          res,
+          asset.checksum,
+          shouldResize ? `w${width}` : undefined,
+        )
+        if (isNotModified(req, etag)) {
+          res.status(304).end()
+          return
+        }
 
         if (shouldResize) {
           const fmt = asset.mimeType.includes('png')
@@ -258,7 +282,6 @@ export function registerAssetRestController(
         // Set appropriate headers
         res.setHeader('Content-Type', outMime)
         res.setHeader('Content-Disposition', `inline; filename="${asset.name}"`)
-        res.setHeader('Cache-Control', 'public, max-age=86400') // Cache for 1 day
 
         // Send binary content (resized if requested)
         res.send(outBuffer)
