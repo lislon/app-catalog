@@ -49,6 +49,9 @@ export function ScreenshotGallery({
         className="h-[85vh] w-full max-w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-3rem)] md:max-w-[calc(100vw-4rem)] p-0 overflow-hidden"
         showCloseButton={true}
         onEscapeKeyDown={(e) => {
+          // Stop propagation so the Esc event doesn't reach outer document listeners
+          // (e.g. SearchResultsList's raw keydown handler, which would clear search).
+          e.stopPropagation()
           // If Gallery is in fullscreen, its capture listener already handled Escape.
           // Prevent Radix from also closing the dialog on the same event.
           if (isFullscreenRef.current) {

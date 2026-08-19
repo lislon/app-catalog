@@ -8,7 +8,15 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { AppWindow, Clock, ExternalLink, Plus, Trash2, X } from 'lucide-react'
+import {
+  AppWindow,
+  CalendarPlus,
+  Clock,
+  ExternalLink,
+  Plus,
+  Trash2,
+  X,
+} from 'lucide-react'
 import React, { useState } from 'react'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { cn } from '~/lib/utils'
@@ -343,36 +351,20 @@ export function AppDetails({
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => recordClick(app.slug)}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground hover:border-primary hover:text-primary transition-all"
-                    title="Open app in new tab (secondary — see access info below)"
+                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
+                    aria-label={'Open ' + app.displayName}
                   >
-                    {app.appUrl.replace(/https?:\/\//g, '')}
-                    <ExternalLink className="size-3 shrink-0 opacity-60" />
+                    <ExternalLink className="size-3.5 shrink-0" />
+                    Open{' '}
+                    <span className="max-w-[240px] truncate text-primary-foreground/70 text-xs font-normal">
+                      {app.appUrl.replace(/https?:\/\//g, '')}
+                    </span>
                   </a>
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 )}
               </div>
-              {/* Freshness date near the header (this is the same signal that
-                  drives "New this week"), so the date is visible in the card
-                  itself, not only in the muted footer. */}
-              {app.freshness?.lastCheckedAt && (
-                <div className="mt-1 px-3">
-                  <span
-                    className="inline-flex items-center gap-1 text-xs text-muted-foreground"
-                    title={app.freshness.lastCheckedAt}
-                  >
-                    <Clock className="size-3" />
-                    Updated {formatRelativeTime(app.freshness.lastCheckedAt)}
-                    {app.freshness.isStale && (
-                      <span className="italic opacity-75">
-                        {' '}
-                        · may be out of date
-                      </span>
-                    )}
-                  </span>
-                </div>
-              )}
+              {/* Updated/Added metadata moved to consolidated section before Sources (#55) */}
             </div>
           </div>
         </div>
@@ -530,6 +522,36 @@ export function AppDetails({
                 </Badge>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Metadata: Added / Updated */}
+        {(app.createdAt || app.freshness?.lastCheckedAt) && (
+          <div className="mt-6 flex flex-wrap gap-x-5 gap-y-1">
+            {app.createdAt && (
+              <span
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground"
+                title={app.createdAt}
+              >
+                <CalendarPlus className="size-3" />
+                Added {formatRelativeTime(app.createdAt)}
+              </span>
+            )}
+            {app.freshness?.lastCheckedAt && (
+              <span
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground"
+                title={app.freshness.lastCheckedAt}
+              >
+                <Clock className="size-3" />
+                Updated {formatRelativeTime(app.freshness.lastCheckedAt)}
+                {app.freshness.isStale && (
+                  <span className="italic opacity-75">
+                    {' '}
+                    · may be out of date
+                  </span>
+                )}
+              </span>
+            )}
           </div>
         )}
 
