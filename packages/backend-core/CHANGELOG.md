@@ -1,5 +1,49 @@
 # @igstack/app-catalog-backend-core
 
+## 0.16.0
+
+### Minor Changes
+
+- [#139](https://github.com/lislon/app-catalog/pull/139) [`4dfc6ce`](https://github.com/lislon/app-catalog/commit/4dfc6ce1442b039f3a27e020b96c11cbf1809c7d) Thanks [@lislon](https://github.com/lislon)! - Restore catalog UI features that were already published but missing from the
+  stable branch
+
+  The stable branch was re-created from a snapshot that predates a batch of
+  already-released UI work, and the promotions for that batch were never replayed.
+  Anything installing the stable tag therefore had a _newer_ version number with an
+  _older_ app card. Restored, byte-for-byte against the published tree:
+  - App card: a primary "Open <url>" action instead of the muted secondary link,
+    and the Added/Updated timestamps consolidated into one metadata row just above
+    Sources (`Resource.createdAt` is now serialised for this).
+  - Access section: Step 1 / Step 2 badges for two-step access apps, with the
+    post-approval instructions expanded by default for them (still a collapsible
+    accordion for single-step apps), plus list styling for markdown prose.
+  - Launcher: close button and mount focus on the detail card so Esc works when the
+    card was opened by mouse; clear (×) button in the hero search input; matched
+    query text highlighted in search results and in matched sub-resource names.
+  - Gallery: Esc no longer propagates to the outer search listener, so closing the
+    gallery keeps the search query.
+
+### Patch Changes
+
+- [#139](https://github.com/lislon/app-catalog/pull/139) [`4dfc6ce`](https://github.com/lislon/app-catalog/commit/4dfc6ce1442b039f3a27e020b96c11cbf1809c7d) Thanks [@lislon](https://github.com/lislon)! - Revalidate icon, asset and screenshot binaries instead of caching them for a day
+
+  These URLs are keyed by row id or by name, and `upsertAsset` replaces content in
+  place rather than inserting a new row — so the bytes behind a given URL can
+  change. With `Cache-Control: public, max-age=86400` a browser that had already
+  loaded an icon kept serving the old artwork from its disk cache for up to 24
+  hours after the replacement shipped, which reads as "the deploy did not work".
+
+  The three binary routes now send an `ETag` derived from the stored checksum (plus
+  the resize parameter, where one applies) together with
+  `Cache-Control: public, max-age=0, must-revalidate`, and answer a matching
+  `If-None-Match` with `304` before doing any image work. Unchanged content still
+  costs a single conditional request with no body, and a replacement is visible on
+  the next request.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.16.0
+  - @igstack/app-catalog-table-sync@0.16.0
+
 ## 0.13.0
 
 ### Minor Changes
