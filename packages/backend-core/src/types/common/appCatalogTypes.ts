@@ -46,6 +46,13 @@ export interface SourceReference {
 export interface Freshness {
   /** ISO-8601 timestamp the app's sources were last verified, or null if never. */
   lastCheckedAt: string | null
+  /**
+   * ISO-8601 timestamp the source content last actually CHANGED — what the UI
+   * shows as "Updated". Distinct from `lastCheckedAt`: a source can be re-read
+   * repeatedly without changing. Null for entries scanned before this was
+   * tracked, in which case the frontend falls back to `lastCheckedAt`.
+   */
+  lastContentChangeAt: string | null
   /** True when the entry is overdue for a re-check by more than the grace period. */
   isStale: boolean
 }
@@ -118,6 +125,7 @@ export interface Resource {
    */
   lastCheckedAt?: string | null
   nextCheckAfter?: string | null
+  lastContentChangeAt?: string | null
   /** ISO-8601 timestamp of when this entry was first created in the catalog DB. */
   createdAt?: string
 }

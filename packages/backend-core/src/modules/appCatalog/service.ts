@@ -158,10 +158,15 @@ function rowToResource(row: ResourceRowWithSourceRefs): Resource {
     : undefined
   const tiers =
     row.tiers == null ? undefined : (row.tiers as unknown as Resource['tiers'])
-  const freshness = computeFreshness(
-    row.lastCheckedAt ? row.lastCheckedAt.toISOString() : null,
-    row.nextCheckAfter ? row.nextCheckAfter.toISOString() : null,
-  )
+  const freshness = computeFreshness({
+    lastCheckedAt: row.lastCheckedAt ? row.lastCheckedAt.toISOString() : null,
+    nextCheckAfter: row.nextCheckAfter
+      ? row.nextCheckAfter.toISOString()
+      : null,
+    lastContentChangeAt: row.lastContentChangeAt
+      ? row.lastContentChangeAt.toISOString()
+      : null,
+  })
 
   return {
     id: row.id,
