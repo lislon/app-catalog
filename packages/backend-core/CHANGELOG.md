@@ -1,5 +1,26 @@
 # @igstack/app-catalog-backend-core
 
+## 0.17.0
+
+### Minor Changes
+
+- [#142](https://github.com/lislon/app-catalog/pull/142) [`18ab792`](https://github.com/lislon/app-catalog/commit/18ab7920d9721ebd30fc36b835f8770547ae840c) Thanks [@lislon](https://github.com/lislon)! - Show when a catalog entry's content last actually changed, not when it was last
+  checked. The freshness scan re-reads a source on a backoff schedule and records
+  `lastCheckedAt` every time, whether or not anything changed — so an entry whose
+  data had been identical for months still advertised "Updated 22 hours ago".
+
+  Resources now carry `lastContentChangeAt` alongside `lastCheckedAt` (new nullable
+  `DbResource` column, plumbed through `syncAppCatalog` and the app-catalog service
+  into the `Freshness` payload). The detail panel's "Updated" line and the launcher's
+  "New this week" section read the content-change date, falling back to the check
+  date for entries recorded before the field existed; the tooltip exposes both dates.
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.17.0
+  - @igstack/app-catalog-table-sync@0.17.0
+
 ## 0.16.0
 
 ### Minor Changes
