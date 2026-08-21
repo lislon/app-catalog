@@ -68,6 +68,8 @@ jobs:
         uses: tanstack/config/.github/setup@main
       - name: Build Packages
         run: pnpm run build:all
+      - name: Stamp git SHA into preview packages
+        run: node scripts/write-git-sha.mjs "${{ github.event.pull_request.head.sha || github.sha }}"
       - name: Publish Previews
         continue-on-error: true
         run: pnpx pkg-pr-new publish --pnpm --compact './packages/*' --template './examples/*/*'
