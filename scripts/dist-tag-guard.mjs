@@ -8,7 +8,7 @@
  * The consequence is that a release which shipped nothing reports success, while
  * the changeset that triggered it is consumed either way, so the next run has
  * nothing left to publish. That is how the stable channel stayed wedged for days
- * (#83 AC3) without a single red check.
+ * without a single red check.
  *
  * Usage:
  *   node scripts/dist-tag-guard.mjs capture --tag <tag> --out <file>
@@ -35,18 +35,26 @@
  *                     because `changesets/action` rewrites package.json in place
  *                     when it opens a version PR.
  *
- * Reads are retried, because a fresh publish takes a few seconds to become
- * visible through npm's CDN. Unlike `scripts/check-registry-versions.mjs` this
- * guard is fail-CLOSED: it runs on the publish path, where "cannot tell" must
- * never be reported as "shipped".
+ * Reads are retried until a deadline, because a fresh publish takes a few
+ * seconds to become visible through npm's CDN. Every individual lookup is also
+ * given a hard timeout: `npm view` was measured hanging for 951s on one call out
+ * of ten while its neighbours answered in under a second, and an unbounded read
+ * would stall the release rather than report on it.
+ *
+ * Unlike `scripts/check-registry-versions.mjs` this guard is fail-CLOSED: it
+ * runs on the publish path, where "cannot tell" must never be reported as
+ * "shipped".
  */
 import { execFileSync } from 'node:child_process'
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const PACKAGES_DIR = 'packages'
-const ATTEMPTS = 12
-const DELAY_MS = 10_000
+/** Hard cap on a single `npm view`; observed p99 is well under a second. */
+const LOOKUP_TIMEOUT_MS = 15_000
+const RETRY_DELAY_MS = 10_000
+/** Total patience for a fresh publish to clear npm's CDN. */
+const DEADLINE_MS = 3 * 60_000
 
 function flag(name) {
   const i = process.argv.indexOf(name)
@@ -81,44 +89,86 @@ function declaredPackages() {
 }
 
 /**
- * Version the registry currently serves on `tag`, or null when the tag does not
- * exist, the package was never published, or the lookup failed. `npm view` exits
- * 0 with empty output for a missing dist-tag, so both shapes land here.
+ * Ask the registry what `tag` currently points at.
+ *
+ * Returns `{version, error}`. `version` is null both when the tag does not exist
+ * and when the lookup failed, so `error` is what tells "the registry answered,
+ * and the answer is nothing" apart from "the registry never answered" — the
+ * difference between a stalled release and an unreadable registry. `npm view`
+ * exits 0 with empty output for a missing dist-tag.
  */
 function served(name, tag) {
   try {
     const out = execFileSync(
       'npm',
       ['view', '--prefer-online', name, `dist-tags.${tag}`],
-      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+      {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+        timeout: LOOKUP_TIMEOUT_MS,
+        killSignal: 'SIGKILL',
+      },
     ).trim()
-    return out === '' ? null : out
-  } catch {
-    return null
+    return { version: out === '' ? null : out, error: null }
+  } catch (e) {
+    const reason =
+      e.signal === 'SIGKILL'
+        ? `timed out after ${LOOKUP_TIMEOUT_MS / 1000}s`
+        : String(e.message || e).split('\n')[0]
+    return { version: null, error: reason }
   }
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
-function capture() {
+/** `served`, retried so one flaky lookup does not decide anything. */
+async function servedRetrying(name, tag, attempts = 3) {
+  let result
+  for (let i = 1; i <= attempts; i++) {
+    result = served(name, tag)
+    if (!result.error) return result
+    console.log(`  ${name}: lookup failed (${result.error})`)
+    if (i < attempts) await sleep(RETRY_DELAY_MS)
+  }
+  return result
+}
+
+async function capture() {
   const tag = flag('--tag')
   const out = flag('--out')
   if (!tag || !out) usage('capture needs --tag and --out')
 
-  const snapshot = {
-    tag,
-    packages: declaredPackages().map((pkg) => ({
-      ...pkg,
-      served: served(pkg.name, tag),
-    })),
-  }
-  if (snapshot.packages.length === 0) {
+  const declared = declaredPackages()
+  if (declared.length === 0) {
     console.error(`No publishable packages found under ${PACKAGES_DIR}/.`)
     process.exit(1)
   }
-  writeFileSync(out, `${JSON.stringify(snapshot, null, 2)}\n`)
-  console.log(`Captured @${tag} for ${snapshot.packages.length} package(s):`)
-  for (const pkg of snapshot.packages) {
+
+  const packages = []
+  const unreadable = []
+  for (const pkg of declared) {
+    const result = await servedRetrying(pkg.name, tag)
+    if (result.error) unreadable.push({ name: pkg.name, error: result.error })
+    packages.push({ ...pkg, served: result.version })
+  }
+
+  // A baseline read from an unreachable registry would make the post-publish
+  // assertion assert the wrong thing, so refuse it. Nothing has been published
+  // yet at this point, so failing here leaves no half-released state.
+  if (unreadable.length > 0) {
+    console.error(
+      '\nCould not read the registry, so there is no trustworthy baseline to\n' +
+        'compare the publish against. Refusing to continue:\n',
+    )
+    for (const pkg of unreadable) {
+      console.error(`  ${pkg.name}: ${pkg.error}`)
+    }
+    process.exit(1)
+  }
+
+  writeFileSync(out, `${JSON.stringify({ tag, packages }, null, 2)}\n`)
+  console.log(`Captured @${tag} for ${packages.length} package(s):`)
+  for (const pkg of packages) {
     console.log(
       `- ${pkg.name}: declares ${pkg.version}, @${tag} serves ${pkg.served ?? '(nothing)'}`,
     )
@@ -182,20 +232,26 @@ async function assert() {
 
   console.log(`Waiting for @${tag} to serve ${expected.length} new version(s)…`)
   const pending = new Map(expected.map((e) => [e.name, e]))
-  for (let attempt = 1; attempt <= ATTEMPTS && pending.size > 0; attempt++) {
+  const deadline = Date.now() + DEADLINE_MS
+  let attempt = 0
+  while (pending.size > 0) {
+    attempt++
     for (const entry of [...pending.values()]) {
-      entry.actual = served(entry.name, tag)
+      const result = await servedRetrying(entry.name, tag)
+      entry.actual = result.version
       if (entry.actual === entry.expect) {
         console.log(`✓ @${tag} ${entry.name} → ${entry.actual}`)
         pending.delete(entry.name)
       }
     }
-    if (pending.size > 0 && attempt < ATTEMPTS) {
-      console.log(
-        `… ${pending.size} package(s) not visible yet (attempt ${attempt}/${ATTEMPTS}); retrying in ${DELAY_MS / 1000}s`,
-      )
-      await sleep(DELAY_MS)
-    }
+    if (pending.size === 0) break
+    // Deadline, not a fixed attempt count: each lookup is already capped by
+    // LOOKUP_TIMEOUT_MS, so total patience is what needs bounding here.
+    if (Date.now() + RETRY_DELAY_MS >= deadline) break
+    console.log(
+      `… ${pending.size} package(s) not visible yet (attempt ${attempt}); retrying in ${RETRY_DELAY_MS / 1000}s`,
+    )
+    await sleep(RETRY_DELAY_MS)
   }
 
   if (pending.size > 0) {
