@@ -30,6 +30,16 @@ jobs:
         run: pnpm run prisma:generate
       - name: Run Checks
         run: pnpm run test:pr --parallel=3
+  versions:
+    name: Registry Versions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+      - name: Setup Tools
+        uses: tanstack/config/.github/setup@main
+      - name: Check declared versions against the registry
+        run: node scripts/check-registry-versions.mjs
   e2e:
     name: E2E Tests
     runs-on: ubuntu-latest

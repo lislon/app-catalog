@@ -86,12 +86,20 @@ jobs:
       - name: Bake git SHA into package.json (alpha)
         if: github.ref == 'refs/heads/alpha'
         run: node scripts/write-git-sha.mjs "${{ github.sha }}"
+      - name: Capture npm dist-tags before publish (alpha)
+        if: github.ref == 'refs/heads/alpha'
+        run: node scripts/dist-tag-guard.mjs capture --tag alpha --out "$RUNNER_TEMP/dist-tags-before.json"
       - name: Publish to @alpha tag
         if: github.ref == 'refs/heads/alpha'
         # Publish via the npm CLI so npm's OIDC trusted-publishing is used
         # (no NPM_TOKEN). pnpm packs each package (rewriting workspace:* to
         # concrete versions); npm publishes the tarballs with provenance.
         run: node scripts/publish-oidc.mjs --tag alpha
+      - name: Assert the @alpha tag moved (alpha)
+        if: github.ref == 'refs/heads/alpha'
+        # A version already on the registry is only a warning, so the publish
+        # step exits 0 even when it shipped nothing. Prove the tag moved.
+        run: node scripts/dist-tag-guard.mjs assert --before "$RUNNER_TEMP/dist-tags-before.json" --mode snapshot
 
       # Nothing is committed back to this branch. The snapshot version bump, the
       # refreshed lockfile and the consumed changeset all live only in the
@@ -104,10 +112,17 @@ jobs:
       #   * it committed the changeset deletion, so the stable branch never saw
       #     the changeset and every stable release needed a manual cherry-pick.
       # `packages/*/package.json` must therefore stay at the version the stable
-      # branch declares.
+      # branch declares; `scripts/check-registry-versions.mjs` guards that.
 
       # Stable releases for main branch
+      - name: Check declared versions against the registry (main)
+        if: github.ref == 'refs/heads/main'
+        run: node scripts/check-registry-versions.mjs
+      - name: Capture npm dist-tags before release (main)
+        if: github.ref == 'refs/heads/main'
+        run: node scripts/dist-tag-guard.mjs capture --tag latest --out "$RUNNER_TEMP/dist-tags-before.json"
       - name: Run Changesets (main)
+        id: changesets
         if: github.ref == 'refs/heads/main'
         uses: changesets/action@v1.5.3
         with:
@@ -117,6 +132,13 @@ jobs:
           title: 'chore: version packages'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Assert the @latest tag moved (main)
+        if: github.ref == 'refs/heads/main'
+        # Only asserts for packages that declared an unpublished version *before*
+        # the action ran, so a push that merely opens the version PR stays green.
+        run: node scripts/dist-tag-guard.mjs assert --before "$RUNNER_TEMP/dist-tags-before.json" --mode release
+        env:
+          CHANGESETS_PUBLISHED: ${{ steps.changesets.outputs.published }}
 
   # push:
   #   needs: test-and-publish
