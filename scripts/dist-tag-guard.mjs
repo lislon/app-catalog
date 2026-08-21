@@ -191,7 +191,7 @@ async function assert() {
     console.log(`changesets/action reported published=${publishedByAction}`)
   }
 
-  /** @type {{name: string, expect: string, was: string | null, actual?: string | null}[]} */
+  /** @type {{name: string, expect: string, was: string | null, actual?: string | null, error?: string | null}[]} */
   let expected = []
   if (mode === 'snapshot') {
     const wasByName = new Map(before.packages.map((p) => [p.name, p.served]))
@@ -237,8 +237,13 @@ async function assert() {
   while (pending.size > 0) {
     attempt++
     for (const entry of [...pending.values()]) {
-      const result = await servedRetrying(entry.name, tag)
+      // Plain `served`, not `servedRetrying`: this loop already *is* the retry,
+      // and nesting one inside the other would overrun the deadline before it
+      // gets checked.
+      const result = served(entry.name, tag)
       entry.actual = result.version
+      entry.error = result.error
+      if (entry.error) console.log(`  ${entry.name}: ${entry.error}`)
       if (entry.actual === entry.expect) {
         console.log(`✓ @${tag} ${entry.name} → ${entry.actual}`)
         pending.delete(entry.name)
@@ -255,6 +260,20 @@ async function assert() {
   }
 
   if (pending.size > 0) {
+    // Every remaining lookup errored, so the registry never said what it serves.
+    // That is a different diagnosis from "it serves the old version", and saying
+    // "nothing was published" would be a guess.
+    if ([...pending.values()].every((entry) => entry.error)) {
+      console.error(
+        `\nCANNOT TELL whether anything was published: every @${tag} lookup failed.\n` +
+          'Treated as a failed release, because on the publish path "cannot tell"\n' +
+          'must not be reported as "shipped". Re-run once the registry answers.\n',
+      )
+      for (const entry of pending.values()) {
+        console.error(`  ${entry.name}: ${entry.error}`)
+      }
+      process.exit(1)
+    }
     console.error(
       `\nNOTHING WAS PUBLISHED: the @${tag} dist-tag did not move.\n\n` +
         'The publish step exited 0 anyway — a version that is already on the\n' +
@@ -262,8 +281,11 @@ async function assert() {
         'nothing. Do not treat it as a release.\n',
     )
     for (const entry of pending.values()) {
+      const state = entry.error
+        ? `lookup failed (${entry.error})`
+        : `still serves ${entry.actual ?? '(nothing)'}`
       console.error(
-        `  ${entry.name}: expected @${tag} = ${entry.expect}, still serves ${entry.actual ?? '(nothing)'}` +
+        `  ${entry.name}: expected @${tag} = ${entry.expect}, ${state}` +
           ` (was ${entry.was ?? '(nothing)'} before the publish)`,
       )
     }
@@ -279,7 +301,7 @@ async function assert() {
 
 const command = process.argv[2]
 if (command === 'capture') {
-  capture()
+  await capture()
 } else if (command === 'assert') {
   await assert()
 } else {
