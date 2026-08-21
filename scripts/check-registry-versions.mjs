@@ -26,6 +26,14 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const PACKAGES_DIR = 'packages'
+/**
+ * Hard cap on a single `npm view`. Observed p99 is well under a second, but one
+ * call in ten was measured hanging for 951s while its neighbours answered
+ * immediately. A timeout lands in the same `catch` as any other lookup failure,
+ * so the fail-open behaviour is unchanged — it just cannot stall a job for a
+ * quarter of an hour.
+ */
+const LOOKUP_TIMEOUT_MS = 15_000
 
 /** Semver compare for the plain `x.y.z` releases the `latest` tag carries. */
 function compare(a, b) {
@@ -42,6 +50,8 @@ function publishedLatest(name) {
     return execFileSync('npm', ['view', `${name}@latest`, 'version'], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: LOOKUP_TIMEOUT_MS,
+      killSignal: 'SIGKILL',
     }).trim()
   } catch {
     // Never published yet, or the registry is unreachable.
