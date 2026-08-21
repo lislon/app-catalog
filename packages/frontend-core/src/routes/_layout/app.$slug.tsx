@@ -17,6 +17,15 @@ const searchSchema = z.object({
 })
 
 export const Route = createFileRoute('/_layout/app/$slug')({
+  // Renders nothing: the parent `_layout` route owns AppCatalogLayout +
+  // AppCatalogPage for both this route and the catalog index, and reads the
+  // open app's slug from the router matches. This route exists only for the
+  // loader, search params and URL matching.
+  //
+  // Deliberately no `errorComponent`: like every other route here, loader
+  // errors bubble to the single app-wide boundary (`errorComponent:
+  // RootErrorPage` in __root.tsx). Adding a local one -- especially one that
+  // renders null -- would swallow the failure with no error surface.
   component: () => null,
   validateSearch: searchSchema,
   search: { middlewares: [stripSearchParams(['q'])] },
