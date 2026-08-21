@@ -1,8 +1,6 @@
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 import { z } from 'zod'
 import { appCatalogRouteLoader } from '~/modules/appCatalog/routeLoader'
-import { AppCatalogLayout } from '~/modules/appCatalog/ui/layout/AppCatalogLayout'
-import { AppCatalogPage } from '~/modules/appCatalog/ui/pages/AppCatalogPage'
 
 // Preserve the URL-synced filter params (see AppCatalogFiltersContext) on this
 // route so they aren't stripped on navigation. `q` (the search text) is the
@@ -19,7 +17,7 @@ const searchSchema = z.object({
 })
 
 export const Route = createFileRoute('/_layout/app/$slug')({
-  component: RouteComponent,
+  component: () => null,
   validateSearch: searchSchema,
   search: { middlewares: [stripSearchParams(['q'])] },
   async loader() {
@@ -27,14 +25,3 @@ export const Route = createFileRoute('/_layout/app/$slug')({
     return { appCatalogLoader }
   },
 })
-
-function RouteComponent() {
-  const { queryClient, trpcClient } = Route.useRouteContext()
-  const { slug } = Route.useParams()
-
-  return (
-    <AppCatalogLayout queryClient={queryClient} trpcClient={trpcClient}>
-      <AppCatalogPage selectedSlug={slug} />
-    </AppCatalogLayout>
-  )
-}

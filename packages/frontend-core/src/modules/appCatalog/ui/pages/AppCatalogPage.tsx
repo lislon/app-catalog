@@ -6,6 +6,7 @@ import {
   useDeferredValue,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import { Button } from '~/ui/button'
@@ -38,6 +39,17 @@ export function AppCatalogPage({
 
   // Selected app comes from the route path (/app/<slug>); undefined = nothing open
   const selectedAppSlug = selectedSlug
+
+  // Preserve scroll position when opening an app detail (navigating to /app/$slug
+  // mounts a fresh component, resetting the scroll container to 0).
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (selectedSlug && scrollContainerRef.current) {
+      const saved = sessionStorage.getItem('acScrollTop')
+      if (saved) scrollContainerRef.current.scrollTop = Number(saved)
+    }
+  }, [selectedSlug])
 
   // Search value from context (URL-synced in AppCatalogFiltersContext)
   const search = useSearch({ strict: false })
@@ -237,6 +249,12 @@ export function AppCatalogPage({
   }, [selectedAppSlug, resources, navigate])
 
   const handleAppClick = (app: Resource) => {
+    if (scrollContainerRef.current) {
+      sessionStorage.setItem(
+        'acScrollTop',
+        String(scrollContainerRef.current.scrollTop),
+      )
+    }
     void navigate({
       to: '/app/$slug',
       params: { slug: app.slug },
@@ -296,7 +314,7 @@ export function AppCatalogPage({
   // internally to reveal the full Browse-all list as the user scrolls.
   if (showLauncherHome) {
     return (
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto">
         <LauncherHome
           apps={rootResources.filter(
             (a) => filterState.showDeprecated || !a.deprecated,
