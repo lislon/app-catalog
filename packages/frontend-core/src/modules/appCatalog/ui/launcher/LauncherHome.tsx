@@ -304,10 +304,18 @@ function SearchResultsList({
                     Matched {kids.length} sub-resource
                     {kids.length === 1 ? '' : 's'}:{' '}
                     {shown.map((k, idx) => (
-                      <span key={k.slug}>
+                      <button
+                        key={k.slug}
+                        type="button"
+                        className="hover:underline focus:outline-none"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onAppClick(k)
+                        }}
+                      >
                         {idx > 0 && ', '}
                         <Highlight text={k.displayName} query={searchValue} />
-                      </span>
+                      </button>
                     ))}
                     {extra}
                   </span>
