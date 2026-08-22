@@ -252,8 +252,10 @@ export function AppCatalogPage({
   // (recentMode / tagFilters / active search) is active. A selected app no longer
   // forces the old grid — instead the launcher stays as the backdrop and the app
   // detail renders in a slide-over panel (#38 item B). The legacy grid+split-pane
-  // is used for recent/tag filter views AND for active search (so expandable
-  // sub-resource rows and query highlighting in AppCatalogGrid are visible).
+  // AppCatalogGrid is used for recentMode, tag-filter, and active search
+  // (expandable sub-resource rows and query highlighting). LauncherHome owns
+  // the idle/browse state. The grid is wrapped in the same centered max-width
+  // so the layouts are visually consistent.
   const showLauncherHome =
     !filterState.recentMode &&
     Object.keys(filterState.tagFilters).length === 0 &&
@@ -326,76 +328,78 @@ export function AppCatalogPage({
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div className="shrink-0">
-        <OnboardingCard />
-      </div>
-
-      <div className="shrink-0">
-        <FilterBar
-          totalCount={allCount}
-          recentCount={recentCount}
-          deprecatedCount={deprecatedCount}
-          apps={rootResources}
-        />
-      </div>
-
-      {didDeprecatedFallback && (
-        <div
-          role="status"
-          className="shrink-0 px-1 pb-2 text-sm text-muted-foreground"
-        >
-          {`No active apps${
-            searchValue ? ` for "${searchValue}"` : ''
-          } — showing deprecated matches.`}
+      <div className="w-full max-w-[1000px] mx-auto flex flex-col flex-1 min-h-0">
+        <div className="shrink-0">
+          <OnboardingCard />
         </div>
-      )}
 
-      <div className="flex-1 min-h-0">
-        {filteredApps.length === 0 && !selectedAppSlug ? (
-          <Empty>
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <X className="h-6 w-6" />
-              </EmptyMedia>
-              <EmptyTitle>
-                No apps found{searchValue && ` for "${searchValue}"`}
-              </EmptyTitle>
-              <EmptyDescription>
-                Try adjusting your search or filters
-              </EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-              {searchValue && (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSearchValue('')
-                    void navigate({ to: '/' })
-                  }}
-                  className="gap-2"
-                >
-                  <X className="h-4 w-4" />
-                  Clear search
-                </Button>
-              )}
-            </EmptyContent>
-          </Empty>
-        ) : (
-          <AppCatalogGrid
-            apps={filteredApps}
-            selectedAppSlug={selectedAppSlug}
-            selectedSubSlug={selectedSubSlug}
-            groupingDefinition={groupingDefinition}
-            onAppClick={handleAppClick}
-            onClosePanel={() => void navigate({ to: '/' })}
-            onSubClick={handleSubClick}
-            onBackToParent={handleBackToParent}
-            hasSearch={!!deferredSearchValue}
-            searchQuery={searchValue}
-            totalAppsCount={totalAppsCount}
-            onClearFilters={handleClearFilters}
+        <div className="shrink-0">
+          <FilterBar
+            totalCount={allCount}
+            recentCount={recentCount}
+            deprecatedCount={deprecatedCount}
+            apps={rootResources}
           />
+        </div>
+
+        {didDeprecatedFallback && (
+          <div
+            role="status"
+            className="shrink-0 px-1 pb-2 text-sm text-muted-foreground"
+          >
+            {`No active apps${
+              searchValue ? ` for "${searchValue}"` : ''
+            } — showing deprecated matches.`}
+          </div>
         )}
+
+        <div className="flex-1 min-h-0">
+          {filteredApps.length === 0 && !selectedAppSlug ? (
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <X className="h-6 w-6" />
+                </EmptyMedia>
+                <EmptyTitle>
+                  No apps found{searchValue && ` for "${searchValue}"`}
+                </EmptyTitle>
+                <EmptyDescription>
+                  Try adjusting your search or filters
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                {searchValue && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSearchValue('')
+                      void navigate({ to: '/' })
+                    }}
+                    className="gap-2"
+                  >
+                    <X className="h-4 w-4" />
+                    Clear search
+                  </Button>
+                )}
+              </EmptyContent>
+            </Empty>
+          ) : (
+            <AppCatalogGrid
+              apps={filteredApps}
+              selectedAppSlug={selectedAppSlug}
+              selectedSubSlug={selectedSubSlug}
+              groupingDefinition={groupingDefinition}
+              onAppClick={handleAppClick}
+              onClosePanel={() => void navigate({ to: '/' })}
+              onSubClick={handleSubClick}
+              onBackToParent={handleBackToParent}
+              hasSearch={!!deferredSearchValue}
+              searchQuery={searchValue}
+              totalAppsCount={totalAppsCount}
+              onClearFilters={handleClearFilters}
+            />
+          )}
+        </div>
       </div>
     </div>
   )
