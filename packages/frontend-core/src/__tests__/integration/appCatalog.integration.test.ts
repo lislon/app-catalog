@@ -372,6 +372,44 @@ describe('App Catalog Integration', () => {
     })
   })
 
+  // Layout stability: typing must not swap the launcher shell for the grid.
+  // Regression — the first keystroke used to unmount the centered launcher and
+  // mount AppCatalogGrid instead (its own search bar, Show All / My Recent tabs,
+  // category dropdown, deprecated checkbox, wide table), so the whole upper half
+  // of the page jumped. The hero and the search input must be the very same DOM
+  // nodes before and after typing, with no filter chrome in search mode.
+  it('keeps the hero + search box mounted while typing, with no filter chrome', async () => {
+    const { ui } = await given(magazine.full())
+
+    const heroBefore = screen.getByText('What do you need to get into?')
+    const inputBefore = ui.catalog.getSearchInput()
+
+    await ui.catalog.search('taskflow')
+    await waitFor(() => {
+      expect(ui.catalog.getTableData().map((r) => r.name)).toContain('TaskFlow')
+    })
+
+    // Same nodes → nothing above the results was re-rendered from scratch.
+    expect(screen.getByText('What do you need to get into?')).toBe(heroBefore)
+    expect(ui.catalog.getSearchInput()).toBe(inputBefore)
+
+    // No grid chrome while searching.
+    expect(document.querySelector('table')).toBeNull()
+    expect(
+      screen.queryByRole('checkbox', { name: /Show Deprecated Apps/i }),
+    ).toBeNull()
+    expect(screen.queryByText(/My Recent/i)).toBeNull()
+    expect(screen.queryByText(/Filter By Category/i)).toBeNull()
+
+    // Clearing the search returns to the browse view in the same shell.
+    fireEvent.click(document.querySelector('[aria-label="Clear search"]')!)
+    await waitFor(() => {
+      expect(screen.getByText(/Browse all/i)).toBeInTheDocument()
+    })
+    expect(screen.getByText('What do you need to get into?')).toBe(heroBefore)
+    expect(ui.catalog.getSearchInput()).toBe(inputBefore)
+  })
+
   it('shows expandable subresource rows under parent in search results', async () => {
     const { ui } = await given(
       magazine.custom(({ backendCfg }) => {
