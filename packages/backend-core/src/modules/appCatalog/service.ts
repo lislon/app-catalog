@@ -153,6 +153,7 @@ function rowToResource(row: ResourceRowWithSourceRefs): Resource {
       ? undefined
       : (row.deprecated as unknown as Resource['deprecated'])
   const aiPrompt = row.aiPrompt == null ? undefined : row.aiPrompt
+  const aiMemory = row.aiMemory == null ? undefined : row.aiMemory
   const urlIssues = (row.urlIssues as unknown as string[] | null)?.length
     ? (row.urlIssues as unknown as string[])
     : undefined
@@ -186,6 +187,7 @@ function rowToResource(row: ResourceRowWithSourceRefs): Resource {
     sources,
     deprecated,
     aiPrompt,
+    aiMemory,
     urlIssues,
     tiers,
     // Fields from former SubResource
@@ -297,6 +299,30 @@ export async function updateApp(input: UpdateAppInput): Promise<Resource> {
     return rowToResource(refetched)
   }
 
+  return rowToResource(updated)
+}
+
+export interface UpdateAiMemoryInput {
+  /** Resource id (DB id, not slug) */
+  id: string
+  /** New value for aiMemory. Pass null to clear. */
+  aiMemory: string | null
+}
+
+/**
+ * Updates the AI-owned scratchpad for a resource.
+ * This mutation is intentionally separate from updateApp so AI agents can
+ * write knowledge without a full MR cycle. It does NOT touch aiPrompt.
+ */
+export async function updateAiMemory(
+  input: UpdateAiMemoryInput,
+): Promise<Resource> {
+  const prisma = getDbClient()
+  const updated = await prisma.dbResource.update({
+    where: { id: input.id },
+    data: { aiMemory: input.aiMemory },
+    include: { sourceRefs: true },
+  })
   return rowToResource(updated)
 }
 

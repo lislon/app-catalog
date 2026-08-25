@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fireEvent, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 
 import { given } from './harness/given'
@@ -18,7 +18,7 @@ describe('App Catalog Integration', () => {
   it('navigate screenshots then escape back to list view', async () => {
     const { ui } = await given(magazine.full())
 
-    await ui.catalog.openApp('Jira')
+    await ui.catalog.openApp('TaskFlow')
     await ui.app.screenshots.open()
 
     await waitFor(() => {
@@ -45,7 +45,7 @@ describe('App Catalog Integration', () => {
         const approvalMethod = backendCfg.withApprovalMethod({
           type: 'service',
           displayName: 'Help Desk',
-          config: { url: 'https://helpdesk.example.com' },
+          config: { url: 'https://support.example.com' },
         })
         backendCfg.withApp({
           displayName: 'My Custom App',
@@ -148,6 +148,36 @@ describe('App Catalog Integration', () => {
     expect(ui.catalog.isDetailPanelOpen()).toBe(false)
   })
 
+  // Detail card UX (#45): the detail panel shows a prominent primary "Open" button
+  // with the destination URL visible alongside it.
+  it('shows a prominent primary Open button with URL in the app detail card', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        backendCfg.withApp({
+          displayName: 'Website App',
+          description: 'Has a website',
+          appUrl: 'https://tools.example.com/launch',
+        })
+        backendCfg.withApp({
+          displayName: 'No URL App',
+          description: 'No url',
+        })
+      }),
+    )
+
+    await ui.catalog.openApp('Website App')
+    const btn = ui.app.getOpenButton()
+    expect(btn).not.toBeNull()
+    expect(btn!.getAttribute('href')).toBe('https://tools.example.com/launch')
+    expect(btn!.getAttribute('target')).toBe('_blank')
+    // The URL is shown in the button (stripped of protocol).
+    expect(btn!.textContent).toContain('tools.example.com/launch')
+
+    // An app without appUrl shows no Open button.
+    await ui.catalog.openApp('No URL App')
+    expect(ui.app.getOpenButton()).toBeNull()
+  })
+
   // Test 5: Returning user — cached data + no onboarding + backend down
   it('returning user sees cached apps even when backend is unavailable', async () => {
     suppressConsole([/TRPC Error/, /Failed to fetch/])
@@ -164,8 +194,8 @@ describe('App Catalog Integration', () => {
 
     const tableData = ui.catalog.getTableData()
     expect(tableData.length).toBe(5)
-    expect(tableData.map((r) => r.name)).toContain('Jira')
-    expect(tableData.map((r) => r.name)).toContain('Slack')
+    expect(tableData.map((r) => r.name)).toContain('TaskFlow')
+    expect(tableData.map((r) => r.name)).toContain('TeamChat')
   })
 
   // Test 3: Network Error — Connection Reset
@@ -297,5 +327,263 @@ describe('App Catalog Integration', () => {
     expect(document.body.textContent).not.toMatch(
       /(?<![\d])0(?![\d]).*clear filters/i,
     )
+  })
+
+  it('highlights matched query text in search result app names (#57)', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        backendCfg.withApp({ displayName: 'Kubernetes Platform' })
+        backendCfg.withApp({ displayName: 'Other Tool' })
+      }),
+    )
+
+    await ui.catalog.search('kube')
+
+    await waitFor(() => {
+      const marks = document.querySelectorAll('mark')
+      const markTexts = [...marks].map((m) => String(m.textContent))
+      expect(markTexts.some((t) => t.toLowerCase().includes('kube'))).toBe(true)
+    })
+  })
+
+  it('clear (×) button appears when search has text and clears on click (#54)', async () => {
+    const { ui } = await given(magazine.full())
+
+    // Before typing: no clear button
+    expect(
+      document.querySelector('[aria-label="Clear search"]'),
+    ).not.toBeInTheDocument()
+
+    // After typing: clear button appears
+    await ui.catalog.search('taskflow')
+    await waitFor(() => {
+      expect(
+        document.querySelector('[aria-label="Clear search"]'),
+      ).toBeInTheDocument()
+    })
+
+    // Click × — input clears, button disappears
+    fireEvent.click(document.querySelector('[aria-label="Clear search"]')!)
+    await waitFor(() => {
+      expect(ui.catalog.getSearchInput().value).toBe('')
+      expect(
+        document.querySelector('[aria-label="Clear search"]'),
+      ).not.toBeInTheDocument()
+    })
+  })
+
+  // Layout stability: typing must not swap the launcher shell for the grid.
+  // Regression — the first keystroke used to unmount the centered launcher and
+  // mount AppCatalogGrid instead (its own search bar, Show All / My Recent tabs,
+  // category dropdown, deprecated checkbox, wide table), so the whole upper half
+  // of the page jumped. The hero and the search input must be the very same DOM
+  // nodes before and after typing, with no filter chrome in search mode.
+  it('keeps the hero + search box mounted while typing, with no filter chrome', async () => {
+    const { ui } = await given(magazine.full())
+
+    const heroBefore = screen.getByText('What do you need to get into?')
+    const inputBefore = ui.catalog.getSearchInput()
+
+    await ui.catalog.search('taskflow')
+    await waitFor(() => {
+      expect(ui.catalog.getTableData().map((r) => r.name)).toContain('TaskFlow')
+    })
+
+    // Same nodes → nothing above the results was re-rendered from scratch.
+    expect(screen.getByText('What do you need to get into?')).toBe(heroBefore)
+    expect(ui.catalog.getSearchInput()).toBe(inputBefore)
+
+    // No grid chrome while searching.
+    expect(document.querySelector('table')).toBeNull()
+    expect(
+      screen.queryByRole('checkbox', { name: /Show Deprecated Apps/i }),
+    ).toBeNull()
+    expect(screen.queryByText(/My Recent/i)).toBeNull()
+    expect(screen.queryByText(/Filter By Category/i)).toBeNull()
+
+    // Clearing the search returns to the browse view in the same shell.
+    fireEvent.click(document.querySelector('[aria-label="Clear search"]')!)
+    await waitFor(() => {
+      expect(screen.getByText(/Browse all/i)).toBeInTheDocument()
+    })
+    expect(screen.getByText('What do you need to get into?')).toBe(heroBefore)
+    expect(ui.catalog.getSearchInput()).toBe(inputBefore)
+  })
+
+  it('shows expandable subresource rows under parent in search results', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        const app = backendCfg.withApp({
+          slug: 'aws-console',
+          displayName: 'AWS Console',
+          description: 'Cloud management console',
+        })
+        for (let i = 1; i <= 7; i++) {
+          backendCfg.withSubResource({
+            appSlug: app.slug,
+            slug: `acct-data-${i}`,
+            displayName: `Data Account ${i}`,
+          })
+        }
+      }),
+    )
+    await ui.catalog.search('Data Account')
+    await waitFor(() => {
+      const subRows = ui.catalog.getSubResourceRows()
+      expect(subRows).not.toBeNull()
+      expect(subRows!.visible).toBe(5)
+      expect(subRows!.total).toBe(7)
+      expect(subRows!.hasExpandRow).toBe(true)
+    })
+  })
+
+  it('expand "...N more" row reveals all subresources', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        const app = backendCfg.withApp({
+          slug: 'aws-console',
+          displayName: 'AWS Console',
+        })
+        for (let i = 1; i <= 7; i++) {
+          backendCfg.withSubResource({
+            appSlug: app.slug,
+            slug: `acct-data-${i}`,
+            displayName: `Data Account ${i}`,
+          })
+        }
+      }),
+    )
+    await ui.catalog.search('Data Account')
+    await waitFor(() => {
+      expect(ui.catalog.getSubResourceRows()).not.toBeNull()
+    })
+    await ui.catalog.expandSubResources()
+    const subRows = ui.catalog.getSubResourceRows()
+    expect(subRows!.visible).toBe(7)
+    expect(subRows!.hasExpandRow).toBe(false)
+  })
+
+  it('clicking subresource row opens parent app detail', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        const method = backendCfg.withApprovalMethod({
+          type: 'service',
+          displayName: 'Support Portal',
+          config: { url: 'https://support.example.com' },
+        })
+        const app = backendCfg.withApp({
+          slug: 'aws-console',
+          displayName: 'AWS Console',
+          accessRequest: {
+            approvalMethodSlug: method.slug,
+            comments: 'Submit a support ticket to request access',
+          },
+        })
+        backendCfg.withSubResource({
+          appSlug: app.slug,
+          slug: 'acct-data-prod',
+          displayName: 'Data Account Prod',
+        })
+      }),
+    )
+    await ui.catalog.search('Data Account')
+    await waitFor(() => {
+      expect(ui.catalog.getSubResourceRows()).not.toBeNull()
+    })
+    await ui.catalog.clickSubResource('Data Account Prod')
+    // Clicking a sub-resource opens the parent app detail, not the sub-detail.
+    // The sub-resources section inside the panel is pre-filtered by the search query.
+    await waitFor(() => {
+      expect(ui.catalog.isDetailPanelOpen()).toBe(true)
+    })
+    expect(ui.app.getOpenTitle()).toContain('AWS Console')
+    // No sub-detail — the parent detail is shown directly
+    expect(ui.app.getSubResourceDetail()).toBeNull()
+  })
+
+  it('back button from subresource detail returns to parent view', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        const method = backendCfg.withApprovalMethod({
+          type: 'service',
+          displayName: 'Support Portal',
+          config: { url: 'https://support.example.com' },
+        })
+        const app = backendCfg.withApp({
+          slug: 'aws-console',
+          displayName: 'AWS Console',
+          accessRequest: { approvalMethodSlug: method.slug },
+        })
+        backendCfg.withSubResource({
+          appSlug: app.slug,
+          slug: 'acct-data-prod',
+          displayName: 'Data Account Prod',
+        })
+      }),
+    )
+    await ui.catalog.search('Data Account')
+    await waitFor(() => {
+      expect(ui.catalog.getSubResourceRows()).not.toBeNull()
+    })
+    // Clicking sub-resource row opens the parent, so the detail panel is open
+    await ui.catalog.clickSubResource('Data Account Prod')
+    await waitFor(() => {
+      expect(ui.catalog.isDetailPanelOpen()).toBe(true)
+    })
+    // Parent detail is shown — no sub-detail, no back button needed
+    expect(ui.app.getSubResourceDetail()).toBeNull()
+    expect(ui.app.getOpenTitle()).toContain('AWS Console')
+  })
+
+  it('shows Step 1 / Step 2 badges for two-step access apps (#56)', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        const method = backendCfg.withApprovalMethod({
+          type: 'service',
+          displayName: 'Natero Bot',
+          config: { url: 'https://natero.example.com' },
+        })
+        backendCfg.withApp({
+          displayName: 'Two-Step App',
+          accessRequest: {
+            approvalMethodSlug: method.slug,
+            requestPrompt: 'Give me access to Two-Step App',
+            postApprovalInstructions: 'Contact the owner to complete setup.',
+          },
+        })
+        backendCfg.withApp({ displayName: 'Other App' })
+      }),
+    )
+    await ui.catalog.openApp('Two-Step App')
+    await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
+    expect(screen.getByText('Step 1')).toBeInTheDocument()
+    expect(screen.getByText('Step 2')).toBeInTheDocument()
+    expect(
+      screen.getByText('Contact the owner to complete setup.'),
+    ).toBeInTheDocument()
+  })
+
+  it('hides Step labels for single-step apps (#56)', async () => {
+    const { ui } = await given(
+      magazine.custom(({ backendCfg }) => {
+        const method = backendCfg.withApprovalMethod({
+          type: 'service',
+          displayName: 'Natero Bot',
+          config: { url: 'https://natero.example.com' },
+        })
+        backendCfg.withApp({
+          displayName: 'Single-Step App',
+          accessRequest: {
+            approvalMethodSlug: method.slug,
+            requestPrompt: 'Give me access',
+          },
+        })
+        backendCfg.withApp({ displayName: 'Other App' })
+      }),
+    )
+    await ui.catalog.openApp('Single-Step App')
+    await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
+    expect(screen.queryByText('Step 1')).not.toBeInTheDocument()
+    expect(screen.queryByText('Step 2')).not.toBeInTheDocument()
   })
 })

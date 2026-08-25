@@ -8,7 +8,7 @@ import { magazine } from './mock-backend/magazines'
 
 // #9: a header toggle (Apps | Service Desks) + a /service-desks route showing a
 // searchable table of all type:'service' approval methods with open links.
-// magazine.full() seeds two service desks (IT Help Desk, Ops Helpdesk) and
+// magazine.full() seeds two service desks (Support Portal, Ops Portal) and
 // two custom methods (Manager Approval, Self-Service) which must NOT appear.
 
 function serviceDeskTable(): HTMLElement {
@@ -37,23 +37,29 @@ describe('Service Desks view (#9)', () => {
     })
 
     const names = deskNames()
-    expect(names).toContain('IT Help Desk')
-    expect(names).toContain('Ops Helpdesk')
+    expect(names).toContain('Support Portal')
+    expect(names).toContain('Ops Portal')
     // custom-type methods are not service desks
     expect(names).not.toContain('Manager Approval')
     expect(names).not.toContain('Self-Service')
 
-    // Each service desk row has a link to its portal opening in a new tab.
+    // Each service desk row has links to its portal opening in a new tab.
+    // The name itself is now also a link, plus the URL is shown under the name.
     const itRow = within(serviceDeskTable())
       .getAllByRole('row')
-      .find((r) => r.textContent.includes('IT Help Desk'))!
-    const link = within(itRow).getByRole('link')
-    expect(link).toHaveAttribute('href', 'https://helpdesk.example.com')
-    expect(link).toHaveAttribute('target', '_blank')
-    // The link shows the full URL without the scheme, not generic "Open" text.
-    expect(link).toHaveTextContent('helpdesk.example.com')
-    expect(link).not.toHaveTextContent('Open')
-    expect(link).not.toHaveTextContent('https://')
+      .find((r) => r.textContent.includes('Support Portal'))!
+    const links = within(itRow).getAllByRole('link')
+    // All links in the row point to the same portal URL
+    for (const link of links) {
+      expect(link).toHaveAttribute('href', 'https://support.example.com')
+      expect(link).toHaveAttribute('target', '_blank')
+    }
+    // At least one link shows the URL without the scheme
+    const urlLink = links.find((l) =>
+      String(l.textContent).includes('support.example.com'),
+    )
+    expect(urlLink).toBeTruthy()
+    expect(urlLink).not.toHaveTextContent('https://')
   })
 
   it('shows the service desk description as subtext when present', async () => {
@@ -65,19 +71,20 @@ describe('Service Desks view (#9)', () => {
       expect(screen.getByLabelText('Search service desks')).toBeInTheDocument()
     })
 
-    // IT Help Desk has a description; it renders in the same name cell as subtext.
+    // Support Portal has a description; it renders in the same name cell as subtext.
     const itRow = within(serviceDeskTable())
       .getAllByRole('row')
-      .find((r) => r.textContent.includes('IT Help Desk'))!
+      .find((r) => r.textContent.includes('Support Portal'))!
     const nameCell = within(itRow).getAllByRole('cell')[0]
-    expect(nameCell).toHaveTextContent('IT Infrastructure support desk')
+    expect(nameCell).toHaveTextContent('General IT support desk')
 
-    // Ops Helpdesk has no description — its name cell shows only the name.
+    // Ops Portal has no description — its name element shows only the name
+    // (the cell also contains the URL link now, so check the name element).
     const uxRow = within(serviceDeskTable())
       .getAllByRole('row')
-      .find((r) => r.textContent.includes('Ops Helpdesk'))!
-    const uxNameCell = within(uxRow).getAllByRole('cell')[0]!
-    expect(uxNameCell.textContent.trim()).toBe('Ops Helpdesk')
+      .find((r) => r.textContent.includes('Ops Portal'))!
+    const uxNameEl = within(uxRow).getByTestId('service-desk-name')
+    expect(uxNameEl.textContent.trim()).toBe('Ops Portal')
   })
 
   it('filters the desks by search', async () => {
@@ -86,14 +93,14 @@ describe('Service Desks view (#9)', () => {
       initialRoute: '/service-desks',
     })
 
-    await waitFor(() => expect(deskNames()).toContain('Ops Helpdesk'))
+    await waitFor(() => expect(deskNames()).toContain('Ops Portal'))
 
     await user.type(screen.getByLabelText('Search service desks'), 'Ops')
 
     await waitFor(() => {
       const names = deskNames()
-      expect(names).toContain('Ops Helpdesk')
-      expect(names).not.toContain('IT Help Desk')
+      expect(names).toContain('Ops Portal')
+      expect(names).not.toContain('Support Portal')
     })
   })
 
@@ -126,14 +133,14 @@ describe('Service Desks view (#9)', () => {
 
 // #23: the header "Apps" tab must stay active while viewing an app-detail route
 // (/app/<slug>) — the detail panel is part of the Apps view. Previously the Apps
-// link was active only on the exact "/" route, so /app/quicksight highlighted
+// link was active only on the exact "/" route, so /app/taskflow highlighted
 // neither tab.
 describe('ViewToggle active tab (#23)', () => {
   const appsTab = () => screen.getByRole('link', { name: 'Apps' })
   const deskTab = () => screen.getByRole('link', { name: 'Service Desks' })
 
   it('activates the Apps tab on an app-detail route (/app/$slug)', async () => {
-    await given(magazine.full(), { initialRoute: '/app/jira' })
+    await given(magazine.full(), { initialRoute: '/app/taskflow' })
 
     await waitFor(() =>
       expect(appsTab()).toHaveAttribute('aria-current', 'page'),

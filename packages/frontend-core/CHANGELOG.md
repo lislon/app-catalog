@@ -1,10 +1,58 @@
 # @igstack/app-catalog-frontend-core
 
-## 0.17.0
+## 0.4.0-alpha-20260819143830
+
+## 0.4.0-alpha-20260818210825
+
+## 0.4.0-alpha-20260818041444
+
+### Patch Changes
+
+- [#136](https://github.com/lislon/app-catalog/pull/136) [`554e85b`](https://github.com/lislon/app-catalog/commit/554e85bc298b74a4c2cfee70bde7ec5142c94c9b) Thanks [@lislon](https://github.com/lislon)! - Cap the `better-auth` dependency below 1.7.0
+
+  1.7.0 dropped the `genericOAuthClient` export from `better-auth/client/plugins`, which
+  `modules/auth/authClient.ts` imports. The dependency was declared as `^1.4.18`, and that
+  caret range ships in the published packages — so any consumer that installs without a
+  lockfile resolves 1.7.0 and its bundler fails the build on the missing export
+  (`"genericOAuthClient" is not exported by better-auth/dist/client/plugins/index.mjs`).
+
+  The range is now `>=1.4.18 <1.7.0`, which keeps patch and minor updates flowing while
+  excluding the breaking release. Raise the cap when `authClient` migrates to the 1.7
+  entry point.
+
+## 0.4.0-alpha-20260817192135
+
+## 0.4.0-alpha-20260817183828
+
+## 0.4.0-alpha-20260814233321
+
+### Patch Changes
+
+- [#132](https://github.com/lislon/app-catalog/pull/132) [`0b1eefe`](https://github.com/lislon/app-catalog/commit/0b1eefe32dd6b9d0d6a995120c3f26ace4e28ebe) Thanks [@lislon](https://github.com/lislon)! - Pin the `ai` and `@ai-sdk/*` dependencies to exact versions, and drop `ai` and
+  `@ai-sdk/react` from `frontend-core`, where neither was imported.
+
+  Those packages publish several times a day and hard-pin each other exactly, so a
+  caret range resolved to a release that could be minutes old — faster than npm's
+  registry metadata becomes consistent. Fresh installs failed intermittently with
+  `ERR_PNPM_NO_MATCHING_VERSION` on a transitive `@ai-sdk` package that was in fact
+  published. Exact versions in the published `dependencies` make the resolution
+  deterministic for consumers too, which a root `overrides` block cannot do.
+
+## 0.4.0-alpha-20260814035133
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260813154215
+
+## 0.4.0-alpha-20260813153122
+
+## 0.4.0-alpha-20260813065159
 
 ### Minor Changes
 
-- [#142](https://github.com/lislon/app-catalog/pull/142) [`18ab792`](https://github.com/lislon/app-catalog/commit/18ab7920d9721ebd30fc36b835f8770547ae840c) Thanks [@lislon](https://github.com/lislon)! - Show when a catalog entry's content last actually changed, not when it was last
+- [#128](https://github.com/lislon/app-catalog/pull/128) [`8924f5d`](https://github.com/lislon/app-catalog/commit/8924f5d032da40d40191ee35da9e09a9c6f1c032) Thanks [@lislon](https://github.com/lislon)! - Show when a catalog entry's content last actually changed, not when it was last
   checked. The freshness scan re-reads a source on a backoff schedule and records
   `lastCheckedAt` every time, whether or not anything changed — so an entry whose
   data had been identical for months still advertised "Updated 22 hours ago".
@@ -15,106 +63,304 @@
   "New this week" section read the content-change date, falling back to the check
   date for entries recorded before the field existed; the tooltip exposes both dates.
 
-## 0.16.0
+## 0.4.0-alpha-20260813024744
 
-### Minor Changes
-
-- [#139](https://github.com/lislon/app-catalog/pull/139) [`4dfc6ce`](https://github.com/lislon/app-catalog/commit/4dfc6ce1442b039f3a27e020b96c11cbf1809c7d) Thanks [@lislon](https://github.com/lislon)! - Restore catalog UI features that were already published but missing from the
-  stable branch
-
-  The stable branch was re-created from a snapshot that predates a batch of
-  already-released UI work, and the promotions for that batch were never replayed.
-  Anything installing the stable tag therefore had a _newer_ version number with an
-  _older_ app card. Restored, byte-for-byte against the published tree:
-  - App card: a primary "Open <url>" action instead of the muted secondary link,
-    and the Added/Updated timestamps consolidated into one metadata row just above
-    Sources (`Resource.createdAt` is now serialised for this).
-  - Access section: Step 1 / Step 2 badges for two-step access apps, with the
-    post-approval instructions expanded by default for them (still a collapsible
-    accordion for single-step apps), plus list styling for markdown prose.
-  - Launcher: close button and mount focus on the detail card so Esc works when the
-    card was opened by mouse; clear (×) button in the hero search input; matched
-    query text highlighted in search results and in matched sub-resource names.
-  - Gallery: Esc no longer propagates to the outer search listener, so closing the
-    gallery keeps the search query.
-
-## 0.13.0
-
-## 0.12.0
-
-### Minor Changes
-
-- [#81](https://github.com/lislon/app-catalog/pull/81) [`6fce45e`](https://github.com/lislon/app-catalog/commit/6fce45e4c5cd01b4871864e20f4661ff6dd2ebf2) Thanks [@lislon](https://github.com/lislon)! - Launcher detail & home polish: app detail now opens as a centered, wide modal
-  card (was a right slide-over) with the access block as the hero and a two-step
-  "parent access first" banner for nested resources. Search results annotate
-  which sub-resources matched a query and reveal the matched child on open.
-  Person chips expose both name and email in a popover so you can copy either.
-  Adds a header "Updated …" freshness line, a URL-on-hover launch affordance,
-  drops the redundant "App" type badge, and an optional attribution footer
-  (`UiSettings.attribution`).
-
-## 0.11.0
-
-### Minor Changes
-
-- [#79](https://github.com/lislon/app-catalog/pull/79) [`53b9880`](https://github.com/lislon/app-catalog/commit/53b9880710cf90adf491e159d2acf9f800272c66) Thanks [@lislon](https://github.com/lislon)! - feat: adaptive launcher UI — discovery spine, search-morph, details-first, two-step access, sub-resource reveal (#38)
-
-  Adaptive home with Your apps / New this week / Browse all sections.
-  Search morphs into a keyboard-navigable results list (↑↓/↵/Esc).
-  Primary click opens the detail slide-over (details-first UX); launch is quiet ↗.
-  Two-step access prerequisite chain for sub-resources.
-  Sub-resource reveal: open parent and seed the sub-resource search filter.
-  ⌘K/Ctrl+K shortcut to focus the hero search.
-
-## 0.10.1
-
-## 0.10.0
-
-### Minor Changes
-
-- [#72](https://github.com/lislon/app-catalog/pull/72) [`329d1bb`](https://github.com/lislon/app-catalog/commit/329d1bbc8e983a1e36a3bd5cfceeaf398ce4088b) Thanks [@lislon](https://github.com/lislon)! - Add optional AWS Account ID column to sub-resources table. Shows `extra.awsAccountId` with copy-to-clipboard when present; degrades to "—" when absent. Account ID also included in search filter.
-
-## 0.9.5
+## 0.4.0-alpha-20260812171537
 
 ### Patch Changes
 
-- [#64](https://github.com/lislon/app-catalog/pull/64) [`c8d3f77`](https://github.com/lislon/app-catalog/commit/c8d3f771950f8a88ba8cd7945553d4b92d9f5fcf) Thanks [@lislon](https://github.com/lislon)! - Fix stray `0` appearing in the catalog grid when a search matches no apps. The
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260812005550
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260812004355
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260811223520
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260811221253
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260811214151
+
+### Minor Changes
+
+- [#115](https://github.com/lislon/app-catalog/pull/115) [`b2ae724`](https://github.com/lislon/app-catalog/commit/b2ae724183be12cd267b6d834707e963225c60e3) Thanks [@lislon](https://github.com/lislon)! - UI improvements batch: clear search, Added date, two-step access badges, MCP export
+  - Clear (×) button in search input when text is present
+  - "Added N ago" date shown before Sources in app detail cards (backend: expose createdAt)
+  - Step 1 / Step 2 badges for two-step access apps (postApprovalInstructions + requestPrompt)
+  - Export getResourcesFromPrisma from backend-core public API (for MCP server)
+
+## 0.4.0-alpha-20260811213256
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260811212059
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260811181653
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260811154702
+
+### Patch Changes
+
+- [#108](https://github.com/lislon/app-catalog/pull/108) [`da24c9b`](https://github.com/lislon/app-catalog/commit/da24c9bb9c8d68e10f005cfc51f6f1c9bb0b6801) Thanks [@lislon](https://github.com/lislon)! - Fix Esc key on mouse-opened app card; gallery Esc no longer clears search
+
+## 0.4.0-alpha-20260811152919
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260811142024
+
+### Minor Changes
+
+- [#103](https://github.com/lislon/app-catalog/pull/103) [`c8cc18b`](https://github.com/lislon/app-catalog/commit/c8cc18b92fb3ac921a892fadad0a384e63fc57bc) Thanks [@lislon](https://github.com/lislon)! - UI improvements: search highlight, Added date, clear search button, close card button
+  - Highlight matched query text in search result app names and subresource names
+  - Show "Added N ago" date before Sources in app detail cards (backend: expose createdAt)
+  - Clear (×) button in search input when text is present
+  - Close (×) button on app card dialog
+
+## 0.4.0-alpha-20260811053337
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260811052504
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260811051931
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260811020745
+
+### Patch Changes
+
+- [#94](https://github.com/lislon/app-catalog/pull/94) [`e30e0d2`](https://github.com/lislon/app-catalog/commit/e30e0d2e96df69c0b4361f7e99729dc2d220653b) Thanks [@lislon](https://github.com/lislon)! - Fix markdown prose list rendering — add .prose ol/ul rules to index.css so list markers compile into the published dist bundle (Tailwind v4 JIT doesn't compile utility classes from published npm dist TSX).
+
+## 0.4.0-alpha-20260810232952
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260810225555
+
+### Patch Changes
+
+- [#89](https://github.com/lislon/app-catalog/pull/89) [`fc67007`](https://github.com/lislon/app-catalog/commit/fc670076e8ae6547a8e26e27544337261aafc62d) Thanks [@lislon](https://github.com/lislon)! - Fix list marker styles in markdown prose blocks — Tailwind preflight resets list-style to none; add explicit list-decimal/list-disc utilities so numbered and bulleted lists render correctly in access request comments and post-approval instructions.
+
+## 0.4.0-alpha-20260810213549
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260810153641
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260808192944
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807223013
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807203854
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807174540
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807164058
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807053627
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807050147
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807041139
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807033203
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807030804
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807022842
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807003952
+
+### Patch Changes
+
+- [#69](https://github.com/lislon/app-catalog/pull/69) [`59a609d`](https://github.com/lislon/app-catalog/commit/59a609dd7e6cb17350737ec7a97b2a98af406305) Thanks [@lislon](https://github.com/lislon)! - Make the display serif actually render and surface the resource owner. The warm
+  theme defined a Fraunces display-serif token but nothing loaded the webfont or
+  applied it, so headings fell back to the system sans. Load Fraunces + Nunito
+  Sans via a real stylesheet link and apply the serif to the key display headings
+  (the wordmark, the app detail title, group headers, and the onboarding title).
+
+  Also render an **Owner** row in the app detail — "who is responsible for this
+  resource" — from `ownerPersonSlug`, kept visually distinct from the access
+  approver (who decides access requests), per the domain model.
+
+## 0.4.0-alpha-20260806002918
+
+### Minor Changes
+
+- [#68](https://github.com/lislon/app-catalog/pull/68) [`5a42440`](https://github.com/lislon/app-catalog/commit/5a42440b26da98ca1375ac3234b81e86b112d980) Thanks [@lislon](https://github.com/lislon)! - Re-theme the catalog with a warm, crafted visual identity matched to the
+  hand-drawn logo. The previous palette was built around a generic purple accent
+  on a cool blue-gray background that read as a templated dashboard. The design
+  tokens now use a warm "crayon" palette derived from the logo — an orange primary
+  with amber/coral/blue/green chart colors — on a cream paper background, with a
+  rounder corner radius and a friendlier type pairing (Fraunces display serif +
+  Nunito Sans body). Because every component reads these tokens, the whole app —
+  header, filters, buttons, badges, and the app detail panel — picks up the new
+  look at once, in both light and dark mode.
+
+  Also fixes the app detail "how to get access" section so it is never blank:
+  methods with no clickable target now render an explicit line — "open to
+  everyone, no request needed" for open access, or a fallback pointing to the
+  resource owner when the process is undocumented — instead of rendering nothing.
+  The section is retitled from "Access Request" to the task-oriented "How to get
+  access".
+
+  Each catalog row now also has a secondary "open in new tab" launch button for
+  the resource URL, so the fast "I just want the link" jump stays one click away
+  while the primary row click opens the access detail.
+
+## 0.4.0-alpha-20260806002251
+
+### Minor Changes
+
+- [#67](https://github.com/lislon/app-catalog/pull/67) [`f81663d`](https://github.com/lislon/app-catalog/commit/f81663d144c9f4beb71d0390ac0a20483b86562e) Thanks [@lislon](https://github.com/lislon)! - Re-theme the catalog with a warm, crafted visual identity matched to the
+  hand-drawn logo. The previous palette was built around a generic purple accent
+  on a cool blue-gray background that read as a templated dashboard. The design
+  tokens now use a warm "crayon" palette derived from the logo — an orange primary
+  with amber/coral/blue/green chart colors — on a cream paper background, with a
+  rounder corner radius and a friendlier type pairing (Fraunces display serif +
+  Nunito Sans body). Because every component reads these tokens, the whole app —
+  header, filters, buttons, badges, and the app detail panel — picks up the new
+  look at once, in both light and dark mode.
+
+  Also fixes the app detail "how to get access" section so it is never blank:
+  methods with no clickable target now render an explicit line — "open to
+  everyone, no request needed" for open access, or a fallback pointing to the
+  resource owner when the process is undocumented — instead of rendering nothing.
+  The section is retitled from "Access Request" to the task-oriented "How to get
+  access".
+
+  Each catalog row now also has a secondary "open in new tab" launch button for
+  the resource URL, so the fast "I just want the link" jump stays one click away
+  while the primary row click opens the access detail.
+
+## 0.4.0-alpha-20260805180712
+
+### Patch Changes
+
+- [#66](https://github.com/lislon/app-catalog/pull/66) [`197e6e3`](https://github.com/lislon/app-catalog/commit/197e6e343fd1bc351d50b10a9660da9eb42a5ea3) Thanks [@lislon](https://github.com/lislon)! - Keep the catalog search text out of the URL. The search box previously synced
+  its value to a `?q=` query param, so opening or sharing an app link carried the
+  search term along (`/app/<slug>?q=<search>`), cluttering the deep link. The
+  search value now persists in `sessionStorage` instead, so it still survives the
+  per-route remount of the filters provider — including the auto-navigation to a
+  single match, where the input text must not be lost — while shared and
+  bookmarked links stay clean `/app/<slug>` (or `/`). Incoming legacy `?q=` links
+  are stripped from the URL on load via a `stripSearchParams` search middleware.
+
+## 0.4.0-alpha-20260805143647
+
+### Patch Changes
+
+- [#63](https://github.com/lislon/app-catalog/pull/63) [`98da849`](https://github.com/lislon/app-catalog/commit/98da8491b36920676f2f47361807446347af86fc) Thanks [@lislon](https://github.com/lislon)! - Fix stray `0` appearing in the catalog grid when a search matches no apps. The
   numeric `&&`-gated "Clear filters" row now uses `(totalAppsCount ?? 0) > apps.length`
   so it can never render a bare number as a React text node.
 
-## 0.9.4
+## 0.4.0-alpha-20260804214537
 
 ### Patch Changes
 
-- [#60](https://github.com/lislon/app-catalog/pull/60) [`bed4657`](https://github.com/lislon/app-catalog/commit/bed465709379f99ef7c42ab185b9fc9e6ad924f3) Thanks [@lislon](https://github.com/lislon)! - Left-align the numbered "Sources" list in the app-detail panel. The list item
-  markers ("1.", "2.", …) are shrink-wrapped spans; in a proportional font the
-  glyph "2" is wider than "1", so the text on later rows started a few pixels to
-  the right of the first and the list stopped reading as left-aligned. The marker
-  spans now use `tabular-nums` so every digit is equal-width and all rows share
-  the same left edge (applied to both the read-only and admin-editable
-  renderings).
+- Snapshot release from alpha branch
 
-## 0.9.3
+## 0.4.0-alpha-20260804172958
 
 ### Patch Changes
 
-- [#57](https://github.com/lislon/app-catalog/pull/57) [`60a5dce`](https://github.com/lislon/app-catalog/commit/60a5dceb8b0c9c3f32440fb850d8f8fe40857e47) Thanks [@lislon](https://github.com/lislon)! - Stop raw markdown from leaking as literal text in compact/clamped catalog
-  surfaces (#25 follow-up). Descriptions can now contain markdown (notably
-  cross-reference links like `[Example Portal](/app/example-portal)`), which
-  the detail panel renders as real links. But the grid list preview, the
-  `AppCatalogTable` row, the sub-resources table, and the filter combobox render
-  `description` as plain text, so the raw link syntax was visible to users. Those
-  compact/`line-clamp` surfaces now render descriptions through a new
-  `markdownToPlainText` helper — showing just the visible text (e.g. "Example
-  Portal") with no bracket/paren syntax and no interactive link that could break
-  the clamp or layout. The full interactive cross-links remain in the detail
-  view.
+- Snapshot release from alpha branch
 
-## 0.9.2
+## 0.4.0-alpha-20260804161437
 
 ### Patch Changes
 
-- [#54](https://github.com/lislon/app-catalog/pull/54) [`43bfedd`](https://github.com/lislon/app-catalog/commit/43bfeddcb3ffb1eda3b95f1b3534d1687cc6cd07) Thanks [@lislon](https://github.com/lislon)! - Render internal cross-reference links in catalog markdown as in-app router
+- [#53](https://github.com/lislon/app-catalog/pull/53) [`7d93441`](https://github.com/lislon/app-catalog/commit/7d93441a5b23bcc8036cf6d6c2b4c63753b2fccf) Thanks [@lislon](https://github.com/lislon)! - Render internal cross-reference links in catalog markdown as in-app router
   navigation. A relative `[Name](/app/<slug>)` link in a description/comment now
   navigates within the catalog via the TanStack router (same tab, no full
   reload) instead of opening a new browser tab, so entries can cross-link each
@@ -124,20 +370,20 @@
   points at the currently open app. External http/https links are unchanged
   (still open in a new tab with `noopener noreferrer`).
 
-## 0.9.1
+## 0.4.0-alpha-20260731185816
 
 ### Patch Changes
 
-- [#51](https://github.com/lislon/app-catalog/pull/51) [`ded2a26`](https://github.com/lislon/app-catalog/commit/ded2a267311d802b41520dbed0b6197537c61f41) Thanks [@lislon](https://github.com/lislon)! - Keep the header "Apps" tab active while viewing an app-detail route
+- [#50](https://github.com/lislon/app-catalog/pull/50) [`9ea8776`](https://github.com/lislon/app-catalog/commit/9ea8776668ae5021378a8f2cdf3f9c935f153223) Thanks [@lislon](https://github.com/lislon)! - Keep the header "Apps" tab active while viewing an app-detail route
   (`/app/<slug>`). Previously the toggle used an exact match on `/`, so on
   `/app/<slug>` neither "Apps" nor "Service Desks" was highlighted (#23). The
   active segment is now derived from the current pathname.
 
-## 0.9.0
+## 0.4.0-alpha-20260730182101
 
 ### Minor Changes
 
-- [#48](https://github.com/lislon/app-catalog/pull/48) [`ed5e3ee`](https://github.com/lislon/app-catalog/commit/ed5e3eeca8520a24714eb48c8c5a9a9cbaf63291) Thanks [@lislon](https://github.com/lislon)! - Backend-computed freshness on the app detail view. Each resource now carries a
+- [#47](https://github.com/lislon/app-catalog/pull/47) [`7c22d5d`](https://github.com/lislon/app-catalog/commit/7c22d5d7fddb2fb6f3d288397d92a889c888ea81) Thanks [@lislon](https://github.com/lislon)! - Backend-computed freshness on the app detail view. Each resource now carries a
   `freshness: { lastCheckedAt, isStale }` (derived server-side from the source
   scan's last-checked/next-check dates); the detail view renders a muted
   "Last checked …" line after Sources, with a subtle "· may be out of date" note
@@ -145,54 +391,62 @@
 
 ### Patch Changes
 
-- [#48](https://github.com/lislon/app-catalog/pull/48) [`ed5e3ee`](https://github.com/lislon/app-catalog/commit/ed5e3eeca8520a24714eb48c8c5a9a9cbaf63291) Thanks [@lislon](https://github.com/lislon)! - Redirect `/app/<alias>` to the canonical `/app/<slug>`. When an app's slug
+- [#47](https://github.com/lislon/app-catalog/pull/47) [`7c22d5d`](https://github.com/lislon/app-catalog/commit/7c22d5d7fddb2fb6f3d288397d92a889c888ea81) Thanks [@lislon](https://github.com/lislon)! - Redirect `/app/<alias>` to the canonical `/app/<slug>`. When an app's slug
   changes, its old slug can be listed in `aliases[]`; visiting the old URL now
   redirects (client-side, replace) to the canonical app instead of showing a
   blank catalog.
 
-## 0.8.1
+## 0.4.0-alpha-20260730170821
 
 ### Patch Changes
 
-- [#43](https://github.com/lislon/app-catalog/pull/43) [`f0356fd`](https://github.com/lislon/app-catalog/commit/f0356fd236f721ddd31cc043613f3fad19467401) Thanks [@lislon](https://github.com/lislon)! - Service Desks view: autofocus the search input when the view loads, matching the
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260729145918
+
+### Patch Changes
+
+- [#42](https://github.com/lislon/app-catalog/pull/42) [`eafd7a5`](https://github.com/lislon/app-catalog/commit/eafd7a5516bb2a901daa973de4753fa34a38722c) Thanks [@lislon](https://github.com/lislon)! - Service Desks view: autofocus the search input when the view loads, matching the
   Apps view. Switching to the Service Desks tab now places the cursor in the search
   box so users can type immediately.
 
-## 0.8.0
+## 0.4.0-alpha-20260729145014
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260729112817
 
 ### Minor Changes
 
-- [#38](https://github.com/lislon/app-catalog/pull/38) [`847e5f9`](https://github.com/lislon/app-catalog/commit/847e5f9dfe1e903100f7a76cf92eec79e84d3c57) Thanks [@lislon](https://github.com/lislon)! - Service Desks view: show an optional description as muted subtext under each
+- [#37](https://github.com/lislon/app-catalog/pull/37) [`b966cfc`](https://github.com/lislon/app-catalog/commit/b966cfccd3dc2ec8a9e76afe10c0ff6d31c70485) Thanks [@lislon](https://github.com/lislon)! - Service Desks view: show an optional description as muted subtext under each
   service desk's name. Adds an optional `description` field to the service
   approval-method config (`ServiceConfig.description`); the Service Desks table
   renders it beneath the name when present.
 
-## 0.7.1
+## 0.4.0-alpha-20260728193854
 
 ### Patch Changes
 
-- [#35](https://github.com/lislon/app-catalog/pull/35) [`0d990e0`](https://github.com/lislon/app-catalog/commit/0d990e092ed31d1517add9dfbe851f357a202365) Thanks [@lislon](https://github.com/lislon)! - Gallery: clicking the fullscreen image now exits fullscreen, making zoom a
-  reversible click toggle. Previously the only way out of the zoomed view was the
-  ✕ button or Escape. The fullscreen image gets a `cursor-zoom-out` affordance and
-  `role="button"` / `aria-label="Zoom out"`; the ✕ button and Escape handler are
-  unchanged.
+- Snapshot release from alpha branch
 
-## 0.7.0
+## 0.4.0-alpha-20260728181436
 
 ### Minor Changes
 
-- [#32](https://github.com/lislon/app-catalog/pull/32) [`e8c1172`](https://github.com/lislon/app-catalog/commit/e8c11721a2eaf62a3f398fcc0baa3e1b047f23fd) Thanks [@lislon](https://github.com/lislon)! - Add a "Service Desks" view. A compact "Apps | Service Desks" segmented toggle in
+- [#31](https://github.com/lislon/app-catalog/pull/31) [`25ee63c`](https://github.com/lislon/app-catalog/commit/25ee63c4515e1962ff1cb44a2dba7a8207943c87) Thanks [@lislon](https://github.com/lislon)! - Add a "Service Desks" view. A compact "Apps | Service Desks" segmented toggle in
   the header (no added height) switches between the app catalog (/) and a new
   /service-desks route. The Service Desks page lists all service-desk approval
   methods (type 'service') in a searchable table, each with a link that opens its
   portal in a new tab. Data rides in on the existing app-catalog query — no
   backend change.
 
-## 0.6.5
+## 0.4.0-alpha-20260728153301
 
 ### Patch Changes
 
-- [#29](https://github.com/lislon/app-catalog/pull/29) [`0cb73b6`](https://github.com/lislon/app-catalog/commit/0cb73b6c300e4b08e446141d689562d64fa15211) Thanks [@lislon](https://github.com/lislon)! - Fix the deprecated-app "View replacement" link (and deep links) rendering a
+- [#28](https://github.com/lislon/app-catalog/pull/28) [`3495bc0`](https://github.com/lislon/app-catalog/commit/3495bc04d14653ccfbf470d17d017c455318b125) Thanks [@lislon](https://github.com/lislon)! - Fix the deprecated-app "View replacement" link (and deep links) rendering a
   blank panel. Navigating to /app/<slug> now resolves the open app from the full
   resource set, and the catalog renders the detail panel even when the current
   search/filters would otherwise show an empty state. Previously the panel
@@ -200,22 +454,44 @@
   deep-linked app) not matching the active search changed the URL but showed
   nothing. "Hard navigation" now behaves like typing the URL in the browser.
 
-## 0.6.4
+## 0.4.0-alpha-20260728040254
 
 ### Patch Changes
 
-- [#26](https://github.com/lislon/app-catalog/pull/26) [`d1efc0e`](https://github.com/lislon/app-catalog/commit/d1efc0eeeabc390cd61cc00349bf868b66dc5fd3) Thanks [@lislon](https://github.com/lislon)! - Search now falls back to deprecated apps when there are no active matches. If a
+- [#25](https://github.com/lislon/app-catalog/pull/25) [`5e2b1e7`](https://github.com/lislon/app-catalog/commit/5e2b1e7229a9d207c07298ee792777f8e18e759c) Thanks [@lislon](https://github.com/lislon)! - Search now falls back to deprecated apps when there are no active matches. If a
   search query returns zero non-deprecated results but deprecated apps match, the
   catalog shows those deprecated matches, displays a "showing deprecated matches"
   notice, and auto-enables the "Show Deprecated Apps" toggle so the state is
   visible and consistent. When the query has active matches, deprecated apps stay
   hidden as before; when nothing matches at all, the normal empty state shows.
 
-## 0.6.3
+## 0.4.0-alpha-20260727205627
 
 ### Patch Changes
 
-- [#23](https://github.com/lislon/app-catalog/pull/23) [`7c46b42`](https://github.com/lislon/app-catalog/commit/7c46b422cc1a18dbb6129c093e160b631cb5c608) Thanks [@lislon](https://github.com/lislon)! - Fix search input losing text and focus when it auto-navigates to a single
+- [#22](https://github.com/lislon/app-catalog/pull/22) [`d369f89`](https://github.com/lislon/app-catalog/commit/d369f8936d859698bd1404ba924fb11d33987e80) Thanks [@lislon](https://github.com/lislon)! - Fix the app detail route (`/app/$slug`) stripping the `q` search param. The
+  route had no `validateSearch` schema, so TanStack Router dropped unknown params
+  on navigation — including the URL-synced search query. That defeated the #10
+  fix in the real router: `q` never survived the auto-navigation, so the search
+  input still cleared. Added a `validateSearch` schema declaring `q` and the other
+  URL-synced filter params (`filterTag`, `recent`, `filters`, `deprecated`).
+
+## 0.4.0-alpha-20260727202703
+
+### Patch Changes
+
+- [#21](https://github.com/lislon/app-catalog/pull/21) [`5b3bb2b`](https://github.com/lislon/app-catalog/commit/5b3bb2b034fa2a8c22660bf129dd93ed7113f246) Thanks [@lislon](https://github.com/lislon)! - Fix the search input still resetting when typing into an empty search and the
+  query narrows to a single app. The auto-navigate effect runs before the filters
+  provider's async state→URL sync, so at navigation time the URL did not yet hold
+  the `q` param and it was carried through as empty. The current search value is
+  now injected directly into the auto-navigation's search params, so the typed
+  query lands in the URL and the input stays populated across the route change.
+
+## 0.4.0-alpha-20260727200037
+
+### Patch Changes
+
+- [#20](https://github.com/lislon/app-catalog/pull/20) [`7aefd80`](https://github.com/lislon/app-catalog/commit/7aefd8038a15943bc2ae3e81e412b33fe46f632c) Thanks [@lislon](https://github.com/lislon)! - Fix search input losing text and focus when it auto-navigates to a single
   match. Typing a query that narrows the catalog to one app auto-opens that app's
   detail page, but the search value lived in component-local state (not the URL)
   and the filters provider remounts per route — so the input and keyboard focus
@@ -228,25 +504,11 @@
   existing in-sync equality check already prevents default-value pollution, so
   the redundant init gate was removed.
 
-- [#23](https://github.com/lislon/app-catalog/pull/23) [`1a5a8f8`](https://github.com/lislon/app-catalog/commit/1a5a8f8e2e35561cdff18d0d41a0f126d3f80c48) Thanks [@lislon](https://github.com/lislon)! - Fix the search input still resetting when typing into an empty search and the
-  query narrows to a single app. The auto-navigate effect runs before the filters
-  provider's async state→URL sync, so at navigation time the URL did not yet hold
-  the `q` param and it was carried through as empty. The current search value is
-  now injected directly into the auto-navigation's search params, so the typed
-  query lands in the URL and the input stays populated across the route change.
-
-- [#23](https://github.com/lislon/app-catalog/pull/23) [`411886a`](https://github.com/lislon/app-catalog/commit/411886ad102dde98d77b73cf20406b30fb171369) Thanks [@lislon](https://github.com/lislon)! - Fix the app detail route (`/app/$slug`) stripping the `q` search param. The
-  route had no `validateSearch` schema, so TanStack Router dropped unknown params
-  on navigation — including the URL-synced search query. That defeated the #10
-  fix in the real router: `q` never survived the auto-navigation, so the search
-  input still cleared. Added a `validateSearch` schema declaring `q` and the other
-  URL-synced filter params (`filterTag`, `recent`, `filters`, `deprecated`).
-
-## 0.6.2
+## 0.4.0-alpha-20260727044221
 
 ### Patch Changes
 
-- [#18](https://github.com/lislon/app-catalog/pull/18) [`36c3827`](https://github.com/lislon/app-catalog/commit/36c3827dfdb1827448c323f39ebcf2afc8dc2af3) Thanks [@lislon](https://github.com/lislon)! - Fix `useAuth must be used within AuthProvider` on the root route's fallback
+- [#17](https://github.com/lislon/app-catalog/pull/17) [`115acd1`](https://github.com/lislon/app-catalog/commit/115acd121ec1a7a0c4abe0af6fdf8187a40ba8d8) Thanks [@lislon](https://github.com/lislon)! - Fix `useAuth must be used within AuthProvider` on the root route's fallback
   components. The `pendingComponent` (`LoadingScreen`) and `notFoundComponent`
   (`NotFoundError`) render `MainLayout → Header → useAuth()` but the router
   renders these fallbacks outside the app's provider tree. They are now wrapped
@@ -254,29 +516,43 @@
   cold-load pending states (intermittent) no longer crash — they render the
   clean 404 / loading UI instead.
 
-## 0.6.1
+## 0.4.0-alpha-20260726003135
 
 ### Patch Changes
 
-- [#15](https://github.com/lislon/app-catalog/pull/15) [`e0ed7e0`](https://github.com/lislon/app-catalog/commit/e0ed7e05fd76f199d4c7a40819502f65c375977b) Thanks [@lislon](https://github.com/lislon)! - Surface git SHA + commit URL in version info; footer FE line now shows the frontend-core version, its git SHA (linked to the commit), and the build pipeline id together instead of the pipeline id overwriting the version.
+- [#14](https://github.com/lislon/app-catalog/pull/14) [`e217812`](https://github.com/lislon/app-catalog/commit/e217812b08b70a1e3397e433477e28347359d77a) Thanks [@lislon](https://github.com/lislon)! - Surface git SHA + commit URL in version info; footer FE line now shows the frontend-core version, its git SHA (linked to the commit), and the build pipeline id together instead of the pipeline id overwriting the version.
 
-## 0.6.0
+## 0.4.0-alpha-20260725214358
 
-### Minor Changes
+### Patch Changes
 
-- [#11](https://github.com/lislon/app-catalog/pull/11) [`0f1f0a2`](https://github.com/lislon/app-catalog/commit/0f1f0a255ff3ad8a06cb92b6cdc9b0241c220e78) Thanks [@lislon](https://github.com/lislon)! - Add /app/<slug> deep-link routing: selecting an app navigates to a shareable path and opening that URL opens the app's detail in the full catalog. Replaces the ?app= query param.
+- [#13](https://github.com/lislon/app-catalog/pull/13) [`d3d216f`](https://github.com/lislon/app-catalog/commit/d3d216f49901ee08a477a9cbb43033b1f27ddb25) Thanks [@lislon](https://github.com/lislon)! - Dev-only warning when the catalog loads resources but none are top-level (fingerprints a frontend/backend-core version skew or a stale service worker), so an empty catalog is diagnosable at a glance instead of looking like a data outage.
 
-## 0.5.0
-
-### Minor Changes
-
-- [#8](https://github.com/lislon/app-catalog/pull/8) [`749d9f7`](https://github.com/lislon/app-catalog/commit/749d9f7e505d0a897bdcb80a6698d0dbc3261e81) Thanks [@lislon](https://github.com/lislon)! - Render app description as markdown so links (e.g. Slack channels) are clickable. Adds a shared `MarkdownText` component used at the live detail render site (AppCatalogGrid) with secure external links, and removes the dead `AppDetailModal` component.
-
-## 0.4.0
+## 0.4.0-alpha-20260725185223
 
 ### Minor Changes
 
-- [`80b5114`](https://github.com/lislon/app-catalog/commit/80b511412606a0238fb856b6f34ff9188e0b6eb3) Thanks [@lislon](https://github.com/lislon)! - First stable release with full feature set: sub-resources, person/group entities, app tier variants, unified Resource model, PWA auto-update, Datadog RUM integration.
+- [#10](https://github.com/lislon/app-catalog/pull/10) [`26fbda1`](https://github.com/lislon/app-catalog/commit/26fbda1fca2767f77f11f87c47bab7a323620cb6) Thanks [@lislon](https://github.com/lislon)! - Add /app/<slug> deep-link routing: selecting an app navigates to a shareable path and opening that URL opens the app's detail in the full catalog. Replaces the ?app= query param.
+
+- [`bb394de`](https://github.com/lislon/app-catalog/commit/bb394deb104d27714202f1691639a38ccd0a553f) Thanks [@lislon](https://github.com/lislon)! - Render app description as markdown so links (e.g. Slack channels) are clickable. Adds a shared `MarkdownText` component used at the live detail render site (AppCatalogGrid) with secure external links, and removes the dead `AppDetailModal` component.
+
+## 0.3.1-alpha-20260724220657
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.3.1-alpha-20260724205941
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.3.1-alpha-20260724172703
+
+### Patch Changes
+
+- Snapshot release from alpha branch
 
 ## 0.3.1-alpha-20260406011911
 

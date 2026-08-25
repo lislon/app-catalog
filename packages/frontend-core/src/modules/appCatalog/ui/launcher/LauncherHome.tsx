@@ -1,6 +1,6 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
 import { ArrowUpRight, Search, X } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '~/lib/utils'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { markdownToPlainText } from '../../utils/markdownToPlainText'
@@ -13,9 +13,12 @@ import { Highlight } from '../components/Highlight'
  * Adaptive-home discovery spine (issue #38, increment 1) — matches the
  * option-a-launcher prototype:
  *   Your apps (frequent) → New this week → Browse all
- * Rendered by AppCatalogPage when there is no active search and no open detail.
- * The hero search box drives the same `searchValue` used elsewhere; typing hands
- * off to the results view (increment 2 refines the morph).
+ *
+ * This is the PERSISTENT shell for the catalog: idle browse, active search and
+ * an open detail overlay all render inside it. Only the area below the hero
+ * swaps (discovery spine ↔ results list), so the hero copy, the search box and
+ * the page container never move while the user types. Do not switch the page to
+ * a different container on search — that was the layout-jitter bug.
  */
 
 // Type pill text. Plain "application" resources are the common case and don't
@@ -42,6 +45,14 @@ export interface LauncherHomeProps {
   onLaunch: (app: Resource) => void
   /** Total resource count for the "Browse all" label. */
   totalCount: number
+  /**
+   * True while an app/sub-resource detail overlay is open above the launcher.
+   * The results list then stops binding ↑↓/↵/Esc so the overlay owns the
+   * keyboard (otherwise Esc would ALSO wipe the search behind the overlay).
+   */
+  detailOpen?: boolean
+  /** Currently open sub-resource slug, for highlighting its row. */
+  selectedSubSlug?: string
 }
 
 function LaunchButton({
@@ -152,10 +163,29 @@ function ResourceRow({
   )
 }
 
+/** Matched sub-resources listed under a parent before the "… N more" row. */
+const COLLAPSED_SUB_LIMIT = 5
+
+/** One line in the flat, keyboard-navigable results list. */
+type ResultRow =
+  | { kind: 'app'; key: string; app: Resource }
+  | { kind: 'sub'; key: string; sub: Resource; parent: Resource }
+  | { kind: 'more'; key: string; parent: Resource; hidden: number }
+
 /**
- * Keyboard-navigable search results list — increment 2 of the launcher redesign.
- * Appears below the hero search box when the user types, replacing the
- * discovery spine. Pressing ↑↓ navigates, ↵ opens detail, Esc clears.
+ * Keyboard-navigable search results list — the launcher's only search surface.
+ *
+ * It renders directly BELOW the hero search box, inside the same persistent
+ * launcher shell: the hero copy, the search input and the page container never
+ * move when the user types, and no filter chrome (tabs / category / deprecated
+ * toggle) appears. Those filters live in the browse view only — clearing the
+ * search brings them back.
+ *
+ * Rows are flat and individually clickable. A matched sub-resource gets its own
+ * indented row under its parent, so a query that only hits a sub-resource
+ * (e.g. a cloud account) can be opened directly instead of forcing the user to
+ * dig through the parent's detail. ↑↓ moves over every row, ↵ activates the
+ * focused one, Esc clears the search.
  */
 function SearchResultsList({
   apps,
@@ -163,14 +193,21 @@ function SearchResultsList({
   onAppClick,
   onLaunch,
   onClear,
+  keyboardEnabled = true,
+  selectedSubSlug,
 }: {
   apps: Resource[]
   searchValue: string
   onAppClick: (app: Resource) => void
   onLaunch: (app: Resource) => void
   onClear: () => void
+  keyboardEnabled?: boolean
+  selectedSubSlug?: string
 }) {
   const [focusedIndex, setFocusedIndex] = useState(-1)
+  const [expandedParents, setExpandedParents] = useState<Set<string>>(
+    () => new Set(),
+  )
 
   const results = useMemo(
     () => searchResources(apps, searchValue),
@@ -209,31 +246,78 @@ function SearchResultsList({
     [results],
   )
 
-  // Reset focus when results change
+  // Flatten parents + their matched sub-resources into one navigable list, so a
+  // sub-resource row is a first-class result (clickable, focusable) rather than
+  // a footnote on its parent.
+  const rows = useMemo(() => {
+    const out: ResultRow[] = []
+    for (const app of results) {
+      out.push({ kind: 'app', key: `app:${app.slug}`, app })
+      const kids = matchedChildrenByParent.get(app.slug) ?? []
+      const expanded = expandedParents.has(app.slug)
+      const visible = expanded ? kids : kids.slice(0, COLLAPSED_SUB_LIMIT)
+      for (const sub of visible) {
+        out.push({
+          kind: 'sub',
+          key: `sub:${app.slug}:${sub.slug}`,
+          sub,
+          parent: app,
+        })
+      }
+      const hidden = kids.length - visible.length
+      if (hidden > 0) {
+        out.push({ kind: 'more', key: `more:${app.slug}`, parent: app, hidden })
+      }
+    }
+    return out
+  }, [results, matchedChildrenByParent, expandedParents])
+
+  const activateRow = useCallback(
+    (row: ResultRow) => {
+      if (row.kind === 'app') {
+        onAppClick(row.app)
+      } else if (row.kind === 'sub') {
+        // Open the parent app detail, not the sub-resource's own detail page.
+        // The sub-resources table inside the detail panel is pre-filtered by the
+        // current search query (filterState.searchValue → SubResourcesSection
+        // initialSearch), so the matching account is immediately visible.
+        onAppClick(row.parent)
+      } else {
+        setExpandedParents((prev) => new Set(prev).add(row.parent.slug))
+      }
+    },
+    [onAppClick],
+  )
+
+  // Reset focus and collapse expanded sub-resource lists when the query changes
   useEffect(() => {
     setFocusedIndex(-1)
+    setExpandedParents(new Set())
   }, [searchValue])
 
   useEffect(() => {
+    // While a detail overlay is open it owns the keyboard: without this guard
+    // Esc would clear the search behind the overlay and ↑↓/↵ would navigate to
+    // a different app from a list the user cannot see.
+    if (!keyboardEnabled) return
     const onKey = (e: KeyboardEvent) => {
-      if (results.length === 0) return
+      if (rows.length === 0) return
       if (e.key === 'ArrowDown') {
         e.preventDefault()
-        setFocusedIndex((i) => Math.min(i + 1, results.length - 1))
+        setFocusedIndex((i) => Math.min(i + 1, rows.length - 1))
       } else if (e.key === 'ArrowUp') {
         e.preventDefault()
         setFocusedIndex((i) => Math.max(i - 1, 0))
       } else if (e.key === 'Enter') {
-        if (focusedIndex >= 0 && results[focusedIndex]) {
-          onAppClick(results[focusedIndex])
-        }
+        const row = focusedIndex >= 0 ? rows[focusedIndex] : undefined
+        if (row) activateRow(row)
       } else if (e.key === 'Escape') {
         onClear()
       }
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [results, focusedIndex, onAppClick, onClear])
+  }, [rows, focusedIndex, activateRow, onClear, keyboardEnabled])
 
   return (
     <div className="max-w-[620px] mx-auto mt-3">
@@ -255,81 +339,119 @@ function SearchResultsList({
         </div>
       )}
 
-      {/* Results */}
+      {/* Results — parents and their matched sub-resources as one flat list */}
       <div
         className="flex flex-col gap-1.5"
         role="listbox"
         aria-label="Search results"
       >
-        {results.map((app, i) => (
-          <button
-            key={app.slug}
-            type="button"
-            role="option"
-            title={`View ${app.displayName}`}
-            aria-selected={focusedIndex === i}
-            onMouseEnter={() => setFocusedIndex(i)}
-            onClick={() => onAppClick(app)}
-            className={cn(
-              'group flex items-center gap-3.5 w-full text-left',
-              'bg-card border rounded-[var(--radius)] px-3.5 py-2.5',
-              'transition-all',
-              focusedIndex === i
-                ? 'border-ring shadow-sm bg-muted/30'
-                : 'border-border hover:border-ring hover:shadow-sm',
-            )}
-          >
-            <ResourceIcon app={app} size={40} />
-            <span className="flex-1 min-w-0">
-              <span className="block text-[14px] font-semibold truncate">
-                <Highlight text={app.displayName} query={searchValue} />
-                {app.abbreviation && app.abbreviation !== app.displayName && (
-                  <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">
-                    (<Highlight text={app.abbreviation} query={searchValue} />)
+        {rows.map((row, i) => {
+          const focused = focusedIndex === i
+
+          if (row.kind === 'sub') {
+            const { sub, parent } = row
+            const isOpen = selectedSubSlug === sub.slug
+            return (
+              <button
+                key={row.key}
+                type="button"
+                role="option"
+                aria-selected={focused}
+                aria-label={`${sub.displayName} — sub-resource of ${parent.displayName}`}
+                title={sub.displayName}
+                onMouseEnter={() => setFocusedIndex(i)}
+                onClick={() => activateRow(row)}
+                className={cn(
+                  // Indented + left rule so the parent/child relation reads at
+                  // a glance without an extra text prefix.
+                  'flex items-center ml-8 border-l-2 pl-3 pr-3 py-1.5 text-left',
+                  'text-[13px] rounded-r-[var(--radius)] transition-colors',
+                  focused || isOpen
+                    ? 'border-primary bg-muted/40 text-foreground'
+                    : 'border-border text-muted-foreground hover:border-primary hover:bg-muted/30 hover:text-foreground',
+                )}
+              >
+                <Highlight text={sub.displayName} query={searchValue} />
+              </button>
+            )
+          }
+
+          if (row.kind === 'more') {
+            return (
+              <button
+                key={row.key}
+                type="button"
+                role="option"
+                aria-selected={focused}
+                aria-label={`Show ${row.hidden} more matching sub-resources of ${row.parent.displayName}`}
+                onMouseEnter={() => setFocusedIndex(i)}
+                onClick={() => activateRow(row)}
+                className={cn(
+                  'flex items-center ml-8 border-l-2 pl-3 pr-3 py-1.5 text-left',
+                  'text-[13px] rounded-r-[var(--radius)] transition-colors',
+                  focused
+                    ? 'border-primary bg-muted/40 text-foreground'
+                    : 'border-border text-muted-foreground hover:border-primary hover:text-foreground',
+                )}
+              >
+                ... {row.hidden} more
+              </button>
+            )
+          }
+
+          const app = row.app
+          return (
+            <button
+              key={row.key}
+              type="button"
+              role="option"
+              title={`View ${app.displayName}`}
+              aria-selected={focused}
+              onMouseEnter={() => setFocusedIndex(i)}
+              onClick={() => activateRow(row)}
+              className={cn(
+                'group flex items-center gap-3.5 w-full text-left',
+                'bg-card border rounded-[var(--radius)] px-3.5 py-2.5',
+                'transition-all',
+                focused
+                  ? 'border-ring shadow-sm bg-muted/30'
+                  : 'border-border hover:border-ring hover:shadow-sm',
+              )}
+            >
+              <ResourceIcon app={app} size={40} />
+              <span className="flex-1 min-w-0">
+                <span className="block text-[14px] font-semibold truncate">
+                  <Highlight text={app.displayName} query={searchValue} />
+                  {app.abbreviation && app.abbreviation !== app.displayName && (
+                    <span className="ml-1.5 text-[12px] font-normal text-muted-foreground">
+                      (<Highlight text={app.abbreviation} query={searchValue} />
+                      )
+                    </span>
+                  )}
+                </span>
+                {app.description && (
+                  <span className="block text-[12.5px] text-muted-foreground truncate">
+                    {markdownToPlainText(app.description)}
                   </span>
                 )}
               </span>
-              {app.description && (
-                <span className="block text-[12.5px] text-muted-foreground truncate">
-                  {markdownToPlainText(app.description)}
+              {typeLabel(app.type) && (
+                <span className="text-[11.5px] text-muted-foreground bg-muted rounded-full px-2.5 py-0.5 whitespace-nowrap shrink-0">
+                  {typeLabel(app.type)}
                 </span>
               )}
-              {(() => {
-                const kids = matchedChildrenByParent.get(app.slug)
-                if (!kids || kids.length === 0) return null
-                const shown = kids.slice(0, 3)
-                const extra = kids.length > 3 ? ` +${kids.length - 3} more` : ''
-                return (
-                  <span className="mt-0.5 block text-[12px] text-primary truncate">
-                    Matched {kids.length} sub-resource
-                    {kids.length === 1 ? '' : 's'}:{' '}
-                    {shown.map((k, idx) => (
-                      <span key={k.slug}>
-                        {idx > 0 && ', '}
-                        <Highlight text={k.displayName} query={searchValue} />
-                      </span>
-                    ))}
-                    {extra}
-                  </span>
-                )
-              })()}
-            </span>
-            {typeLabel(app.type) && (
-              <span className="text-[11.5px] text-muted-foreground bg-muted rounded-full px-2.5 py-0.5 whitespace-nowrap shrink-0">
-                {typeLabel(app.type)}
-              </span>
-            )}
-            <LaunchButton
-              app={app}
-              onLaunch={onLaunch}
-              className="size-7 shrink-0 opacity-0 group-hover:opacity-100"
-            />
-          </button>
-        ))}
+              <LaunchButton
+                app={app}
+                onLaunch={onLaunch}
+                className="size-7 shrink-0 opacity-0 group-hover:opacity-100"
+              />
+            </button>
+          )
+        })}
       </div>
 
       {/* Keyboard hint */}
-      {results.length > 0 && (
+      {rows.length > 0 && (
         <p className="text-[11.5px] text-muted-foreground/60 text-center mt-3">
           ↑↓ navigate · ↵ view access · esc clear
         </p>
@@ -346,6 +468,8 @@ export function LauncherHome({
   onAppClick,
   onLaunch,
   totalCount,
+  detailOpen = false,
+  selectedSubSlug,
 }: LauncherHomeProps) {
   const { getTopApps } = useAppClickHistory()
   const [topSlugs, setTopSlugs] = useState<string[]>([])
@@ -466,7 +590,9 @@ export function LauncherHome({
         </div>
       </div>
 
-      {/* Search morph: when typing, show compact results list instead of the discovery spine */}
+      {/* Search results: rendered in place, directly under the (unmoved) hero
+          search box. The discovery spine below is what gets replaced — the
+          shell, hero and search box stay put, so typing never shifts layout. */}
       {isSearching && (
         <SearchResultsList
           apps={allResources ?? apps}
@@ -474,6 +600,8 @@ export function LauncherHome({
           onAppClick={onAppClick}
           onLaunch={onLaunch}
           onClear={() => onSearchChange('')}
+          keyboardEnabled={!detailOpen}
+          selectedSubSlug={selectedSubSlug}
         />
       )}
 

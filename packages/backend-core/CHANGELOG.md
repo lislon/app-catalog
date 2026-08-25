@@ -1,52 +1,10 @@
 # @igstack/app-catalog-backend-core
 
-## 0.17.0
-
-### Minor Changes
-
-- [#142](https://github.com/lislon/app-catalog/pull/142) [`18ab792`](https://github.com/lislon/app-catalog/commit/18ab7920d9721ebd30fc36b835f8770547ae840c) Thanks [@lislon](https://github.com/lislon)! - Show when a catalog entry's content last actually changed, not when it was last
-  checked. The freshness scan re-reads a source on a backoff schedule and records
-  `lastCheckedAt` every time, whether or not anything changed — so an entry whose
-  data had been identical for months still advertised "Updated 22 hours ago".
-
-  Resources now carry `lastContentChangeAt` alongside `lastCheckedAt` (new nullable
-  `DbResource` column, plumbed through `syncAppCatalog` and the app-catalog service
-  into the `Freshness` payload). The detail panel's "Updated" line and the launcher's
-  "New this week" section read the content-change date, falling back to the check
-  date for entries recorded before the field existed; the tooltip exposes both dates.
+## 0.4.0-alpha-20260819143830
 
 ### Patch Changes
 
-- Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.17.0
-  - @igstack/app-catalog-table-sync@0.17.0
-
-## 0.16.0
-
-### Minor Changes
-
-- [#139](https://github.com/lislon/app-catalog/pull/139) [`4dfc6ce`](https://github.com/lislon/app-catalog/commit/4dfc6ce1442b039f3a27e020b96c11cbf1809c7d) Thanks [@lislon](https://github.com/lislon)! - Restore catalog UI features that were already published but missing from the
-  stable branch
-
-  The stable branch was re-created from a snapshot that predates a batch of
-  already-released UI work, and the promotions for that batch were never replayed.
-  Anything installing the stable tag therefore had a _newer_ version number with an
-  _older_ app card. Restored, byte-for-byte against the published tree:
-  - App card: a primary "Open <url>" action instead of the muted secondary link,
-    and the Added/Updated timestamps consolidated into one metadata row just above
-    Sources (`Resource.createdAt` is now serialised for this).
-  - Access section: Step 1 / Step 2 badges for two-step access apps, with the
-    post-approval instructions expanded by default for them (still a collapsible
-    accordion for single-step apps), plus list styling for markdown prose.
-  - Launcher: close button and mount focus on the detail card so Esc works when the
-    card was opened by mouse; clear (×) button in the hero search input; matched
-    query text highlighted in search results and in matched sub-resource names.
-  - Gallery: Esc no longer propagates to the outer search listener, so closing the
-    gallery keeps the search query.
-
-### Patch Changes
-
-- [#139](https://github.com/lislon/app-catalog/pull/139) [`4dfc6ce`](https://github.com/lislon/app-catalog/commit/4dfc6ce1442b039f3a27e020b96c11cbf1809c7d) Thanks [@lislon](https://github.com/lislon)! - Revalidate icon, asset and screenshot binaries instead of caching them for a day
+- [#138](https://github.com/lislon/app-catalog/pull/138) [`e716071`](https://github.com/lislon/app-catalog/commit/e71607116650683285735e47b8b547814102b43d) Thanks [@lislon](https://github.com/lislon)! - Revalidate icon, asset and screenshot binaries instead of caching them for a day
 
   These URLs are keyed by row id or by name, and `upsertAsset` replaces content in
   place rather than inserting a new row — so the bytes behind a given URL can
@@ -62,25 +20,65 @@
   the next request.
 
 - Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.16.0
-  - @igstack/app-catalog-table-sync@0.16.0
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260819143830
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260819143830
 
-## 0.13.0
-
-### Minor Changes
-
-- [`79a86cb`](https://github.com/lislon/app-catalog/commit/79a86cb6d4c32c0265f865317c7b6b858383b7d7) Thanks [@lislon](https://github.com/lislon)! - Add `buildPgSslConfig()` and apply it when creating the pg pool, so DB TLS is
-  driven by `PGSSLMODE`/`PGSSLROOTCERT` correctly. node-postgres does not honor
-  those on a connection-string pool (it maps `verify-full` to a bare `ssl:true`
-  and ignores the CA), so a server cert signed by a private CA (e.g. AWS RDS)
-  could not be verified. The helper builds the `ssl` object explicitly:
-  verify-full validates CA chain + hostname; verify-ca skips hostname;
-  require/prefer validate when a CA is given; no-verify encrypts without
-  validation; disable/unset leaves SSL off. Exported for downstream reuse.
+## 0.4.0-alpha-20260818210825
 
 ### Patch Changes
 
-- [#134](https://github.com/lislon/app-catalog/pull/134) [`e6faea0`](https://github.com/lislon/app-catalog/commit/e6faea0c2765e557f6c8240927ebc73a6af9c874) Thanks [@lislon](https://github.com/lislon)! - Route Prisma's own queries to the preview-env schema
+- [#137](https://github.com/lislon/app-catalog/pull/137) [`e5cf160`](https://github.com/lislon/app-catalog/commit/e5cf1607bc698e8db5abf30adc72343523e2831f) Thanks [@lislon](https://github.com/lislon)! - Fix `upsertAsset` silently discarding new binary content when an asset row with the same name already exists. Previously, only `mimeType` was ever patched on an existing row — replacing an icon or screenshot file on disk (same app slug, same derived asset name) had no effect on future syncs, no matter how many times the app redeployed. Now the stored `checksum` is compared against the freshly computed one; on a mismatch the whole row (`content`, `checksum`, `fileSize`, `width`, `height`, `mimeType`) is rewritten together.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260818210825
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260818210825
+
+## 0.4.0-alpha-20260818041444
+
+### Patch Changes
+
+- [#136](https://github.com/lislon/app-catalog/pull/136) [`554e85b`](https://github.com/lislon/app-catalog/commit/554e85bc298b74a4c2cfee70bde7ec5142c94c9b) Thanks [@lislon](https://github.com/lislon)! - Cap the `better-auth` dependency below 1.7.0
+
+  1.7.0 dropped the `genericOAuthClient` export from `better-auth/client/plugins`, which
+  `modules/auth/authClient.ts` imports. The dependency was declared as `^1.4.18`, and that
+  caret range ships in the published packages — so any consumer that installs without a
+  lockfile resolves 1.7.0 and its bundler fails the build on the missing export
+  (`"genericOAuthClient" is not exported by better-auth/dist/client/plugins/index.mjs`).
+
+  The range is now `>=1.4.18 <1.7.0`, which keeps patch and minor updates flowing while
+  excluding the breaking release. Raise the cap when `authClient` migrates to the 1.7
+  entry point.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260818041444
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260818041444
+
+## 0.4.0-alpha-20260817192135
+
+### Patch Changes
+
+- [#135](https://github.com/lislon/app-catalog/pull/135) [`3f60ebc`](https://github.com/lislon/app-catalog/commit/3f60ebcfbc1820e1bf80298a7956fe6c432ca274) Thanks [@lislon](https://github.com/lislon)! - Follow-ups to the schema-isolation fix, from code review:
+  - The admin chat tools listed tables and columns from a hardcoded `public` while the
+    SQL they go on to run resolves through `search_path`. They now describe
+    `current_schema()`, so an isolated deployment is no longer told about tables it
+    cannot see.
+  - `verifyDbSchema()` compared the configured schema to `current_schema()` as raw
+    strings. Postgres truncates identifiers to 63 bytes, so a long schema name failed
+    the check on a deployment that was in fact correctly isolated. It now compares the
+    name Postgres kept.
+  - `verifyDbSchema()` armed only on the `DB_SCHEMA` environment variable, so a
+    deployment isolated through config alone was never checked. It now arms on the
+    resolved schema, which is the same value that feeds the pool's `search_path`.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260817192135
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260817192135
+
+## 0.4.0-alpha-20260817183828
+
+### Patch Changes
+
+- [#133](https://github.com/lislon/app-catalog/pull/133) [`a93e66f`](https://github.com/lislon/app-catalog/commit/a93e66f7cc0c46ac2edc29b0d581b8f43668bb53) Thanks [@lislon](https://github.com/lislon)! - Route Prisma's own queries to the preview-env schema
 
   A `search_path` on the pool was necessary but not sufficient: Prisma 7 driver
   adapters qualify every table name with the schema the adapter reports, so a
@@ -97,20 +95,94 @@
   to something else — Postgres silently skips a missing `search_path` entry and
   falls through to `public`, which is exactly the corruption worth crashing on.
 
-- [#134](https://github.com/lislon/app-catalog/pull/134) [`e6faea0`](https://github.com/lislon/app-catalog/commit/e6faea0c2765e557f6c8240927ebc73a6af9c874) Thanks [@lislon](https://github.com/lislon)! - Follow-ups to the schema-isolation fix, from code review:
-  - The admin chat tools listed tables and columns from a hardcoded `public` while the
-    SQL they go on to run resolves through `search_path`. They now describe
-    `current_schema()`, so an isolated deployment is no longer told about tables it
-    cannot see.
-  - `verifyDbSchema()` compared the configured schema to `current_schema()` as raw
-    strings. Postgres truncates identifiers to 63 bytes, so a long schema name failed
-    the check on a deployment that was in fact correctly isolated. It now compares the
-    name Postgres kept.
-  - `verifyDbSchema()` armed only on the `DB_SCHEMA` environment variable, so a
-    deployment isolated through config alone was never checked. It now arms on the
-    resolved schema, which is the same value that feeds the pool's `search_path`.
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260817183828
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260817183828
 
-- [#127](https://github.com/lislon/app-catalog/pull/127) [`3af01e8`](https://github.com/lislon/app-catalog/commit/3af01e8a1ad18a300e1c7c651b9145a464fa42ce) Thanks [@lislon](https://github.com/lislon)! - Serve SVG assets as `image/svg+xml`. `sharp` reports `format === 'svg'`, but
+## 0.4.0-alpha-20260814233321
+
+### Patch Changes
+
+- [#132](https://github.com/lislon/app-catalog/pull/132) [`0b1eefe`](https://github.com/lislon/app-catalog/commit/0b1eefe32dd6b9d0d6a995120c3f26ace4e28ebe) Thanks [@lislon](https://github.com/lislon)! - Pin the `ai` and `@ai-sdk/*` dependencies to exact versions, and drop `ai` and
+  `@ai-sdk/react` from `frontend-core`, where neither was imported.
+
+  Those packages publish several times a day and hard-pin each other exactly, so a
+  caret range resolved to a release that could be minutes old — faster than npm's
+  registry metadata becomes consistent. Fresh installs failed intermittently with
+  `ERR_PNPM_NO_MATCHING_VERSION` on a transitive `@ai-sdk` package that was in fact
+  published. Exact versions in the published `dependencies` make the resolution
+  deterministic for consumers too, which a root `overrides` block cannot do.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260814233321
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260814233321
+
+## 0.4.0-alpha-20260814035133
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260814035133
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260814035133
+
+## 0.4.0-alpha-20260813154215
+
+### Patch Changes
+
+- [#130](https://github.com/lislon/app-catalog/pull/130) [`2f1ea8a`](https://github.com/lislon/app-catalog/commit/2f1ea8a375f82d8ea39fbbb1df30c7d57b7d2a07) Thanks [@lislon](https://github.com/lislon)! - Let `DB_SCHEMA` outrank a schema baked into the app config
+
+  A deployment knows it is a schema-isolated preview; the config server does not,
+  and a config naming `public` would pin the pool straight back to the shared
+  tables the preview was meant to be isolated from.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260813154215
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260813154215
+
+## 0.4.0-alpha-20260813153122
+
+### Patch Changes
+
+- [#129](https://github.com/lislon/app-catalog/pull/129) [`5e5ecb0`](https://github.com/lislon/app-catalog/commit/5e5ecb03dd295bcecb141405acd55064729fb2e3) Thanks [@lislon](https://github.com/lislon)! - Apply the preview-env schema to the pool the app actually uses
+
+  `DB_SCHEMA` was only honoured by `getDbClient()`, but the middleware builds its
+  own pool and calls `setDbClient()` with it — so the schema was dropped and every
+  schema-isolated deployment silently read the shared `public` tables. A preview
+  env whose schema had been migrated ahead of `public` then failed its startup
+  catalog sync with "the column does not exist in the current database".
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260813153122
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260813153122
+
+## 0.4.0-alpha-20260813065159
+
+### Minor Changes
+
+- [#128](https://github.com/lislon/app-catalog/pull/128) [`8924f5d`](https://github.com/lislon/app-catalog/commit/8924f5d032da40d40191ee35da9e09a9c6f1c032) Thanks [@lislon](https://github.com/lislon)! - Show when a catalog entry's content last actually changed, not when it was last
+  checked. The freshness scan re-reads a source on a backoff schedule and records
+  `lastCheckedAt` every time, whether or not anything changed — so an entry whose
+  data had been identical for months still advertised "Updated 22 hours ago".
+
+  Resources now carry `lastContentChangeAt` alongside `lastCheckedAt` (new nullable
+  `DbResource` column, plumbed through `syncAppCatalog` and the app-catalog service
+  into the `Freshness` payload). The detail panel's "Updated" line and the launcher's
+  "New this week" section read the content-change date, falling back to the check
+  date for entries recorded before the field existed; the tooltip exposes both dates.
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260813065159
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260813065159
+
+## 0.4.0-alpha-20260813024744
+
+### Patch Changes
+
+- [#70](https://github.com/lislon/app-catalog/pull/70) [`7aeae6b`](https://github.com/lislon/app-catalog/commit/7aeae6b4e04879e5d97cf075de86bff15525ec34) Thanks [@lislon](https://github.com/lislon)! - Serve SVG assets as `image/svg+xml`. `sharp` reports `format === 'svg'`, but
   `formatToMime` had no `svg` key, so `parseAssetMeta()` fell through to the
   `image/${format}` fallback and produced the invalid `image/svg`. Behind a
   `X-Content-Type-Options: nosniff` proxy, browsers refuse to render such a
@@ -123,97 +195,402 @@
   The rewrite is idempotent and repairs stale rows on the next sync.
 
 - Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.13.0
-  - @igstack/app-catalog-table-sync@0.13.0
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260813024744
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260813024744
 
-## 0.12.0
+## 0.4.0-alpha-20260812171537
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260812171537
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260812171537
+
+## 0.4.0-alpha-20260812005550
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260812005550
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260812005550
+
+## 0.4.0-alpha-20260812004355
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260812004355
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260812004355
+
+## 0.4.0-alpha-20260811223520
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260811223520
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260811223520
+
+## 0.4.0-alpha-20260811221253
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260811221253
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260811221253
+
+## 0.4.0-alpha-20260811214151
+
+### Patch Changes
+
+- [#115](https://github.com/lislon/app-catalog/pull/115) [`b2ae724`](https://github.com/lislon/app-catalog/commit/b2ae724183be12cd267b6d834707e963225c60e3) Thanks [@lislon](https://github.com/lislon)! - UI improvements batch: clear search, Added date, two-step access badges, MCP export
+  - Clear (×) button in search input when text is present
+  - "Added N ago" date shown before Sources in app detail cards (backend: expose createdAt)
+  - Step 1 / Step 2 badges for two-step access apps (postApprovalInstructions + requestPrompt)
+  - Export getResourcesFromPrisma from backend-core public API (for MCP server)
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260811214151
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260811214151
+
+## 0.4.0-alpha-20260811213256
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260811213256
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260811213256
+
+## 0.4.0-alpha-20260811212059
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260811212059
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260811212059
+
+## 0.4.0-alpha-20260811181653
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260811181653
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260811181653
+
+## 0.4.0-alpha-20260811154702
 
 ### Patch Changes
 
 - Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.12.0
-  - @igstack/app-catalog-table-sync@0.12.0
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260811154702
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260811154702
 
-## 0.11.0
-
-### Patch Changes
-
-- [#79](https://github.com/lislon/app-catalog/pull/79) [`53b9880`](https://github.com/lislon/app-catalog/commit/53b9880710cf90adf491e159d2acf9f800272c66) Thanks [@lislon](https://github.com/lislon)! - feat: adaptive launcher UI — discovery spine, search-morph, details-first, two-step access, sub-resource reveal (#38)
-
-  Adaptive home with Your apps / New this week / Browse all sections.
-  Search morphs into a keyboard-navigable results list (↑↓/↵/Esc).
-  Primary click opens the detail slide-over (details-first UX); launch is quiet ↗.
-  Two-step access prerequisite chain for sub-resources.
-  Sub-resource reveal: open parent and seed the sub-resource search filter.
-  ⌘K/Ctrl+K shortcut to focus the hero search.
-
-- Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.11.0
-  - @igstack/app-catalog-table-sync@0.11.0
-
-## 0.10.1
+## 0.4.0-alpha-20260811152919
 
 ### Patch Changes
 
-- [#75](https://github.com/lislon/app-catalog/pull/75) [`7671137`](https://github.com/lislon/app-catalog/commit/767113714d7ca32fd8ff11d73389ee926b13c10b) Thanks [@lislon](https://github.com/lislon)! - Pin @ai-sdk/provider-utils to 4.0.41 to fix broken pnpm install caused by ai@6.0.246 declaring a non-existent version 4.0.42.
+- Snapshot release from alpha branch
 
 - Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.10.1
-  - @igstack/app-catalog-table-sync@0.10.1
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260811152919
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260811152919
 
-## 0.10.0
+## 0.4.0-alpha-20260811142024
 
 ### Patch Changes
 
-- Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.10.0
-  - @igstack/app-catalog-table-sync@0.10.0
+- [#103](https://github.com/lislon/app-catalog/pull/103) [`c8cc18b`](https://github.com/lislon/app-catalog/commit/c8cc18b92fb3ac921a892fadad0a384e63fc57bc) Thanks [@lislon](https://github.com/lislon)! - UI improvements: search highlight, Added date, clear search button, close card button
+  - Highlight matched query text in search result app names and subresource names
+  - Show "Added N ago" date before Sources in app detail cards (backend: expose createdAt)
+  - Clear (×) button in search input when text is present
+  - Close (×) button on app card dialog
 
-## 0.9.5
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260811142024
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260811142024
+
+## 0.4.0-alpha-20260811053337
 
 ### Patch Changes
 
-- Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.9.5
-  - @igstack/app-catalog-table-sync@0.9.5
+- Snapshot release from alpha branch
 
-## 0.9.4
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260811053337
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260811053337
+
+## 0.4.0-alpha-20260811052504
 
 ### Patch Changes
 
-- Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.9.4
-  - @igstack/app-catalog-table-sync@0.9.4
+- Snapshot release from alpha branch
 
-## 0.9.3
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260811052504
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260811052504
+
+## 0.4.0-alpha-20260811051931
 
 ### Patch Changes
 
-- Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.9.3
-  - @igstack/app-catalog-table-sync@0.9.3
+- Snapshot release from alpha branch
 
-## 0.9.2
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260811051931
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260811051931
+
+## 0.4.0-alpha-20260811020745
 
 ### Patch Changes
 
 - Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.9.2
-  - @igstack/app-catalog-table-sync@0.9.2
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260811020745
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260811020745
 
-## 0.9.1
+## 0.4.0-alpha-20260810232952
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260810232952
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260810232952
+
+## 0.4.0-alpha-20260810225555
 
 ### Patch Changes
 
 - Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.9.1
-  - @igstack/app-catalog-table-sync@0.9.1
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260810225555
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260810225555
 
-## 0.9.0
+## 0.4.0-alpha-20260810213549
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260810213549
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260810213549
+
+## 0.4.0-alpha-20260810153641
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260810153641
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260810153641
+
+## 0.4.0-alpha-20260808192944
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260808192944
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260808192944
+
+## 0.4.0-alpha-20260807223013
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260807223013
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260807223013
+
+## 0.4.0-alpha-20260807203854
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260807203854
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260807203854
+
+## 0.4.0-alpha-20260807174540
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260807174540
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260807174540
+
+## 0.4.0-alpha-20260807164058
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260807164058
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260807164058
+
+## 0.4.0-alpha-20260807053627
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260807053627
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260807053627
+
+## 0.4.0-alpha-20260807050147
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260807050147
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260807050147
+
+## 0.4.0-alpha-20260807041139
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260807041139
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260807041139
+
+## 0.4.0-alpha-20260807033203
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260807033203
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260807033203
+
+## 0.4.0-alpha-20260807030804
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260807030804
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260807030804
+
+## 0.4.0-alpha-20260807022842
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260807022842
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260807022842
+
+## 0.4.0-alpha-20260807003952
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260807003952
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260807003952
+
+## 0.4.0-alpha-20260806002918
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260806002918
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260806002918
+
+## 0.4.0-alpha-20260806002251
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260806002251
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260806002251
+
+## 0.4.0-alpha-20260805180712
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260805180712
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260805180712
+
+## 0.4.0-alpha-20260805143647
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260805143647
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260805143647
+
+## 0.4.0-alpha-20260804214537
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260804214537
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260804214537
+
+## 0.4.0-alpha-20260804172958
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260804172958
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260804172958
+
+## 0.4.0-alpha-20260804161437
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260804161437
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260804161437
+
+## 0.4.0-alpha-20260731185816
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260731185816
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260731185816
+
+## 0.4.0-alpha-20260730182101
 
 ### Minor Changes
 
-- [#48](https://github.com/lislon/app-catalog/pull/48) [`ed5e3ee`](https://github.com/lislon/app-catalog/commit/ed5e3eeca8520a24714eb48c8c5a9a9cbaf63291) Thanks [@lislon](https://github.com/lislon)! - Backend-computed freshness on the app detail view. Each resource now carries a
+- [#47](https://github.com/lislon/app-catalog/pull/47) [`7c22d5d`](https://github.com/lislon/app-catalog/commit/7c22d5d7fddb2fb6f3d288397d92a889c888ea81) Thanks [@lislon](https://github.com/lislon)! - Backend-computed freshness on the app detail view. Each resource now carries a
   `freshness: { lastCheckedAt, isStale }` (derived server-side from the source
   scan's last-checked/next-check dates); the detail view renders a muted
   "Last checked …" line after Sources, with a subtle "· may be out of date" note
@@ -222,22 +599,42 @@
 ### Patch Changes
 
 - Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.9.0
-  - @igstack/app-catalog-table-sync@0.9.0
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260730182101
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260730182101
 
-## 0.8.1
+## 0.4.0-alpha-20260730170821
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260730170821
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260730170821
+
+## 0.4.0-alpha-20260729145918
 
 ### Patch Changes
 
 - Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.8.1
-  - @igstack/app-catalog-table-sync@0.8.1
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260729145918
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260729145918
 
-## 0.8.0
+## 0.4.0-alpha-20260729145014
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260729145014
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260729145014
+
+## 0.4.0-alpha-20260729112817
 
 ### Minor Changes
 
-- [#38](https://github.com/lislon/app-catalog/pull/38) [`847e5f9`](https://github.com/lislon/app-catalog/commit/847e5f9dfe1e903100f7a76cf92eec79e84d3c57) Thanks [@lislon](https://github.com/lislon)! - Service Desks view: show an optional description as muted subtext under each
+- [#37](https://github.com/lislon/app-catalog/pull/37) [`b966cfc`](https://github.com/lislon/app-catalog/commit/b966cfccd3dc2ec8a9e76afe10c0ff6d31c70485) Thanks [@lislon](https://github.com/lislon)! - Service Desks view: show an optional description as muted subtext under each
   service desk's name. Adds an optional `description` field to the service
   approval-method config (`ServiceConfig.description`); the Service Desks table
   renders it beneath the name when present.
@@ -245,94 +642,130 @@
 ### Patch Changes
 
 - Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.8.0
-  - @igstack/app-catalog-table-sync@0.8.0
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260729112817
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260729112817
 
-## 0.7.1
+## 0.4.0-alpha-20260728193854
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260728193854
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260728193854
+
+## 0.4.0-alpha-20260728181436
 
 ### Patch Changes
 
 - Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.7.1
-  - @igstack/app-catalog-table-sync@0.7.1
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260728181436
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260728181436
 
-## 0.7.0
-
-### Patch Changes
-
-- Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.7.0
-  - @igstack/app-catalog-table-sync@0.7.0
-
-## 0.6.5
+## 0.4.0-alpha-20260728153301
 
 ### Patch Changes
 
 - Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.6.5
-  - @igstack/app-catalog-table-sync@0.6.5
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260728153301
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260728153301
 
-## 0.6.4
-
-### Patch Changes
-
-- Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.6.4
-  - @igstack/app-catalog-table-sync@0.6.4
-
-## 0.6.3
+## 0.4.0-alpha-20260728040254
 
 ### Patch Changes
 
 - Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.6.3
-  - @igstack/app-catalog-table-sync@0.6.3
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260728040254
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260728040254
 
-## 0.6.2
-
-### Patch Changes
-
-- Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.6.2
-  - @igstack/app-catalog-table-sync@0.6.2
-
-## 0.6.1
-
-### Patch Changes
-
-- [#15](https://github.com/lislon/app-catalog/pull/15) [`e0ed7e0`](https://github.com/lislon/app-catalog/commit/e0ed7e05fd76f199d4c7a40819502f65c375977b) Thanks [@lislon](https://github.com/lislon)! - Surface git SHA + commit URL in version info; footer FE line now shows the frontend-core version, its git SHA (linked to the commit), and the build pipeline id together instead of the pipeline id overwriting the version.
-
-- Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.6.1
-  - @igstack/app-catalog-table-sync@0.6.1
-
-## 0.6.0
+## 0.4.0-alpha-20260727205627
 
 ### Patch Changes
 
 - Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.6.0
-  - @igstack/app-catalog-table-sync@0.6.0
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260727205627
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260727205627
 
-## 0.5.0
+## 0.4.0-alpha-20260727202703
 
 ### Patch Changes
 
 - Updated dependencies []:
-  - @igstack/app-catalog-shared-core@0.5.0
-  - @igstack/app-catalog-table-sync@0.5.0
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260727202703
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260727202703
 
-## 0.4.0
-
-### Minor Changes
-
-- [`80b5114`](https://github.com/lislon/app-catalog/commit/80b511412606a0238fb856b6f34ff9188e0b6eb3) Thanks [@lislon](https://github.com/lislon)! - First stable release with full feature set: sub-resources, person/group entities, app tier variants, unified Resource model, PWA auto-update, Datadog RUM integration.
+## 0.4.0-alpha-20260727200037
 
 ### Patch Changes
 
-- Updated dependencies [[`80b5114`](https://github.com/lislon/app-catalog/commit/80b511412606a0238fb856b6f34ff9188e0b6eb3)]:
-  - @igstack/app-catalog-shared-core@0.4.0
-  - @igstack/app-catalog-table-sync@0.4.0
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260727200037
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260727200037
+
+## 0.4.0-alpha-20260727044221
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260727044221
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260727044221
+
+## 0.4.0-alpha-20260726003135
+
+### Patch Changes
+
+- [#14](https://github.com/lislon/app-catalog/pull/14) [`e217812`](https://github.com/lislon/app-catalog/commit/e217812b08b70a1e3397e433477e28347359d77a) Thanks [@lislon](https://github.com/lislon)! - Surface git SHA + commit URL in version info; footer FE line now shows the frontend-core version, its git SHA (linked to the commit), and the build pipeline id together instead of the pipeline id overwriting the version.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260726003135
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260726003135
+
+## 0.4.0-alpha-20260725214358
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260725214358
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260725214358
+
+## 0.4.0-alpha-20260725185223
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.4.0-alpha-20260725185223
+  - @igstack/app-catalog-table-sync@0.4.0-alpha-20260725185223
+
+## 0.3.1-alpha-20260724220657
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.3.1-alpha-20260724220657
+  - @igstack/app-catalog-table-sync@0.3.1-alpha-20260724220657
+
+## 0.3.1-alpha-20260724205941
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.3.1-alpha-20260724205941
+  - @igstack/app-catalog-table-sync@0.3.1-alpha-20260724205941
+
+## 0.3.1-alpha-20260724172703
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.3.1-alpha-20260724172703
+  - @igstack/app-catalog-table-sync@0.3.1-alpha-20260724172703
 
 ## 0.3.1-alpha-20260406011911
 

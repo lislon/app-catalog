@@ -1,58 +1,284 @@
 # @igstack/app-catalog-shared-core
 
-## 0.17.0
+## 0.4.0-alpha-20260819143830
 
-## 0.16.0
+## 0.4.0-alpha-20260818210825
 
-## 0.13.0
+## 0.4.0-alpha-20260818041444
 
-## 0.12.0
+## 0.4.0-alpha-20260817192135
 
-## 0.11.0
+## 0.4.0-alpha-20260817183828
 
-## 0.10.1
+## 0.4.0-alpha-20260814233321
 
-## 0.10.0
+## 0.4.0-alpha-20260814035133
 
-## 0.9.5
+### Patch Changes
 
-## 0.9.4
+- Snapshot release from alpha branch
 
-## 0.9.3
+## 0.4.0-alpha-20260813154215
 
-## 0.9.2
+## 0.4.0-alpha-20260813153122
 
-## 0.9.1
+## 0.4.0-alpha-20260813065159
 
-## 0.9.0
+## 0.4.0-alpha-20260813024744
 
-## 0.8.1
+## 0.4.0-alpha-20260812171537
 
-## 0.8.0
+### Patch Changes
 
-## 0.7.1
+- Snapshot release from alpha branch
 
-## 0.7.0
+## 0.4.0-alpha-20260812005550
 
-## 0.6.5
+### Patch Changes
 
-## 0.6.4
+- Snapshot release from alpha branch
 
-## 0.6.3
+## 0.4.0-alpha-20260812004355
 
-## 0.6.2
+### Patch Changes
 
-## 0.6.1
+- Snapshot release from alpha branch
 
-## 0.6.0
+## 0.4.0-alpha-20260811223520
 
-## 0.5.0
+### Patch Changes
 
-## 0.4.0
+- Snapshot release from alpha branch
 
-### Minor Changes
+## 0.4.0-alpha-20260811221253
 
-- [`80b5114`](https://github.com/lislon/app-catalog/commit/80b511412606a0238fb856b6f34ff9188e0b6eb3) Thanks [@lislon](https://github.com/lislon)! - First stable release with full feature set: sub-resources, person/group entities, app tier variants, unified Resource model, PWA auto-update, Datadog RUM integration.
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260811214151
+
+## 0.4.0-alpha-20260811213256
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260811212059
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260811181653
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260811154702
+
+## 0.4.0-alpha-20260811152919
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260811142024
+
+## 0.4.0-alpha-20260811053337
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260811052504
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260811051931
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260811020745
+
+## 0.4.0-alpha-20260810232952
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260810225555
+
+## 0.4.0-alpha-20260810213549
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260810153641
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260808192944
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807223013
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807203854
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807174540
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807164058
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807053627
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807050147
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807041139
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807033203
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807030804
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807022842
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260807003952
+
+## 0.4.0-alpha-20260806002918
+
+## 0.4.0-alpha-20260806002251
+
+## 0.4.0-alpha-20260805180712
+
+## 0.4.0-alpha-20260805143647
+
+## 0.4.0-alpha-20260804214537
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260804172958
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260804161437
+
+## 0.4.0-alpha-20260731185816
+
+## 0.4.0-alpha-20260730182101
+
+## 0.4.0-alpha-20260730170821
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260729145918
+
+## 0.4.0-alpha-20260729145014
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260729112817
+
+## 0.4.0-alpha-20260728193854
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.4.0-alpha-20260728181436
+
+## 0.4.0-alpha-20260728153301
+
+## 0.4.0-alpha-20260728040254
+
+## 0.4.0-alpha-20260727205627
+
+## 0.4.0-alpha-20260727202703
+
+## 0.4.0-alpha-20260727200037
+
+## 0.4.0-alpha-20260727044221
+
+## 0.4.0-alpha-20260726003135
+
+## 0.4.0-alpha-20260725214358
+
+## 0.4.0-alpha-20260725185223
+
+## 0.3.1-alpha-20260724220657
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.3.1-alpha-20260724205941
+
+### Patch Changes
+
+- Snapshot release from alpha branch
+
+## 0.3.1-alpha-20260724172703
+
+### Patch Changes
+
+- Snapshot release from alpha branch
 
 ## 0.3.1-alpha-20260406011911
 

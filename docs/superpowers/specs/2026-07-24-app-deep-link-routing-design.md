@@ -3,7 +3,7 @@
 **Date:** 2026-07-24
 **Status:** Approved
 **Repo:** app-catalog (open source, `packages/frontend-core`)
-**Issue:** eng/informatics/sra/ig-umbrella#3
+**Issue:** #3
 
 ## Goal
 

@@ -1,12 +1,19 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
 import { X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
+import { useAppCatalogContext } from '../../context/AppCatalogContext'
+import { SubResourceDetailPanel } from '../components/SubResourceDetailPanel'
 import { AppDetails } from '../grid/AppCatalogGrid'
 
 /**
  * Centered detail card for the launcher (#38, item B). Renders the rich
  * AppDetails (access-hero, sub-resources, tiers) as a large centered modal card
  * over the launcher backdrop, instead of the old grid + resizable split-pane.
+ *
+ * When a sub-resource is selected (`?sub=<slug>` — e.g. the user clicked a
+ * matched sub-resource row in the search results) the card shows that
+ * sub-resource's own detail, with its two-step access chain and a back link to
+ * the parent, mirroring the grid's split-pane behavior.
  *
  * Escape handling: this component does NOT globally bind Escape. Escape-to-close
  * is owned by AppDetails' own key handling (which first closes an open
@@ -15,13 +22,20 @@ import { AppDetails } from '../grid/AppCatalogGrid'
  */
 export function LauncherDetailPanel({
   app,
+  subResource,
   onClose,
   onAppClick,
+  onBackToParent,
 }: {
   app: Resource
+  /** Selected child of `app`, when the URL carries `?sub=<slug>`. */
+  subResource?: Resource | null
   onClose: () => void
   onAppClick?: (app: Resource) => void
+  /** Clears `?sub=` and returns to the parent's detail. */
+  onBackToParent?: () => void
 }) {
+  const { approvalMethods } = useAppCatalogContext()
   const dialogRef = useRef<HTMLDivElement>(null)
 
   // Focus the dialog on mount so Esc hotkeys fire immediately, even when
@@ -47,7 +61,7 @@ export function LauncherDetailPanel({
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label={`${app.displayName} details`}
+        aria-label={`${subResource?.displayName ?? app.displayName} details`}
         tabIndex={-1}
         className="relative w-full max-w-[min(1120px,94vw)] my-auto rounded-[var(--radius)] border border-border bg-background shadow-2xl animate-in fade-in zoom-in-95 duration-200 outline-none"
       >
@@ -60,11 +74,20 @@ export function LauncherDetailPanel({
           <X className="size-4" />
         </button>
         <div className="max-h-[85vh] overflow-y-auto px-6 py-5 sm:px-8 sm:py-7">
-          <AppDetails
-            app={app}
-            onAppClick={onAppClick}
-            onClosePanel={onClose}
-          />
+          {subResource ? (
+            <SubResourceDetailPanel
+              subResource={subResource}
+              parent={app}
+              approvalMethods={approvalMethods}
+              onBack={onBackToParent ?? onClose}
+            />
+          ) : (
+            <AppDetails
+              app={app}
+              onAppClick={onAppClick}
+              onClosePanel={onClose}
+            />
+          )}
         </div>
       </div>
     </div>

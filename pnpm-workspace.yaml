@@ -3,7 +3,12 @@ packages:
   - examples/*
 
 catalog:
-  better-auth: ^1.4.18
+  # Capped below 1.7.0: that release dropped the `genericOAuthClient` export from
+  # `better-auth/client/plugins`, which `modules/auth/authClient.ts` imports. A caret
+  # range leaks into the published packages, so a consumer installing without a
+  # lockfile resolves 1.7.0 and its bundler fails on the missing export. Raise the cap
+  # once authClient migrates to the 1.7 entry point.
+  better-auth: '>=1.4.18 <1.7.0'
   '@dnd-kit/core': ^6.3.1
   '@dnd-kit/sortable': ^10.0.0
   '@dnd-kit/utilities': ^3.2.2
@@ -71,6 +76,6 @@ catalog:
   zod: ^4.3.5
 
 overrides:
-  '@ai-sdk/provider-utils': 4.0.41
+  '@ai-sdk/provider-utils': 4.0.45
 
 linkWorkspacePackages: true

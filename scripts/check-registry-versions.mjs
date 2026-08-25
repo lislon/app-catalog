@@ -12,13 +12,28 @@
  * after a release. Only "behind the registry" is an error.
  *
  * Registry lookups fail open (network/registry hiccups must not block PRs), but
- * a genuine version regression fails the job.
+ * a genuine version regression fails the job. Runs on pull requests and on
+ * pushes to the stable branch, so a direct push is covered too.
+ *
+ * SCOPE LIMIT — this cannot detect a stalled pre-release channel. It compares
+ * against the `latest` tag only and skips any declared pre-release outright, so
+ * an `@alpha` that has not moved in months looks clean here. Do not rely on it
+ * for that; whether a publish actually moved a dist-tag is proved by
+ * `scripts/dist-tag-guard.mjs`, which runs on both publish paths.
  */
 import { execFileSync } from 'node:child_process'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const PACKAGES_DIR = 'packages'
+/**
+ * Hard cap on a single `npm view`. Observed p99 is well under a second, but one
+ * call in ten was measured hanging for 951s while its neighbours answered
+ * immediately. A timeout lands in the same `catch` as any other lookup failure,
+ * so the fail-open behaviour is unchanged — it just cannot stall a job for a
+ * quarter of an hour.
+ */
+const LOOKUP_TIMEOUT_MS = 15_000
 
 /** Semver compare for the plain `x.y.z` releases the `latest` tag carries. */
 function compare(a, b) {
@@ -35,6 +50,8 @@ function publishedLatest(name) {
     return execFileSync('npm', ['view', `${name}@latest`, 'version'], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: LOOKUP_TIMEOUT_MS,
+      killSignal: 'SIGKILL',
     }).trim()
   } catch {
     // Never published yet, or the registry is unreachable.
@@ -48,7 +65,9 @@ for (const dir of readdirSync(PACKAGES_DIR, { withFileTypes: true })) {
   if (!dir.isDirectory()) continue
   let pkg
   try {
-    pkg = JSON.parse(readFileSync(join(PACKAGES_DIR, dir.name, 'package.json'), 'utf8'))
+    pkg = JSON.parse(
+      readFileSync(join(PACKAGES_DIR, dir.name, 'package.json'), 'utf8'),
+    )
   } catch {
     continue
   }

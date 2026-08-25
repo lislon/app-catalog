@@ -1,7 +1,13 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import { X } from 'lucide-react'
-import { useDeferredValue, useEffect, useMemo, useState } from 'react'
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import { Button } from '~/ui/button'
 import {
   Empty,
@@ -34,6 +40,35 @@ export function AppCatalogPage({
   const selectedAppSlug = selectedSlug
 
   // Search value from context (URL-synced in AppCatalogFiltersContext)
+  const search = useSearch({ strict: false })
+  const selectedSubSlug = search.sub
+
+  const handleSubClick = useCallback(
+    (parentSlug: string, subSlug: string) => {
+      void navigate({
+        to: '/app/$slug',
+        params: { slug: parentSlug },
+        search: (prev) => ({ ...prev, sub: subSlug }),
+      })
+    },
+    [navigate],
+  )
+
+  const handleBackToParent = useCallback(() => {
+    // Return to parent app detail, clearing the sub-resource selection.
+    // selectedAppSlug is the parent slug (set by the /app/$slug route).
+    if (selectedAppSlug) {
+      void navigate({
+        to: '/app/$slug',
+        params: { slug: selectedAppSlug },
+        search: (prev) => {
+          const { sub: _sub, ...rest } = prev as Record<string, string>
+          return rest
+        },
+      })
+    }
+  }, [navigate, selectedAppSlug])
+
   const searchValue = filterState.searchValue
   const setSearchValue = actions.setSearchValue
 
@@ -139,14 +174,32 @@ export function AppCatalogPage({
     topAppSlugs,
   ])
 
+  // The legacy grid + split-pane only renders for the structural filter views.
+  // Search is handled by the launcher, so anything that reasons about the grid's
+  // filter controls must be gated on this.
+  const legacyGridActive =
+    filterState.recentMode || Object.keys(filterState.tagFilters).length > 0
+
   // #11: when the search fell back to deprecated results, enable the
   // "Show Deprecated Apps" toggle so the state is visible and consistent.
   // Runs as an effect (not in render) to avoid a side effect during useMemo.
+  // Grid-only: in the launcher that checkbox isn't rendered, so flipping it
+  // would silently (and permanently) leak deprecated apps into Browse-all with
+  // no visible control to undo it. The launcher labels the fallback itself.
   useEffect(() => {
-    if (didDeprecatedFallback && !filterState.showDeprecated) {
+    if (
+      legacyGridActive &&
+      didDeprecatedFallback &&
+      !filterState.showDeprecated
+    ) {
       actions.setShowDeprecated(true)
     }
-  }, [didDeprecatedFallback, filterState.showDeprecated, actions])
+  }, [
+    legacyGridActive,
+    didDeprecatedFallback,
+    filterState.showDeprecated,
+    actions,
+  ])
 
   // Calculate counts for FilterBar
   const { allCount, recentCount, deprecatedCount } = useAppCounts({
@@ -157,13 +210,11 @@ export function AppCatalogPage({
 
   // Auto-open details when only 1 result — ONLY in the legacy grid path
   // (recent/tag filters active). In the launcher (#38) typing shows the
-  // search-morph results list; auto-navigating to /app/<slug> on a single
+  // in-place results list; auto-navigating to /app/<slug> on a single
   // match would yank the user out of the launcher into the old grid+panel
   // (reported bug: searching "biom" jumped straight to an app-detail page).
-  // The morph already renders the single match as a keyboard-selectable row —
-  // the user presses ↵ or clicks to open it.
-  const legacyGridActive =
-    filterState.recentMode || Object.keys(filterState.tagFilters).length > 0
+  // The results list already renders the single match as a keyboard-selectable
+  // row — the user presses ↵ or clicks to open it.
   useEffect(() => {
     if (
       legacyGridActive &&
@@ -213,11 +264,16 @@ export function AppCatalogPage({
     if (app.appUrl) window.open(app.appUrl, '_blank', 'noopener,noreferrer')
   }
 
-  // Adaptive-home launcher (#38): shown whenever no structural filter
-  // (recentMode / tagFilters) is active. A selected app no longer forces the
-  // old grid — instead the launcher stays as the backdrop and the app detail
-  // renders in a slide-over panel (#38 item B). The legacy grid+split-pane is
-  // reserved for the recent/tag filter views.
+  // Adaptive-home launcher (#38): the persistent shell for browsing, searching
+  // AND an open app detail. Search must NOT switch containers — typing used to
+  // swap the centered launcher for the wide grid (new search bar, tabs, category
+  // dropdown, deprecated checkbox), so the whole page jumped on the first
+  // keystroke. The launcher now renders its results list below the (unmoved)
+  // hero search box, and the legacy grid+split-pane is left only for the
+  // structural filter views — recentMode and tag filters — where those filter
+  // controls are the point. A selected app renders in an overlay above whichever
+  // view is active (#38 item B). The grid is wrapped in the same centered
+  // max-width so the two layouts stay visually consistent.
   const showLauncherHome =
     !filterState.recentMode && Object.keys(filterState.tagFilters).length === 0
 
@@ -229,6 +285,19 @@ export function AppCatalogPage({
         : null,
     [selectedAppSlug, resources],
   )
+
+  // …and the sub-resource within it, when the URL carries `?sub=` (e.g. the user
+  // clicked a matched sub-resource row in the search results).
+  const launcherSelectedSub = useMemo(() => {
+    if (!selectedSubSlug || !launcherSelectedApp) return null
+    return (
+      resources.find(
+        (r) =>
+          r.slug === selectedSubSlug &&
+          r.parentSlug === launcherSelectedApp.slug,
+      ) ?? null
+    )
+  }, [selectedSubSlug, launcherSelectedApp, resources])
 
   const handleClearFilters = () => {
     setSearchValue('')
@@ -252,13 +321,15 @@ export function AppCatalogPage({
   // Use first tag definition for grouping
   const groupingDefinition = tagsDefinitions[0]
 
-  // Adaptive-home launcher view (#38): the discovery spine or the search-morph
-  // results list (handled inside LauncherHome). Owns vertical scroll —
-  // MainLayout is h-screen/overflow-hidden, so the launcher must scroll
+  // Adaptive-home launcher view (#38): the discovery spine or, while typing, the
+  // in-place results list (both handled inside LauncherHome). Owns vertical
+  // scroll — MainLayout is h-screen/overflow-hidden, so the launcher must scroll
   // internally to reveal the full Browse-all list as the user scrolls.
+  // `scrollbar-gutter: stable` reserves the scrollbar track so the shorter
+  // results list doesn't shift the hero sideways when the scrollbar disappears.
   if (showLauncherHome) {
     return (
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto [scrollbar-gutter:stable]">
         <LauncherHome
           apps={rootResources.filter(
             (a) => filterState.showDeprecated || !a.deprecated,
@@ -272,14 +343,18 @@ export function AppCatalogPage({
           onAppClick={handleAppClick}
           onLaunch={handleLaunch}
           totalCount={totalAppsCount}
+          detailOpen={launcherSelectedApp !== null}
+          selectedSubSlug={selectedSubSlug}
         />
         {/* #38 item B: app detail as a slide-over over the launcher backdrop,
             instead of dropping into the old grid + split-pane. */}
         {launcherSelectedApp && (
           <LauncherDetailPanel
             app={launcherSelectedApp}
+            subResource={launcherSelectedSub}
             onClose={() => void navigate({ to: '/' })}
             onAppClick={handleAppClick}
+            onBackToParent={handleBackToParent}
           />
         )}
       </div>
@@ -288,73 +363,78 @@ export function AppCatalogPage({
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div className="shrink-0">
-        <OnboardingCard />
-      </div>
-
-      <div className="shrink-0">
-        <FilterBar
-          totalCount={allCount}
-          recentCount={recentCount}
-          deprecatedCount={deprecatedCount}
-          apps={rootResources}
-        />
-      </div>
-
-      {didDeprecatedFallback && (
-        <div
-          role="status"
-          className="shrink-0 px-1 pb-2 text-sm text-muted-foreground"
-        >
-          {`No active apps${
-            searchValue ? ` for "${searchValue}"` : ''
-          } — showing deprecated matches.`}
+      <div className="w-full max-w-[1000px] mx-auto flex flex-col flex-1 min-h-0">
+        <div className="shrink-0">
+          <OnboardingCard />
         </div>
-      )}
 
-      <div className="flex-1 min-h-0">
-        {filteredApps.length === 0 && !selectedAppSlug ? (
-          <Empty>
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <X className="h-6 w-6" />
-              </EmptyMedia>
-              <EmptyTitle>
-                No apps found{searchValue && ` for "${searchValue}"`}
-              </EmptyTitle>
-              <EmptyDescription>
-                Try adjusting your search or filters
-              </EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-              {searchValue && (
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSearchValue('')
-                    void navigate({ to: '/' })
-                  }}
-                  className="gap-2"
-                >
-                  <X className="h-4 w-4" />
-                  Clear search
-                </Button>
-              )}
-            </EmptyContent>
-          </Empty>
-        ) : (
-          <AppCatalogGrid
-            apps={filteredApps}
-            selectedAppSlug={selectedAppSlug}
-            groupingDefinition={groupingDefinition}
-            onAppClick={handleAppClick}
-            onClosePanel={() => void navigate({ to: '/' })}
-            hasSearch={!!deferredSearchValue}
-            searchQuery={deferredSearchValue}
-            totalAppsCount={totalAppsCount}
-            onClearFilters={handleClearFilters}
+        <div className="shrink-0">
+          <FilterBar
+            totalCount={allCount}
+            recentCount={recentCount}
+            deprecatedCount={deprecatedCount}
+            apps={rootResources}
           />
+        </div>
+
+        {didDeprecatedFallback && (
+          <div
+            role="status"
+            className="shrink-0 px-1 pb-2 text-sm text-muted-foreground"
+          >
+            {`No active apps${
+              searchValue ? ` for "${searchValue}"` : ''
+            } — showing deprecated matches.`}
+          </div>
         )}
+
+        <div className="flex-1 min-h-0">
+          {filteredApps.length === 0 && !selectedAppSlug ? (
+            <Empty>
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <X className="h-6 w-6" />
+                </EmptyMedia>
+                <EmptyTitle>
+                  No apps found{searchValue && ` for "${searchValue}"`}
+                </EmptyTitle>
+                <EmptyDescription>
+                  Try adjusting your search or filters
+                </EmptyDescription>
+              </EmptyHeader>
+              <EmptyContent>
+                {searchValue && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSearchValue('')
+                      void navigate({ to: '/' })
+                    }}
+                    className="gap-2"
+                  >
+                    <X className="h-4 w-4" />
+                    Clear search
+                  </Button>
+                )}
+              </EmptyContent>
+            </Empty>
+          ) : (
+            <AppCatalogGrid
+              apps={filteredApps}
+              selectedAppSlug={selectedAppSlug}
+              selectedSubSlug={selectedSubSlug}
+              groupingDefinition={groupingDefinition}
+              onAppClick={handleAppClick}
+              onClosePanel={() => void navigate({ to: '/' })}
+              onSubClick={handleSubClick}
+              onBackToParent={handleBackToParent}
+              hasSearch={!!deferredSearchValue}
+              searchQuery={searchValue}
+              totalAppsCount={totalAppsCount}
+              onClearFilters={handleClearFilters}
+            />
+          )}
+        </div>
       </div>
     </div>
   )

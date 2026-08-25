@@ -9,7 +9,7 @@ import { getAccessPrerequisiteChain } from '../../utils/resolveHelpers'
  * the user must obtain the parent's access FIRST. That chain is invisible
  * otherwise, so surface it explicitly as ordered steps:
  *
- *   Step 1 — get access to <parent> (e.g. AWS Console via IT Helpdesk)
+ *   Step 1 — get access to <parent> (e.g. AWS Console via Support Portal)
  *   Step 2 — get access to THIS resource (contact its owner / access contacts)
  *
  * Renders nothing for root resources or children with no access-bearing parent.
