@@ -463,23 +463,19 @@ describe('App Catalog Integration', () => {
     expect(subRows!.hasExpandRow).toBe(false)
   })
 
-  it('clicking subresource row shows its detail with two-step access', async () => {
+  it('clicking subresource row opens parent app detail', async () => {
     const { ui } = await given(
       magazine.custom(({ backendCfg }) => {
-        const parentMethod = backendCfg.withApprovalMethod({
+        const method = backendCfg.withApprovalMethod({
           type: 'service',
           displayName: 'Support Portal',
           config: { url: 'https://support.example.com' },
-        })
-        const subMethod = backendCfg.withApprovalMethod({
-          type: 'custom',
-          displayName: 'Account Owner',
         })
         const app = backendCfg.withApp({
           slug: 'aws-console',
           displayName: 'AWS Console',
           accessRequest: {
-            approvalMethodSlug: parentMethod.slug,
+            approvalMethodSlug: method.slug,
             comments: 'Submit a support ticket to request access',
           },
         })
@@ -487,10 +483,6 @@ describe('App Catalog Integration', () => {
           appSlug: app.slug,
           slug: 'acct-data-prod',
           displayName: 'Data Account Prod',
-          accessRequest: {
-            approvalMethodSlug: subMethod.slug,
-            comments: 'Contact account owner for account-level permissions',
-          },
         })
       }),
     )
@@ -499,15 +491,14 @@ describe('App Catalog Integration', () => {
       expect(ui.catalog.getSubResourceRows()).not.toBeNull()
     })
     await ui.catalog.clickSubResource('Data Account Prod')
+    // Clicking a sub-resource opens the parent app detail, not the sub-detail.
+    // The sub-resources section inside the panel is pre-filtered by the search query.
     await waitFor(() => {
-      expect(ui.app.getSubResourceDetail()).not.toBeNull()
+      expect(ui.catalog.isDetailPanelOpen()).toBe(true)
     })
-    const detail = ui.app.getSubResourceDetail()
-    expect(detail).not.toBeNull()
-    expect(detail!.subResourceName).toBe('Data Account Prod')
-    expect(detail!.hasStep1).toBe(true)
-    expect(detail!.hasStep2).toBe(true)
-    expect(detail!.backButtonLabel).toBe('Back to AWS Console')
+    expect(ui.app.getOpenTitle()).toContain('AWS Console')
+    // No sub-detail — the parent detail is shown directly
+    expect(ui.app.getSubResourceDetail()).toBeNull()
   })
 
   it('back button from subresource detail returns to parent view', async () => {
@@ -534,14 +525,14 @@ describe('App Catalog Integration', () => {
     await waitFor(() => {
       expect(ui.catalog.getSubResourceRows()).not.toBeNull()
     })
+    // Clicking sub-resource row opens the parent, so the detail panel is open
     await ui.catalog.clickSubResource('Data Account Prod')
     await waitFor(() => {
-      expect(ui.app.getSubResourceDetail()).not.toBeNull()
+      expect(ui.catalog.isDetailPanelOpen()).toBe(true)
     })
-    await ui.app.clickBackToParent()
-    // After going back, the sub detail should be gone and parent detail shown
+    // Parent detail is shown — no sub-detail, no back button needed
     expect(ui.app.getSubResourceDetail()).toBeNull()
-    expect(ui.catalog.isDetailPanelOpen()).toBe(true)
+    expect(ui.app.getOpenTitle()).toContain('AWS Console')
   })
 
   it('shows Step 1 / Step 2 badges for two-step access apps (#56)', async () => {
