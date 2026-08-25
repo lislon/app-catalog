@@ -341,7 +341,6 @@ export function AppCatalogPage({
           searchValue={searchValue}
           onSearchChange={setSearchValue}
           onAppClick={handleAppClick}
-          onSubClick={handleSubClick}
           onLaunch={handleLaunch}
           totalCount={totalAppsCount}
           detailOpen={launcherSelectedApp !== null}

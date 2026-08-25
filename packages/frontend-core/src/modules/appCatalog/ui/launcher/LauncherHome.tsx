@@ -42,11 +42,6 @@ export interface LauncherHomeProps {
   searchValue: string
   onSearchChange: (v: string) => void
   onAppClick: (app: Resource) => void
-  /**
-   * Open a matched sub-resource's own detail (parent detail + `?sub=`).
-   * Falls back to `onAppClick` when omitted.
-   */
-  onSubClick?: (parentSlug: string, subSlug: string) => void
   onLaunch: (app: Resource) => void
   /** Total resource count for the "Browse all" label. */
   totalCount: number
@@ -196,7 +191,6 @@ function SearchResultsList({
   apps,
   searchValue,
   onAppClick,
-  onSubClick,
   onLaunch,
   onClear,
   keyboardEnabled = true,
@@ -205,7 +199,6 @@ function SearchResultsList({
   apps: Resource[]
   searchValue: string
   onAppClick: (app: Resource) => void
-  onSubClick?: (parentSlug: string, subSlug: string) => void
   onLaunch: (app: Resource) => void
   onClear: () => void
   keyboardEnabled?: boolean
@@ -284,15 +277,16 @@ function SearchResultsList({
       if (row.kind === 'app') {
         onAppClick(row.app)
       } else if (row.kind === 'sub') {
-        // Prefer the parent+`?sub=` route so the sub-resource opens with its
-        // parent's context (two-step access, back-to-parent).
-        if (onSubClick) onSubClick(row.parent.slug, row.sub.slug)
-        else onAppClick(row.sub)
+        // Open the parent app detail, not the sub-resource's own detail page.
+        // The sub-resources table inside the detail panel is pre-filtered by the
+        // current search query (filterState.searchValue → SubResourcesSection
+        // initialSearch), so the matching account is immediately visible.
+        onAppClick(row.parent)
       } else {
         setExpandedParents((prev) => new Set(prev).add(row.parent.slug))
       }
     },
-    [onAppClick, onSubClick],
+    [onAppClick],
   )
 
   // Reset focus and collapse expanded sub-resource lists when the query changes
@@ -472,7 +466,6 @@ export function LauncherHome({
   searchValue,
   onSearchChange,
   onAppClick,
-  onSubClick,
   onLaunch,
   totalCount,
   detailOpen = false,
@@ -605,7 +598,6 @@ export function LauncherHome({
           apps={allResources ?? apps}
           searchValue={searchValue}
           onAppClick={onAppClick}
-          onSubClick={onSubClick}
           onLaunch={onLaunch}
           onClear={() => onSearchChange('')}
           keyboardEnabled={!detailOpen}
