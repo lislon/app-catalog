@@ -1,5 +1,11 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.18.0
+
+### Minor Changes
+
+- [`edf38ec`](https://github.com/lislon/app-catalog/commit/edf38ec6ec9dbe1bdc709556f21896c0f13a0ff7) Thanks [@lislon](https://github.com/lislon)! - Search and navigation improvements: stable launcher shell with no layout shift when typing, sub-resource rows in search open parent app with pre-filtered sub-resources table, scroll position preserved when opening/closing the app detail overlay.
+
 ## 0.4.0-alpha-20260819143830
 
 ## 0.4.0-alpha-20260818210825
