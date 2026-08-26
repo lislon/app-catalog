@@ -1,5 +1,15 @@
 # @igstack/app-catalog-backend-core
 
+## 0.18.1
+
+### Patch Changes
+
+- [#153](https://github.com/lislon/app-catalog/pull/153) [`0696c36`](https://github.com/lislon/app-catalog/commit/0696c36179592134e87ba98ab9890b2a307c1f76) Thanks [@lislon](https://github.com/lislon)! - Add catalogAddedAt field to Resource type and wire it to DB createdAt in sync
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.18.1
+  - @igstack/app-catalog-table-sync@0.18.1
+
 ## 0.18.0
 
 ### Patch Changes
