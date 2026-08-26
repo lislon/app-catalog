@@ -318,6 +318,9 @@ export async function syncAppCatalog(
         lastContentChangeAt: resource.lastContentChangeAt
           ? new Date(resource.lastContentChangeAt)
           : null,
+        createdAt: resource.catalogAddedAt
+          ? new Date(resource.catalogAddedAt)
+          : undefined,
       }
     })
 
