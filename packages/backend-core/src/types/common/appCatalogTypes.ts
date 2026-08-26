@@ -128,6 +128,12 @@ export interface Resource {
   lastCheckedAt?: string | null
   nextCheckAfter?: string | null
   lastContentChangeAt?: string | null
+  /**
+   * ISO-8601 date when this app was first added to the catalog (INPUT — set in
+   * static config from git history). Used by the sync to seed DB `createdAt` on
+   * first insert and after DB rebuilds. Never changes once set.
+   */
+  catalogAddedAt?: string
   /** ISO-8601 timestamp of when this entry was first created in the catalog DB. */
   createdAt?: string
 }
