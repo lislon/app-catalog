@@ -327,6 +327,29 @@ export async function syncAppCatalog(
     // Sync resources
     const result = await sync.sync(dbResources)
 
+    // Backfill catalogAddedAt → DB createdAt. The table-sync comparison treats
+    // createdAt as just another field, but Prisma's update path may silently
+    // drop it because it carries @default(now()). This dedicated pass uses
+    // updateMany with a WHERE guard so it only fires when the DB date is newer
+    // than the static catalogAddedAt (e.g. after a DB rebuild), and is a no-op
+    // once the dates are already correct.
+    for (const resource of resources) {
+      if (!resource.catalogAddedAt) continue
+      const addedAt = new Date(resource.catalogAddedAt)
+      await prisma.dbResource.updateMany({
+        where: {
+          slug:
+            resource.slug ||
+            resource.displayName
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-+|-+$/g, ''),
+          createdAt: { gt: addedAt },
+        },
+        data: { createdAt: addedAt },
+      })
+    }
+
     // Resolve slug -> id for synced resources so SourceReference can reference by resourceId
     const slugs = dbResources.map((a) => a.slug)
     const resourceRows = await prisma.dbResource.findMany({
