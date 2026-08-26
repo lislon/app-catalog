@@ -1,5 +1,15 @@
 # @igstack/app-catalog-backend-core
 
+## 0.18.2
+
+### Patch Changes
+
+- [#156](https://github.com/lislon/app-catalog/pull/156) [`f99a9cd`](https://github.com/lislon/app-catalog/commit/f99a9cd24e33176b36f167ebdcdf0665b45e66f7) Thanks [@lislon](https://github.com/lislon)! - Fix catalogAddedAt backfill: add explicit updateMany loop after sync to set DB createdAt from static catalogAddedAt values
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.18.2
+  - @igstack/app-catalog-table-sync@0.18.2
+
 ## 0.18.1
 
 ### Patch Changes
