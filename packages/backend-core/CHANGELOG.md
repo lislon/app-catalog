@@ -1,5 +1,15 @@
 # @igstack/app-catalog-backend-core
 
+## 0.18.3
+
+### Patch Changes
+
+- [#159](https://github.com/lislon/app-catalog/pull/159) [`886aaab`](https://github.com/lislon/app-catalog/commit/886aaab0c0a420e2f11e34159f0021b9c750de78) Thanks [@lislon](https://github.com/lislon)! - Fix catalogAddedAt backfill: use executeRaw instead of updateMany to reliably update createdAt (Prisma client engine may silently omit @default(now()) fields from updateMany)
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@0.18.3
+  - @igstack/app-catalog-table-sync@0.18.3
+
 ## 0.18.2
 
 ### Patch Changes
