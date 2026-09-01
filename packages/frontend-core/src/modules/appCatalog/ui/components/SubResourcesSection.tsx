@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '~/ui/table'
-import { PersonBadge } from './PersonBadge'
+import { PersonBadge, PersonOrGroupBadge } from './PersonBadge'
 import {
   Select,
   SelectContent,
@@ -19,8 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/ui/select'
-import { useAppCatalogContext } from '~/modules/appCatalog'
-import { getGroupBySlug } from '~/modules/appCatalog/utils/resolveHelpers'
 import { markdownToPlainText } from '~/modules/appCatalog/utils/markdownToPlainText'
 
 interface SubResourcesSectionProps {
@@ -100,7 +98,6 @@ export function SubResourcesSection({
   subResources,
   initialSearch,
 }: SubResourcesSectionProps) {
-  const { groups } = useAppCatalogContext()
   // Seed the filter with the incoming query ONLY if it matches a child, so we
   // reveal the matched sub-resource without hiding everything on a non-match.
   const seededSearch = useMemo(() => {
@@ -195,7 +192,7 @@ export function SubResourcesSection({
               <TableHead>Name</TableHead>
               <TableHead className="w-[80px]">Tier</TableHead>
               <TableHead>Owner</TableHead>
-              <TableHead>Access Contacts</TableHead>
+              <TableHead>Approvers</TableHead>
               <TableHead className="w-[140px]">AWS Account</TableHead>
             </TableRow>
           </TableHeader>
@@ -211,15 +208,8 @@ export function SubResourcesSection({
               </TableRow>
             ) : (
               filtered.map((sr) => {
-                // Resolve maintainer group members
-                const maintainerMembers = (
-                  sr.accessMaintainerGroupSlugs ?? []
-                ).flatMap((groupSlug) => {
-                  const group = getGroupBySlug(groups, groupSlug)
-                  return group?.memberSlugs ?? []
-                })
-                // Deduplicate
-                const uniqueMaintainers = [...new Set(maintainerMembers)]
+                // Approvers are Person OR Group slugs; the badge resolves both.
+                const approvers = [...new Set(sr.approverSlugs ?? [])]
 
                 return (
                   <TableRow key={sr.slug}>
@@ -254,10 +244,10 @@ export function SubResourcesSection({
                       )}
                     </TableCell>
                     <TableCell>
-                      {uniqueMaintainers.length > 0 ? (
+                      {approvers.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
-                          {uniqueMaintainers.map((personSlug) => (
-                            <PersonBadge key={personSlug} slug={personSlug} />
+                          {approvers.map((slug) => (
+                            <PersonOrGroupBadge key={slug} slug={slug} />
                           ))}
                         </div>
                       ) : (

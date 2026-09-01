@@ -303,10 +303,9 @@ export async function syncAppCatalog(
         // Fields from former SubResource
         parentSlug: resource.parentSlug ?? null,
         tier: resource.tier ?? null,
-        familySlug: resource.familySlug ?? null,
         aliases: resource.aliases ?? [],
         ownerPersonSlug: resource.ownerPersonSlug ?? null,
-        accessMaintainerGroupSlugs: resource.accessMaintainerGroupSlugs ?? [],
+        approverSlugs: resource.approverSlugs ?? [],
         accessComments: resource.accessComments ?? null,
         extra: resource.extra ?? null,
         lastCheckedAt: resource.lastCheckedAt

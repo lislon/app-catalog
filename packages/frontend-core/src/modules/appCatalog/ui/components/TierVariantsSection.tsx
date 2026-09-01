@@ -16,7 +16,7 @@ import {
   TableRow,
 } from '~/ui/table'
 import { useAppCatalogContext } from '~/modules/appCatalog'
-import { PersonBadge } from './PersonBadge'
+import { PersonOrGroupBadge } from './PersonBadge'
 
 interface TierVariantsSectionProps {
   tiers: TierVariant[]
@@ -76,7 +76,7 @@ function TierAccessDetail({
   const hasExtra =
     accessRequest.comments ||
     accessRequest.urls?.length ||
-    accessRequest.approverPersonSlugs?.length ||
+    accessRequest.approverSlugs?.length ||
     accessRequest.postApprovalInstructions
 
   return (
@@ -131,11 +131,11 @@ function TierAccessDetail({
               ))}
             </div>
           )}
-          {accessRequest.approverPersonSlugs &&
-            accessRequest.approverPersonSlugs.length > 0 && (
+          {accessRequest.approverSlugs &&
+            accessRequest.approverSlugs.length > 0 && (
               <div className="flex flex-wrap gap-1">
-                {accessRequest.approverPersonSlugs.map((slug) => (
-                  <PersonBadge key={slug} slug={slug} />
+                {accessRequest.approverSlugs.map((slug) => (
+                  <PersonOrGroupBadge key={slug} slug={slug} />
                 ))}
               </div>
             )}
