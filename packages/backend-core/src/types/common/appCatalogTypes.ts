@@ -101,14 +101,12 @@ export interface Resource {
   parentSlug?: string
   /** Tier slug (e.g. "prod", "dev") — for sub-resources */
   tier?: string
-  /** Groups tier variants visually */
-  familySlug?: string
   /** Alternative identifiers */
   aliases?: string[]
   /** Person slug of the owner */
   ownerPersonSlug?: string
-  /** Group slugs of access maintainers */
-  accessMaintainerGroupSlugs?: string[]
+  /** Slugs of who decides on an access request — each a Person or a Group */
+  approverSlugs?: string[]
   /** Free-text access comments */
   accessComments?: string
   /** Arbitrary extra data */

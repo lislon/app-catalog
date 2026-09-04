@@ -21,7 +21,7 @@ import {
   TableRow,
 } from '~/ui/table'
 import { MarkdownLink } from './MarkdownText'
-import { PersonBadge } from './PersonBadge'
+import { PersonOrGroupBadge } from './PersonBadge'
 
 // Constants
 const COPY_FEEDBACK_DURATION = 2000
@@ -295,13 +295,13 @@ export function AccessRequestSection({
       )}
 
       {/* Approvers */}
-      {accessRequest.approverPersonSlugs &&
-        accessRequest.approverPersonSlugs.length > 0 && (
+      {accessRequest.approverSlugs &&
+        accessRequest.approverSlugs.length > 0 && (
           <div>
             <h4 className="mb-2 text-sm font-medium">Approvers</h4>
             <div className="flex flex-wrap gap-2">
-              {accessRequest.approverPersonSlugs.map((slug) => (
-                <PersonBadge key={slug} slug={slug} />
+              {accessRequest.approverSlugs.map((slug) => (
+                <PersonOrGroupBadge key={slug} slug={slug} />
               ))}
             </div>
           </div>

@@ -75,7 +75,7 @@ export class MockBackendConfigurer {
       slug: overrides.slug ?? `sr-${id}`,
       displayName: overrides.displayName ?? `Sub Resource ${counter}`,
       aliases: overrides.aliases ?? [],
-      accessMaintainerGroupSlugs: overrides.accessMaintainerGroupSlugs ?? [],
+      approverSlugs: overrides.approverSlugs ?? [],
       parentSlug: appSlug,
       tier: overrides.tier,
       ownerPersonSlug: overrides.ownerPersonSlug,
