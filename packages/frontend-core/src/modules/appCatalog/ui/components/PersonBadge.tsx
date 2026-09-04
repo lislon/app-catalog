@@ -101,11 +101,20 @@ export function PersonOrGroupBadge({ slug }: PersonBadgeProps) {
 /** Group chip: name, optional email, and the member names in a popover. */
 function GroupBadge({ group }: { group: Group }) {
   const { persons } = useAppCatalogContext()
-  const displayName = group.displayName || group.slug
   const memberNames = group.memberSlugs.map((s) => {
     const p = getPersonBySlug(persons, s)
     return p ? `${p.firstName} ${p.lastName}`.trim() || s : s
   })
+  // Many groups (e.g. aws-maintainers-*) have no real displayName set — it's
+  // just their slug. Show the member names directly instead of the opaque
+  // slug so approvers stay recognizable at a glance, without a popover click.
+  const hasRealDisplayName =
+    group.displayName && group.displayName !== group.slug
+  const displayName = hasRealDisplayName
+    ? group.displayName!
+    : memberNames.length > 0
+      ? memberNames.join(', ')
+      : group.slug
 
   if (!group.email && memberNames.length === 0) {
     return (

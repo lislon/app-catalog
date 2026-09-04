@@ -1,6 +1,6 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
-import { Check, Copy, Search } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Search } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { Badge } from '~/ui/badge'
 import { Input } from '~/ui/input'
 import {
@@ -58,40 +58,6 @@ function getTierDisplayLabel(tierSlug: string): string {
   if (tierSlug === 'dev') return 'Dev'
   if (tierSlug === 'staging') return 'Staging'
   return tierSlug
-}
-
-function CopyAccountIdButton({ accountId }: { accountId: string }) {
-  const [copied, setCopied] = useState(false)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    }
-  }, [])
-
-  const handleCopy = useCallback(() => {
-    void navigator.clipboard.writeText(accountId).then(() => {
-      setCopied(true)
-      timeoutRef.current = setTimeout(() => setCopied(false), 1500)
-    })
-  }, [accountId])
-
-  return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      className="flex items-center gap-1 font-mono text-xs text-muted-foreground hover:text-foreground transition-colors group"
-      title="Copy account ID"
-    >
-      <span>{accountId}</span>
-      {copied ? (
-        <Check className="size-3 text-green-500 shrink-0" />
-      ) : (
-        <Copy className="size-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-      )}
-    </button>
-  )
 }
 
 export function SubResourcesSection({
@@ -260,7 +226,9 @@ export function SubResourcesSection({
                           sr.extra as Record<string, unknown> | null | undefined
                         )?.awsAccountId as string | undefined
                         return accountId ? (
-                          <CopyAccountIdButton accountId={accountId} />
+                          <span className="font-mono text-xs text-muted-foreground select-text">
+                            {accountId}
+                          </span>
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )
