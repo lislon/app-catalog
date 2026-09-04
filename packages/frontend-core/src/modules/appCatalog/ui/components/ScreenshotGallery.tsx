@@ -27,11 +27,13 @@ export function ScreenshotGallery({
   // Track whether Gallery is in fullscreen — if so, block Radix from closing on Escape
   const isFullscreenRef = useRef(false)
 
-  // Transform screenshot IDs to full URLs
+  // Transform screenshot IDs to URLs. Capped at 2000px — plenty for on-screen
+  // viewing (incl. fullscreen zoom) while avoiding multi-MB original downloads
+  // for every slide in the carousel (all slides mount at once, unlazy).
   const images: GalleryImage[] = useMemo(
     () =>
       screenshotIds.map((id) => ({
-        url: `/api/screenshots/${id}`,
+        url: `/api/screenshots/${id}?size=2000`,
         alt: `${app.abbreviation || app.displayName} screenshot`,
       })),
     [screenshotIds, app.abbreviation, app.displayName],
