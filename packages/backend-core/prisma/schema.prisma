@@ -158,10 +158,10 @@ model DbResource {
   children                   DbResource[]      @relation("ResourceTree")
   // Fields merged from former DbSubResource
   tier                       String? // e.g. "prod", "dev"
-  familySlug                 String? // groups tier variants visually
   aliases                    String[]          @default([])
   ownerPersonSlug            String?
-  accessMaintainerGroupSlugs String[]          @default([])
+  approverSlugs              String[]          @default([]) // Person or Group slugs
+
   accessComments             String?
   /// [SubResourceExtra]
   extra                      Json?

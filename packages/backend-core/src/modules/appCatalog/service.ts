@@ -193,12 +193,9 @@ function rowToResource(row: ResourceRowWithSourceRefs): Resource {
     // Fields from former SubResource
     parentSlug: row.parentSlug ?? undefined,
     tier: row.tier ?? undefined,
-    familySlug: row.familySlug ?? undefined,
     aliases: row.aliases.length ? row.aliases : undefined,
     ownerPersonSlug: row.ownerPersonSlug ?? undefined,
-    accessMaintainerGroupSlugs: row.accessMaintainerGroupSlugs.length
-      ? row.accessMaintainerGroupSlugs
-      : undefined,
+    approverSlugs: row.approverSlugs.length ? row.approverSlugs : undefined,
     accessComments: row.accessComments ?? undefined,
     extra: row.extra
       ? (row.extra as unknown as Record<string, unknown>)

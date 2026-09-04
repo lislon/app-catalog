@@ -17,7 +17,7 @@ function makeChildResource(
     id: overrides.slug,
     displayName: overrides.slug,
     aliases: [],
-    accessMaintainerGroupSlugs: [],
+    approverSlugs: [],
     ...overrides,
   }
 }

@@ -144,9 +144,10 @@ export interface AppAccessRequest {
   roles?: AppRole[]
 
   /**
-   * Individuals that will approve request within given approval method. No need to reach them directly unless specified.
+   * Who decides on this request — each slug is a Person or a Group. No need to
+   * reach them directly unless specified.
    */
-  approverPersonSlugs?: string[] // slugs referencing Person entities
+  approverSlugs?: string[] // slugs referencing Person or Group entities
   /**
    * Additional instructions to get approvals
    */

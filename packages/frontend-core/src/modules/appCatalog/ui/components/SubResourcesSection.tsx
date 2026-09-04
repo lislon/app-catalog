@@ -1,6 +1,6 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
-import { Check, Copy, Search } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Search } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { Badge } from '~/ui/badge'
 import { Input } from '~/ui/input'
 import {
@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '~/ui/table'
-import { PersonBadge } from './PersonBadge'
+import { PersonBadge, PersonOrGroupBadge } from './PersonBadge'
 import {
   Select,
   SelectContent,
@@ -19,8 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/ui/select'
-import { useAppCatalogContext } from '~/modules/appCatalog'
-import { getGroupBySlug } from '~/modules/appCatalog/utils/resolveHelpers'
 import { markdownToPlainText } from '~/modules/appCatalog/utils/markdownToPlainText'
 
 interface SubResourcesSectionProps {
@@ -62,45 +60,10 @@ function getTierDisplayLabel(tierSlug: string): string {
   return tierSlug
 }
 
-function CopyAccountIdButton({ accountId }: { accountId: string }) {
-  const [copied, setCopied] = useState(false)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    }
-  }, [])
-
-  const handleCopy = useCallback(() => {
-    void navigator.clipboard.writeText(accountId).then(() => {
-      setCopied(true)
-      timeoutRef.current = setTimeout(() => setCopied(false), 1500)
-    })
-  }, [accountId])
-
-  return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      className="flex items-center gap-1 font-mono text-xs text-muted-foreground hover:text-foreground transition-colors group"
-      title="Copy account ID"
-    >
-      <span>{accountId}</span>
-      {copied ? (
-        <Check className="size-3 text-green-500 shrink-0" />
-      ) : (
-        <Copy className="size-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-      )}
-    </button>
-  )
-}
-
 export function SubResourcesSection({
   subResources,
   initialSearch,
 }: SubResourcesSectionProps) {
-  const { groups } = useAppCatalogContext()
   // Seed the filter with the incoming query ONLY if it matches a child, so we
   // reveal the matched sub-resource without hiding everything on a non-match.
   const seededSearch = useMemo(() => {
@@ -195,7 +158,7 @@ export function SubResourcesSection({
               <TableHead>Name</TableHead>
               <TableHead className="w-[80px]">Tier</TableHead>
               <TableHead>Owner</TableHead>
-              <TableHead>Access Contacts</TableHead>
+              <TableHead>Approvers</TableHead>
               <TableHead className="w-[140px]">AWS Account</TableHead>
             </TableRow>
           </TableHeader>
@@ -211,15 +174,8 @@ export function SubResourcesSection({
               </TableRow>
             ) : (
               filtered.map((sr) => {
-                // Resolve maintainer group members
-                const maintainerMembers = (
-                  sr.accessMaintainerGroupSlugs ?? []
-                ).flatMap((groupSlug) => {
-                  const group = getGroupBySlug(groups, groupSlug)
-                  return group?.memberSlugs ?? []
-                })
-                // Deduplicate
-                const uniqueMaintainers = [...new Set(maintainerMembers)]
+                // Approvers are Person OR Group slugs; the badge resolves both.
+                const approvers = [...new Set(sr.approverSlugs ?? [])]
 
                 return (
                   <TableRow key={sr.slug}>
@@ -254,10 +210,10 @@ export function SubResourcesSection({
                       )}
                     </TableCell>
                     <TableCell>
-                      {uniqueMaintainers.length > 0 ? (
+                      {approvers.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
-                          {uniqueMaintainers.map((personSlug) => (
-                            <PersonBadge key={personSlug} slug={personSlug} />
+                          {approvers.map((slug) => (
+                            <PersonOrGroupBadge key={slug} slug={slug} />
                           ))}
                         </div>
                       ) : (
@@ -270,7 +226,9 @@ export function SubResourcesSection({
                           sr.extra as Record<string, unknown> | null | undefined
                         )?.awsAccountId as string | undefined
                         return accountId ? (
-                          <CopyAccountIdButton accountId={accountId} />
+                          <span className="font-mono text-xs text-muted-foreground select-text">
+                            {accountId}
+                          </span>
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )
