@@ -1,5 +1,11 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.18.4
+
+### Patch Changes
+
+- [#162](https://github.com/lislon/app-catalog/pull/162) [`35306ba`](https://github.com/lislon/app-catalog/commit/35306ba5dcada115b01fde52a18282bd2e1eb08d) Thanks [@lislon](https://github.com/lislon)! - Fix sub-resource table: AWS account ID is now plain selectable text instead of a copy-button (couldn't be selected by mouse). Approver groups with no real display name now show member names instead of the opaque group slug.
+
 ## 0.18.3
 
 ## 0.18.2
