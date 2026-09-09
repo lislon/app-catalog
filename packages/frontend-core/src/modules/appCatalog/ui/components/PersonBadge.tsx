@@ -95,6 +95,19 @@ export function PersonOrGroupBadge({ slug }: PersonBadgeProps) {
       </Badge>
     )
   }
+
+  // No group email to copy → show each member as its own clickable/copyable
+  // chip instead of one opaque group chip.
+  if (!group.email && group.memberSlugs.length > 0) {
+    return (
+      <span className="inline-flex flex-wrap gap-1">
+        {group.memberSlugs.map((memberSlug) => (
+          <PersonOrGroupBadge key={memberSlug} slug={memberSlug} />
+        ))}
+      </span>
+    )
+  }
+
   return <GroupBadge group={group} />
 }
 
