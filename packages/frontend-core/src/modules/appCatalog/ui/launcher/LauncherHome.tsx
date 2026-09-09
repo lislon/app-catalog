@@ -494,15 +494,19 @@ export function LauncherHome({
     [topSlugs, bySlug],
   )
 
-  // New this week: apps whose content actually changed in the last 7 days, as a
-  // proxy for "recently added/updated" (frontend Resource has no createdAt yet;
-  // see #38). A bare re-check is not an update, so prefer the content-change
-  // date, falling back to the check date only for entries that predate it.
-  // Falls back to empty (section hidden) when no freshness data.
+  // New this week: apps whose content actually changed in the last 7 days, OR
+  // that were newly added to the catalog in the last 7 days (createdAt). A bare
+  // re-check is not an update, so prefer the content-change date over the check
+  // date for entries that have been through a freshness cycle; a freshly-added
+  // app has no freshness data yet, so createdAt is its only signal — a new
+  // app never showed here otherwise, no matter how recent.
   const fresh = useMemo(() => {
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
     const updatedAt = (a: Resource) =>
-      a.freshness?.lastContentChangeAt ?? a.freshness?.lastCheckedAt ?? null
+      a.freshness?.lastContentChangeAt ??
+      a.freshness?.lastCheckedAt ??
+      a.createdAt ??
+      null
     return apps
       .filter((a) => {
         const t = updatedAt(a)
