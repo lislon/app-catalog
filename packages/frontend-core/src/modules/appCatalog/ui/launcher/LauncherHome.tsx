@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '~/lib/utils'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { markdownToPlainText } from '../../utils/markdownToPlainText'
+import { pickNewThisWeek } from '../../utils/launcherHelpers'
 import { AttributionFooter } from './AttributionFooter'
 import { ResourceIcon } from './ResourceIcon'
 import { searchResources } from '../../utils/searchApps'
@@ -494,31 +495,8 @@ export function LauncherHome({
     [topSlugs, bySlug],
   )
 
-  // New this week: apps whose content actually changed in the last 7 days, OR
-  // that were newly added to the catalog in the last 7 days (createdAt). A bare
-  // re-check is not an update, so prefer the content-change date over the check
-  // date for entries that have been through a freshness cycle; a freshly-added
-  // app has no freshness data yet, so createdAt is its only signal — a new
-  // app never showed here otherwise, no matter how recent.
-  const fresh = useMemo(() => {
-    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
-    const updatedAt = (a: Resource) =>
-      a.freshness?.lastContentChangeAt ??
-      a.freshness?.lastCheckedAt ??
-      a.createdAt ??
-      null
-    return apps
-      .filter((a) => {
-        const t = updatedAt(a)
-        return t ? new Date(t).getTime() >= weekAgo : false
-      })
-      .sort(
-        (a, b) =>
-          new Date(updatedAt(b) ?? 0).getTime() -
-          new Date(updatedAt(a) ?? 0).getTime(),
-      )
-      .slice(0, 6)
-  }, [apps])
+  // New this week: apps ADDED in the last 7 days — see pickNewThisWeek (#96).
+  const fresh = useMemo(() => pickNewThisWeek(apps), [apps])
 
   // Browse all: everything not already promoted to "Your apps", alpha by name.
   const browse = useMemo(() => {
