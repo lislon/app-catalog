@@ -1,5 +1,11 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.18.5
+
+### Patch Changes
+
+- [#167](https://github.com/lislon/app-catalog/pull/167) [`da25c2a`](https://github.com/lislon/app-catalog/commit/da25c2a48fdd4fa191058e4351acc0d70f135b9d) Thanks [@lislon](https://github.com/lislon)! - Fix "New this week": a newly-added catalog entry never appeared there, no matter how recent, because the section only checked freshness-tracking timestamps (content-change/last-checked), which a brand-new entry never has. It now also falls back to `createdAt`.
+
 ## 0.18.4
 
 ### Patch Changes
