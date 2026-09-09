@@ -49,3 +49,54 @@ describe('PersonOrGroupBadge — resolving an approver slug', () => {
     expect(screen.getByText('nobody-knows-me')).toBeInTheDocument()
   })
 })
+
+// A group with no real displayName set (displayName === slug, e.g.
+// aws-maintainers-lly) used to render the opaque slug as the badge label.
+describe('PersonOrGroupBadge — group with no real display name', () => {
+  it('falls back to joined member names instead of the opaque slug', () => {
+    const ctx = {
+      resources: [],
+      isLoadingApps: false,
+      tagsDefinitions: [],
+      approvalMethods: [],
+      persons,
+      groups: [
+        {
+          slug: 'aws-maintainers-lly',
+          displayName: 'aws-maintainers-lly',
+          memberSlugs: ['jdoe@example.com'],
+        },
+      ],
+    } satisfies AppCatalogContextIface
+
+    render(
+      <AppCatalogContext value={ctx}>
+        <PersonOrGroupBadge slug="aws-maintainers-lly" />
+      </AppCatalogContext>,
+    )
+
+    expect(screen.getByText('Jane Doe')).toBeInTheDocument()
+    expect(screen.queryByText('aws-maintainers-lly')).not.toBeInTheDocument()
+  })
+
+  it('falls back to the slug when there are no members to show either', () => {
+    const ctx = {
+      resources: [],
+      isLoadingApps: false,
+      tagsDefinitions: [],
+      approvalMethods: [],
+      persons,
+      groups: [
+        { slug: 'empty-group', displayName: 'empty-group', memberSlugs: [] },
+      ],
+    } satisfies AppCatalogContextIface
+
+    render(
+      <AppCatalogContext value={ctx}>
+        <PersonOrGroupBadge slug="empty-group" />
+      </AppCatalogContext>,
+    )
+
+    expect(screen.getByText('empty-group')).toBeInTheDocument()
+  })
+})
