@@ -1,5 +1,15 @@
 # @igstack/app-catalog-frontend-core
 
+## 0.18.6
+
+### Patch Changes
+
+- [#170](https://github.com/lislon/app-catalog/pull/170) [`ce742c7`](https://github.com/lislon/app-catalog/commit/ce742c718238639b3048955fe4b73532c9b3f1a2) Thanks [@lislon](https://github.com/lislon)! - Approver groups with no email now show each member as its own clickable, copyable chip instead of one opaque group chip with a plain-text member list.
+
+- [#171](https://github.com/lislon/app-catalog/pull/171) [`173a00a`](https://github.com/lislon/app-catalog/commit/173a00a11aa0e36798af72ad482a62c695fadd92) Thanks [@lislon](https://github.com/lislon)! - Fix "New this week" so it reflects what was actually ADDED to the catalog. It previously keyed off the freshness job's re-check timestamps (`freshness.lastContentChangeAt` / `lastCheckedAt`), which meant a months-old app that had merely been re-verified showed up as new, while a genuinely new entry — which has no freshness data yet — could be missing. The section now filters and sorts on the catalog add date (`createdAt`) alone, so it agrees with the card's own "Added …" label.
+
+- [#174](https://github.com/lislon/app-catalog/pull/174) [`003b19c`](https://github.com/lislon/app-catalog/commit/003b19ca966c20e1af3fda74bbbe077a0339b544) Thanks [@lislon](https://github.com/lislon)! - App detail card now shows a collapsed-by-default "Technical information" section, right after Teams, when the entry has an `aiPrompt` and/or `aiMemory` value set. These AI-facing fields were previously not surfaced in the UI at all.
+
 ## 0.18.5
 
 ### Patch Changes
