@@ -4,7 +4,7 @@ import type {
 } from '@igstack/app-catalog-backend-core'
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { LogOut } from 'lucide-react'
+import { Info, LogOut } from 'lucide-react'
 import React, { use } from 'react'
 import AppCatalogLogo from '~/assets/app-catalog.svg?react'
 import { useTRPC } from '~/api/infra/trpc'
@@ -25,6 +25,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '~/ui/dropdown-menu'
+import { Popover, PopoverContent, PopoverTrigger } from '~/ui/popover'
 import { Skeleton } from '~/ui/skeleton'
 
 function ShaSuffix({ version }: { version: VersionInfo }) {
@@ -105,6 +106,44 @@ export function VersionDisplay({ versions }: { versions: AppVersionInfo }) {
   )
 }
 
+/**
+ * Version detail moved behind an on-demand popover (same click-to-reveal
+ * pattern as PersonBadge's approver chips) instead of always-visible text —
+ * keeps the header compact. Content is unchanged: same Pipeline/Core/FE
+ * lines, links, and SHA suffix as before, just revealed on click.
+ */
+export function VersionPopover({ versions }: { versions: AppVersionInfo }) {
+  const isLocal =
+    versions.backend?.displayName === 'local' && !versions.coreVersion
+
+  if (isLocal) {
+    return (
+      <span className="text-xs text-muted-foreground" title="Local">
+        local
+      </span>
+    )
+  }
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors"
+          aria-label="Show version details"
+          title="Version details"
+          data-testid="version-info-trigger"
+        >
+          <Info className="size-3.5" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-auto p-2">
+        <VersionDisplay versions={versions} />
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 export interface HeaderProps {
   middle?: React.ReactNode
 }
@@ -145,9 +184,14 @@ export function Header({ middle }: HeaderProps) {
               <span className="font-serif text-lg font-semibold">
                 App Catalog
               </span>
-              {appCatalogContextMaybe?.versions && (
-                <VersionDisplay versions={appCatalogContextMaybe.versions} />
-              )}
+              <div className="flex items-center gap-1.5">
+                {appCatalogContextMaybe?.versions && (
+                  <VersionPopover versions={appCatalogContextMaybe.versions} />
+                )}
+                <span className="text-[10px] text-muted-foreground/60">
+                  by Igor Golovin
+                </span>
+              </div>
             </div>
           </div>
         </Link>
