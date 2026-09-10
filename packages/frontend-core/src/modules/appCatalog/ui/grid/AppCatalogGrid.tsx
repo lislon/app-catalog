@@ -36,6 +36,12 @@ import {
   TableHeader,
   TableRow,
 } from '~/ui/table'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '~/ui/accordion'
 import { AccessRequestSection } from '../components/AccessRequestSection'
 import { AccessPrerequisiteChain } from '../components/AccessPrerequisiteChain'
 import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
@@ -530,6 +536,42 @@ export function AppDetails({
               ))}
             </div>
           </div>
+        )}
+
+        {/* Technical information: AI-facing fields, de-emphasized/collapsed */}
+        {(app.aiPrompt || app.aiMemory) && (
+          <Accordion type="single" collapsible className="mt-6">
+            <AccordionItem
+              value="technical-info"
+              className="border rounded-lg px-4"
+            >
+              <AccordionTrigger className="text-sm hover:no-underline py-3">
+                Technical information
+              </AccordionTrigger>
+              <AccordionContent className="pb-3 space-y-3">
+                {app.aiPrompt && (
+                  <div>
+                    <h4 className="mb-1 text-xs font-medium text-muted-foreground">
+                      AI Prompt
+                    </h4>
+                    <p className="text-xs whitespace-pre-wrap">
+                      {app.aiPrompt}
+                    </p>
+                  </div>
+                )}
+                {app.aiMemory && (
+                  <div>
+                    <h4 className="mb-1 text-xs font-medium text-muted-foreground">
+                      AI Memory
+                    </h4>
+                    <p className="text-xs whitespace-pre-wrap">
+                      {app.aiMemory}
+                    </p>
+                  </div>
+                )}
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         )}
 
         {/* Metadata: Added / Updated */}
