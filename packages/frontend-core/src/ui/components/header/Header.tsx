@@ -4,7 +4,7 @@ import type {
 } from '@igstack/app-catalog-backend-core'
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { Info, LogOut } from 'lucide-react'
+import { LogOut, X } from 'lucide-react'
 import React, { use } from 'react'
 import AppCatalogLogo from '~/assets/app-catalog.svg?react'
 import { useTRPC } from '~/api/infra/trpc'
@@ -25,7 +25,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '~/ui/dropdown-menu'
-import { Popover, PopoverContent, PopoverTrigger } from '~/ui/popover'
+import {
+  Popover,
+  PopoverClose,
+  PopoverContent,
+  PopoverTrigger,
+} from '~/ui/popover'
 import { Skeleton } from '~/ui/skeleton'
 
 function ShaSuffix({ version }: { version: VersionInfo }) {
@@ -56,26 +61,26 @@ function VersionItem({
   label: string
   version: VersionInfo
 }) {
-  // Outer element is a <span> (not <a>) so the optional SHA link can be a
-  // sibling anchor without producing invalid nested <a> markup.
   return (
-    <span className="text-xs text-muted-foreground" title={label}>
-      {label}:{' '}
-      {version.url ? (
-        <a
-          href={version.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary hover:text-primary/80 transition-colors font-medium"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {version.displayName}
-        </a>
-      ) : (
-        version.displayName
-      )}
-      <ShaSuffix version={version} />
-    </span>
+    <div className="flex items-center justify-between gap-4 py-1">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-sm font-medium text-right">
+        {version.url ? (
+          <a
+            href={version.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:text-primary/80 transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {version.displayName}
+          </a>
+        ) : (
+          version.displayName
+        )}
+        <ShaSuffix version={version} />
+      </span>
+    </div>
   )
 }
 
@@ -92,7 +97,7 @@ export function VersionDisplay({ versions }: { versions: AppVersionInfo }) {
   }
 
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex flex-col divide-y">
       {versions.backend && (
         <VersionItem label="Pipeline" version={versions.backend} />
       )}
@@ -129,16 +134,29 @@ export function VersionPopover({ versions }: { versions: AppVersionInfo }) {
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors"
+          className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-mono leading-none text-muted-foreground hover:bg-primary/15 hover:text-primary transition-colors"
           aria-label="Show version details"
           title="Version details"
           data-testid="version-info-trigger"
         >
-          <Info className="size-3.5" />
+          {versions.backend?.displayName === 'local'
+            ? 'local'
+            : `#${versions.backend?.displayName ?? '?'}`}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-auto p-2">
-        <VersionDisplay versions={versions} />
+      <PopoverContent align="start" className="w-72 p-0 overflow-hidden">
+        <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/40">
+          <span className="text-sm font-semibold">Version details</span>
+          <PopoverClose
+            className="rounded p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="Close"
+          >
+            <X className="size-3.5" />
+          </PopoverClose>
+        </div>
+        <div className="px-3 py-1">
+          <VersionDisplay versions={versions} />
+        </div>
       </PopoverContent>
     </Popover>
   )
@@ -177,24 +195,24 @@ export function Header({ middle }: HeaderProps) {
   return (
     <div className="flex items-center mb-4 pb-4 gap-4 border-b">
       <div className="flex items-center gap-4">
-        <Link to="/">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          <Link to="/">
             <AppCatalogLogo className="h-16 w-16" />
-            <div className="flex flex-col">
-              <span className="font-serif text-lg font-semibold">
-                App Catalog
+          </Link>
+          <div className="flex flex-col">
+            <Link to="/" className="font-serif text-lg font-semibold">
+              App Catalog
+            </Link>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-muted-foreground/60">
+                by Igor Golovin
               </span>
-              <div className="flex items-center gap-1.5">
-                {appCatalogContextMaybe?.versions && (
-                  <VersionPopover versions={appCatalogContextMaybe.versions} />
-                )}
-                <span className="text-[10px] text-muted-foreground/60">
-                  by Igor Golovin
-                </span>
-              </div>
+              {appCatalogContextMaybe?.versions && (
+                <VersionPopover versions={appCatalogContextMaybe.versions} />
+              )}
             </div>
           </div>
-        </Link>
+        </div>
       </div>
       {middle && <div className="flex-1">{middle}</div>}
       <div className="flex items-center gap-3 ml-auto">
