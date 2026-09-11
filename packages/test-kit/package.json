@@ -1,0 +1,87 @@
+{
+  "name": "@igstack/app-catalog-test-kit",
+  "version": "0.18.6",
+  "description": "Integration test harness for App Catalog: mock backend, mock network and page objects",
+  "homepage": "https://github.com/lislon/app-catalog",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lislon/app-catalog.git",
+    "directory": "packages/test-kit"
+  },
+  "license": "MIT",
+  "author": "Igor Golovin",
+  "sideEffects": [
+    "./src/setup/*",
+    "./dist/esm/setup/*"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "my-custom-condition": "./src/index.ts",
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      }
+    },
+    "./setup": {
+      "my-custom-condition": "./src/setup/testSetup.ts",
+      "import": {
+        "types": "./dist/esm/setup/testSetup.d.ts",
+        "default": "./dist/esm/setup/testSetup.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "module": "dist/esm/index.js",
+  "types": "dist/esm/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "clean": "premove ./dist ./coverage ./dist-ts",
+    "compile": "tsc --build",
+    "fix": "prettier --write ./src ./tests && eslint --fix ./src ./tests",
+    "test": "pnpm run test:unit",
+    "test:eslint": "eslint ./src ./tests --max-warnings=0",
+    "test:types": "tsc --noEmit",
+    "test:unit": "vitest --run",
+    "test:unit:dev": "vitest"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "catalog:",
+    "@tanstack/react-router": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "^14.6.1",
+    "@trpc/client": "catalog:",
+    "fake-indexeddb": "^6.2.4",
+    "msw": "^2.12.14",
+    "msw-trpc": "^2.0.1",
+    "superjson": "catalog:"
+  },
+  "devDependencies": {
+    "@igstack/app-catalog-backend-core": "workspace:*",
+    "@igstack/app-catalog-frontend-core": "workspace:*",
+    "@tanstack/vite-config": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "jsdom": "^25.0.1",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@igstack/app-catalog-backend-core": "workspace:^",
+    "@igstack/app-catalog-frontend-core": "workspace:^",
+    "jsdom": ">=25",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}

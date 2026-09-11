@@ -3,8 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom/vitest'
 
-import { given } from './harness/given'
-import { magazine } from './mock-backend/magazines'
+import { given, magazine } from '@igstack/app-catalog-test-kit'
 
 // #9: a header toggle (Apps | Service Desks) + a /service-desks route showing a
 // searchable table of all type:'service' approval methods with open links.

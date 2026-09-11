@@ -64,6 +64,7 @@ jobs:
           "@igstack/app-catalog-frontend-core": patch
           "@igstack/app-catalog-shared-core": patch
           "@igstack/app-catalog-table-sync": patch
+          "@igstack/app-catalog-test-kit": patch
           "@igstack/app-catalog-frontend-build-vite": patch
           ---
 

@@ -1,5 +1,8 @@
 import type { AppCatalogData } from '@igstack/app-catalog-backend-core'
-import { AcDb, dbCacheDbKeys } from '~/userDb/AcDb'
+import {
+  AcDb,
+  dbCacheDbKeys,
+} from '@igstack/app-catalog-frontend-core/internal'
 
 /**
  * Pre-populate the browser's local state to simulate a returning user.

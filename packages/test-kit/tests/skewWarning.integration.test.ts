@@ -2,8 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 
-import { given } from './harness/given'
-import { magazine } from './mock-backend/magazines'
+import { given, magazine } from '@igstack/app-catalog-test-kit'
 
 // The dev-only skew warning fires when resources loaded but 0 are top-level
 // (fingerprint of a frontend/backend-core version skew or stale service worker).

@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 
-import { given } from './harness/given'
-import { magazine } from './mock-backend/magazines'
+import { given, magazine } from '@igstack/app-catalog-test-kit'
 
 describe('App deep-link routing', () => {
   it('opens the app detail when navigating directly to /app/<slug>', async () => {

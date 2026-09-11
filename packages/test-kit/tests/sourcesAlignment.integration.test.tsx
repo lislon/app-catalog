@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 
-import { given } from './harness/given'
-import { magazine } from './mock-backend/magazines'
+import { given, magazine } from '@igstack/app-catalog-test-kit'
 
 // #28: In the app-detail "Sources" numbered list, the item markers ("1.", "2.")
 // are shrink-wrapped spans. In a proportional font the glyph "2" is wider than

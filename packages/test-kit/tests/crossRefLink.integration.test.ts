@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom/vitest'
-import { given } from './harness/given'
-import { magazine } from './mock-backend/magazines'
+import { given, magazine } from '@igstack/app-catalog-test-kit'
 
 // #25: when an app description references another catalog app via a relative
 // markdown link `[Name](/app/<slug>)`, it must navigate WITHIN the catalog

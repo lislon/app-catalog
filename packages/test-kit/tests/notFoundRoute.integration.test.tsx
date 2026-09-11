@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 
-import { given } from './harness/given'
-import { magazine } from './mock-backend/magazines'
+import { given, magazine } from '@igstack/app-catalog-test-kit'
 
 /**
  * Regression for #7 (root cause in #6): the root route's `notFoundComponent`
