@@ -25,8 +25,10 @@ describe('VersionPopover', () => {
     fireEvent.click(screen.getByTestId('version-info-trigger'))
 
     expect(screen.getByText('#123')).toBeInTheDocument()
-    expect(screen.getByText(/Core:\s*0\.18\.6/)).toBeInTheDocument()
-    expect(screen.getByText(/FE:\s*fe-build-42/)).toBeInTheDocument()
+    expect(screen.getByText('Core')).toBeInTheDocument()
+    expect(screen.getByText('0.18.6')).toBeInTheDocument()
+    expect(screen.getByText('FE')).toBeInTheDocument()
+    expect(screen.getByText('fe-build-42')).toBeInTheDocument()
     expect(screen.getByText('(abc1234)')).toBeInTheDocument()
   })
 
@@ -38,6 +40,15 @@ describe('VersionPopover', () => {
       'href',
       'https://example.test/pipeline/123',
     )
+  })
+
+  it('closes when the close button is clicked', () => {
+    render(<VersionPopover versions={versions} />)
+    fireEvent.click(screen.getByTestId('version-info-trigger'))
+    expect(screen.getByText('0.18.6')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.queryByText('0.18.6')).not.toBeInTheDocument()
   })
 
   it('renders "local" without a popover when running local-only', () => {
