@@ -139,9 +139,7 @@ export function VersionPopover({ versions }: { versions: AppVersionInfo }) {
           title="Version details"
           data-testid="version-info-trigger"
         >
-          {versions.backend?.displayName === 'local'
-            ? 'local'
-            : `#${versions.backend?.displayName ?? '?'}`}
+          {versions.backend?.displayName ?? '?'}
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 p-0 overflow-hidden">
