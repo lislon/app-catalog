@@ -24,7 +24,7 @@ describe('VersionPopover', () => {
 
     fireEvent.click(screen.getByTestId('version-info-trigger'))
 
-    expect(screen.getByText('#123')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '#123' })).toBeInTheDocument()
     expect(screen.getByText('Core')).toBeInTheDocument()
     expect(screen.getByText('0.18.6')).toBeInTheDocument()
     expect(screen.getByText('FE')).toBeInTheDocument()
