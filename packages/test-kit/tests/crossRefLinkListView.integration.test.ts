@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
-import { given } from './harness/given'
-import { magazine } from './mock-backend/magazines'
+import { given, magazine } from '@igstack/app-catalog-test-kit'
 
 // #25 regression: descriptions now carry markdown cross-reference links like
 // `[GenomicsApp](/app/genomics-app)`. The detail panel renders them

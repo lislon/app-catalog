@@ -6,9 +6,12 @@ import type { TRPCRouter } from '@igstack/app-catalog-backend-core'
 import { setupServer } from 'msw/node'
 import type { SetupServer } from 'msw/node'
 
-import { App } from '~/App'
-import { AcDb } from '~/userDb/AcDb'
-import { createAcRouter } from '~/util/createAcRouter'
+import {
+  AcDb,
+  App,
+  SEARCH_STORAGE_KEY,
+  createAcRouter,
+} from '@igstack/app-catalog-frontend-core/internal'
 
 import { MockDb } from '../mock-backend/MockDb'
 import { MockUserContext } from '../mock-backend/MockUserContext'
@@ -25,7 +28,6 @@ import { MockBackendVerifier } from './MockBackendVerifier'
 import { getGlobalError } from '../tools/ErrorTools'
 import type { GlobalError } from '../tools/ErrorTools'
 import { browserState } from '../tools/BrowserState'
-import { SEARCH_STORAGE_KEY } from '~/modules/appCatalog/hooks/useSessionSyncedState'
 import { CatalogTools } from '../tools/CatalogTools'
 import { AppDetailTools } from '../tools/AppDetailTools'
 import { GalleryTools } from '../tools/GalleryTools'

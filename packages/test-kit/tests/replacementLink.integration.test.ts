@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 
-import { given } from './harness/given'
-import { magazine } from './mock-backend/magazines'
+import { given, magazine } from '@igstack/app-catalog-test-kit'
 
 // #12: a deprecated app's "View replacement" link must open the replacement
 // app's detail — like typing its /app/<slug> URL — even when the replacement

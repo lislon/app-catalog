@@ -3,10 +3,12 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom/vitest'
 
-import { given } from './harness/given'
-import { magazine } from './mock-backend/magazines'
-import { SharedNetwork } from './mock-network/SharedNetwork'
-import { suppressConsole } from './tools/suppressConsole'
+import {
+  SharedNetwork,
+  given,
+  magazine,
+  suppressConsole,
+} from '@igstack/app-catalog-test-kit'
 
 describe('Auth Integration', () => {
   it('unauthenticated user sees Login button', async () => {

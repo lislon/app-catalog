@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 
-import { given } from './harness/given'
-import { magazine } from './mock-backend/magazines'
 import {
+  given,
+  magazine,
   makeConnectionResetError,
   makeHtmlResponseError,
-} from './mock-network/errorFactories'
-import { suppressConsole, suppressConsoleGlobal } from './tools/suppressConsole'
+  suppressConsole,
+  suppressConsoleGlobal,
+} from '@igstack/app-catalog-test-kit'
 
 describe('App Catalog Integration', () => {
   // Background sync debug noise appears whenever cache is used with backend down

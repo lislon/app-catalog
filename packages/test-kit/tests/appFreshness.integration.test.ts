@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 
-import { given } from './harness/given'
-import { magazine } from './mock-backend/magazines'
+import { given, magazine } from '@igstack/app-catalog-test-kit'
 
 // The backend owns the freshness semantic and serves
 // { lastCheckedAt, lastContentChangeAt, isStale }. These tests only assert the
