@@ -71,6 +71,7 @@
     "jsdom": "^25.0.1",
     "typescript": "catalog:",
     "vite": "catalog:",
+    "vite-plugin-svgr": "catalog:",
     "vitest": "catalog:"
   },
   "peerDependencies": {
