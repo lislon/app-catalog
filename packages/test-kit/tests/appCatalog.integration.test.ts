@@ -191,8 +191,6 @@ describe('App Catalog Integration', () => {
       }),
     )
 
-    expect(ui.catalog.isOnboardingVisible()).toBe(false)
-
     const tableData = ui.catalog.getTableData()
     expect(tableData.length).toBe(5)
     expect(tableData.map((r) => r.name)).toContain('TaskFlow')
@@ -373,12 +371,13 @@ describe('App Catalog Integration', () => {
     })
   })
 
-  // Layout stability: typing must not swap the launcher shell for the grid.
-  // Regression — the first keystroke used to unmount the centered launcher and
-  // mount AppCatalogGrid instead (its own search bar, Show All / My Recent tabs,
+  // Layout stability: typing must not swap the catalog shell for anything else.
+  // Regression — the first keystroke used to unmount the centered catalog and
+  // mount the legacy grid instead (its own search bar, Show All / My Recent tabs,
   // category dropdown, deprecated checkbox, wide table), so the whole upper half
-  // of the page jumped. The hero and the search input must be the very same DOM
-  // nodes before and after typing, with no filter chrome in search mode.
+  // of the page jumped. That grid is gone now, and these assertions guard its
+  // absence: the hero and the search input must be the very same DOM nodes
+  // before and after typing, with no filter chrome in search mode.
   it('keeps the hero + search box mounted while typing, with no filter chrome', async () => {
     const { ui } = await given(magazine.full())
 

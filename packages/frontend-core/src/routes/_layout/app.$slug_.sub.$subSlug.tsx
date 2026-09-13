@@ -11,8 +11,6 @@ import { appCatalogRouteLoader } from '~/modules/appCatalog/routeLoader'
 // nesting under it would leave this match mounted but never rendered.
 const searchSchema = z.object({
   filterTag: z.string().optional(),
-  recent: z.string().optional(),
-  filters: z.string().optional(),
   deprecated: z.string().optional(),
   q: z.string().optional(),
   sub: z.string().optional(),

@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 export interface TableRow {
@@ -13,28 +13,13 @@ export class CatalogTools {
 
   /**
    * Click an app row by display name.
-   * Works against both the table/grid view and the launcher home (#38), which
-   * renders app rows as buttons rather than a <table>.
    * Throws with list of visible apps if name not found.
    */
   async openApp(name: string): Promise<void> {
-    const table = this.getCatalogTable()
-    if (table) {
-      const rows = within(table).getAllByRole('row')
-      for (const row of rows) {
-        const nameEl = row.querySelector('.font-medium')
-        if (nameEl?.textContent.trim() === name) {
-          await this.user.click(row)
-          return
-        }
-      }
-    } else {
-      // Launcher home: rows are buttons titled "View <name>".
-      const btn = screen.queryByTitle(`View ${name}`)
-      if (btn) {
-        await this.user.click(btn)
-        return
-      }
+    const btn = screen.queryByTitle(`View ${name}`)
+    if (btn) {
+      await this.user.click(btn)
+      return
     }
 
     const visibleNames = this.getTableData().map((r) => r.name)
@@ -57,46 +42,24 @@ export class CatalogTools {
   }
 
   /**
-   * Parse the catalog table into structured data.
-   * Skips group header rows (colspan rows).
+   * The app rows currently on the page, as structured data.
    */
   getTableData(): TableRow[] {
-    const table = this.getCatalogTable()
-    if (!table) {
-      // Check if there's a global error — throw with details for debugging
-      const bodyText = document.body.textContent
-      if (
-        bodyText.includes('Something went wrong') ||
-        bodyText.includes('Ooops')
-      ) {
-        throw new Error(
-          `Cannot read table — global error on page: ${bodyText.slice(0, 500)}`,
-        )
-      }
-      // Launcher home (#38): no <table>; read the app row buttons instead.
-      const launcherRows = this.getLauncherRows()
-      if (launcherRows.length > 0) return launcherRows
-      throw new Error('No table or launcher rows found on page')
+    const rows = this.getAppRows()
+    if (rows.length > 0) return rows
+
+    // No rows at all: a global error is the likeliest cause, and its text is
+    // far more useful than "nothing found".
+    const bodyText = document.body.textContent
+    if (
+      bodyText.includes('Something went wrong') ||
+      bodyText.includes('Ooops')
+    ) {
+      throw new Error(
+        `Cannot read app rows — global error on page: ${bodyText.slice(0, 500)}`,
+      )
     }
-
-    const rows = within(table).getAllByRole('row')
-    const result: TableRow[] = []
-
-    for (const row of rows) {
-      const cells = within(row).queryAllByRole('cell')
-      // Skip header rows and group header rows (single cell with colspan)
-      if (cells.length < 2) continue
-
-      const nameEl = cells[0]?.querySelector('.font-medium')
-      if (!nameEl) continue
-
-      result.push({
-        name: nameEl.textContent.trim(),
-        description: cells[1]?.textContent.trim() ?? '',
-      })
-    }
-
-    return result
+    throw new Error('No app rows found on page')
   }
 
   /**
@@ -118,15 +81,6 @@ export class CatalogTools {
     return !!screen.queryByLabelText('Close details panel')
   }
 
-  /** Whether the "Show Deprecated Apps" toggle is currently checked. */
-  isShowDeprecatedChecked(): boolean {
-    const cb = screen.getByRole('checkbox', { name: /Show Deprecated Apps/i })
-    return (
-      cb.getAttribute('aria-checked') === 'true' ||
-      cb.getAttribute('data-state') === 'checked'
-    )
-  }
-
   /** Whether the "showing deprecated matches" fallback notice is visible. */
   hasDeprecatedFallbackNotice(): boolean {
     return !!screen.queryByText(/showing deprecated matches/i)
@@ -141,19 +95,11 @@ export class CatalogTools {
   }
 
   /**
-   * Whether the onboarding/welcome card is visible.
+   * Read app rows off the catalog: buttons titled "View <name>". Description is
+   * the `.text-muted-foreground` span. Deduped by name (an app can appear both
+   * in "Your apps" and "Browse all").
    */
-  isOnboardingVisible(): boolean {
-    return !!screen.queryByText('Welcome to App Catalog')
-  }
-
-  /**
-   * Read app rows from the launcher home (#38): buttons titled "View <name>".
-   * Name is the first `.font-semibold`/`.font-bold` span; description the
-   * `.text-muted-foreground` span. Deduped by name (an app can appear both in
-   * "Your apps" and "Browse all").
-   */
-  private getLauncherRows(): TableRow[] {
+  private getAppRows(): TableRow[] {
     const buttons = Array.from(
       document.querySelectorAll<HTMLElement>('button[title^="View "]'),
     )
@@ -229,14 +175,5 @@ export class CatalogTools {
         `[role="option"][data-kind="${kind}"]`,
       ),
     )
-  }
-
-  /**
-   * Get the main catalog table (first table on page, skipping sub-resource tables in detail panel).
-   */
-  private getCatalogTable(): HTMLElement | null {
-    const tables = screen.queryAllByRole('table')
-    // The catalog table is the first table; sub-resource tables appear later in the detail panel
-    return tables[0] ?? null
   }
 }

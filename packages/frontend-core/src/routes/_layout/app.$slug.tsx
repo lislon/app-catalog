@@ -9,8 +9,6 @@ import { appCatalogRouteLoader } from '~/modules/appCatalog/routeLoader'
 // `stripSearchParams` middleware removes it so shared app links stay clean.
 const searchSchema = z.object({
   filterTag: z.string().optional(),
-  recent: z.string().optional(),
-  filters: z.string().optional(),
   deprecated: z.string().optional(),
   q: z.string().optional(),
   sub: z.string().optional(),
