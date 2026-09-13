@@ -1,6 +1,7 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
+import { Link, useSearch } from '@tanstack/react-router'
 import { Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Badge } from '~/ui/badge'
 import { Input } from '~/ui/input'
 import {
@@ -23,6 +24,8 @@ import { markdownToPlainText } from '~/modules/appCatalog/utils/markdownToPlainT
 
 interface SubResourcesSectionProps {
   subResources: Resource[]
+  /** Slug of the parent, for linking to a child's own page. */
+  parentSlug: string
   /**
    * Initial filter text (#38 item C). When the user reached this app by
    * searching a term that matched a sub-resource, seed the sub-resource filter
@@ -62,8 +65,20 @@ function getTierDisplayLabel(tierSlug: string): string {
 
 export function SubResourcesSection({
   subResources,
+  parentSlug,
   initialSearch,
 }: SubResourcesSectionProps) {
+  // `?sub=<slug>` — the one sub-resource the user asked for, by clicking its row
+  // in the search results. It wins over the query-seeded filter below: a query
+  // like "project" matches every child, so seeding with it would bury the row
+  // that was actually clicked.
+  const search_ = useSearch({ strict: false })
+  const selectedSubSlug = search_.sub
+  const selectedSub = useMemo(
+    () => subResources.find((sr) => sr.slug === selectedSubSlug) ?? null,
+    [subResources, selectedSubSlug],
+  )
+
   // Seed the filter with the incoming query ONLY if it matches a child, so we
   // reveal the matched sub-resource without hiding everything on a non-match.
   const seededSearch = useMemo(() => {
@@ -79,6 +94,11 @@ export function SubResourcesSection({
   const [search, setSearch] = useState(seededSearch)
   const [tierFilter, setTierFilter] = useState<string>('all')
 
+  // useState only reads its argument on the first render, so without this the
+  // filter kept the query from whenever this panel first mounted — searching
+  // again with the panel already open left the old term in the box.
+  useEffect(() => setSearch(seededSearch), [seededSearch])
+
   const uniqueTiers = useMemo(() => {
     const tiers = new Set<string>()
     for (const sr of subResources) {
@@ -88,6 +108,8 @@ export function SubResourcesSection({
   }, [subResources])
 
   const filtered = useMemo(() => {
+    if (selectedSub) return [selectedSub]
+
     let result = subResources
 
     if (tierFilter !== 'all') {
@@ -110,7 +132,7 @@ export function SubResourcesSection({
     }
 
     return result
-  }, [subResources, search, tierFilter])
+  }, [subResources, search, tierFilter, selectedSub])
 
   if (subResources.length === 0) return null
 
@@ -178,11 +200,27 @@ export function SubResourcesSection({
                 const approvers = [...new Set(sr.approverSlugs ?? [])]
 
                 return (
-                  <TableRow key={sr.slug}>
+                  <TableRow
+                    key={sr.slug}
+                    // The row the user asked for, so it reads as "this one" even
+                    // once the filter is cleared and its siblings come back.
+                    aria-current={
+                      sr.slug === selectedSubSlug ? 'true' : undefined
+                    }
+                    className={
+                      sr.slug === selectedSubSlug ? 'bg-primary/[0.06]' : ''
+                    }
+                  >
                     <TableCell>
-                      <div className="font-medium text-sm">
+                      {/* A real link, not a click handler on the row: this is a
+                          table of resources, each of which has its own page. */}
+                      <Link
+                        to="/app/$slug/sub/$subSlug"
+                        params={{ slug: parentSlug, subSlug: sr.slug }}
+                        className="font-medium text-sm hover:text-primary hover:underline"
+                      >
                         {sr.displayName}
-                      </div>
+                      </Link>
                       {(sr.aliases ?? []).length > 0 && (
                         <div className="text-xs text-muted-foreground mt-0.5">
                           {(sr.aliases ?? []).join(', ')}

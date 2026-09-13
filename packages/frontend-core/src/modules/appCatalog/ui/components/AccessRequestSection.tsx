@@ -1,9 +1,10 @@
 import type {
+  AppAccessRequest,
   AppApprovalMethod,
   Resource,
 } from '@igstack/app-catalog-backend-core'
 import { Bot, Check, Copy, ExternalLink, Settings, Users } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { Button } from '~/ui/button'
 import {
@@ -139,7 +140,33 @@ export function AccessRequestSection({
   approvalMethods,
 }: AccessRequestSectionProps) {
   const { copiedId, copyToClipboard } = useCopyToClipboard()
-  const accessRequest = app.accessRequest
+
+  // Sub-resources carry their access data as top-level fields (`approverSlugs`,
+  // `accessComments`, `ownerPersonSlug`) rather than in an `accessRequest`.
+  // Without this fallback the whole section rendered nothing for them: the
+  // person was told a request is needed and then shown no way to make one.
+  const accessRequest = useMemo((): AppAccessRequest | undefined => {
+    if (app.accessRequest) return app.accessRequest
+    const approverSlugs = [
+      ...new Set([
+        ...(app.approverSlugs ?? []),
+        ...(app.ownerPersonSlug ? [app.ownerPersonSlug] : []),
+      ]),
+    ]
+    if (approverSlugs.length === 0 && !app.accessComments) return undefined
+    // No approval method to name — the approvers below ARE the route.
+    return {
+      approvalMethodSlug: '',
+      approverSlugs,
+      comments: app.accessComments,
+    }
+  }, [
+    app.accessRequest,
+    app.approverSlugs,
+    app.ownerPersonSlug,
+    app.accessComments,
+  ])
+
   const approvalMethod = approvalMethods.find(
     (m) => m.slug === accessRequest?.approvalMethodSlug,
   )

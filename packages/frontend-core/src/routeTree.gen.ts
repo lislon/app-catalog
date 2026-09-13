@@ -16,6 +16,7 @@ import { Route as LayoutServiceDesksRouteImport } from './routes/_layout/service
 import { Route as LayoutLoginRouteImport } from './routes/_layout/login'
 import { Route as LayoutAppSlugRouteImport } from './routes/_layout/app.$slug'
 import { Route as LayoutCatalogAppsIndexRouteImport } from './routes/_layout/catalog.apps.index'
+import { Route as LayoutAppSlugSubSubSlugRouteImport } from './routes/_layout/app.$slug_.sub.$subSlug'
 
 const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
@@ -51,6 +52,11 @@ const LayoutCatalogAppsIndexRoute = LayoutCatalogAppsIndexRouteImport.update({
   path: '/catalog/apps/',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutAppSlugSubSubSlugRoute = LayoutAppSlugSubSubSlugRouteImport.update({
+  id: '/app/$slug_/sub/$subSlug',
+  path: '/app/$slug/sub/$subSlug',
+  getParentRoute: () => LayoutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/app/$slug': typeof LayoutAppSlugRoute
   '/catalog/apps/': typeof LayoutCatalogAppsIndexRoute
+  '/app/$slug/sub/$subSlug': typeof LayoutAppSlugSubSubSlugRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LayoutLoginRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/': typeof LayoutIndexRoute
   '/app/$slug': typeof LayoutAppSlugRoute
   '/catalog/apps': typeof LayoutCatalogAppsIndexRoute
+  '/app/$slug/sub/$subSlug': typeof LayoutAppSlugSubSubSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/app/$slug': typeof LayoutAppSlugRoute
   '/_layout/catalog/apps/': typeof LayoutCatalogAppsIndexRoute
+  '/_layout/app/$slug_/sub/$subSlug': typeof LayoutAppSlugSubSubSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/app/$slug'
     | '/catalog/apps/'
+    | '/app/$slug/sub/$subSlug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app/$slug'
     | '/catalog/apps'
+    | '/app/$slug/sub/$subSlug'
   id:
     | '__root__'
     | '/_layout'
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '/_layout/'
     | '/_layout/app/$slug'
     | '/_layout/catalog/apps/'
+    | '/_layout/app/$slug_/sub/$subSlug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -162,6 +174,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutCatalogAppsIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/app/$slug_/sub/$subSlug': {
+      id: '/_layout/app/$slug_/sub/$subSlug'
+      path: '/app/$slug/sub/$subSlug'
+      fullPath: '/app/$slug/sub/$subSlug'
+      preLoaderRoute: typeof LayoutAppSlugSubSubSlugRouteImport
+      parentRoute: typeof LayoutRoute
+    }
   }
 }
 
@@ -171,6 +190,7 @@ interface LayoutRouteChildren {
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutAppSlugRoute: typeof LayoutAppSlugRoute
   LayoutCatalogAppsIndexRoute: typeof LayoutCatalogAppsIndexRoute
+  LayoutAppSlugSubSubSlugRoute: typeof LayoutAppSlugSubSubSlugRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
@@ -179,6 +199,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutAppSlugRoute: LayoutAppSlugRoute,
   LayoutCatalogAppsIndexRoute: LayoutCatalogAppsIndexRoute,
+  LayoutAppSlugSubSubSlugRoute: LayoutAppSlugSubSubSlugRoute,
 }
 
 const LayoutRouteWithChildren =

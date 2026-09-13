@@ -30,7 +30,8 @@ import { LauncherDetailPanel } from '../launcher/LauncherDetailPanel'
 
 export function AppCatalogPage({
   selectedSlug,
-}: { selectedSlug?: string } = {}) {
+  selectedSubSlug: subPageSlug,
+}: { selectedSlug?: string; selectedSubSlug?: string } = {}) {
   const { resources, isLoadingApps, tagsDefinitions } = useAppCatalogContext()
   const { state: filterState, actions } = useAppCatalogFilters()
   const { getTopApps } = useAppClickHistory()
@@ -41,7 +42,13 @@ export function AppCatalogPage({
 
   // Search value from context (URL-synced in AppCatalogFiltersContext)
   const search = useSearch({ strict: false })
-  const selectedSubSlug = search.sub
+
+  // Two distinct states, deliberately on different parts of the URL:
+  //  - `?sub=<slug>`             the parent's detail, singled out to one child
+  //  - `/app/<slug>/sub/<child>` that child's OWN page, with its access chain
+  // Clicking a matched sub-resource in the search results reaches the first;
+  // clicking its name in the parent's table reaches the second.
+  const highlightSubSlug = search.sub
 
   const handleSubClick = useCallback(
     (parentSlug: string, subSlug: string) => {
@@ -54,20 +61,29 @@ export function AppCatalogPage({
     [navigate],
   )
 
+  const handleSubPageClick = useCallback(
+    (parentSlug: string, subSlug: string) => {
+      void navigate({
+        to: '/app/$slug/sub/$subSlug',
+        params: { slug: parentSlug, subSlug },
+        search: (prev) => prev,
+      })
+    },
+    [navigate],
+  )
+
   const handleBackToParent = useCallback(() => {
-    // Return to parent app detail, clearing the sub-resource selection.
-    // selectedAppSlug is the parent slug (set by the /app/$slug route).
+    // Leave the sub-resource's page for its parent's detail, keeping `?sub=` so
+    // the row the user came from stays singled out — going "back" shouldn't
+    // dump them into all forty-seven siblings.
     if (selectedAppSlug) {
       void navigate({
         to: '/app/$slug',
         params: { slug: selectedAppSlug },
-        search: (prev) => {
-          const { sub: _sub, ...rest } = prev as Record<string, string>
-          return rest
-        },
+        search: (prev) => ({ ...prev, sub: subPageSlug }),
       })
     }
-  }, [navigate, selectedAppSlug])
+  }, [navigate, selectedAppSlug, subPageSlug])
 
   const searchValue = filterState.searchValue
   const setSearchValue = actions.setSearchValue
@@ -286,18 +302,18 @@ export function AppCatalogPage({
     [selectedAppSlug, resources],
   )
 
-  // …and the sub-resource within it, when the URL carries `?sub=` (e.g. the user
-  // clicked a matched sub-resource row in the search results).
+  // …and the sub-resource whose OWN page is open (`/app/<slug>/sub/<child>`).
+  // `?sub=` deliberately does NOT land here: that state stays on the parent's
+  // detail with the child singled out in its table.
   const launcherSelectedSub = useMemo(() => {
-    if (!selectedSubSlug || !launcherSelectedApp) return null
+    if (!subPageSlug || !launcherSelectedApp) return null
     return (
       resources.find(
         (r) =>
-          r.slug === selectedSubSlug &&
-          r.parentSlug === launcherSelectedApp.slug,
+          r.slug === subPageSlug && r.parentSlug === launcherSelectedApp.slug,
       ) ?? null
     )
-  }, [selectedSubSlug, launcherSelectedApp, resources])
+  }, [subPageSlug, launcherSelectedApp, resources])
 
   const handleClearFilters = () => {
     setSearchValue('')
@@ -341,10 +357,11 @@ export function AppCatalogPage({
           searchValue={searchValue}
           onSearchChange={setSearchValue}
           onAppClick={handleAppClick}
+          onSubClick={handleSubClick}
           onLaunch={handleLaunch}
           totalCount={totalAppsCount}
           detailOpen={launcherSelectedApp !== null}
-          selectedSubSlug={selectedSubSlug}
+          selectedSubSlug={highlightSubSlug}
         />
         {/* #38 item B: app detail as a slide-over over the launcher backdrop,
             instead of dropping into the old grid + split-pane. */}
@@ -422,11 +439,11 @@ export function AppCatalogPage({
             <AppCatalogGrid
               apps={filteredApps}
               selectedAppSlug={selectedAppSlug}
-              selectedSubSlug={selectedSubSlug}
+              selectedSubSlug={subPageSlug}
               groupingDefinition={groupingDefinition}
               onAppClick={handleAppClick}
               onClosePanel={() => void navigate({ to: '/' })}
-              onSubClick={handleSubClick}
+              onSubClick={handleSubPageClick}
               onBackToParent={handleBackToParent}
               hasSearch={!!deferredSearchValue}
               searchQuery={searchValue}

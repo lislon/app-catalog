@@ -6,6 +6,8 @@ export interface TableRow {
   description: string
 }
 
+const rowText = (el: Element) => el.textContent.trim()
+
 export class CatalogTools {
   private user = userEvent.setup()
 
@@ -170,77 +172,63 @@ export class CatalogTools {
   }
 
   /**
-   * Get expandable subresource rows shown under parents in search results.
-   * Returns null if no sub-rows are visible.
+   * The matched sub-resource rows shown under their parents in search results.
+   * Selected by role + `data-kind`, not by styling — a Tailwind class is not a
+   * contract, and these assertions outlived two rounds of restyling.
    */
   getSubResourceRows(): {
     visible: number
     total: number
     hasExpandRow: boolean
     names: string[]
+    /** Name of the row marked `aria-current`, if any. */
+    currentName: string | null
   } | null {
-    const subButtons = Array.from(
-      document.querySelectorAll<HTMLButtonElement>(
-        'button[class*="border-l-2"]',
-      ),
-    )
-    if (subButtons.length === 0) return null
+    const subRows = this.querySubRows('sub')
+    const expandRow = this.querySubRows('more')[0] ?? null
+    if (subRows.length === 0 && !expandRow) return null
 
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    const getText = (el: HTMLButtonElement) => (el.textContent ?? '').trim()
-    const isExpandRow = (el: HTMLButtonElement) => getText(el).startsWith('...')
-
-    const expandButton = subButtons.find(isExpandRow)
-    const hasExpandRow = !!expandButton
-
-    let hiddenCount = 0
-    if (expandButton) {
-      const match = /\d+/.exec(getText(expandButton))
-      hiddenCount = match?.[0] ? parseInt(match[0], 10) : 0
-    }
-
-    const visibleSubs = subButtons.filter((b) => !isExpandRow(b))
+    const hidden = expandRow ? /\d+/.exec(rowText(expandRow)) : null
 
     return {
-      visible: visibleSubs.length,
-      total: visibleSubs.length + hiddenCount,
-      hasExpandRow,
-      names: visibleSubs.map((b) => getText(b)),
+      visible: subRows.length,
+      total: subRows.length + (hidden?.[0] ? parseInt(hidden[0], 10) : 0),
+      hasExpandRow: !!expandRow,
+      names: subRows.map(rowText),
+      currentName:
+        subRows
+          .filter((el) => el.getAttribute('aria-current') === 'true')
+          .map(rowText)[0] ?? null,
     }
   }
 
   async clickSubResource(displayName: string): Promise<void> {
-    const subButtons = Array.from(
-      document.querySelectorAll<HTMLButtonElement>(
-        'button[class*="border-l-2"]',
-      ),
-    )
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    const getText = (el: HTMLButtonElement) => (el.textContent ?? '').trim()
-    const target = subButtons.find(
-      (b) =>
-        getText(b) === displayName && !getText(b).trimStart().startsWith('...'),
+    const target = this.querySubRows('sub').find(
+      (el) => rowText(el) === displayName,
     )
     if (!target) {
       throw new Error(
-        `Sub-resource "${displayName}" not found in search result rows`,
+        `Sub-resource "${displayName}" not found in search result rows. ` +
+          `Visible: [${this.querySubRows('sub').map(rowText).join(', ')}]`,
       )
     }
     await this.user.click(target)
   }
 
   async expandSubResources(): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    const getText = (el: HTMLButtonElement) => (el.textContent ?? '').trim()
-    const expandButtons = Array.from(
-      document.querySelectorAll<HTMLButtonElement>(
-        'button[class*="border-l-2"]',
-      ),
-    ).filter((b) => getText(b).trimStart().startsWith('...'))
-    if (expandButtons.length === 0) {
-      throw new Error('No expand ("...N more") button found')
+    const expandRow = this.querySubRows('more')[0]
+    if (!expandRow) {
+      throw new Error('No expand ("... N more") row found in search results')
     }
-    await this.user.click(expandButtons[0]!)
+    await this.user.click(expandRow)
+  }
+
+  private querySubRows(kind: 'sub' | 'more'): HTMLElement[] {
+    return Array.from(
+      document.querySelectorAll<HTMLElement>(
+        `[role="option"][data-kind="${kind}"]`,
+      ),
+    )
   }
 
   /**

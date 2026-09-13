@@ -12,7 +12,9 @@
   "author": "Igor Golovin",
   "sideEffects": [
     "./src/setup/*",
-    "./dist/esm/setup/*"
+    "./dist/esm/setup/*",
+    "./src/cucumber/*",
+    "./dist/esm/cucumber/*"
   ],
   "type": "module",
   "exports": {
@@ -28,6 +30,13 @@
       "import": {
         "types": "./dist/esm/setup/testSetup.d.ts",
         "default": "./dist/esm/setup/testSetup.js"
+      }
+    },
+    "./cucumber": {
+      "my-custom-condition": "./src/cucumber/steps.ts",
+      "import": {
+        "types": "./dist/esm/cucumber/steps.d.ts",
+        "default": "./dist/esm/cucumber/steps.js"
       }
     },
     "./package.json": "./package.json"
@@ -59,6 +68,7 @@
     "fake-indexeddb": "^6.2.4",
     "msw": "^2.12.14",
     "msw-trpc": "^2.0.1",
+    "quickpickle": "^1.11.2",
     "superjson": "catalog:"
   },
   "devDependencies": {

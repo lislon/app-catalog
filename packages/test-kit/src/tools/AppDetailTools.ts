@@ -90,6 +90,8 @@ export class AppDetailTools {
     total: number
     visible: number
     names: string[]
+    /** Name of the row marked `aria-current` — the one the user asked for. */
+    currentName: string | null
   } | null {
     const panel = this.getPanel()
     const heading = Array.from(panel.querySelectorAll('div')).find((el) =>
@@ -102,15 +104,33 @@ export class AppDetailTools {
     const total = match?.[2] ? parseInt(match[2], 10) : 0
 
     const names: string[] = []
+    let currentName: string | null = null
     const rows = panel.querySelectorAll('table tbody tr')
     rows.forEach((row) => {
       const nameCell = row.querySelector('td .font-medium')
-      if (nameCell?.textContent) {
-        names.push(nameCell.textContent.trim())
-      }
+      if (!nameCell?.textContent) return
+      const name = nameCell.textContent.trim()
+      names.push(name)
+      if (row.getAttribute('aria-current') === 'true') currentName = name
     })
 
-    return { total, visible, names }
+    return { total, visible, names, currentName }
+  }
+
+  /** Open a sub-resource's own page from the parent's sub-resource table. */
+  async clickSubResourceInTable(displayName: string): Promise<void> {
+    const panel = this.getPanel()
+    const links = Array.from(
+      panel.querySelectorAll<HTMLElement>('table tbody tr td .font-medium'),
+    )
+    const target = links.find((el) => el.textContent.trim() === displayName)
+    if (!target) {
+      throw new Error(
+        `Sub-resource "${displayName}" not found in the sub-resource table. ` +
+          `Rows: [${links.map((el) => el.textContent.trim()).join(', ')}]`,
+      )
+    }
+    await this.user.click(target)
   }
 
   /**
