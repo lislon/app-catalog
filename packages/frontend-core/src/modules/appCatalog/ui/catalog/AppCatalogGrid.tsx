@@ -30,7 +30,7 @@ const typeLabel = (t?: string): string | null => {
   return t.charAt(0).toUpperCase() + t.slice(1)
 }
 
-export interface LauncherHomeProps {
+export interface AppCatalogGridProps {
   /** All root (non-child) resources, already filtered for deprecated per settings. */
   apps: Resource[]
   /**
@@ -478,7 +478,7 @@ function SearchResultsList({
   )
 }
 
-export function LauncherHome({
+export function AppCatalogGrid({
   apps,
   allResources,
   searchValue,
@@ -489,7 +489,7 @@ export function LauncherHome({
   totalCount,
   detailOpen = false,
   selectedSubSlug,
-}: LauncherHomeProps) {
+}: AppCatalogGridProps) {
   const { getTopApps } = useAppClickHistory()
   const [topSlugs, setTopSlugs] = useState<string[]>([])
 

@@ -1,7 +1,6 @@
 import type { TRPCRouter } from '@igstack/app-catalog-backend-core'
 import type { QueryClient } from '@tanstack/react-query'
 import type { TRPCClient } from '@trpc/client'
-import { useUiSettings } from '~/context/UiSettingsContext'
 import { AppCatalogProvider } from '~/modules/appCatalog/context/AppCatalogContext'
 import { AppCatalogFiltersProvider } from '~/modules/appCatalog/ui/context/AppCatalogFiltersContext'
 import { ViewToggle } from '~/modules/appCatalog/ui/components/ViewToggle'
@@ -21,15 +20,10 @@ export function AppCatalogLayout({
   trpcClient,
   headerMiddle,
 }: AppCatalogLayoutProps) {
-  const uiSettings = useUiSettings()
-  const filterableTagPrefixes = uiSettings.filterPane?.filterByTagPrefixes ?? []
-
   return (
     <TopLevelProviders queryClient={queryClient} trpcClient={trpcClient}>
       <AppCatalogProvider>
-        <AppCatalogFiltersProvider
-          filterableTagPrefixes={filterableTagPrefixes}
-        >
+        <AppCatalogFiltersProvider>
           <MainLayout headerMiddle={headerMiddle ?? <ViewToggle />}>
             {/* <Breadcrumb className="pb-4">*/}
             {/*  <BreadcrumbList>*/}

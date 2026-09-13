@@ -3,24 +3,24 @@ import { X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { SubResourceDetailPanel } from '../components/SubResourceDetailPanel'
-import { AppDetails } from '../grid/AppCatalogGrid'
+import { AppDetails } from '../detail/AppDetails'
 
 /**
- * Centered detail card for the launcher (#38, item B). Renders the rich
+ * Centered detail card over the catalog (#38, item B). Renders the rich
  * AppDetails (access-hero, sub-resources, tiers) as a large centered modal card
- * over the launcher backdrop, instead of the old grid + resizable split-pane.
+ * over the catalog backdrop.
  *
  * When a sub-resource is selected (`?sub=<slug>` — e.g. the user clicked a
  * matched sub-resource row in the search results) the card shows that
  * sub-resource's own detail, with its two-step access chain and a back link to
- * the parent, mirroring the grid's split-pane behavior.
+ * the parent.
  *
  * Escape handling: this component does NOT globally bind Escape. Escape-to-close
  * is owned by AppDetails' own key handling (which first closes an open
  * screenshot gallery, then closes the card), so pressing Esc inside the gallery
  * returns to the card — not all the way to the home page (#38 Esc-stacking bug).
  */
-export function LauncherDetailPanel({
+export function AppDetailPanel({
   app,
   subResource,
   onClose,
