@@ -10,7 +10,9 @@ import {
   AcDb,
   App,
   SEARCH_STORAGE_KEY,
+  clearSessionState,
   createAcRouter,
+  seedSessionState,
 } from '@igstack/app-catalog-frontend-core/internal'
 
 import { MockDb } from '../mock-backend/MockDb'
@@ -50,6 +52,9 @@ let activeServer: SetupServer | null = null
 let activeDb: AcDb | null = null
 
 export async function cleanupTestResources(): Promise<void> {
+  // The module-scoped filter store dies with the document in a browser; between
+  // tests there is no new document, so reset it by hand.
+  clearSessionState()
   if (activeServer) {
     activeServer.close()
     activeServer = null
@@ -95,11 +100,11 @@ export async function given(
     localStorage.setItem(key, value)
   }
 
-  // Seed the persisted catalog search (#27): simulates a returning user who had
-  // typed a query before navigating. Backs the same sessionStorage key the
-  // provider reads, so the search input repopulates without any `?q=` in the URL.
+  // Seed the catalog search (#27): simulates a user who had already typed a query
+  // before navigating. Writes the same store key the provider reads, so the
+  // search input repopulates without any `?q=` in the URL.
   if (opts.seedSearch !== undefined) {
-    sessionStorage.setItem(SEARCH_STORAGE_KEY, opts.seedSearch)
+    seedSessionState(SEARCH_STORAGE_KEY, opts.seedSearch)
   }
 
   // 5. Build network catalog from backend service, then apply overrides

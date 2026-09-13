@@ -217,6 +217,7 @@ function TiersAndSubResourcesPanel({ app }: { app: Resource }) {
         <div className="mt-6">
           <SubResourcesSection
             subResources={appSubResources}
+            parentSlug={app.slug}
             initialSearch={filterState.searchValue}
           />
         </div>

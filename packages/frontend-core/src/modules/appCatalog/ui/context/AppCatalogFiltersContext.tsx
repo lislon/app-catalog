@@ -104,16 +104,15 @@ export function AppCatalogFiltersProvider({
     encode: encodeFiltersParam,
   })
 
-  // Search value persists in sessionStorage (not the URL) so it survives the
+  // Search value lives in a module-scoped store (not the URL) so it survives the
   // per-route remount of this provider — e.g. auto-opening an app's detail page
   // when the query narrows to one match (#10) — WITHOUT leaking `?q=` into every
-  // shared/bookmarked app link (#27). The synchronous store read/write also
-  // removes the effect-ordering race the URL sync had (#10).
+  // shared/bookmarked app link (#27), and without outliving the page load the way
+  // sessionStorage did. The synchronous store read/write also removes the
+  // effect-ordering race the URL sync had (#10).
   const [searchValue, setSearchValue] = useSessionSyncedState<string>({
     key: SEARCH_STORAGE_KEY,
     defaultValue: '',
-    decode: (value) => value,
-    encode: (value) => (value === '' ? undefined : value),
   })
 
   const [showDeprecated, setShowDeprecated] = useUrlSyncedState({

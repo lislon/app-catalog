@@ -43,6 +43,8 @@ export interface LauncherHomeProps {
   searchValue: string
   onSearchChange: (v: string) => void
   onAppClick: (app: Resource) => void
+  /** Opens a matched sub-resource: its parent's detail, singled out to it. */
+  onSubClick: (parentSlug: string, subSlug: string) => void
   onLaunch: (app: Resource) => void
   /** Total resource count for the "Browse all" label. */
   totalCount: number
@@ -192,6 +194,7 @@ function SearchResultsList({
   apps,
   searchValue,
   onAppClick,
+  onSubClick,
   onLaunch,
   onClear,
   keyboardEnabled = true,
@@ -200,6 +203,7 @@ function SearchResultsList({
   apps: Resource[]
   searchValue: string
   onAppClick: (app: Resource) => void
+  onSubClick: (parentSlug: string, subSlug: string) => void
   onLaunch: (app: Resource) => void
   onClear: () => void
   keyboardEnabled?: boolean
@@ -273,21 +277,26 @@ function SearchResultsList({
     return out
   }, [results, matchedChildrenByParent, expandedParents])
 
+  const matchCount = useMemo(() => {
+    let n = results.length
+    for (const kids of matchedChildrenByParent.values()) n += kids.length
+    return n
+  }, [results, matchedChildrenByParent])
+
   const activateRow = useCallback(
     (row: ResultRow) => {
       if (row.kind === 'app') {
         onAppClick(row.app)
       } else if (row.kind === 'sub') {
-        // Open the parent app detail, not the sub-resource's own detail page.
-        // The sub-resources table inside the detail panel is pre-filtered by the
-        // current search query (filterState.searchValue → SubResourcesSection
-        // initialSearch), so the matching account is immediately visible.
-        onAppClick(row.parent)
+        // Open the parent's detail singled out to THIS sub-resource. Filtering
+        // the parent's sub-resource table by the query instead would leave the
+        // clicked row buried among every other match ("project" matches 47).
+        onSubClick(row.parent.slug, row.sub.slug)
       } else {
         setExpandedParents((prev) => new Set(prev).add(row.parent.slug))
       }
     },
-    [onAppClick],
+    [onAppClick, onSubClick],
   )
 
   // Reset focus and collapse expanded sub-resource lists when the query changes
@@ -322,11 +331,14 @@ function SearchResultsList({
 
   return (
     <div className="max-w-[620px] mx-auto mt-3">
-      {/* Meta line */}
+      {/* Meta line. Counts matched sub-resources too — they are results in
+          their own right, and a parent surfaced only via 47 matching accounts
+          used to be reported as "1 result". Collapsed ones still count, so the
+          number doesn't jump when the "... N more" row is expanded. */}
       <div className="text-[13px] text-muted-foreground mb-2 px-1">
-        {results.length === 0
+        {matchCount === 0
           ? `No results for "${searchValue}"`
-          : `${results.length} result${results.length === 1 ? '' : 's'}`}
+          : `${matchCount} result${matchCount === 1 ? '' : 's'}`}
       </div>
 
       {/* #11: deprecated-only fallback notice */}
@@ -357,7 +369,11 @@ function SearchResultsList({
                 key={row.key}
                 type="button"
                 role="option"
+                data-kind="sub"
                 aria-selected={focused}
+                // "Which one am I looking at" — set while this sub-resource is
+                // the one singled out in its parent's detail behind the overlay.
+                aria-current={isOpen ? 'true' : undefined}
                 aria-label={`${sub.displayName} — sub-resource of ${parent.displayName}`}
                 title={sub.displayName}
                 onMouseEnter={() => setFocusedIndex(i)}
@@ -383,6 +399,7 @@ function SearchResultsList({
                 key={row.key}
                 type="button"
                 role="option"
+                data-kind="more"
                 aria-selected={focused}
                 aria-label={`Show ${row.hidden} more matching sub-resources of ${row.parent.displayName}`}
                 onMouseEnter={() => setFocusedIndex(i)}
@@ -467,6 +484,7 @@ export function LauncherHome({
   searchValue,
   onSearchChange,
   onAppClick,
+  onSubClick,
   onLaunch,
   totalCount,
   detailOpen = false,
@@ -580,6 +598,7 @@ export function LauncherHome({
           apps={allResources ?? apps}
           searchValue={searchValue}
           onAppClick={onAppClick}
+          onSubClick={onSubClick}
           onLaunch={onLaunch}
           onClear={() => onSearchChange('')}
           keyboardEnabled={!detailOpen}

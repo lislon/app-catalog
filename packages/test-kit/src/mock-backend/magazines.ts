@@ -220,6 +220,87 @@ function singleMagazine(postConfigure?: Magazine): Magazine {
 }
 
 // ---------------------------------------------------------------------------
+// Sub-resource magazine
+// ---------------------------------------------------------------------------
+
+/** How many sub-resources the parent gets. Above COLLAPSED_SUB_LIMIT (5) on
+ *  purpose, so the collapsed "... N more" row is exercised. */
+const SUB_RESOURCE_COUNT = 47
+
+/**
+ * One parent resource with a long list of children — the shape that makes
+ * sub-resource search worth having (a cloud console with dozens of accounts, a
+ * database server with dozens of schemas).
+ *
+ * Children are named `project-01 … project-47` so a query can match all of them
+ * at once ("project"), exactly one ("project-02"), or none ("Cloud Console" —
+ * the parent's own name). Each carries a synthetic 12-digit account id in
+ * `aliases`, so searching by identifier rather than by name is covered too.
+ *
+ * Access data is deliberately uneven:
+ *  - the parent and `project-02` both have an `accessRequest` → two-step chain
+ *  - `project-03` has only top-level `approverSlugs`/`accessComments` → the
+ *    fallback path, which must still tell the user how to get access
+ *  - everything else has none
+ */
+function subResourcesMagazine(postConfigure?: Magazine): Magazine {
+  return (ctx) => {
+    const { backendCfg } = ctx
+
+    const supportPortal = backendCfg.withApprovalMethod({
+      slug: 'it-support',
+      type: 'service',
+      displayName: 'Support Portal',
+      config: { url: 'https://support.example.com' },
+    })
+
+    const parent = backendCfg.withApp({
+      slug: 'cloud-console',
+      displayName: 'Cloud Console',
+      description: 'Cloud accounts and the projects inside them',
+      appUrl: 'https://console.example.com',
+      accessRequest: {
+        approvalMethodSlug: supportPortal.slug,
+        comments: 'Request the base role first',
+      },
+    })
+
+    backendCfg.withApp({
+      slug: 'teamchat',
+      displayName: 'TeamChat',
+      description: 'Team messaging and collaboration',
+    })
+
+    for (let i = 1; i <= SUB_RESOURCE_COUNT; i++) {
+      const n = String(i).padStart(2, '0')
+      backendCfg.withSubResource({
+        appSlug: parent.slug,
+        slug: `project-${n}`,
+        displayName: `project-${n}`,
+        aliases: [String(i).padStart(12, '0')],
+        tier: i % 2 === 0 ? 'prod' : 'dev',
+        ...(i === 2
+          ? {
+              accessRequest: {
+                approvalMethodSlug: supportPortal.slug,
+                comments: 'Then request this project',
+              },
+            }
+          : {}),
+        ...(i === 3
+          ? {
+              approverSlugs: ['owner@example.com'],
+              accessComments: 'Ask the project owner directly',
+            }
+          : {}),
+      })
+    }
+
+    postConfigure?.(ctx)
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Magazine entries
 // ---------------------------------------------------------------------------
 
@@ -239,6 +320,10 @@ export const magazine = {
       { prepopulateCache: true, dismissOnboarding: true },
       postConfigure,
     ),
+
+  /** 1 parent with 47 sub-resources + 1 unrelated app — accepts optional post-configurer */
+  subResources: (postConfigure?: Magazine) =>
+    subResourcesMagazine(postConfigure),
 
   /** Inline custom configurer — pass-through for ad-hoc tests */
   custom: (fn: Magazine): Magazine => fn,
