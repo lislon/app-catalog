@@ -32,7 +32,7 @@ const config = defineConfig(({ mode }) => {
       watch: false,
       environment: 'jsdom',
       typecheck: { enabled: true },
-      setupFiles: ['./src/__tests__/integration/setup/testSetup.ts'],
+      setupFiles: ['./src/__tests__/setupTests.tsx'],
       include: ['./src/__tests__/**/*.test.{ts,tsx}'],
     },
     plugins: [
@@ -60,7 +60,7 @@ const config = defineConfig(({ mode }) => {
     return mergeConfig(
       tanstackViteConfig({
         tsconfigPath,
-        entry: './src/index.tsx',
+        entry: ['./src/index.tsx', './src/internal.ts'],
         srcDir: './src',
         cjs: false,
       }),

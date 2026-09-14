@@ -221,7 +221,7 @@ export function Gallery({
             </div>
           </div>
         ) : (
-          <div className="h-full w-full overflow-auto p-2">
+          <div className="h-full w-full overflow-auto p-2 flex items-center justify-center">
             {imageState !== 'loaded' && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <Spinner className="size-8" />
@@ -230,7 +230,7 @@ export function Gallery({
             <img
               src={currentImage.url}
               alt={currentImage.alt}
-              className="max-w-full h-auto cursor-zoom-out"
+              className="max-w-full max-h-full h-auto cursor-zoom-out"
               onClick={() => setFullscreen(false)}
               onLoad={() => handleImageLoad(currentIndex)}
               onError={() => handleImageError(currentIndex)}

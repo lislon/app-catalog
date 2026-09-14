@@ -53,8 +53,12 @@ const PACKAGES_DIR = 'packages'
 /** Hard cap on a single `npm view`; observed p99 is well under a second. */
 const LOOKUP_TIMEOUT_MS = 15_000
 const RETRY_DELAY_MS = 10_000
-/** Total patience for a fresh publish to clear npm's CDN. */
-const DEADLINE_MS = 3 * 60_000
+/**
+ * Total patience for a fresh publish to clear npm's CDN. A package whose
+ * packument is young — a newly added one, or one nothing downloads — has taken
+ * well over 3 minutes, which failed this step while the publish itself was fine.
+ */
+const DEADLINE_MS = 10 * 60_000
 
 function flag(name) {
   const i = process.argv.indexOf(name)

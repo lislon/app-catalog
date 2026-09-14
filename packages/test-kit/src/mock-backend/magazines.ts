@@ -1,0 +1,330 @@
+import type { MockBackendConfigurer } from './MockBackendConfigurer'
+import type { BrowserStateCfg } from './BrowserStateCfg'
+import type { NetworkConfigurerCfg } from '../mock-network/NetworkConfigurerCfg'
+
+// ---------------------------------------------------------------------------
+// Core types
+// ---------------------------------------------------------------------------
+
+export interface ConfigurerContext {
+  backendCfg: MockBackendConfigurer
+  browserStateCfg: BrowserStateCfg
+  networkCfg: NetworkConfigurerCfg
+}
+
+/** A magazine is a function that configures the context */
+export type Magazine = (ctx: ConfigurerContext) => void
+
+// ---------------------------------------------------------------------------
+// Full magazine features
+// ---------------------------------------------------------------------------
+
+interface FullFeatures {
+  prepopulateCache?: boolean
+  dismissOnboarding?: boolean
+}
+
+function fullMagazine(
+  features: FullFeatures,
+  postConfigure?: Magazine,
+): Magazine {
+  return (ctx) => {
+    const { backendCfg, browserStateCfg } = ctx
+
+    // Approval methods — all 3 types
+    const supportPortal = backendCfg.withApprovalMethod({
+      slug: 'it-support',
+      type: 'service',
+      displayName: 'Support Portal',
+      config: {
+        url: 'https://support.example.com',
+        description: 'General IT support desk',
+      },
+    })
+    backendCfg.withApprovalMethod({
+      slug: 'ops-support',
+      type: 'service',
+      displayName: 'Ops Portal',
+      config: { url: 'https://opsdesk.example.com' },
+    })
+    const managerApproval = backendCfg.withApprovalMethod({
+      slug: 'manager-approval',
+      type: 'custom',
+      displayName: 'Manager Approval',
+      config: {},
+    })
+    backendCfg.withApprovalMethod({
+      slug: 'self-service',
+      type: 'custom',
+      displayName: 'Self-Service',
+      config: {},
+    })
+
+    // Tag definitions
+    backendCfg.withTag({
+      prefix: 'category',
+      displayName: 'Category',
+      description: 'Application category',
+      values: [
+        {
+          value: 'project-management',
+          displayName: 'Project Management',
+          description: '',
+        },
+        {
+          value: 'communication',
+          displayName: 'Communication',
+          description: '',
+        },
+        { value: 'internal', displayName: 'Internal Tools', description: '' },
+      ],
+    })
+    backendCfg.withTag({
+      prefix: 'team',
+      displayName: 'Team',
+      description: 'Owning team',
+      values: [
+        { value: 'engineering', displayName: 'Engineering', description: '' },
+        { value: 'platform', displayName: 'Platform', description: '' },
+      ],
+    })
+
+    // Apps
+    backendCfg.withApp({
+      slug: 'taskflow',
+      displayName: 'TaskFlow',
+      description: 'Project tracking and issue management',
+      tags: ['category:project-management', 'team:engineering'],
+      screenshotIds: ['ss-taskflow-1', 'ss-taskflow-2', 'ss-taskflow-3'],
+      appUrl: 'https://taskflow.example.com',
+      accessRequest: {
+        approvalMethodSlug: supportPortal.slug,
+        comments: 'Submit a ticket',
+      },
+    })
+
+    backendCfg.withApp({
+      slug: 'teamchat',
+      displayName: 'TeamChat',
+      description: 'Team messaging and collaboration',
+      tags: ['category:communication', 'team:platform'],
+      screenshotIds: ['ss-teamchat-1'],
+      appUrl: 'https://teamchat.example.com',
+    })
+
+    const newTool = backendCfg.withApp({
+      slug: 'new-tool',
+      displayName: 'New Tool',
+      description: 'The modern replacement',
+      tags: ['category:internal'],
+    })
+
+    backendCfg.withApp({
+      slug: 'old-tool',
+      displayName: 'Old Tool',
+      description: 'Legacy project tracker',
+      tags: ['category:project-management'],
+      deprecated: {
+        type: 'deprecated',
+        comment: 'Replaced by New Tool',
+        replacementSlug: newTool.slug,
+      },
+    })
+
+    backendCfg.withApp({
+      slug: 'legacy-app',
+      displayName: 'Legacy App',
+      description: 'Still works but discouraged',
+      tags: ['category:internal'],
+      deprecated: {
+        type: 'discouraged',
+        comment: 'Consider using alternatives',
+      },
+    })
+
+    backendCfg.withApp({
+      slug: 'internal-portal',
+      displayName: 'Internal Portal',
+      description: 'Company intranet portal',
+      tags: ['category:internal', 'team:platform'],
+      screenshotIds: ['ss-portal-1'],
+      accessRequest: {
+        approvalMethodSlug: managerApproval.slug,
+        comments: 'Requires manager approval',
+      },
+    })
+
+    backendCfg.withApp({
+      slug: 'admin-console',
+      displayName: 'Admin Console',
+      description: 'System administration dashboard',
+      tags: ['category:internal', 'team:engineering'],
+    })
+
+    // Apply features
+    if (features.dismissOnboarding) {
+      browserStateCfg.dismissOnboarding()
+    }
+    if (features.prepopulateCache) {
+      browserStateCfg.withOfflineData()
+    }
+
+    // Apply post-configurer (for test-specific overrides)
+    postConfigure?.(ctx)
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Single magazine
+// ---------------------------------------------------------------------------
+
+function singleMagazine(postConfigure?: Magazine): Magazine {
+  return (ctx) => {
+    const { backendCfg } = ctx
+
+    const method = backendCfg.withApprovalMethod({
+      slug: 'it-support',
+      type: 'service',
+      displayName: 'Support Portal',
+      config: { url: 'https://support.example.com' },
+    })
+
+    backendCfg.withTag({
+      prefix: 'category',
+      displayName: 'Category',
+      description: 'Application category',
+      values: [
+        {
+          value: 'project-management',
+          displayName: 'Project Management',
+          description: '',
+        },
+      ],
+    })
+
+    backendCfg.withApp({
+      slug: 'taskflow',
+      displayName: 'TaskFlow',
+      description: 'Project tracking and issue management',
+      tags: ['category:project-management'],
+      screenshotIds: ['screenshot-taskflow-1', 'screenshot-taskflow-2'],
+      appUrl: 'https://taskflow.example.com',
+      accessRequest: {
+        approvalMethodSlug: method.slug,
+        comments: 'Submit a ticket to IT',
+      },
+    })
+
+    postConfigure?.(ctx)
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Sub-resource magazine
+// ---------------------------------------------------------------------------
+
+/** How many sub-resources the parent gets. Above COLLAPSED_SUB_LIMIT (5) on
+ *  purpose, so the collapsed "... N more" row is exercised. */
+const SUB_RESOURCE_COUNT = 47
+
+/**
+ * One parent resource with a long list of children — the shape that makes
+ * sub-resource search worth having (a cloud console with dozens of accounts, a
+ * database server with dozens of schemas).
+ *
+ * Children are named `project-01 … project-47` so a query can match all of them
+ * at once ("project"), exactly one ("project-02"), or none ("Cloud Console" —
+ * the parent's own name). Each carries a synthetic 12-digit account id in
+ * `aliases`, so searching by identifier rather than by name is covered too.
+ *
+ * Access data is deliberately uneven:
+ *  - the parent and `project-02` both have an `accessRequest` → two-step chain
+ *  - `project-03` has only top-level `approverSlugs`/`accessComments` → the
+ *    fallback path, which must still tell the user how to get access
+ *  - everything else has none
+ */
+function subResourcesMagazine(postConfigure?: Magazine): Magazine {
+  return (ctx) => {
+    const { backendCfg } = ctx
+
+    const supportPortal = backendCfg.withApprovalMethod({
+      slug: 'it-support',
+      type: 'service',
+      displayName: 'Support Portal',
+      config: { url: 'https://support.example.com' },
+    })
+
+    const parent = backendCfg.withApp({
+      slug: 'cloud-console',
+      displayName: 'Cloud Console',
+      description: 'Cloud accounts and the projects inside them',
+      appUrl: 'https://console.example.com',
+      accessRequest: {
+        approvalMethodSlug: supportPortal.slug,
+        comments: 'Request the base role first',
+      },
+    })
+
+    backendCfg.withApp({
+      slug: 'teamchat',
+      displayName: 'TeamChat',
+      description: 'Team messaging and collaboration',
+    })
+
+    for (let i = 1; i <= SUB_RESOURCE_COUNT; i++) {
+      const n = String(i).padStart(2, '0')
+      backendCfg.withSubResource({
+        appSlug: parent.slug,
+        slug: `project-${n}`,
+        displayName: `project-${n}`,
+        aliases: [String(i).padStart(12, '0')],
+        tier: i % 2 === 0 ? 'prod' : 'dev',
+        ...(i === 2
+          ? {
+              accessRequest: {
+                approvalMethodSlug: supportPortal.slug,
+                comments: 'Then request this project',
+              },
+            }
+          : {}),
+        ...(i === 3
+          ? {
+              approverSlugs: ['owner@example.com'],
+              accessComments: 'Ask the project owner directly',
+            }
+          : {}),
+      })
+    }
+
+    postConfigure?.(ctx)
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Magazine entries
+// ---------------------------------------------------------------------------
+
+export const magazine = {
+  /** No apps, no tags, no approval methods */
+  empty: (() => {}) satisfies Magazine,
+
+  /** 1 app (TaskFlow), 1 tag, 1 approval method — accepts optional post-configurer */
+  single: (postConfigure?: Magazine) => singleMagazine(postConfigure),
+
+  /** Full catalog, first-time user — accepts optional post-configurer */
+  full: (postConfigure?: Magazine) => fullMagazine({}, postConfigure),
+
+  /** Full catalog, returning user (cache + onboarding dismissed) — accepts optional post-configurer */
+  fullReturningUser: (postConfigure?: Magazine) =>
+    fullMagazine(
+      { prepopulateCache: true, dismissOnboarding: true },
+      postConfigure,
+    ),
+
+  /** 1 parent with 47 sub-resources + 1 unrelated app — accepts optional post-configurer */
+  subResources: (postConfigure?: Magazine) =>
+    subResourcesMagazine(postConfigure),
+
+  /** Inline custom configurer — pass-through for ad-hoc tests */
+  custom: (fn: Magazine): Magazine => fn,
+}

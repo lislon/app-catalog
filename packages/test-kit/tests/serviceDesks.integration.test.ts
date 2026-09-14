@@ -1,0 +1,167 @@
+import { describe, expect, it } from 'vitest'
+import { screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import '@testing-library/jest-dom/vitest'
+
+import { given, magazine } from '@igstack/app-catalog-test-kit'
+
+// #9: a header toggle (Apps | Service Desks) + a /service-desks route showing a
+// searchable table of all type:'service' approval methods with open links.
+// magazine.full() seeds two service desks (Support Portal, Ops Portal) and
+// two custom methods (Manager Approval, Self-Service) which must NOT appear.
+
+function serviceDeskTable(): HTMLElement {
+  // The service-desks table (only table on that route).
+  return screen.getByRole('table')
+}
+
+function deskNames(): string[] {
+  const rows = within(serviceDeskTable()).getAllByRole('row')
+  return rows
+    .map(
+      (r) =>
+        within(r).queryByTestId('service-desk-name')?.textContent.trim() ?? '',
+    )
+    .filter(Boolean)
+}
+
+describe('Service Desks view (#9)', () => {
+  it('lists only service-type approval methods with open links', async () => {
+    await given(magazine.full(), {
+      initialRoute: '/service-desks',
+    })
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Search service desks')).toBeInTheDocument()
+    })
+
+    const names = deskNames()
+    expect(names).toContain('Support Portal')
+    expect(names).toContain('Ops Portal')
+    // custom-type methods are not service desks
+    expect(names).not.toContain('Manager Approval')
+    expect(names).not.toContain('Self-Service')
+
+    // Each service desk row has links to its portal opening in a new tab.
+    // The name itself is now also a link, plus the URL is shown under the name.
+    const itRow = within(serviceDeskTable())
+      .getAllByRole('row')
+      .find((r) => r.textContent.includes('Support Portal'))!
+    const links = within(itRow).getAllByRole('link')
+    // All links in the row point to the same portal URL
+    for (const link of links) {
+      expect(link).toHaveAttribute('href', 'https://support.example.com')
+      expect(link).toHaveAttribute('target', '_blank')
+    }
+    // At least one link shows the URL without the scheme
+    const urlLink = links.find((l) =>
+      String(l.textContent).includes('support.example.com'),
+    )
+    expect(urlLink).toBeTruthy()
+    expect(urlLink).not.toHaveTextContent('https://')
+  })
+
+  it('shows the service desk description as subtext when present', async () => {
+    await given(magazine.full(), {
+      initialRoute: '/service-desks',
+    })
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Search service desks')).toBeInTheDocument()
+    })
+
+    // Support Portal has a description; it renders in the same name cell as subtext.
+    const itRow = within(serviceDeskTable())
+      .getAllByRole('row')
+      .find((r) => r.textContent.includes('Support Portal'))!
+    const nameCell = within(itRow).getAllByRole('cell')[0]
+    expect(nameCell).toHaveTextContent('General IT support desk')
+
+    // Ops Portal has no description — its name element shows only the name
+    // (the cell also contains the URL link now, so check the name element).
+    const uxRow = within(serviceDeskTable())
+      .getAllByRole('row')
+      .find((r) => r.textContent.includes('Ops Portal'))!
+    const uxNameEl = within(uxRow).getByTestId('service-desk-name')
+    expect(uxNameEl.textContent.trim()).toBe('Ops Portal')
+  })
+
+  it('filters the desks by search', async () => {
+    const user = userEvent.setup()
+    await given(magazine.full(), {
+      initialRoute: '/service-desks',
+    })
+
+    await waitFor(() => expect(deskNames()).toContain('Ops Portal'))
+
+    await user.type(screen.getByLabelText('Search service desks'), 'Ops')
+
+    await waitFor(() => {
+      const names = deskNames()
+      expect(names).toContain('Ops Portal')
+      expect(names).not.toContain('Support Portal')
+    })
+  })
+
+  it('toggles between Apps and Service Desks from the header', async () => {
+    const { router } = await given(magazine.full(), { initialRoute: '/' })
+
+    // Apps view first — the catalog search box is present.
+    await waitFor(() =>
+      expect(screen.getByLabelText('Search apps')).toBeInTheDocument(),
+    )
+
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('link', { name: 'Service Desks' }))
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/service-desks')
+    })
+    expect(screen.getByLabelText('Search service desks')).toBeInTheDocument()
+  })
+
+  it('autofocuses the search input when the view loads (parity with Apps)', async () => {
+    await given(magazine.full(), {
+      initialRoute: '/service-desks',
+    })
+
+    const search = await screen.findByLabelText('Search service desks')
+    await waitFor(() => expect(search).toHaveFocus())
+  })
+})
+
+// #23: the header "Apps" tab must stay active while viewing an app-detail route
+// (/app/<slug>) — the detail panel is part of the Apps view. Previously the Apps
+// link was active only on the exact "/" route, so /app/taskflow highlighted
+// neither tab.
+describe('ViewToggle active tab (#23)', () => {
+  const appsTab = () => screen.getByRole('link', { name: 'Apps' })
+  const deskTab = () => screen.getByRole('link', { name: 'Service Desks' })
+
+  it('activates the Apps tab on an app-detail route (/app/$slug)', async () => {
+    await given(magazine.full(), { initialRoute: '/app/taskflow' })
+
+    await waitFor(() =>
+      expect(appsTab()).toHaveAttribute('aria-current', 'page'),
+    )
+    expect(deskTab()).not.toHaveAttribute('aria-current')
+  })
+
+  it('activates the Apps tab on the root route', async () => {
+    await given(magazine.full(), { initialRoute: '/' })
+
+    await waitFor(() =>
+      expect(appsTab()).toHaveAttribute('aria-current', 'page'),
+    )
+    expect(deskTab()).not.toHaveAttribute('aria-current')
+  })
+
+  it('activates only Service Desks on the /service-desks route', async () => {
+    await given(magazine.full(), { initialRoute: '/service-desks' })
+
+    await waitFor(() =>
+      expect(deskTab()).toHaveAttribute('aria-current', 'page'),
+    )
+    expect(appsTab()).not.toHaveAttribute('aria-current')
+  })
+})

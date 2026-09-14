@@ -7,6 +7,7 @@ import { AppCatalogPage } from '~/modules/appCatalog/ui/pages/AppCatalogPage'
 // populated once the router builds the tree, so it must be read at render
 // time (inside the selector), never at module scope.
 import { Route as AppDetailRoute } from './_layout/app.$slug'
+import { Route as SubResourceDetailRoute } from './_layout/app.$slug_.sub.$subSlug'
 import { Route as CatalogIndexRoute } from './_layout/index'
 
 export const Route = createFileRoute('/_layout')({
@@ -25,15 +26,22 @@ function LayoutComponent() {
   // re-renders when the catalog branch or the open app changes -- not on every
   // router state update. `useStore` shallow-compares the result, so returning
   // an object is still referentially stable.
-  const { isCatalogRoute, selectedSlug } = useRouterState({
+  const { isCatalogRoute, selectedSlug, selectedSubSlug } = useRouterState({
     select: (s) => {
       const detailMatch = s.matches.find((m) => m.routeId === AppDetailRoute.id)
+      const subMatch = s.matches.find(
+        (m) => m.routeId === SubResourceDetailRoute.id,
+      )
+      const params = (detailMatch ?? subMatch)?.params as
+        | { slug?: string; subSlug?: string }
+        | undefined
       return {
         isCatalogRoute:
           detailMatch !== undefined ||
+          subMatch !== undefined ||
           s.matches.some((m) => m.routeId === CatalogIndexRoute.id),
-        selectedSlug: (detailMatch?.params as { slug?: string } | undefined)
-          ?.slug,
+        selectedSlug: params?.slug,
+        selectedSubSlug: params?.subSlug,
       }
     },
   })
@@ -44,7 +52,10 @@ function LayoutComponent() {
 
   return (
     <AppCatalogLayout queryClient={queryClient} trpcClient={trpcClient}>
-      <AppCatalogPage selectedSlug={selectedSlug} />
+      <AppCatalogPage
+        selectedSlug={selectedSlug}
+        selectedSubSlug={selectedSubSlug}
+      />
       {/*
         The catalog child routes render `null` -- the page above is theirs. The
         Outlet is still rendered so those matches stay mounted: that is what

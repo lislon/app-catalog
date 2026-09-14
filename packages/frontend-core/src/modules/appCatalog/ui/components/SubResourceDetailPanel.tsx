@@ -28,8 +28,17 @@ export function SubResourceDetailPanel({
   approvalMethods,
   onBack,
 }: SubResourceDetailPanelProps) {
-  const hasParentAccess = !!parent.accessRequest
-  const hasSubAccess = !!subResource.accessRequest
+  // Mirrors AccessRequestSection's fallback: a sub-resource usually documents
+  // access through top-level `approverSlugs`/`accessComments`, not through an
+  // `accessRequest`. Only counting the latter hid its step of the chain.
+  const hasAccessInfo = (r: Resource) =>
+    !!r.accessRequest ||
+    (r.approverSlugs?.length ?? 0) > 0 ||
+    !!r.ownerPersonSlug ||
+    !!r.accessComments
+
+  const hasParentAccess = hasAccessInfo(parent)
+  const hasSubAccess = hasAccessInfo(subResource)
   const hasTwoStepAccess = hasParentAccess && hasSubAccess
   const hasAnyAccess = hasParentAccess || hasSubAccess
 
