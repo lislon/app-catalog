@@ -2,7 +2,7 @@ import { Link, useRouterState } from '@tanstack/react-router'
 import { cn } from '~/lib/utils'
 
 /**
- * Compact segmented toggle for the header (Apps | Service Desks). Rendered in
+ * Compact segmented toggle for the header (Apps | Service Desks | MCP). Rendered in
  * the header's `middle` slot so it adds no header height. Uses router Links so
  * each segment is deep-linkable.
  *
@@ -17,6 +17,7 @@ export function ViewToggle() {
 
   const appsActive = pathname === '/' || pathname.startsWith('/app/')
   const desksActive = pathname.startsWith('/service-desks')
+  const mcpActive = pathname.startsWith('/mcp')
 
   const segment =
     'inline-flex items-center rounded-md px-3 py-1 text-sm font-medium transition-colors'
@@ -44,6 +45,14 @@ export function ViewToggle() {
         className={cn(segment, desksActive ? active : inactive)}
       >
         Service Desks
+      </Link>
+      <Link
+        to="/mcp"
+        aria-label="MCP"
+        aria-current={mcpActive ? 'page' : undefined}
+        className={cn(segment, mcpActive ? active : inactive)}
+      >
+        MCP
       </Link>
     </div>
   )

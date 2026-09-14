@@ -677,6 +677,9 @@ importers:
       '@base-ui/react':
         specifier: ^1.0.0
         version: 1.0.0(@types/react@19.2.7)(react-dom@19.1.2(react@19.1.2))(react@19.1.2)
+      '@igstack/app-catalog-shared-core':
+        specifier: workspace:*
+        version: link:../shared-core
       '@radix-ui/react-alert-dialog':
         specifier: ^1.1.14
         version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.1.2(react@19.1.2))(react@19.1.2)
@@ -879,9 +882,6 @@ importers:
       '@igstack/app-catalog-backend-core':
         specifier: workspace:*
         version: link:../backend-core
-      '@igstack/app-catalog-shared-core':
-        specifier: workspace:*
-        version: link:../shared-core
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.1.18(vite@6.4.1(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.30.2)(sass-embedded@1.97.1)(sass@1.97.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.2))

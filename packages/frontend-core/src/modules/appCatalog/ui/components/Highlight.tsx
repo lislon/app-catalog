@@ -1,4 +1,4 @@
-import { highlightText } from '../../utils/searchApps'
+import { highlightText } from '../../utils/highlightText'
 
 /**
  * Highlights all case-insensitive occurrences of `query` in `text`.
