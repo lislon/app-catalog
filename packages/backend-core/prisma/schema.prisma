@@ -152,6 +152,7 @@ model DbResource {
   /// [TierVariant[]]
   tiers                      Json?
   sourceRefs                 SourceReference[]
+  comments                   DbComment[]
   // Self-referential tree: sub-resources point to their parent
   parentSlug                 String?
   parent                     DbResource?       @relation("ResourceTree", fields: [parentSlug], references: [slug])
@@ -179,6 +180,32 @@ model DbResource {
   @@index([slug])
   @@index([tags])
   @@index([parentSlug])
+}
+
+/// A visitor's comment on one resource.
+///
+/// The catalog is browsable without logging in, so a comment carries no user id.
+/// Instead the server issues an opaque visitor token in an httpOnly cookie and
+/// stores its hash: enough to let an author edit or delete their own comment for
+/// a short window, and nothing a reader can forge.
+model DbComment {
+  id         String     @id @default(cuid())
+  // The resource's id, not its slug — a slug is user-facing and gets renamed.
+  resourceId String
+  resource   DbResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  // sha256 of the visitor token. Authorises edit/delete; never sent to a client.
+  authorHash String
+  // The pseudonym shown next to the comment, stored rather than derived at render
+  // time so editing the wordlist later cannot rename everybody's history.
+  authorAlias String
+  body        String
+  // Set on a later edit, so the UI can mark a comment as edited. Null when never edited.
+  editedAt    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([resourceId, createdAt])
+  @@index([authorHash])
 }
 
 model DbAppTagDefinition {

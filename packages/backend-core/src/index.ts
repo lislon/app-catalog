@@ -26,6 +26,16 @@ export { registerAuthRoutes } from './modules/auth/registerAuthRoutes'
 
 export { createAuthRouter, type AuthRouter } from './modules/auth/authRouter'
 
+// Comments
+// CommentView is part of the router's inferred type, so it has to be nameable
+// from outside the package or every consumer's `useTRPC` becomes unportable.
+export { createCommentsRouter } from './modules/comments/commentsRouter'
+export {
+  EDIT_WINDOW_MS,
+  MAX_BODY_LENGTH,
+  type CommentView,
+} from './modules/comments/service'
+
 // Icon management
 export {
   registerIconRestController,
