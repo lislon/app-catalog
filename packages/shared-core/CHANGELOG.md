@@ -1,5 +1,7 @@
 # @igstack/app-catalog-shared-core
 
+## 1.0.1
+
 ## 1.0.0
 
 ### Minor Changes
