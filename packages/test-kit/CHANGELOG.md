@@ -1,5 +1,13 @@
 # @igstack/app-catalog-test-kit
 
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies [[`2223ce0`](https://github.com/lislon/app-catalog/commit/2223ce0dbeed8d5b0fa642275975c9ccdf975b4b)]:
+  - @igstack/app-catalog-frontend-core@1.0.1
+  - @igstack/app-catalog-backend-core@1.0.1
+
 ## 1.0.0
 
 ### Minor Changes

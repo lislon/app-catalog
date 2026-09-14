@@ -1,5 +1,14 @@
 # @igstack/app-catalog-frontend-core
 
+## 1.0.1
+
+### Patch Changes
+
+- [#188](https://github.com/lislon/app-catalog/pull/188) [`2223ce0`](https://github.com/lislon/app-catalog/commit/2223ce0dbeed8d5b0fa642275975c9ccdf975b4b) Thanks [@lislon](https://github.com/lislon)! - Center the MCP docs page content. The column was capped at `max-w-3xl` but never centered, so on a wide screen the whole page sat against the left edge with a large empty gutter on the right.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@1.0.1
+
 ## 1.0.0
 
 ### Minor Changes
