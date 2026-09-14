@@ -1,5 +1,80 @@
 # @igstack/app-catalog-frontend-core
 
+## 1.0.0
+
+### Minor Changes
+
+- [#185](https://github.com/lislon/app-catalog/pull/185) [`a7b251e`](https://github.com/lislon/app-catalog/commit/a7b251e83d8f297f1a3746ae69d5170720d00a83) Thanks [@lislon](https://github.com/lislon)! - Move the catalog ranking engine into shared-core and add an MCP docs page.
+
+  `shared-core` now owns the search engine so both the UI and server-side callers
+  rank resources identically. It exports `searchResources` (roots-only roll-up,
+  behaviour unchanged from the previous frontend-only helper),
+  `searchResourcesRanked` (same pass, but returns which field matched and how) and
+  `searchWithinApp` (ranked search over one app's sub-resources, matching
+  displayName, slug, aliases and description). The functions are generic over a
+  structural `SearchableResource`, so no dependency on any persistence type.
+  `highlightText` stays in `frontend-core`.
+
+  `frontend-core` gains a `/mcp` route, reachable from the header view toggle,
+  documenting the catalog's MCP server: endpoint, CLI one-liner and `.mcp.json`
+  snippet — all built from the current origin — plus a tool reference read live
+  from the server's own registry, so it cannot go stale.
+
+- [#183](https://github.com/lislon/app-catalog/pull/183) [`6fc2b39`](https://github.com/lislon/app-catalog/commit/6fc2b3910208811c58ab3d5897be816adc562c30) Thanks [@lislon](https://github.com/lislon)! - Remove the unreachable legacy grid catalog view
+
+  The catalog had two implementations: the search-first shell everyone actually
+  sees, and an older table-and-filters grid that could only be reached by
+  hand-crafting a `?recent=1` or `?filters=` URL — the controls that set those
+  params rendered only inside the grid itself. The grid, its filter bar, category
+  combobox, grouping tabs and onboarding card are gone, along with the whole
+  search/filter pipeline in the catalog page that only fed them (the shell always
+  re-derived search itself).
+
+  Renames, since the surviving components no longer need "launcher" to
+  disambiguate them: `LauncherHome` is now `AppCatalogGrid` (and
+  `LauncherHomeProps` is `AppCatalogGridProps`), `LauncherDetailPanel` is
+  `AppDetailPanel`, and the rich app detail moved out of the old grid file into
+  its own module.
+
+  Removed exports: `AppCatalogTable`, `AppCatalogFiltersCard`,
+  `AppCatalogDisplayMode`, `AppCatalogScopeFilter`. The `filterPane.filterByTagPrefixes`
+  UI setting is now inert — the pane it configured no longer exists. The `recent`
+  and `filters` search params are no longer declared on the app routes.
+
+  Test kit: `isShowDeprecatedChecked()`, `isOnboardingVisible()` and
+  `getCatalogTable()` are removed from `CatalogTools` — there is no table or
+  onboarding card left to inspect.
+
+- [#182](https://github.com/lislon/app-catalog/pull/182) [`525ffc0`](https://github.com/lislon/app-catalog/commit/525ffc0959e05a6b03d0fe21b342eb278ddb3394) Thanks [@lislon](https://github.com/lislon)! - Opening a sub-resource from search results now lands on it
+
+  Clicking a matched sub-resource used to open its parent with all siblings listed,
+  so a query matching 47 accounts buried the one row that was clicked. Two states
+  now exist: `?sub=<slug>` shows the parent with its table singled out to that
+  child, and `/app/<slug>/sub/<child>` is the child's own page with its two-step
+  access chain. Sub-resource rows in the parent's table are real links, and the
+  result counter now counts matched sub-resources instead of reporting a parent
+  found through 47 matching children as "1 result".
+
+  A sub-resource that documents access through approvers/comments rather than an
+  approval method now renders its access section instead of nothing.
+
+  The search box no longer restores a query from a previous page load.
+
+  The test kit gains a Cucumber layer: `@igstack/app-catalog-test-kit/cucumber`
+  provides step definitions over the existing `given()` harness, so `.feature`
+  files can drive the real app in jsdom. Register a fixture with
+  `registerCatalog(name, magazine)` and reference it from
+  `Given the "<name>" catalog`.
+
+### Patch Changes
+
+- [#178](https://github.com/lislon/app-catalog/pull/178) [`3e0681b`](https://github.com/lislon/app-catalog/commit/3e0681be536d3dd19c6e1476ae727bdb77398014) Thanks [@lislon](https://github.com/lislon)! - Fix the fullscreen screenshot viewer (Gallery) pinning the enlarged image to the top-left corner instead of centering it. The fullscreen wrapper was missing flex centering entirely.
+
+- [#176](https://github.com/lislon/app-catalog/pull/176) [`16ed741`](https://github.com/lislon/app-catalog/commit/16ed741d722d05e150d1a6fb8d468fbaf702e3a4) Thanks [@lislon](https://github.com/lislon)! - Header version footer (Pipeline #, SHA, Core version, FE build) now shows behind a small info icon popover instead of always-visible text, keeping the header compact. Content and links are unchanged, just revealed on click. Also added a small "by Igor Golovin" attribution line.
+
+- Updated dependencies [[`a7b251e`](https://github.com/lislon/app-catalog/commit/a7b251e83d8f297f1a3746ae69d5170720d00a83)]:
+  - @igstack/app-catalog-shared-core@1.0.0
+
 ## 0.18.6
 
 ### Patch Changes
