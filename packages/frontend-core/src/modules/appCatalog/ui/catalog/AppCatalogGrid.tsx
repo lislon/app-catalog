@@ -7,7 +7,7 @@ import { markdownToPlainText } from '../../utils/markdownToPlainText'
 import { pickNewThisWeek } from '../../utils/launcherHelpers'
 import { AttributionFooter } from './AttributionFooter'
 import { ResourceIcon } from './ResourceIcon'
-import { searchResources } from '../../utils/searchApps'
+import { searchResources } from '@igstack/app-catalog-shared-core'
 import { Highlight } from '../components/Highlight'
 
 /**
