@@ -22,7 +22,10 @@ export function formatRelativeTime(
   const then = Date.parse(iso)
   if (Number.isNaN(then)) return ''
   const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
-  let duration = (then - now) / 1000 // seconds, negative for the past
+  // Every timestamp we render already happened, so clamp the future away: a
+  // server clock a few seconds ahead of the browser otherwise turns a comment
+  // posted a moment ago into "in 4 seconds".
+  let duration = Math.min(0, (then - now) / 1000) // seconds, negative for the past
   for (const division of DIVISIONS) {
     if (Math.abs(duration) < division.amount) {
       return rtf.format(Math.round(duration), division.unit)
