@@ -17,6 +17,7 @@ import {
 } from '~/ui/table'
 import { useAppCatalogContext } from '~/modules/appCatalog'
 import { PersonOrGroupBadge } from './PersonBadge'
+import { displayUrl } from '~/modules/appCatalog/utils/displayUrl'
 
 interface TierVariantsSectionProps {
   tiers: TierVariant[]
@@ -125,7 +126,7 @@ function TierAccessDetail({
                   rel="noopener noreferrer"
                   className="text-primary hover:underline inline-flex items-center gap-1"
                 >
-                  {urlObj.label || urlObj.url.replace(/^https?:\/\//, '')}
+                  {urlObj.label || displayUrl(urlObj.url)}
                   <ExternalLinkIcon className="size-3" />
                 </a>
               ))}
@@ -185,7 +186,7 @@ export function TierVariantsSection({ tiers }: TierVariantsSectionProps) {
                       rel="noopener noreferrer"
                       className="text-sm text-primary hover:underline inline-flex items-center gap-1"
                     >
-                      {tier.appUrl.replace(/^https?:\/\//, '')}
+                      {displayUrl(tier.appUrl)}
                       <ExternalLinkIcon className="size-3" />
                     </a>
                   ) : (

@@ -5,6 +5,7 @@ import type {
 import { ArrowLeft, ExternalLink } from 'lucide-react'
 import { Button } from '~/ui/button'
 import { Badge } from '~/ui/badge'
+import { displayUrl } from '~/modules/appCatalog/utils/displayUrl'
 import { AccessRequestSection } from './AccessRequestSection'
 
 interface SubResourceDetailPanelProps {
@@ -89,12 +90,13 @@ export function SubResourceDetailPanel({
             target="_blank"
             rel="noopener noreferrer"
             className="mt-3 inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
-            aria-label={'Open ' + subResource.displayName}
+            title={`Open \u2192 ${displayUrl(subResource.appUrl)}`}
+            aria-label={`Open ${subResource.displayName} in a new tab (${displayUrl(subResource.appUrl)})`}
           >
             <ExternalLink className="size-3.5 shrink-0" />
             Open{' '}
             <span className="max-w-[240px] truncate text-primary-foreground/70 text-xs font-normal">
-              {subResource.appUrl.replace(/https?:\/\//g, '')}
+              {displayUrl(subResource.appUrl)}
             </span>
           </a>
         )}

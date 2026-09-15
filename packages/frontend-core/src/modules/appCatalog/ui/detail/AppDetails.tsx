@@ -34,6 +34,7 @@ import { TierVariantsSection } from '../components/TierVariantsSection'
 import { SubResourcesSection } from '../components/SubResourcesSection'
 import { getChildResources } from '../../utils/resolveHelpers'
 import { CommentsSection } from './CommentsSection'
+import { displayUrl } from '~/modules/appCatalog/utils/displayUrl'
 
 function getIconUrl(iconName: string): string {
   return `/api/icons/${iconName}`
@@ -270,7 +271,7 @@ export function AppDetails({
                           onClick={() => recordClick(app.slug)}
                           className="inline-flex items-center gap-1 rounded-md py-1 text-sm text-blue-600 hover:bg-accent/30 hover:underline dark:text-blue-400 transition-all"
                         >
-                          {url.replace(/https?:\/\//g, '')}
+                          {displayUrl(url)}
                           <ExternalLink className="size-3.5 shrink-0 opacity-40 group-hover:opacity-100 transition-opacity" />
                         </a>
                       ) : (
@@ -285,12 +286,13 @@ export function AppDetails({
                     rel="noopener noreferrer"
                     onClick={() => recordClick(app.slug)}
                     className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
-                    aria-label={'Open ' + app.displayName}
+                    title={`Open \u2192 ${displayUrl(app.appUrl)}`}
+                    aria-label={`Open ${app.displayName} in a new tab (${displayUrl(app.appUrl)})`}
                   >
                     <ExternalLink className="size-3.5 shrink-0" />
                     Open{' '}
                     <span className="max-w-[240px] truncate text-primary-foreground/70 text-xs font-normal">
-                      {app.appUrl.replace(/https?:\/\//g, '')}
+                      {displayUrl(app.appUrl)}
                     </span>
                   </a>
                 ) : (
@@ -423,7 +425,7 @@ export function AppDetails({
                   className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary truncate"
                 >
                   <ExternalLink className="size-3 shrink-0" />
-                  {link.title || link.url.replace(/https?:\/\//g, '')}
+                  {link.title || displayUrl(link.url)}
                 </a>
               ))}
             </div>
@@ -585,7 +587,7 @@ export function AppDetails({
                               rel="noopener noreferrer"
                               className="hover:text-primary inline-flex items-center gap-1 truncate"
                             >
-                              {val.replace(/https?:\/\//g, '')}
+                              {displayUrl(val)}
                               <ExternalLink className="size-3 shrink-0" />
                             </a>
                           ) : (
@@ -642,7 +644,7 @@ export function AppDetails({
                       rel="noopener noreferrer"
                       className="hover:text-primary inline-flex items-center gap-1 truncate"
                     >
-                      {url.replace(/https?:\/\//g, '')}
+                      {displayUrl(url)}
                       <ExternalLink className="size-3 shrink-0" />
                     </a>
                   ) : (
