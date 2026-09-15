@@ -9,17 +9,7 @@ import { registerIconRestController } from '../modules/icons/iconRestController'
 import { registerAssetRestController } from '../modules/assets/assetRestController'
 import { registerScreenshotRestController } from '../modules/assets/screenshotRestController'
 import { createMockSessionResponse } from '../modules/auth/devMockUserUtils'
-
-/** Parse a single cookie value from the Cookie header */
-function getCookie(
-  req: { headers: { cookie?: string } },
-  name: string,
-): string | undefined {
-  const cookies = req.headers.cookie ?? ''
-  if (!cookies) return undefined
-  const match = cookies.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`))
-  return match?.[1] !== undefined ? decodeURIComponent(match[1]) : undefined
-}
+import { getCookie } from '../utils/cookies'
 
 interface FeatureRegistration {
   name: keyof AcFeatureToggles
