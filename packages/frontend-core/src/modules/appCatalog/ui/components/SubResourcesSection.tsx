@@ -263,12 +263,27 @@ export function SubResourcesSection({
                         const accountId = (
                           sr.extra as Record<string, unknown> | null | undefined
                         )?.awsAccountId as string | undefined
-                        return accountId ? (
+                        if (!accountId)
+                          return (
+                            <span className="text-muted-foreground">—</span>
+                          )
+                        // The account id is what people copy; when the resource
+                        // also carries its own `appUrl` that is the console
+                        // deep link for THAT account, so the id doubles as the
+                        // launch affordance.
+                        return sr.appUrl ? (
+                          <a
+                            href={sr.appUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-mono text-xs text-muted-foreground hover:text-primary hover:underline select-text"
+                          >
+                            {accountId}
+                          </a>
+                        ) : (
                           <span className="font-mono text-xs text-muted-foreground select-text">
                             {accountId}
                           </span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
                         )
                       })()}
                     </TableCell>
