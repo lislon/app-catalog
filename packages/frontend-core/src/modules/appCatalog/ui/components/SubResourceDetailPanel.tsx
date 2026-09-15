@@ -2,7 +2,7 @@ import type {
   AppApprovalMethod,
   Resource,
 } from '@igstack/app-catalog-backend-core'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, ExternalLink } from 'lucide-react'
 import { Button } from '~/ui/button'
 import { Badge } from '~/ui/badge'
 import { AccessRequestSection } from './AccessRequestSection'
@@ -77,6 +77,26 @@ export function SubResourceDetailPanel({
           <p className="text-xs text-muted-foreground mt-1">
             Also known as: {(subResource.aliases ?? []).join(', ')}
           </p>
+        )}
+        {/* A child's own URL is what the parent's generic one cannot be -- the
+            console of THIS account. Keyed on `appUrl`, so every sub-resource
+            carrying one is launchable, not only cloud accounts. Deliberately no
+            fallback to the parent's URL: landing on the wrong account is the bug
+            this exists to fix. */}
+        {subResource.appUrl && (
+          <a
+            href={subResource.appUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
+            aria-label={'Open ' + subResource.displayName}
+          >
+            <ExternalLink className="size-3.5 shrink-0" />
+            Open{' '}
+            <span className="max-w-[240px] truncate text-primary-foreground/70 text-xs font-normal">
+              {subResource.appUrl.replace(/https?:\/\//g, '')}
+            </span>
+          </a>
         )}
       </div>
 
