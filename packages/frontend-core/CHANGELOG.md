@@ -1,5 +1,22 @@
 # @igstack/app-catalog-frontend-core
 
+## 2.0.1
+
+### Patch Changes
+
+- [#196](https://github.com/lislon/app-catalog/pull/196) [`fcf46e8`](https://github.com/lislon/app-catalog/commit/fcf46e80cbb5803de1485d14fb0241bba9e041fd) Thanks [@lislon](https://github.com/lislon)! - Launch a sub-resource from its own detail page
+
+  Clicking a sub-resource's name opens its detail panel, which showed the access
+  chain but no way to open the thing — the only launch affordance lived in the
+  parent table's cloud-account cell, so the most obvious path through the UI was a
+  dead end. The panel now renders an `Open` button whenever the sub-resource has
+  its own `appUrl`, keyed on that URL rather than on a cloud account id, so any
+  sub-resource carrying one is launchable. It never falls back to the parent's
+  URL — that fallback is what dropped people into the wrong AWS account.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@2.0.1
+
 ## 2.0.0
 
 ### Minor Changes
