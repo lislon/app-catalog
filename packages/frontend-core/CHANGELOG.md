@@ -1,5 +1,30 @@
 # @igstack/app-catalog-frontend-core
 
+## 2.0.0
+
+### Minor Changes
+
+- [#191](https://github.com/lislon/app-catalog/pull/191) [`98e6cc7`](https://github.com/lislon/app-catalog/commit/98e6cc77ef262847891982b4afbd74e23f4ef038) Thanks [@lislon](https://github.com/lislon)! - Add comments to the app detail view, so users can leave feedback on an app without leaving the catalog.
+
+  The catalog is browsable without logging in, so a comment is not tied to an account. The server issues an opaque token in an httpOnly cookie and stores its hash, which gives each browser a stable pseudonym ("Curious Ferret") and lets an author edit or delete their own comment for the first hour. The window is enforced on the server; the client only hides the controls.
+
+  Adds one table, `DbComment`. The alias is stored on the row rather than derived at render time, so widening the wordlist later cannot rename everybody's history.
+
+### Patch Changes
+
+- [#192](https://github.com/lislon/app-catalog/pull/192) [`ce99b1b`](https://github.com/lislon/app-catalog/commit/ce99b1bc970f7d70497ce0eda46dbd41f5a9c248) Thanks [@lislon](https://github.com/lislon)! - Render a timestamp from a slightly-ahead server clock as "now" instead of "in 4 seconds"
+
+- [#193](https://github.com/lislon/app-catalog/pull/193) [`47f5a9a`](https://github.com/lislon/app-catalog/commit/47f5a9aecd20722cb48d199a44413d048b3de431) Thanks [@lislon](https://github.com/lislon)! - Link a sub-resource's account id to its own launch URL
+
+  The cloud-account column rendered the account id as plain text, so an entry
+  carrying its own per-account console URL had no way to be opened — the only
+  launch affordance was the parent's account-agnostic URL, which drops you into
+  whichever account you last used. When a sub-resource has an `appUrl`, its id is
+  now the link to it; ids without one stay plain text.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@2.0.0
+
 ## 1.0.1
 
 ### Patch Changes

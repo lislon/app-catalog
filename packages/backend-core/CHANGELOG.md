@@ -1,5 +1,21 @@
 # @igstack/app-catalog-backend-core
 
+## 2.0.0
+
+### Minor Changes
+
+- [#191](https://github.com/lislon/app-catalog/pull/191) [`98e6cc7`](https://github.com/lislon/app-catalog/commit/98e6cc77ef262847891982b4afbd74e23f4ef038) Thanks [@lislon](https://github.com/lislon)! - Add comments to the app detail view, so users can leave feedback on an app without leaving the catalog.
+
+  The catalog is browsable without logging in, so a comment is not tied to an account. The server issues an opaque token in an httpOnly cookie and stores its hash, which gives each browser a stable pseudonym ("Curious Ferret") and lets an author edit or delete their own comment for the first hour. The window is enforced on the server; the client only hides the controls.
+
+  Adds one table, `DbComment`. The alias is stored on the row rather than derived at render time, so widening the wordlist later cannot rename everybody's history.
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@2.0.0
+  - @igstack/app-catalog-table-sync@2.0.0
+
 ## 1.0.1
 
 ### Patch Changes
