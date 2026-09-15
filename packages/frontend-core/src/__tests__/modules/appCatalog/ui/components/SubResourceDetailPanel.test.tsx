@@ -41,6 +41,29 @@ describe('SubResourceDetailPanel -- launch affordance', () => {
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'))
   })
 
+  // WCAG 2.5.3: the accessible name must contain the words a sighted user
+  // sees, or voice control ("click Open portal.example") cannot reach the link.
+  it('keeps the visible text inside the accessible name', () => {
+    renderPanel(resource('acct-a', 'https://portal.example/#/console'))
+    const link = screen.getByRole('link', { name: /open/i })
+    const visible = link.textContent
+    expect(visible).toContain('portal.example/#/console')
+    for (const word of visible.trim().split(/\s+/)) {
+      expect(link.getAttribute('aria-label')).toContain(word)
+    }
+  })
+
+  it('exposes the full destination on hover, which truncation hides', () => {
+    const url = 'https://portal.example/#/console?account_id=111122223333'
+    renderPanel(resource('acct-a', url))
+    expect(screen.getByRole('link', { name: /open/i })).toHaveAttribute(
+      'title',
+      expect.stringContaining(
+        'portal.example/#/console?account_id=111122223333',
+      ),
+    )
+  })
+
   it("does not fall back to the parent's URL when the sub-resource has none", () => {
     renderPanel(resource('acct-b'))
 

@@ -10,6 +10,7 @@ import {
   TableRow,
 } from '~/ui/table'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
+import { displayUrl } from '~/modules/appCatalog/utils/displayUrl'
 
 /**
  * Service Desks view (#9): a searchable table of all service-desk approval
@@ -105,7 +106,7 @@ export function ServiceDesksPage() {
                           title={url}
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {url.replace(/^https?:\/\//, '')}
+                          {displayUrl(url)}
                           <ExternalLink className="size-3 shrink-0" />
                         </a>
                       )}

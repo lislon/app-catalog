@@ -9,6 +9,7 @@ import { AttributionFooter } from './AttributionFooter'
 import { ResourceIcon } from './ResourceIcon'
 import { searchResources } from '@igstack/app-catalog-shared-core'
 import { Highlight } from '../components/Highlight'
+import { displayUrl } from '~/modules/appCatalog/utils/displayUrl'
 
 /**
  * Adaptive-home discovery spine (issue #38, increment 1) — matches the
@@ -70,7 +71,7 @@ function LaunchButton({
   if (!app.appUrl) return null
   // Show the destination URL on hover (user ask) — the native title tooltip
   // reveals where the ↗ jumps to, e.g. "Open → console.aws.amazon.com".
-  const prettyUrl = app.appUrl.replace(/^https?:\/\//, '')
+  const prettyUrl = displayUrl(app.appUrl)
   return (
     <a
       href={app.appUrl}
