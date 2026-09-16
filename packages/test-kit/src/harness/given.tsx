@@ -186,6 +186,7 @@ export async function given(
       const hasAlert = screen.queryByRole('alert')
       const hasTable = screen.queryAllByRole('table').length > 0
       const hasSearchbox = screen.queryByLabelText('Search apps')
+      const hasLoginPage = screen.queryByTestId('login-page')
       const hasTanstackError = document.body.textContent.includes(
         'Something went wrong',
       )
@@ -194,6 +195,7 @@ export async function given(
         !hasAlert &&
         !hasTable &&
         !hasSearchbox &&
+        !hasLoginPage &&
         !hasTanstackError &&
         !hasNotFound
       ) {
