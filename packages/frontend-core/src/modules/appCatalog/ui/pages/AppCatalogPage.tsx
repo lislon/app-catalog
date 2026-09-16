@@ -133,15 +133,6 @@ export function AppCatalogPage({
     )
   }, [subPageSlug, selectedApp, resources])
 
-  // Total resource count for the "Browse all" label (respects ?deprecated=1)
-  const totalAppsCount = useMemo(
-    () =>
-      filterState.showDeprecated
-        ? rootResources.length
-        : rootResources.filter((app) => !app.deprecated).length,
-    [rootResources, filterState.showDeprecated],
-  )
-
   if (isLoadingApps) {
     return <div className="py-6 text-muted-foreground">Loading…</div>
   }
@@ -166,7 +157,6 @@ export function AppCatalogPage({
         onAppClick={handleAppClick}
         onSubClick={handleSubClick}
         onLaunch={handleLaunch}
-        totalCount={totalAppsCount}
         detailOpen={selectedApp !== null}
         selectedSubSlug={highlightSubSlug}
       />
