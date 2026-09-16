@@ -305,13 +305,10 @@ export function AccessRequestSection({
                     <TableCell className="font-medium whitespace-nowrap">
                       {role.displayName}
                     </TableCell>
+                    {/* `adminNotes` is provisioning-only and never shown to
+                        the requester — only `description` belongs here. */}
                     <TableCell className="text-sm text-muted-foreground">
                       {role.description || '—'}
-                      {role.adminNotes && (
-                        <div className="mt-1 text-xs italic text-muted-foreground/80">
-                          Note: {role.adminNotes}
-                        </div>
-                      )}
                     </TableCell>
                   </TableRow>
                 ))}
