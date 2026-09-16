@@ -16,7 +16,6 @@ import {
   useIsAuthenticated,
   useUser,
 } from '~/modules/auth'
-import { useAuthModal } from '~/modules/auth/AuthModalContext'
 import { Button } from '~/ui/button'
 import {
   DropdownMenu,
@@ -169,7 +168,6 @@ export function Header({ middle }: HeaderProps) {
   const isAuthenticated = useIsAuthenticated()
   const user = useUser()
   const { logout, devLogin } = useAuthActions()
-  const { open: openLoginModal } = useAuthModal()
   const appCatalogContextMaybe = use(AppCatalogContext)
   const trpc = useTRPC()
   const { data: providersData } = useQuery(
@@ -182,12 +180,6 @@ export function Header({ middle }: HeaderProps) {
     } catch (error) {
       console.error('Logout failed:', error)
     }
-  }
-
-  const handleLoginClick = () => {
-    // Preserve the current URL for redirect after login
-    const currentUrl = window.location.pathname + window.location.search
-    openLoginModal(currentUrl)
   }
 
   return (
@@ -218,24 +210,24 @@ export function Header({ middle }: HeaderProps) {
         {isLoading ? (
           <Skeleton className="w-8 h-8 rounded-full" />
         ) : !isAuthenticated ? (
-          <div className="flex items-center gap-2">
-            {providersData?.devLoginEnabled && (
-              <button
-                type="button"
-                onClick={devLogin}
-                className="text-xs font-medium px-2 py-1 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30 border border-amber-500/30 cursor-pointer"
-              >
-                DEV Login
-              </button>
-            )}
+          // No Login button: the catalog is fully browsable without signing in,
+          // so it mostly advertised a flow most visitors have no reason to
+          // enter. Auth itself is untouched -- the modal, the login route, the
+          // client and session handling all still work, so anyone who reaches
+          // the flow by URL or by calling `useAuthModal().open()` can sign in,
+          // and this branch flips to the user menu below once they do. `git
+          // revert` of the commit that removed it restores the button as-is.
+          // DEV Login stays: it is gated behind `devLoginEnabled`, so it never
+          // reaches a real deployment.
+          providersData?.devLoginEnabled && (
             <button
               type="button"
-              onClick={handleLoginClick}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+              onClick={devLogin}
+              className="text-xs font-medium px-2 py-1 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/30 border border-amber-500/30 cursor-pointer"
             >
-              Login
+              DEV Login
             </button>
-          </div>
+          )
         ) : (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
