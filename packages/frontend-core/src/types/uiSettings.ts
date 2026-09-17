@@ -1,4 +1,32 @@
+import type { ComponentType } from 'react'
 import type { PwaAutoUpdateOptions } from '~/modules/pwa/types'
+
+/** Icon component for an area header. Lucide icon components satisfy this. */
+export type AreaIcon = ComponentType<{
+  size?: number
+  strokeWidth?: number
+  className?: string
+}>
+
+/**
+ * Presentation of the area sections on the home view. The taxonomy is
+ * deployment-specific, so the core ships none of it: labels come from the
+ * catalog's own `category` tag definition and everything below is optional.
+ */
+export interface AreasSettings {
+  /**
+   * Icon per `category:<value>`; the key `DAY_TO_DAY_AREA_KEY` targets the
+   * merged first group. Areas without an icon render title-only.
+   */
+  icons?: Record<string, AreaIcon>
+  /**
+   * Category values that fold into the day-to-day group instead of getting an
+   * area of their own (e.g. perks, office services).
+   */
+  dayToDayCategories?: string[]
+  /** Title of the merged first group. Defaults to "Day-to-day tools". */
+  dayToDayLabel?: string
+}
 
 /**
  * UI settings passed from the app entry point.
@@ -11,6 +39,8 @@ export interface UiSettings {
   }
   /** Frontend build identifier baked at build time (e.g., pipeline ID via VITE env var) */
   frontendBuildId?: string
+  /** Area sections on the home view: icons and the day-to-day fold. */
+  areas?: AreasSettings
   /** PWA auto-update configuration (idle timeout, check interval, debug) */
   pwaAutoUpdate?: PwaAutoUpdateOptions
   /**
