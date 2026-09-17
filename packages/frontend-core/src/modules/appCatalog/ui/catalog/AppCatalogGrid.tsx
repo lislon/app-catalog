@@ -697,7 +697,7 @@ export function AppCatalogGrid({
               type="text"
               value={searchValue}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search apps, databases, cloud accounts, account IDs…"
+              placeholder="Search apps, cloud accounts, or keywords"
               autoComplete="off"
               autoFocus
               ref={searchRef}
