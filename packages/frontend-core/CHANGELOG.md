@@ -1,5 +1,58 @@
 # @igstack/app-catalog-frontend-core
 
+## 3.0.0
+
+### Minor Changes
+
+- [#205](https://github.com/lislon/app-catalog/pull/205) [`3708635`](https://github.com/lislon/app-catalog/commit/370863596a11304147d0b1aef51ef1010aa19399) Thanks [@lislon](https://github.com/lislon)! - The full resource list is grouped into areas of wide cards instead of one flat A-Z list
+
+  The catalog already carries a `category:<value>` tag on every resource and a
+  `universality:everyone` tag on the day-one tools, but the list surfaced neither:
+  ~190 alphabetically sorted, identical rows, each as prominent as the next. It
+  now opens with a "Day-to-day tools" group and then one section per category,
+  biggest section first, each with a large title, a tool count and a two- to
+  three-column grid of cards. The area titles carry the section, so the old
+  "Browse all" header above them is gone.
+
+  No taxonomy is hardcoded: section titles come from the catalog's own `category`
+  tag definition (`tagsDefinitions`, already served with the catalog data), and a
+  value the definition does not know still gets a readable humanized title.
+
+  New optional `UiSettings.areas` lets the consuming app decorate the sections:
+  - `icons` — an icon component per category value, rendered in the section
+    header in place of the accent bar (any `lucide-react` icon fits `AreaIcon`)
+  - `dayToDayCategories` — category values that belong on the "anyone here may
+    want this" shelf instead of an area of their own, folded into the first group
+  - `dayToDayLabel` — the first group's title, default "Day-to-day tools"
+
+  A card puts the icon on the left and the name plus a two-line description beside
+  it, at a fixed height that leaves no dead space under the text. Hovering it
+  expands the card downward to show the rest of the description; the expanded panel
+  overlays the row below rather than reflowing the grid. Keyboard focus expands it
+  the same way, and `prefers-reduced-motion` drops the animation.
+
+  `AppCatalogGrid`'s `totalCount` prop is now optional and unused -- it only fed
+  the count in the removed header. It stays accepted so existing callers compile.
+
+### Patch Changes
+
+- [#205](https://github.com/lislon/app-catalog/pull/205) [`c48994b`](https://github.com/lislon/app-catalog/commit/c48994bbc3bab81b94c07e564015bdc12b720a86) Thanks [@lislon](https://github.com/lislon)! - Make the PWA auto-update actually apply the update it downloads.
+
+  `PwaAutoUpdateController` already checks for a new build when the user goes
+  idle, when the tab becomes visible again, and when the error boundary catches a
+  crash — but each of those ended at `registration.update()`. That only installs
+  the new worker, which then sits in `waiting` for as long as any tab is still
+  controlled by the old one. Reloading does not release it, so the browser kept
+  serving the previously precached bundle indefinitely.
+
+  Each trigger now posts `SKIP_WAITING` to the waiting worker, which is the
+  message the generated service worker answers with `skipWaiting()`; the
+  registration's `activated` listener then reloads the page onto the new build.
+  The idle threshold drops from 5 minutes to 1 minute.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@3.0.0
+
 ## 2.0.4
 
 ### Patch Changes
