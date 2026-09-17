@@ -1,6 +1,6 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
 import { ArrowUpRight, Search, X } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { use, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '~/lib/utils'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { markdownToPlainText } from '../../utils/markdownToPlainText'
@@ -10,11 +10,15 @@ import { ResourceIcon } from './ResourceIcon'
 import { searchResources } from '@igstack/app-catalog-shared-core'
 import { Highlight } from '../components/Highlight'
 import { displayUrl } from '~/modules/appCatalog/utils/displayUrl'
+import { useUiSettings } from '~/context/UiSettingsContext'
+import type { AreaIcon } from '~/types/uiSettings'
+import { AppCatalogContext } from '../../context/AppCatalogContext'
+import { areaLabel, groupByArea } from '../../utils/areaGrouping'
 
 /**
  * Adaptive-home discovery spine (issue #38, increment 1) — matches the
  * option-a-launcher prototype:
- *   Your apps (frequent) → New this week → Browse all
+ *   Your apps (frequent) → New this week → all areas, grouped
  *
  * This is the PERSISTENT shell for the catalog: idle browse, active search and
  * an open detail overlay all render inside it. Only the area below the hero
@@ -47,8 +51,11 @@ export interface AppCatalogGridProps {
   /** Opens a matched sub-resource: its parent's detail, singled out to it. */
   onSubClick: (parentSlug: string, subSlug: string) => void
   onLaunch: (app: Resource) => void
-  /** Total resource count for the "Browse all" label. */
-  totalCount: number
+  /**
+   * @deprecated Unused — it labelled the removed "Browse all" header. Still
+   * accepted so existing callers keep compiling; drop it on the next major.
+   */
+  totalCount?: number
   /**
    * True while an app/sub-resource detail overlay is open above the launcher.
    * The results list then stops binding ↑↓/↵/Esc so the overlay owns the
@@ -118,7 +125,7 @@ function SectionHead({
   )
 }
 
-/** Small row used by "New this week" and "Browse all". */
+/** Small row used by "New this week" and the search results. */
 function ResourceRow({
   app,
   onAppClick,
@@ -164,6 +171,129 @@ function ResourceRow({
       )}
       <LaunchButton app={app} onLaunch={onLaunch} className="size-8" />
     </button>
+  )
+}
+
+/**
+ * Wide area card: icon on the left, name and description beside it.
+ *
+ * The grid cell keeps a fixed footprint and the visible panel is absolute inside
+ * it, so a card growing on hover OVERLAYS the row below instead of reflowing the
+ * whole grid. Hover reveals the rest of the description and nothing else — an
+ * earlier version staggered a delayed tag block in behind the growth, which read
+ * as jitter. Keyboard focus expands the same way, and `motion-reduce` drops the
+ * animation.
+ *
+ * The footprint is a fixed height rather than an aspect ratio: at two or three
+ * columns a ratio makes the card grow taller as the window widens, and the
+ * description — three lines at most — leaves the bottom half empty.
+ */
+function AppCard({
+  app,
+  onAppClick,
+  onLaunch,
+}: {
+  app: Resource
+  onAppClick: (app: Resource) => void
+  onLaunch: (app: Resource) => void
+}) {
+  return (
+    <div className="relative h-[92px]">
+      <button
+        type="button"
+        onClick={() => onAppClick(app)}
+        title={`View ${app.displayName}`}
+        className={cn(
+          'group absolute inset-x-0 top-0 min-h-full max-h-full overflow-hidden',
+          'flex gap-3.5 text-left bg-card border border-border',
+          'rounded-[var(--radius)] p-[15px] pr-11 outline-none',
+          'transition-[max-height,box-shadow,border-color] duration-200',
+          'hover:max-h-96 hover:border-ring hover:shadow-lg hover:z-10',
+          'focus-visible:max-h-96 focus-visible:border-ring focus-visible:shadow-lg focus-visible:z-10',
+          'motion-reduce:transition-none',
+        )}
+      >
+        <LaunchButton
+          app={app}
+          onLaunch={onLaunch}
+          className="absolute top-3 right-3 size-[26px] opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"
+        />
+        <div className="shrink-0">
+          <ResourceIcon app={app} size={40} />
+        </div>
+        {/* min-w-0 so a long unbroken word truncates instead of pushing the
+            column wider than the card. */}
+        <div className="flex min-w-0 flex-col gap-1.5">
+          {/* shrink-0: while max-height animates, the un-clamped description
+              overflows the panel for a few frames. Without it flexbox squeezes
+              this line to 0 and back, which reads as the title flickering. */}
+          <span className="block shrink-0 text-[14.5px] font-bold leading-tight line-clamp-1 group-hover:line-clamp-2 group-focus-visible:line-clamp-2">
+            {app.displayName}
+          </span>
+          {app.description && (
+            <span
+              className={cn(
+                'block shrink-0 text-[12.5px] leading-snug text-muted-foreground',
+                'line-clamp-2 group-hover:line-clamp-none group-focus-visible:line-clamp-none',
+              )}
+            >
+              {markdownToPlainText(app.description)}
+            </span>
+          )}
+        </div>
+      </button>
+    </div>
+  )
+}
+
+/**
+ * One area: icon, big title, count, then its cards. The icon stands in for the
+ * accent bar the header used to carry — it does the same colour job and also
+ * says which area you are in. It is decorative: the `h3` carries the name.
+ */
+function AreaSection({
+  label,
+  Icon,
+  apps,
+  onAppClick,
+  onLaunch,
+}: {
+  label: string
+  Icon?: AreaIcon
+  apps: Resource[]
+  onAppClick: (app: Resource) => void
+  onLaunch: (app: Resource) => void
+}) {
+  return (
+    <section className="mt-11">
+      <div className="flex items-center gap-2.5 mb-4">
+        {Icon ? (
+          <Icon
+            size={26}
+            strokeWidth={1.75}
+            className="text-primary shrink-0"
+          />
+        ) : (
+          <div className="h-[3px] w-11 rounded-full bg-primary" />
+        )}
+        <h3 className="font-serif font-semibold text-[27px] leading-tight tracking-tight m-0">
+          {label}
+        </h3>
+        <span className="text-[13px] text-muted-foreground">
+          {apps.length} {apps.length === 1 ? 'tool' : 'tools'}
+        </span>
+      </div>
+      <div className="grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+        {apps.map((app) => (
+          <AppCard
+            key={app.slug}
+            app={app}
+            onAppClick={onAppClick}
+            onLaunch={onLaunch}
+          />
+        ))}
+      </div>
+    </section>
   )
 }
 
@@ -487,12 +617,15 @@ export function AppCatalogGrid({
   onAppClick,
   onSubClick,
   onLaunch,
-  totalCount,
   detailOpen = false,
   selectedSubSlug,
 }: AppCatalogGridProps) {
   const { getTopApps } = useAppClickHistory()
   const [topSlugs, setTopSlugs] = useState<string[]>([])
+  // Area labels are data (the catalog's own `category` tag definition); only the
+  // icons and the day-to-day fold are deployment config.
+  const { areas } = useUiSettings()
+  const tagsDefinitions = use(AppCatalogContext)?.tagsDefinitions
 
   useEffect(() => {
     void getTopApps(5).then(setTopSlugs)
@@ -517,7 +650,7 @@ export function AppCatalogGrid({
   // New this week: apps ADDED in the last 7 days — see pickNewThisWeek (#96).
   const fresh = useMemo(() => pickNewThisWeek(apps), [apps])
 
-  // Browse all: everything not already promoted to "Your apps", alpha by name.
+  // Everything not already promoted to "Your apps", alpha by name.
   const browse = useMemo(() => {
     const promoted = new Set(frequent.map((a) => a.slug))
     return [...apps]
@@ -525,8 +658,12 @@ export function AppCatalogGrid({
       .sort((a, b) => a.displayName.localeCompare(b.displayName))
   }, [apps, frequent])
 
-  const browseLeft = browse.filter((_, i) => i % 2 === 0)
-  const browseRight = browse.filter((_, i) => i % 2 === 1)
+  // Grouped: day-to-day tools first, then areas biggest-first so the page opens
+  // on the areas most people need. Within an area, alpha (from browse).
+  const browseGroups = useMemo(
+    () => groupByArea(browse, areas?.dayToDayCategories),
+    [browse, areas?.dayToDayCategories],
+  )
 
   const isSearching = searchValue.trim() !== ''
   const searchRef = useRef<HTMLInputElement>(null)
@@ -560,7 +697,7 @@ export function AppCatalogGrid({
               type="text"
               value={searchValue}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search apps, databases, cloud accounts, account IDs…"
+              placeholder="Search apps, cloud accounts, or keywords"
               autoComplete="off"
               autoFocus
               ref={searchRef}
@@ -663,31 +800,19 @@ export function AppCatalogGrid({
             </section>
           )}
 
-          {/* Browse all */}
+          {/* Everything else, grouped by area — the area titles carry it, so
+              there is no "Browse all" header above them. */}
           <section className="mt-9">
-            <SectionHead title="Browse all" count={`${totalCount} resources`} />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              <div className="flex flex-col gap-2">
-                {browseLeft.map((app) => (
-                  <ResourceRow
-                    key={app.slug}
-                    app={app}
-                    onAppClick={onAppClick}
-                    onLaunch={onLaunch}
-                  />
-                ))}
-              </div>
-              <div className="flex flex-col gap-2">
-                {browseRight.map((app) => (
-                  <ResourceRow
-                    key={app.slug}
-                    app={app}
-                    onAppClick={onAppClick}
-                    onLaunch={onLaunch}
-                  />
-                ))}
-              </div>
-            </div>
+            {browseGroups.map(([key, list]) => (
+              <AreaSection
+                key={key}
+                label={areaLabel(key, tagsDefinitions, areas?.dayToDayLabel)}
+                Icon={areas?.icons?.[key]}
+                apps={list}
+                onAppClick={onAppClick}
+                onLaunch={onLaunch}
+              />
+            ))}
           </section>
 
           <AttributionFooter />

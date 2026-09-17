@@ -404,7 +404,8 @@ describe('App Catalog Integration', () => {
     // Clearing the search returns to the browse view in the same shell.
     fireEvent.click(document.querySelector('[aria-label="Clear search"]')!)
     await waitFor(() => {
-      expect(screen.getByText(/Browse all/i)).toBeInTheDocument()
+      // Browse view is back: more than the single search match is listed again.
+      expect(ui.catalog.getTableData().length).toBeGreaterThan(1)
     })
     expect(screen.getByText('What do you need to get into?')).toBe(heroBefore)
     expect(ui.catalog.getSearchInput()).toBe(inputBefore)

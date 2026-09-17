@@ -1,6 +1,7 @@
 export { appPropsFactory } from './appPropsFactory.js'
 export { App } from './App'
 export type { AppProps } from './App'
-export type { UiSettings } from './types/uiSettings'
+export type { AreaIcon, AreasSettings, UiSettings } from './types/uiSettings'
+export { DAY_TO_DAY_AREA_KEY } from './modules/appCatalog/utils/areaGrouping'
 export { PwaAutoUpdateProvider, usePwaAutoUpdate } from './modules/pwa'
 export type { PwaAutoUpdateOptions, PwaUpdateHandle } from './modules/pwa'

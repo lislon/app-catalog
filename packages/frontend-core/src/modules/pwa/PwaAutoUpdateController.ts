@@ -1,6 +1,6 @@
 import type { PwaAutoUpdateOptions, PwaUpdateHandle } from './types'
 
-const DEFAULT_IDLE_TIMEOUT_MS = 5 * 60 * 1000 // 5 minutes
+const DEFAULT_IDLE_TIMEOUT_MS = 60 * 1000 // 1 minute
 const DEFAULT_MIN_CHECK_INTERVAL_MS = 30 * 1000 // 30 seconds
 const VISIBILITY_DEBOUNCE_MS = 1000
 const ERROR_UPDATE_WAIT_MS = 3000
@@ -96,6 +96,8 @@ export class PwaAutoUpdateController {
       } catch {
         this.log('registration.update() failed, reloading anyway')
       }
+
+      this.activateWaitingWorker(registration)
     }
 
     // Wait briefly for a new SW to activate, then reload
@@ -158,8 +160,22 @@ export class PwaAutoUpdateController {
     } catch (error) {
       this.log('registration.update() failed:', error)
     }
-    // With autoUpdate registerType, vite-plugin-pwa handles
-    // skipWaiting + clientsClaim + calling updateSW() automatically
+
+    this.activateWaitingWorker(registration)
+  }
+
+  /**
+   * A freshly installed worker stays in `waiting` for as long as this page is
+   * controlled by the old one — a reload does not release it, only closing
+   * every tab on the origin does. Ask it to take over now; the generated
+   * worker answers this message with `skipWaiting()`, and the registration's
+   * own `activated` listener reloads the page onto the new build.
+   */
+  private activateWaitingWorker(registration: ServiceWorkerRegistration): void {
+    if (!registration.waiting) return
+
+    this.log('New worker is waiting, sending SKIP_WAITING')
+    registration.waiting.postMessage({ type: 'SKIP_WAITING' })
   }
 
   private reload(): void {
