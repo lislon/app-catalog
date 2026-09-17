@@ -11,7 +11,7 @@ import {
 } from '@igstack/app-catalog-test-kit'
 
 describe('Auth Integration', () => {
-  it('unauthenticated user sees Login button', async () => {
+  it('unauthenticated user sees no Login button', async () => {
     suppressConsole(/Failed to fetch session/)
 
     await given(
@@ -20,9 +20,13 @@ describe('Auth Integration', () => {
       }),
     )
 
+    // The catalog is browsable anonymously, so the header advertises no login
+    // entry point. Wait for the anonymous header to settle before asserting
+    // absence, or this passes while the session is still loading.
     await waitFor(() => {
-      expect(screen.getByText('Login')).toBeInTheDocument()
+      expect(screen.queryByTestId('user-avatar-button')).not.toBeInTheDocument()
     })
+    expect(screen.queryByText('Login')).not.toBeInTheDocument()
   })
 
   it('authenticated user sees user avatar initial', async () => {
@@ -63,8 +67,8 @@ describe('Auth Integration', () => {
 
     await waitFor(() => {
       expect(screen.getByText('DEV Login')).toBeInTheDocument()
-      expect(screen.getByText('Login')).toBeInTheDocument()
     })
+    expect(screen.queryByText('Login')).not.toBeInTheDocument()
   })
 
   it('DEV Login button does not appear when devLoginEnabled is false', async () => {
@@ -77,7 +81,7 @@ describe('Auth Integration', () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByText('Login')).toBeInTheDocument()
+      expect(screen.queryByTestId('user-avatar-button')).not.toBeInTheDocument()
     })
     expect(screen.queryByText('DEV Login')).not.toBeInTheDocument()
   })
@@ -99,7 +103,10 @@ describe('Auth Integration', () => {
     })
   })
 
-  it('Login modal shows DEV Quick Login when devLoginEnabled is true', async () => {
+  // The header button that used to open this modal is gone, so the login route
+  // is now the entry point -- and keeping it reachable is the whole point of
+  // hiding the button rather than removing auth.
+  it('login route shows DEV Quick Login when devLoginEnabled is true', async () => {
     suppressConsole(/Failed to fetch session/)
 
     await given(
@@ -112,10 +119,8 @@ describe('Auth Integration', () => {
           catalog.replace(provider.scopeKey, provider.handler)
         })
       }),
+      { initialRoute: '/login' },
     )
-
-    const loginButton = await screen.findByText('Login')
-    await userEvent.click(loginButton)
 
     await waitFor(() => {
       expect(screen.getByText('DEV Quick Login')).toBeInTheDocument()
