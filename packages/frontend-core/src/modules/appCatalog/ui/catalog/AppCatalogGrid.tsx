@@ -175,7 +175,7 @@ function ResourceRow({
 }
 
 /**
- * Squarish area card.
+ * Wide area card: icon on the left, name and description beside it.
  *
  * The grid cell keeps a fixed footprint and the visible panel is absolute inside
  * it, so a card growing on hover OVERLAYS the row below instead of reflowing the
@@ -183,6 +183,10 @@ function ResourceRow({
  * earlier version staggered a delayed tag block in behind the growth, which read
  * as jitter. Keyboard focus expands the same way, and `motion-reduce` drops the
  * animation.
+ *
+ * The footprint is a fixed height rather than an aspect ratio: at two or three
+ * columns a ratio makes the card grow taller as the window widens, and the
+ * description — three lines at most — leaves the bottom half empty.
  */
 function AppCard({
   app,
@@ -194,15 +198,15 @@ function AppCard({
   onLaunch: (app: Resource) => void
 }) {
   return (
-    <div className="relative aspect-[6/7]">
+    <div className="relative h-[92px]">
       <button
         type="button"
         onClick={() => onAppClick(app)}
         title={`View ${app.displayName}`}
         className={cn(
           'group absolute inset-x-0 top-0 min-h-full max-h-full overflow-hidden',
-          'flex flex-col gap-2.5 text-left bg-card border border-border',
-          'rounded-[var(--radius)] p-[15px] outline-none',
+          'flex gap-3.5 text-left bg-card border border-border',
+          'rounded-[var(--radius)] p-[15px] pr-11 outline-none',
           'transition-[max-height,box-shadow,border-color] duration-200',
           'hover:max-h-96 hover:border-ring hover:shadow-lg hover:z-10',
           'focus-visible:max-h-96 focus-visible:border-ring focus-visible:shadow-lg focus-visible:z-10',
@@ -214,23 +218,29 @@ function AppCard({
           onLaunch={onLaunch}
           className="absolute top-3 right-3 size-[26px] opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"
         />
-        <ResourceIcon app={app} size={40} />
-        {/* shrink-0: while max-height animates, the un-clamped description
-            overflows the panel for a few frames. Without it flexbox squeezes
-            this line to 0 and back, which reads as the title flickering. */}
-        <span className="block shrink-0 text-[14.5px] font-bold leading-tight line-clamp-2">
-          {app.displayName}
-        </span>
-        {app.description && (
-          <span
-            className={cn(
-              'block shrink-0 text-[12.5px] leading-snug text-muted-foreground',
-              'line-clamp-3 group-hover:line-clamp-none group-focus-visible:line-clamp-none',
-            )}
-          >
-            {markdownToPlainText(app.description)}
+        <div className="shrink-0">
+          <ResourceIcon app={app} size={40} />
+        </div>
+        {/* min-w-0 so a long unbroken word truncates instead of pushing the
+            column wider than the card. */}
+        <div className="flex min-w-0 flex-col gap-1.5">
+          {/* shrink-0: while max-height animates, the un-clamped description
+              overflows the panel for a few frames. Without it flexbox squeezes
+              this line to 0 and back, which reads as the title flickering. */}
+          <span className="block shrink-0 text-[14.5px] font-bold leading-tight line-clamp-1 group-hover:line-clamp-2 group-focus-visible:line-clamp-2">
+            {app.displayName}
           </span>
-        )}
+          {app.description && (
+            <span
+              className={cn(
+                'block shrink-0 text-[12.5px] leading-snug text-muted-foreground',
+                'line-clamp-2 group-hover:line-clamp-none group-focus-visible:line-clamp-none',
+              )}
+            >
+              {markdownToPlainText(app.description)}
+            </span>
+          )}
+        </div>
       </button>
     </div>
   )
@@ -273,7 +283,7 @@ function AreaSection({
           {apps.length} {apps.length === 1 ? 'tool' : 'tools'}
         </span>
       </div>
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      <div className="grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
         {apps.map((app) => (
           <AppCard
             key={app.slug}
