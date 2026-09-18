@@ -5,6 +5,7 @@ import type {
 } from '@igstack/app-catalog-backend-core'
 import {
   DAY_TO_DAY_AREA_KEY,
+  DAY_TO_DAY_TAG,
   areaLabel,
   categoryOf,
   groupByArea,
@@ -37,21 +38,32 @@ describe('groupByArea', () => {
       app('f1', ['category:finance']),
       app('s1', ['category:security']),
       app('f2', ['category:finance']),
-      app('everyone', ['category:security', 'universality:everyone']),
+      app('shelved', ['category:security', DAY_TO_DAY_TAG]),
     ])
     expect(groups.map(([key, list]) => [key, list.length])).toEqual([
       [DAY_TO_DAY_AREA_KEY, 1],
       ['finance', 2],
-      ['security', 1],
+      ['security', 2],
     ])
   })
 
-  it('folds a configured category into the day-to-day group', () => {
-    const groups = groupByArea(
-      [app('lunch', ['category:perks']), app('bank', ['category:finance'])],
-      ['perks'],
+  it('keeps a shelved app in its own category too', () => {
+    const groups = groupByArea([
+      app('chat', ['category:finance', DAY_TO_DAY_TAG]),
+    ])
+    expect(groups.map(([key, list]) => [key, list.map((a) => a.slug)])).toEqual(
+      [
+        [DAY_TO_DAY_AREA_KEY, ['chat']],
+        ['finance', ['chat']],
+      ],
     )
-    expect(groups.map(([key]) => key)).toEqual([DAY_TO_DAY_AREA_KEY, 'finance'])
+  })
+
+  it('ignores a reach facet — only the placement tag shelves an app', () => {
+    const groups = groupByArea([
+      app('popular', ['category:finance', 'universality:everyone']),
+    ])
+    expect(groups.map(([key]) => key)).toEqual(['finance'])
   })
 
   it('omits the day-to-day group when nothing belongs there', () => {

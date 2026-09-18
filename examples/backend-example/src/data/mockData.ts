@@ -100,6 +100,19 @@ export const mockTagDefinitions: GroupingTagDefinition[] = [
       },
     ],
   },
+  {
+    prefix: 'placement',
+    displayName: 'Placement',
+    description: 'Extra places an application is surfaced in the UI',
+    values: [
+      {
+        value: 'day-to-day',
+        displayName: 'Day-to-day shelf',
+        description:
+          'Also pinned to the shortcut shelf at the top of the home view, in addition to its own category area',
+      },
+    ],
+  },
 ]
 
 // ============================================================================
@@ -159,6 +172,7 @@ export const mockAppCatalog: Resource[] = [
     tags: [
       'category:communication',
       'universality:everyone',
+      'placement:day-to-day',
       'origin:external',
     ],
     appUrl: 'https://yourcompany.slack.com',
@@ -180,6 +194,7 @@ export const mockAppCatalog: Resource[] = [
     tags: [
       'category:communication',
       'universality:everyone',
+      'placement:day-to-day',
       'origin:external',
     ],
     appUrl: 'https://zoom.us',
@@ -413,7 +428,12 @@ export const mockAppCatalog: Resource[] = [
     description:
       'Enterprise HR management and payroll system. Manage employee records, compensation, benefits, time off, performance reviews, and organizational structure.',
     teams: ['All Employees'],
-    tags: ['category:hr', 'universality:everyone', 'origin:external'],
+    tags: [
+      'category:hr',
+      'universality:everyone',
+      'placement:day-to-day',
+      'origin:external',
+    ],
     appUrl: 'https://workday.yourcompany.com',
     accessRequest: {
       approvalMethodSlug: 'auto-provisioned',
@@ -429,7 +449,12 @@ export const mockAppCatalog: Resource[] = [
     description:
       'Employee records and time off management platform. Track PTO, manage employee information, onboarding workflows, and generate HR reports.',
     teams: ['Human Resources', 'All Employees'],
-    tags: ['category:hr', 'universality:everyone', 'origin:external'],
+    tags: [
+      'category:hr',
+      'universality:everyone',
+      'placement:day-to-day',
+      'origin:external',
+    ],
     appUrl: 'https://yourcompany.bamboohr.com',
     accessRequest: {
       approvalMethodSlug: 'auto-provisioned',
@@ -471,7 +496,12 @@ export const mockAppCatalog: Resource[] = [
     description:
       'Expense reporting and reimbursement platform. Submit expenses, scan receipts, track mileage, and automate approval workflows.',
     teams: ['All Employees'],
-    tags: ['category:finance', 'universality:everyone', 'origin:external'],
+    tags: [
+      'category:finance',
+      'universality:everyone',
+      'placement:day-to-day',
+      'origin:external',
+    ],
     appUrl: 'https://www.expensify.com',
     accessRequest: {
       approvalMethodSlug: 'auto-provisioned',
@@ -621,7 +651,12 @@ export const mockAppCatalog: Resource[] = [
     description:
       'Identity and access management platform. Single sign-on (SSO) for all applications, multi-factor authentication (MFA), user provisioning, and access policies.',
     teams: ['All Employees'],
-    tags: ['category:security', 'universality:everyone', 'origin:external'],
+    tags: [
+      'category:security',
+      'universality:everyone',
+      'placement:day-to-day',
+      'origin:external',
+    ],
     appUrl: 'https://yourcompany.okta.com',
     accessRequest: {
       approvalMethodSlug: 'auto-provisioned',
@@ -689,7 +724,12 @@ export const mockAppCatalog: Resource[] = [
     description:
       'Email and productivity suite. Includes Gmail, Google Drive, Calendar, Docs, Sheets, Slides, and Meet. Collaborate on documents in real-time.',
     teams: ['All Employees'],
-    tags: ['category:operations', 'universality:everyone', 'origin:external'],
+    tags: [
+      'category:operations',
+      'universality:everyone',
+      'placement:day-to-day',
+      'origin:external',
+    ],
     appUrl: 'https://workspace.google.com',
     accessRequest: {
       approvalMethodSlug: 'auto-provisioned',
