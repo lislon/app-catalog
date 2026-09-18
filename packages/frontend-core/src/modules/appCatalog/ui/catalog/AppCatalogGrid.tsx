@@ -660,10 +660,7 @@ export function AppCatalogGrid({
 
   // Grouped: day-to-day tools first, then areas biggest-first so the page opens
   // on the areas most people need. Within an area, alpha (from browse).
-  const browseGroups = useMemo(
-    () => groupByArea(browse, areas?.dayToDayCategories),
-    [browse, areas?.dayToDayCategories],
-  )
+  const browseGroups = useMemo(() => groupByArea(browse), [browse])
 
   const isSearching = searchValue.trim() !== ''
   const searchRef = useRef<HTMLInputElement>(null)

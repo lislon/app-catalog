@@ -6,14 +6,20 @@ import type {
 /**
  * Grouping of the full resource list into areas.
  *
- * The vocabulary itself is NOT here: which `category:<value>` tags exist, what
- * they are called and which of them belong on the day-to-day shelf is
- * deployment-specific. Labels come from the catalog's own tag definitions and
- * icons from `UiSettings.areas`, so the core only knows the mechanism.
+ * The vocabulary itself is NOT here: which `category:<value>` tags exist and
+ * what they are called is deployment-specific. Labels come from the catalog's
+ * own tag definitions and icons from `UiSettings.areas`, so the core only knows
+ * the mechanism.
  */
 
 const CATEGORY_PREFIX = 'category:'
-const EVERYONE_TAG = 'universality:everyone'
+
+/**
+ * Opt-in to the day-to-day shelf. Placement only — it says where a resource is
+ * surfaced, never what it is or how many people use it, so it is independent of
+ * both `category:` and any reach/audience facet the catalog may declare.
+ */
+export const DAY_TO_DAY_TAG = 'placement:day-to-day'
 
 /**
  * Synthetic key for the merged first group. Underscored so it cannot collide
@@ -38,23 +44,17 @@ const humanize = (key: string): string => {
  * Day-to-day tools first, then one area per category, biggest area first.
  * Input order is preserved inside each group.
  *
- * `dayToDayCategories` are categories that fold into the day-to-day group
- * instead of getting an area of their own (perks, office services, …).
+ * The shelf is **additive**: a `placement:day-to-day` resource is a shortcut at
+ * the top *and* still listed under its own category. Hoisting it out instead
+ * silently emptied categories of their best-known members.
  */
-export function groupByArea(
-  apps: Resource[],
-  dayToDayCategories: readonly string[] = [],
-): [string, Resource[]][] {
-  const folded = new Set(dayToDayCategories)
+export function groupByArea(apps: Resource[]): [string, Resource[]][] {
   const dayToDay: Resource[] = []
   const byCategory = new Map<string, Resource[]>()
 
   for (const app of apps) {
+    if (app.tags?.includes(DAY_TO_DAY_TAG)) dayToDay.push(app)
     const key = categoryOf(app)
-    if (app.tags?.includes(EVERYONE_TAG) || folded.has(key)) {
-      dayToDay.push(app)
-      continue
-    }
     const list = byCategory.get(key)
     if (list) list.push(app)
     else byCategory.set(key, [app])
