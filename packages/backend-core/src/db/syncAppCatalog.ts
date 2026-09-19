@@ -300,6 +300,7 @@ export async function syncAppCatalog(
         // preserved across restarts. Static-config values are seeded below (if DB is null).
         urlIssues: resource.urlIssues ?? [],
         tiers: resource.tiers ?? null,
+        quickJumps: resource.quickJumps ?? null,
         // Fields from former SubResource
         parentSlug: resource.parentSlug ?? null,
         tier: resource.tier ?? null,
