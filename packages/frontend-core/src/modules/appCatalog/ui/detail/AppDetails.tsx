@@ -347,13 +347,6 @@ export function AppDetails({
             )
           })()}
 
-        {/* Two-step access (#38 D): for a nested resource, show the parent-first
-            prerequisite chain before this resource's own access instructions. */}
-        <AccessPrerequisiteChain resource={app} onOpenParent={onAppClick} />
-
-        {/* Access Request Section — hero of the detail, shown before description */}
-        <AccessRequestSection app={app} approvalMethods={approvalMethods} />
-
         {/* Quick Jump — paste an id, open the matching page. Hoists itself to
             the top of the card (flex order) when the user pins it. */}
         <QuickJumpSection app={app} />
@@ -379,6 +372,14 @@ export function AppDetails({
             <p className="text-sm text-muted-foreground">—</p>
           )}
         </div>
+
+        {/* Two-step access (#38 D): for a nested resource, show the parent-first
+            prerequisite chain before this resource's own access instructions. */}
+        <AccessPrerequisiteChain resource={app} onOpenParent={onAppClick} />
+
+        {/* Access Request Section — what the app is comes first, then how to
+            get into it. */}
+        <AccessRequestSection app={app} approvalMethods={approvalMethods} />
 
         {/* Screenshots - Clickable preview */}
         {app.screenshotIds && app.screenshotIds.length > 0 && (
