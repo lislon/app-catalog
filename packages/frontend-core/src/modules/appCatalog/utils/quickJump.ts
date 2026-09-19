@@ -44,6 +44,19 @@ export function quickJumpSlug(jump: QuickJump): string {
     .join('.')
 }
 
+/**
+ * The title with its system prefix dropped: "Tracker — Rerun report"
+ * becomes "Rerun report". The menu shows the full title, where the choice
+ * between systems is being made; the picker, where it has already been made,
+ * only has to say what the destination does.
+ *
+ * A title with no dash is already short and comes back unchanged.
+ */
+export function quickJumpShortTitle(jump: QuickJump): string {
+  const parts = jump.title.split(/\s+[—–]\s+/)
+  return (parts[parts.length - 1] ?? jump.title).trim()
+}
+
 export interface QuickJumpIdentity {
   /** Human label, e.g. "Case Id" — also the column heading. */
   identity: string

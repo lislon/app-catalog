@@ -5,6 +5,7 @@ import {
   buildQuickJumpUrl,
   groupQuickJumps,
   quickJumpFieldName,
+  quickJumpShortTitle,
   quickJumpSlug,
 } from '~/modules/appCatalog/utils/quickJump'
 
@@ -102,5 +103,26 @@ describe('quickJumpSlug', () => {
         title: 'Kafka UI \u2014 id/aggregate record!',
       }),
     ).toBe('kafka-ui.id-aggregate-record')
+  })
+})
+
+describe('quickJumpShortTitle', () => {
+  it('drops the system prefix the menu shows', () => {
+    expect(
+      quickJumpShortTitle({
+        ...onHost,
+        title: 'Tracker \u2014 Rerun report',
+      }),
+    ).toBe('Rerun report')
+  })
+
+  it('leaves a title that has no prefix alone', () => {
+    expect(quickJumpShortTitle(onHost)).toBe('View case')
+  })
+
+  it('keeps a dash that is part of the name, not a separator', () => {
+    expect(
+      quickJumpShortTitle({ ...onHost, title: 'multi-part-name record' }),
+    ).toBe('multi-part-name record')
   })
 })
