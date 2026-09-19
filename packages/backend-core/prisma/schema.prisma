@@ -151,6 +151,8 @@ model DbResource {
   urlIssues                  String[]          @default([])
   /// [TierVariant[]]
   tiers                      Json?
+  /// [QuickJump[]]
+  quickJumps                 Json?
   sourceRefs                 SourceReference[]
   comments                   DbComment[]
   // Self-referential tree: sub-resources point to their parent

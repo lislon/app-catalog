@@ -20,6 +20,7 @@ import {
 } from '~/ui/accordion'
 import { AccessRequestSection } from '../components/AccessRequestSection'
 import { AccessPrerequisiteChain } from '../components/AccessPrerequisiteChain'
+import { QuickJumpSection } from '../components/QuickJumpSection'
 import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
 import { PersonBadge } from '../components/PersonBadge'
 import { useUser } from '~/modules/auth'
@@ -215,8 +216,9 @@ export function AppDetails({
   return (
     <>
       <div className="flex h-full flex-col p-6">
-        {/* Icon and Title */}
-        <div className="border-b pb-6">
+        {/* Icon and Title — always first: a pinned Quick Jump takes order -1,
+            so the header claims -2 rather than being pushed below it. */}
+        <div className="-order-2 border-b pb-6">
           <div className="flex items-center gap-3">
             <AppIcon app={app} className="size-16" />
             <div className="-mx-3 flex-1 min-w-0">
@@ -351,6 +353,10 @@ export function AppDetails({
 
         {/* Access Request Section — hero of the detail, shown before description */}
         <AccessRequestSection app={app} approvalMethods={approvalMethods} />
+
+        {/* Quick Jump — paste an id, open the matching page. Hoists itself to
+            the top of the card (flex order) when the user pins it. */}
+        <QuickJumpSection app={app} />
 
         {/* Description */}
         <div className="mt-6">

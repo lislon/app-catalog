@@ -26,6 +26,35 @@ export interface TierVariant {
 }
 
 // ============================================================================
+// QUICK JUMP
+// ============================================================================
+
+/**
+ * A deep link into a resource that needs one identifier from the user
+ * ("open case 3117050260"). The user types the id once per identity and every
+ * jump for that identity becomes clickable.
+ *
+ * The url carries at most two placeholders and nothing else — there is no
+ * template engine:
+ *   - `{{baseHost}}` — the resource's own `appUrl`, trailing slash trimmed.
+ *     A jump using it is dropped when the resource has no `appUrl`.
+ *   - `{{value}}` — the typed identifier, url-encoded exactly once.
+ * A jump on a different host than the resource just spells the host out.
+ */
+export interface QuickJump {
+  /**
+   * Human label of the identifier this jump needs, e.g. "Case Id". Jumps are
+   * grouped by it: it is the column heading, the input placeholder, and the key
+   * the browser remembers typed values under, so spell it identically across
+   * apps (company config should keep a shared constant rather than literals).
+   */
+  identity: string
+  /** Shown on the button, with the typed value appended: "View case 3117050260". */
+  title: string
+  url: string
+}
+
+// ============================================================================
 // APP CATALOG TYPES
 // ============================================================================
 
@@ -95,6 +124,8 @@ export interface Resource {
   urlIssues?: string[]
   /** Optional tier variants (e.g., prod/dev) with per-tier URLs and access */
   tiers?: TierVariant[]
+  /** Deep links that take one typed identifier — see {@link QuickJump}. */
+  quickJumps?: QuickJump[]
 
   // --- Fields merged from former SubResource ---
   /** Slug of parent resource (undefined for top-level applications) */

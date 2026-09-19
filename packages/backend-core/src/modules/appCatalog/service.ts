@@ -159,6 +159,10 @@ function rowToResource(row: ResourceRowWithSourceRefs): Resource {
     : undefined
   const tiers =
     row.tiers == null ? undefined : (row.tiers as unknown as Resource['tiers'])
+  const quickJumps =
+    row.quickJumps == null
+      ? undefined
+      : (row.quickJumps as unknown as Resource['quickJumps'])
   const freshness = computeFreshness({
     lastCheckedAt: row.lastCheckedAt ? row.lastCheckedAt.toISOString() : null,
     nextCheckAfter: row.nextCheckAfter
@@ -190,6 +194,7 @@ function rowToResource(row: ResourceRowWithSourceRefs): Resource {
     aiMemory,
     urlIssues,
     tiers,
+    quickJumps,
     // Fields from former SubResource
     parentSlug: row.parentSlug ?? undefined,
     tier: row.tier ?? undefined,

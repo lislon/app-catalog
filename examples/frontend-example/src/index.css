@@ -58,6 +58,7 @@
     --shadow-2xl: 0px 4px 8px -1px hsl(0 0% 0% / 0.25);
     --tracking-normal: 0em;
     --spacing: 0.25rem;
+    --hopper: oklch(0.7488 0.149 130.38);
     --animation-btn: 0.25s;
     --btn-focus-scale: 0.95;
   }
@@ -117,6 +118,7 @@
       0px 4px 8px -1px hsl(0 0% 0% / 0.1), 0px 8px 10px -2px hsl(0 0% 0% / 0.1);
     --shadow-2xl: 0px 4px 8px -1px hsl(0 0% 0% / 0.25);
     --highlight: var(--color-amber-900);
+    --hopper: oklch(0.7488 0.149 130.38);
     --animation-btn: 0.25s;
     --btn-focus-scale: 0.95;
   }
@@ -175,6 +177,7 @@
   --shadow-2xl: var(--shadow-2xl);
 
   --color-highlight: var(--highlight);
+  --color-hopper: var(--hopper);
 
   --animate-button-pop: button-pop var(--animation-btn, 0.25s) ease-out;
 }
