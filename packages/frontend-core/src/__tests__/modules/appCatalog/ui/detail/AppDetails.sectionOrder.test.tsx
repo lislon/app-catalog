@@ -7,6 +7,10 @@ import '@testing-library/jest-dom/vitest'
 // order, so the hooks and the fetching children are stubbed.
 vi.mock('@tanstack/react-router', () => ({
   useSearch: vi.fn(() => ({})),
+  // Quick Jump keeps its destination in the url, so the panel reads the router
+  // even on an app with no jumps to show.
+  useNavigate: vi.fn(() => vi.fn()),
+  useRouter: vi.fn(() => ({ state: { location: { pathname: '/' } } })),
   Link: ({ children, ...rest }: { children?: React.ReactNode }) => (
     <a {...rest}>{children}</a>
   ),

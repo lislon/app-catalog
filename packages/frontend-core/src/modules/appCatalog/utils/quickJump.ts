@@ -20,6 +20,30 @@ export function buildQuickJumpUrl(
     .replaceAll('{{value}}', encodeURIComponent(value.trim()))
 }
 
+/**
+ * Stable url token for a jump, used as `?qj=<slug>` so a chosen destination is
+ * linkable. Derived from the title rather than stored: the em-dash in a title
+ * like "Tracker — View case" separates sub-system from action, so it becomes
+ * `tracker.view-case`.
+ *
+ * Two jumps on one app whose titles slugify the same would collide and the
+ * second one would not be addressable. Titles have to be distinguishable to a
+ * reader anyway, so that is not worth a disambiguation scheme.
+ */
+export function quickJumpSlug(jump: QuickJump): string {
+  return jump.title
+    .split(/[—–]/)
+    .map((part) =>
+      part
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, ''),
+    )
+    .filter(Boolean)
+    .join('.')
+}
+
 export interface QuickJumpIdentity {
   /** Human label, e.g. "Case Id" — also the column heading. */
   identity: string
