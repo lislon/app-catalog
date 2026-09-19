@@ -1,7 +1,8 @@
 import type { QuickJump, Resource } from '@igstack/app-catalog-backend-core'
-import { Pin, Rabbit, Settings2 } from 'lucide-react'
+import { Pin, Settings2 } from 'lucide-react'
 import React from 'react'
 
+import Grasshopper from '~/assets/grasshopper.svg?react'
 import { cn } from '~/lib/utils'
 import { Checkbox } from '~/ui/checkbox'
 import { Input } from '~/ui/input'
@@ -90,7 +91,10 @@ function JumpButton({
         <span className="text-[0.65rem] font-extrabold tracking-widest">
           JUMP
         </span>
-        <Rabbit className="size-4" />
+        <Grasshopper
+          aria-hidden
+          className={cn('h-4 w-auto', !href && 'grayscale')}
+        />
       </span>
     </a>
   )
@@ -135,7 +139,7 @@ export function QuickJumpSection({ app }: { app: Resource }) {
   return (
     <div className={cn('mt-6', prefs.pinned && 'order-[-1]')}>
       <div className="mb-2 flex items-center gap-2">
-        <Rabbit className="size-4 shrink-0 text-hopper" />
+        <Grasshopper aria-hidden className="h-4 w-auto shrink-0" />
         <h3 className="text-sm font-medium">Quick Jump</h3>
         <button
           type="button"

@@ -4,15 +4,20 @@ import { defineConfig, mergeConfig } from 'vitest/config'
 import { tanstackViteConfig } from '@tanstack/vite-config'
 import viteReact from '@vitejs/plugin-react'
 import { quickpickle } from 'quickpickle'
+import svgr from 'vite-plugin-svgr'
 import packageJson from './package.json'
 
 const config = defineConfig({
   // quickpickle pulls its own vite copy, so its Plugin type is structurally
   // identical but nominally foreign — the cast is the whole of that mismatch.
-  plugins: [viteReact(), quickpickle() as PluginOption],
+  //
+  // svgr is the same plugin the app builds with, so an `~/assets/x.svg?react`
+  // import resolves here for free. Mocking them one by one instead meant every
+  // new svg silently threw inside the component that imported it, which reads
+  // as the whole panel failing to render rather than as a missing mock.
+  plugins: [viteReact(), svgr(), quickpickle() as PluginOption],
   resolve: {
-    // Run the app from frontend-core's sources, and let the harness' svg mock
-    // match the `~/...` specifier the app itself imports with.
+    // Run the app from frontend-core's sources.
     conditions: ['my-custom-condition'],
     alias: {
       '~': path.resolve(__dirname, '../frontend-core/src'),
