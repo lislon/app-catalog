@@ -1,7 +1,6 @@
 ---
 '@igstack/app-catalog-frontend-core': minor
 '@igstack/app-catalog-test-kit': patch
-'@igstack/app-catalog-backend-example': patch
 ---
 
 Quick Jump is one control on the app's header instead of a section of its own:
