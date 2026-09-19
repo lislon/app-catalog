@@ -12,6 +12,8 @@ const searchSchema = z.object({
   deprecated: z.string().optional(),
   q: z.string().optional(),
   sub: z.string().optional(),
+  /** Quick Jump's chosen destination (see quickJumpSlug). */
+  qj: z.string().optional(),
 })
 
 export const Route = createFileRoute('/_layout/app/$slug')({

@@ -266,6 +266,26 @@ export const mockAppCatalog: Resource[] = [
     teams: ['Engineering', 'Product', 'QA'],
     tags: ['category:development', 'universality:common', 'origin:external'],
     appUrl: 'https://yourcompany.atlassian.net/jira',
+    // Quick Jump: paste an identifier on this app's page and land on the page
+    // that shows it. `{{baseHost}}` is the app's own appUrl, `{{value}}` the
+    // typed identifier. Jumps sharing an `identity` share a field.
+    quickJumps: [
+      {
+        identity: 'Issue Key',
+        title: 'Jira — View issue',
+        url: '{{baseHost}}/browse/{{value}}',
+      },
+      {
+        identity: 'Issue Key',
+        title: 'Jira — Issue change history',
+        url: '{{baseHost}}/browse/{{value}}?page=history',
+      },
+      {
+        identity: 'Board Id',
+        title: 'Jira — Sprint board',
+        url: '{{baseHost}}/secure/RapidBoard.jspa?rapidView={{value}}',
+      },
+    ],
     accessRequest: {
       approvalMethodSlug: 'it-helpdesk',
       requestPrompt: 'Can I get access to Jira',

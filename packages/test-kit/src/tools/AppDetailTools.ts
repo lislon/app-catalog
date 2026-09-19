@@ -152,7 +152,11 @@ export class AppDetailTools {
      */
     open: async (): Promise<void> => {
       const panel = this.getPanel()
-      const screenshotArea = panel.querySelector('.cursor-pointer')
+      // By label, not by `.cursor-pointer`: that matched whichever styled
+      // control happened to come first in the panel.
+      const screenshotArea = panel.querySelector(
+        '[aria-label^="View screenshots"]',
+      )
       if (!screenshotArea) {
         throw new Error('No clickable screenshot found in detail panel')
       }

@@ -20,7 +20,7 @@ import {
 } from '~/ui/accordion'
 import { AccessRequestSection } from '../components/AccessRequestSection'
 import { AccessPrerequisiteChain } from '../components/AccessPrerequisiteChain'
-import { QuickJumpSection } from '../components/QuickJumpSection'
+import { QuickJumpBar } from '../components/QuickJumpBar'
 import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
 import { PersonBadge } from '../components/PersonBadge'
 import { useUser } from '~/modules/auth'
@@ -256,7 +256,9 @@ export function AppDetails({
                   />
                 </div>
               )}
-              <div className="mt-1 px-3">
+              {/* Open button, then Quick Jump: the host you reach by pressing
+                  it, and the deep link you reach by pasting an id. */}
+              <div className="mt-1 flex flex-wrap items-stretch gap-2 px-3">
                 {isAdmin ? (
                   <InlineEditableField
                     value={app.appUrl ?? ''}
@@ -288,18 +290,21 @@ export function AppDetails({
                     rel="noopener noreferrer"
                     onClick={() => recordClick(app.slug)}
                     className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
-                    title={`Open \u2192 ${displayUrl(app.appUrl)}`}
+                    title={displayUrl(app.appUrl)}
                     aria-label={`Open ${app.displayName} in a new tab (${displayUrl(app.appUrl)})`}
                   >
-                    <ExternalLink className="size-3.5 shrink-0" />
-                    Open{' '}
-                    <span className="max-w-[240px] truncate text-primary-foreground/70 text-xs font-normal">
+                    {/* The host name is the label; the glyph after it says where
+                        pressing it goes. "Open" spent a word on what the icon
+                        already tells you. */}
+                    <span className="max-w-[240px] truncate whitespace-nowrap">
                       {displayUrl(app.appUrl)}
                     </span>
+                    <ExternalLink className="size-3.5 shrink-0" />
                   </a>
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 )}
+                <QuickJumpBar app={app} />
               </div>
               {/* Updated/Added metadata moved to consolidated section before Sources (#55) */}
             </div>
@@ -347,10 +352,6 @@ export function AppDetails({
             )
           })()}
 
-        {/* Quick Jump — paste an id, open the matching page. Hoists itself to
-            the top of the card (flex order) when the user pins it. */}
-        <QuickJumpSection app={app} />
-
         {/* Description */}
         <div className="mt-6">
           <h3 className="mb-2 text-sm font-medium">Description</h3>
@@ -387,8 +388,12 @@ export function AppDetails({
             <h3 className="mb-2 text-sm font-medium">
               Screenshots ({app.screenshotIds.length})
             </h3>
-            <div
-              className="cursor-pointer hover:opacity-80 transition-opacity"
+            {/* A button, not a clickable div: the gallery was unreachable by
+                keyboard, and a role + label gives it a stable handle. */}
+            <button
+              type="button"
+              aria-label={`View screenshots of ${app.displayName}`}
+              className="block w-full cursor-pointer text-left hover:opacity-80 transition-opacity"
               onClick={() => handleScreenshotClick(0)}
             >
               <AppScreenshot app={app} />
@@ -397,7 +402,7 @@ export function AppDetails({
                   Click to view all {app.screenshotIds.length} screenshots
                 </p>
               )}
-            </div>
+            </button>
           </div>
         )}
 

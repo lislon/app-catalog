@@ -5,6 +5,7 @@ import {
   buildQuickJumpUrl,
   groupQuickJumps,
   quickJumpFieldName,
+  quickJumpSlug,
 } from '~/modules/appCatalog/utils/quickJump'
 
 const onHost: QuickJump = {
@@ -80,5 +81,26 @@ describe('quickJumpFieldName', () => {
     expect(quickJumpFieldName('Sequencing Sample Id')).toBe(
       'qj-sequencing-sample-id',
     )
+  })
+})
+
+describe('quickJumpSlug', () => {
+  it('splits the sub-system off the action, one dot between them', () => {
+    expect(
+      quickJumpSlug({ ...onHost, title: 'Tracker \u2014 View case' }),
+    ).toBe('tracker.view-case')
+  })
+
+  it('leaves a title with no sub-system as a single segment', () => {
+    expect(quickJumpSlug(onHost)).toBe('view-case')
+  })
+
+  it('keeps url-safe characters only', () => {
+    expect(
+      quickJumpSlug({
+        ...onHost,
+        title: 'Kafka UI \u2014 id/aggregate record!',
+      }),
+    ).toBe('kafka-ui.id-aggregate-record')
   })
 })
