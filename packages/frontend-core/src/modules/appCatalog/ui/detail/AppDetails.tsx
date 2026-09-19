@@ -20,7 +20,7 @@ import {
 } from '~/ui/accordion'
 import { AccessRequestSection } from '../components/AccessRequestSection'
 import { AccessPrerequisiteChain } from '../components/AccessPrerequisiteChain'
-import { QuickJumpBar } from '../components/QuickJumpBar'
+import { LEAP, QuickJumpBar } from '../components/QuickJumpBar'
 import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
 import { PersonBadge } from '../components/PersonBadge'
 import { useUser } from '~/modules/auth'
@@ -258,7 +258,7 @@ export function AppDetails({
               )}
               {/* Open button, then Quick Jump: the host you reach by pressing
                   it, and the deep link you reach by pasting an id. */}
-              <div className="mt-1 flex flex-wrap items-stretch gap-2 px-3">
+              <div className="mt-3 flex flex-wrap items-stretch gap-2 px-3">
                 {isAdmin ? (
                   <InlineEditableField
                     value={app.appUrl ?? ''}
@@ -289,15 +289,17 @@ export function AppDetails({
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => recordClick(app.slug)}
-                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
+                    className={cn(
+                      'inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90',
+                      LEAP,
+                    )}
                     title={displayUrl(app.appUrl)}
                     aria-label={`Open ${app.displayName} in a new tab (${displayUrl(app.appUrl)})`}
                   >
-                    {/* The host name is the label; the glyph after it says where
-                        pressing it goes. "Open" spent a word on what the icon
-                        already tells you. */}
-                    <span className="max-w-[240px] truncate whitespace-nowrap">
-                      {displayUrl(app.appUrl)}
+                    {/* "Go to <host>": the verb makes it a thing you press and
+                        the host says where to. The glyph adds "in a new tab". */}
+                    <span className="max-w-[280px] truncate whitespace-nowrap">
+                      Go to {displayUrl(app.appUrl)}
                     </span>
                     <ExternalLink className="size-3.5 shrink-0" />
                   </a>

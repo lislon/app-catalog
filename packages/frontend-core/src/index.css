@@ -204,7 +204,6 @@
   --color-eh-context-border: var(--eh-context-border);
 
   --animate-button-pop: button-pop var(--animation-btn, 0.25s) ease-out;
-  --animate-qj-hop: qj-hop 430ms cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 
 @layer base {
@@ -229,30 +228,6 @@
 
   100% {
     transform: scale(1);
-  }
-}
-
-/* Quick Jump's press: a crouch-and-leap, so pressing Jump reads as a jump.
-   Distinct on purpose from button-pop, which only marks the field arming. */
-@keyframes qj-hop {
-  0% {
-    transform: none;
-  }
-
-  20% {
-    transform: translateY(2px) scaleY(0.9);
-  }
-
-  50% {
-    transform: translateY(-7px) scaleY(1.05);
-  }
-
-  75% {
-    transform: translateY(1px) scaleY(0.97);
-  }
-
-  100% {
-    transform: none;
   }
 }
 

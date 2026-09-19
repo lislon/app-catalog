@@ -16,8 +16,11 @@ describe('Quick Jump', () => {
     expect(screen.getByText('Open task')).toBeInTheDocument()
 
     // Jump is dormant until the field has a value, and pressing it then says
-    // "type here" rather than doing nothing.
+    // "type here" rather than doing nothing. The same sentence is on screen for
+    // anyone who only hovers -- CSS decides when, so the test only checks it is
+    // rendered and names the identifier the field is asking for.
     const jump = screen.getByTitle('Enter a Task Id first')
+    expect(screen.getByText('Type a Task Id here first')).toBeInTheDocument()
     fireEvent.click(jump)
     expect(document.activeElement).toBe(field)
 
