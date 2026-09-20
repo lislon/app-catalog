@@ -175,6 +175,7 @@ export function AppDetails({
   const user = useUser()
   const isAdmin = user?.isAdmin ?? false
 
+  const displayTags = (app.tags ?? []).filter((tag) => !tag.includes(':'))
   const sourceUrls: string[] =
     app.sources?.map((s) => (typeof s === 'string' ? s : s.url)) ?? []
   const displaySources =
@@ -474,12 +475,15 @@ export function AppDetails({
           </div>
         )}
 
-        {/* Tags */}
-        {app.tags && app.tags.length > 0 && (
+        {/* Tags, minus the indexing machinery: `namespace:value` tags drive
+            grouping, faceting and placement, are about half of all tag
+            references, and say nothing about what an app is for. The colon is
+            the test. Search still matches them — only the display drops them. */}
+        {displayTags.length > 0 && (
           <div className="mt-6">
             <h3 className="mb-2 text-sm font-medium">Tags</h3>
             <div className="flex flex-wrap gap-2">
-              {app.tags.map((tag) => (
+              {displayTags.map((tag) => (
                 <Badge key={tag} variant="secondary" className="text-xs">
                   {tag}
                 </Badge>
