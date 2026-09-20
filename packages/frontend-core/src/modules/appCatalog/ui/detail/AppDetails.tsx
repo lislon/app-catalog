@@ -20,7 +20,7 @@ import {
 } from '~/ui/accordion'
 import { AccessRequestSection } from '../components/AccessRequestSection'
 import { AccessPrerequisiteChain } from '../components/AccessPrerequisiteChain'
-import { LEAP, QuickJumpBar } from '../components/QuickJumpBar'
+import { LEAP, LEAVE_FILL, QuickJumpBar } from '../components/QuickJumpBar'
 import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
 import { PersonBadge } from '../components/PersonBadge'
 import { useUser } from '~/modules/auth'
@@ -258,7 +258,7 @@ export function AppDetails({
               )}
               {/* Open button, then Quick Jump: the host you reach by pressing
                   it, and the deep link you reach by pasting an id. */}
-              <div className="mt-3 flex flex-wrap items-stretch gap-2 px-3">
+              <div className="mt-3 flex flex-wrap items-stretch gap-3 px-3">
                 {isAdmin ? (
                   <InlineEditableField
                     value={app.appUrl ?? ''}
@@ -290,7 +290,8 @@ export function AppDetails({
                     rel="noopener noreferrer"
                     onClick={() => recordClick(app.slug)}
                     className={cn(
-                      'inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90',
+                      'inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium shadow-sm',
+                      LEAVE_FILL,
                       LEAP,
                     )}
                     title={displayUrl(app.appUrl)}

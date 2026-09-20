@@ -21,15 +21,21 @@ describe('Quick Jump', () => {
     // rendered and names the identifier the field is asking for.
     const jump = screen.getByTitle('Enter a Task Id first')
     expect(screen.getByText('Type a Task Id here first')).toBeInTheDocument()
+    // A real button, not an <a> with no href: an anchor without one cannot take
+    // focus, which left both the hint and the click-to-type mouse-only.
+    expect(jump.tagName).toBe('BUTTON')
+    jump.focus()
+    expect(document.activeElement).toBe(jump)
     fireEvent.click(jump)
     expect(document.activeElement).toBe(field)
 
     fireEvent.change(field, { target: { value: '  T-42 ' } })
 
     // Value trimmed, encoded exactly once.
-    expect(
-      screen.getByTitle('Open task → https://taskflow.example.com/task/T-42'),
-    ).toHaveAttribute('href', 'https://taskflow.example.com/task/T-42')
+    expect(screen.getByTitle('Jump to Open task')).toHaveAttribute(
+      'href',
+      'https://taskflow.example.com/task/T-42',
+    )
   })
 
   it('puts the chosen destination in the url and reads it back', async () => {
@@ -44,11 +50,10 @@ describe('Quick Jump', () => {
     fireEvent.change(screen.getByLabelText('Task Id'), {
       target: { value: 'T-42' },
     })
-    expect(
-      screen.getByTitle(
-        'Task history → https://taskflow.example.com/task/T-42/history',
-      ),
-    ).toBeInTheDocument()
+    expect(screen.getByTitle('Jump to Task history')).toHaveAttribute(
+      'href',
+      'https://taskflow.example.com/task/T-42/history',
+    )
 
     // Picking another destination rewrites the param, keeps the typed value.
     // Keyboard, not pointer: radix opens on pointerdown, which jsdom has no
