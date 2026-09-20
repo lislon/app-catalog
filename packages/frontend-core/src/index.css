@@ -121,7 +121,10 @@
     --font-mono:
       ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
       'Courier New', monospace;
-    --radius: 0.5rem;
+    /* Matches the light block. Every other radius in the app derives from this
+       one, so the two blocks disagreeing meant dark mode quietly rendered a
+       different corner scale than the design it was drawn against. */
+    --radius: 0.875rem;
     --shadow-2xs: 0px 4px 8px -1px hsl(0 0% 0% / 0.05);
     --shadow-xs: 0px 4px 8px -1px hsl(0 0% 0% / 0.05);
     --shadow-sm:

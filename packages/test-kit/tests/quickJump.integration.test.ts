@@ -19,8 +19,12 @@ describe('Quick Jump', () => {
     // "type here" rather than doing nothing. The same sentence is on screen for
     // anyone who only hovers -- CSS decides when, so the test only checks it is
     // rendered and names the identifier the field is asking for.
-    const jump = screen.getByTitle('Enter a Task Id first')
-    expect(screen.getByText('Type a Task Id here first')).toBeInTheDocument()
+    const jump = screen.getByRole('button', { name: 'Jump' })
+    // That sentence IS the button's description. It used to also carry a `title`
+    // saying the same thing in other words, which left a screen reader reading
+    // one of the two and skipping the other.
+    const hint = screen.getByText('Type a Task Id here first')
+    expect(jump).toHaveAttribute('aria-describedby', hint.id)
     // A real button, not an <a> with no href: an anchor without one cannot take
     // focus, which left both the hint and the click-to-type mouse-only.
     expect(jump.tagName).toBe('BUTTON')
