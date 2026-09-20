@@ -1,8 +1,13 @@
+/* Warm, crafted type to match the hand-drawn logo (see issue #31 redesign):
+   Fraunces = characterful display serif, Nunito Sans = friendly readable body.
+
+   This has to come before every other at-rule: a remote @import that follows
+   any rule is invalid where it stands, so the minifier drops it — and the only
+   symptom is body text quietly falling back to a system face on machines that
+   don't happen to have the family installed. */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Nunito+Sans:wght@400;500;600;700;800&display=swap');
 /* @import url(./modules/resourceJump/ui/JumpMainButton.css); */
 @import 'tailwindcss';
-/* Warm, crafted type to match the hand-drawn logo (see issue #31 redesign):
-   Fraunces = characterful display serif, Nunito Sans = friendly readable body. */
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Nunito+Sans:wght@400;500;600;700;800&display=swap');
 /* Other module imports this css, and we need to tell tailwind to scan our tsx files */
 @source ".";
 
