@@ -154,6 +154,19 @@ export function QuickJumpBar({ app }: { app: Resource }) {
   // A typed id belongs to the app it was typed on.
   React.useEffect(() => setValue(''), [jumps])
 
+  // Opening a card is a deliberate act, and this field is the one thing in the
+  // header you act on by typing — so it takes the caret, and you can open an app
+  // and enter an id without reaching for the mouse. Keyed on the app's jumps, so
+  // it re-applies when you move to another app inside the same mounted panel.
+  //
+  // `preventScroll`, or focusing an element inside the scrollable panel scrolls
+  // the panel to it. Not on a coarse pointer: there focus pops the virtual
+  // keyboard over half of what you just opened.
+  React.useEffect(() => {
+    if (window.matchMedia('(pointer: coarse)').matches) return
+    inputRef.current?.focus({ preventScroll: true })
+  }, [jumps])
+
   // A `?qj=` naming another app's jump would silently resolve to this app's
   // first one, leaving the url claiming something untrue.
   React.useEffect(() => {
