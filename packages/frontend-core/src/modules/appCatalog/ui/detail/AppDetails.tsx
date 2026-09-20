@@ -1,4 +1,7 @@
-import type { Resource } from '@igstack/app-catalog-backend-core'
+import type {
+  Resource,
+  SourceReference,
+} from '@igstack/app-catalog-backend-core'
 import {
   AppWindow,
   CalendarPlus,
@@ -27,6 +30,7 @@ import { useUser } from '~/modules/auth'
 import { InlineEditableField } from '../components/InlineEditableField'
 import { MarkdownText } from '../components/MarkdownText'
 import { ScreenshotGallery } from '../components/ScreenshotGallery'
+import { SourcePulse } from '../components/SourcePulse'
 import { useUpdateApp } from '../../hooks/useUpdateApp'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
@@ -169,6 +173,18 @@ export function AppDetails({
     app.sources?.map((s) => (typeof s === 'string' ? s : s.url)) ?? []
   const displaySources =
     draftSource !== null ? [...sourceUrls, draftSource] : sourceUrls
+  // The list renders bare URLs (they are editable as text), so the pulse has to
+  // be looked up rather than carried alongside. Absent until the autoupdate loop
+  // has seen the source — a freshly added one simply gets no mark.
+  const pulseByUrl = React.useMemo(() => {
+    const byUrl = new Map<string, NonNullable<SourceReference['pulse']>>()
+    for (const source of app.sources ?? []) {
+      if (typeof source !== 'string' && source.pulse) {
+        byUrl.set(source.url, source.pulse)
+      }
+    }
+    return byUrl
+  }, [app.sources])
 
   // Enter: open screenshot gallery
   useHotkeys(
@@ -610,6 +626,12 @@ export function AppDetails({
                           )
                         }
                       />
+                      {!isDraft && pulseByUrl.has(url) && (
+                        <SourcePulse
+                          pulse={pulseByUrl.get(url)!}
+                          className="ml-auto"
+                        />
+                      )}
                       {!isDraft && (
                         <Button
                           type="button"
@@ -664,6 +686,12 @@ export function AppDetails({
                     </a>
                   ) : (
                     <span className="text-muted-foreground">—</span>
+                  )}
+                  {pulseByUrl.has(url) && (
+                    <SourcePulse
+                      pulse={pulseByUrl.get(url)!}
+                      className="ml-auto"
+                    />
                   )}
                 </li>
               ))}

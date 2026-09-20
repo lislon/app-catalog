@@ -6,6 +6,7 @@ import type {
   AppCategory,
   GroupingTagDefinition,
   Resource,
+  SourceCheck,
 } from '../../types/common/appCatalogTypes'
 import type {
   CustomConfig,
@@ -15,6 +16,7 @@ import type { Group, Person } from '../../types/common/personGroupTypes'
 import { omit } from 'radashi'
 import { parseSourceSlug } from '../../utils/parseSourceSlug'
 import { computeFreshness } from './freshness'
+import { computeSourcePulse } from './sourcePulse'
 
 /** Prisma query result for DbResource with sourceRefs included (used by rowToResource) */
 type ResourceRowWithSourceRefs = Prisma.DbResourceGetPayload<{
@@ -140,6 +142,15 @@ function rowToResource(row: ResourceRowWithSourceRefs): Resource {
     sourceSlug: ref.sourceSlug,
     url: ref.url,
     parseDate: ref.parseDate ? ref.parseDate.toISOString() : null,
+    // Derived here rather than shipped raw so the pulse mark can stay a dumb
+    // renderer, the same way `freshness` is computed for the entry below.
+    pulse: computeSourcePulse({
+      lastCheckedAt: ref.lastCheckedAt?.toISOString() ?? null,
+      nextCheckAfter: ref.nextCheckAfter?.toISOString() ?? null,
+      lastContentChangeAt: ref.lastContentChangeAt?.toISOString() ?? null,
+      checkIntervalHours: ref.checkIntervalHours,
+      changeHistory: ref.changeHistory as SourceCheck[] | null,
+    }),
   }))
   const notes = row.notes == null ? undefined : row.notes
   const appUrl = row.appUrl == null ? undefined : row.appUrl

@@ -25,6 +25,17 @@ interface AssetSyncResult {
   iconName: string | null
 }
 
+/**
+ * ISO string to Date, tolerating junk. The per-source schedule comes from a file
+ * an agent writes, so a malformed date must drop that one field rather than fail
+ * the whole catalog sync on `Invalid Date`.
+ */
+function asDate(iso: string | null | undefined): Date | null {
+  if (!iso) return null
+  const t = Date.parse(iso)
+  return Number.isNaN(t) ? null : new Date(t)
+}
+
 function isFileNotFoundError(error: unknown): boolean {
   return (
     error instanceof Error &&
@@ -374,6 +385,10 @@ export async function syncAppCatalog(
       return (resource.sources ?? []).map((source) => {
         const url = typeof source === 'string' ? source : source.url
         const sourceSlug = parseSourceSlug(url)
+        // A bare URL from config carries no schedule; an enriched source does,
+        // and it is the autoupdate registry's copy that wins on every sync.
+        const schedule =
+          typeof source === 'string' ? {} : (source.schedule ?? {})
         return {
           resourceId,
           sourceSlug,
@@ -381,6 +396,11 @@ export async function syncAppCatalog(
           parseDate: null,
           excerpts: [],
           userPrompt: null,
+          lastCheckedAt: asDate(schedule.lastCheckedAt),
+          nextCheckAfter: asDate(schedule.nextCheckAfter),
+          lastContentChangeAt: asDate(schedule.lastContentChangeAt),
+          checkIntervalHours: schedule.checkIntervalHours ?? null,
+          changeHistory: schedule.changeHistory ?? null,
         }
       })
     })
