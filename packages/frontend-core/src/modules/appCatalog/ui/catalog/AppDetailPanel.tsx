@@ -40,8 +40,13 @@ export function AppDetailPanel({
 
   // Focus the dialog on mount so Esc hotkeys fire immediately, even when
   // the card was opened by a mouse click (which leaves focus on the grid row).
+  //
+  // Unless something inside already took the caret — the Quick Jump field does,
+  // and it has the better claim: a child's effect runs before its parent's, so
+  // without this guard the card would take focus straight back off it.
   useEffect(() => {
-    dialogRef.current?.focus()
+    const dialog = dialogRef.current
+    if (dialog && !dialog.contains(document.activeElement)) dialog.focus()
   }, [])
 
   return (

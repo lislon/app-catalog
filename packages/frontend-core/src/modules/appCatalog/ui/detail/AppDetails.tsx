@@ -217,12 +217,17 @@ export function AppDetails({
   )
 
   // Esc: close the details panel (only when gallery is NOT open)
+  //
+  // From inside a text field too: the Quick Jump field holds the caret from the
+  // moment the card opens, so the default "ignore form tags" left the card with
+  // no keyboard way out. A field that wants Esc for itself stops the event —
+  // InlineEditableField does, so Esc there cancels the edit and nothing more.
   useHotkeys(
     'escape',
     () => {
       onClosePanel()
     },
-    { enabled: !isGalleryOpen },
+    { enabled: !isGalleryOpen, enableOnFormTags: ['input'] },
     [isGalleryOpen, onClosePanel],
   )
 
