@@ -66,22 +66,40 @@ export function useUrlSyncedState<T>({
   // changes made from the default (e.g. the first keystroke in an empty search)
   // are still persisted to the URL and survive navigation/remounts.
   useEffect(() => {
+    // Compare against the LIVE router location, not the `useSearch()` snapshot
+    // above: that snapshot comes from the resolved route match and still holds
+    // the pre-navigation params while a navigation this effect issued is
+    // settling. `encode` is normally an inline arrow, so this effect re-runs on
+    // every render — and against the stale snapshot the sync check never
+    // matched, so each render queued another navigate() and each navigate()
+    // caused another render. 50 of those is React's "Maximum update depth
+    // exceeded", which unmounted the subtree mid-interaction (#152).
+    //
+    // Spreading the live params matters for the same reason: two instances of
+    // this hook writing different keys in one tick would otherwise each spread
+    // their own stale snapshot and drop the other's param.
+    const currentSearch = router.state.location.search as Record<
+      string,
+      unknown
+    >
+
     // Encode state value for URL
     const encodedValue = encode ? encode(state) : (state as string | undefined)
 
     // Check if already in sync
-    if (encodedValue === (search as Record<string, unknown>)[key]) return
+    if (encodedValue === currentSearch[key]) return
 
-    const currentPath = router.state.location.pathname
     navigate({
-      to: currentPath,
+      to: router.state.location.pathname,
       search: {
-        ...search,
+        ...currentSearch,
         [key]: encodedValue,
       },
       replace: true, // Use replace to avoid polluting history
     })
-  }, [state, key, encode, navigate, router.state.location.pathname, search])
+    // `search` stays in the deps so an external URL change (back/forward) still
+    // re-runs this and re-asserts state → URL.
+  }, [state, key, encode, navigate, router, search])
 
   return [state, setState]
 }

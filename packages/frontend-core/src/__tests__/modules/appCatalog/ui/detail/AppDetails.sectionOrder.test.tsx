@@ -10,7 +10,9 @@ vi.mock('@tanstack/react-router', () => ({
   // Quick Jump keeps its destination in the url, so the panel reads the router
   // even on an app with no jumps to show.
   useNavigate: vi.fn(() => vi.fn()),
-  useRouter: vi.fn(() => ({ state: { location: { pathname: '/' } } })),
+  useRouter: vi.fn(() => ({
+    state: { location: { pathname: '/', search: {} } },
+  })),
   Link: ({ children, ...rest }: { children?: React.ReactNode }) => (
     <a {...rest}>{children}</a>
   ),
