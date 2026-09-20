@@ -23,7 +23,13 @@ import {
 } from '~/ui/accordion'
 import { AccessRequestSection } from '../components/AccessRequestSection'
 import { AccessPrerequisiteChain } from '../components/AccessPrerequisiteChain'
-import { LEAP, LEAVE_FILL, QuickJumpBar } from '../components/QuickJumpBar'
+import {
+  LEAP,
+  LEAVE_FILL,
+  QUIET_FILL,
+  QuickJumpBar,
+  hasQuickJumps,
+} from '../components/QuickJumpBar'
 import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
 import { PersonBadge } from '../components/PersonBadge'
 import { useUser } from '~/modules/auth'
@@ -306,8 +312,13 @@ export function AppDetails({
                     rel="noopener noreferrer"
                     onClick={() => recordClick(app.slug)}
                     className={cn(
-                      'inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium shadow-sm',
-                      LEAVE_FILL,
+                      // The row's one inset and icon gap, and its height stated
+                      // rather than left to the taller neighbour.
+                      'inline-flex min-h-[34px] items-center gap-1.5 rounded-md px-3 text-sm font-medium shadow-sm',
+                      // Only ever ONE solid brand fill in this row: it goes to
+                      // Quick Jump's submit when there is one, because that is
+                      // the control that acts on something the user typed.
+                      hasQuickJumps(app) ? QUIET_FILL : LEAVE_FILL,
                       LEAP,
                     )}
                     title={displayUrl(app.appUrl)}
