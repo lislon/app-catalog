@@ -1,14 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { appCatalogRouteLoader } from '~/modules/appCatalog/routeLoader'
 import { AppCatalogLayout } from '~/modules/appCatalog/ui/layout/AppCatalogLayout'
 import { McpPage } from '~/modules/appCatalog/ui/pages/McpPage'
 
 export const Route = createFileRoute('/_layout/mcp')({
   component: RouteComponent,
-  async loader() {
-    const appCatalogLoader = await appCatalogRouteLoader()
-    return { appCatalogLoader }
-  },
 })
 
 function RouteComponent() {
