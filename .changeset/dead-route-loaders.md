@@ -11,8 +11,7 @@ re-ran it, the route match went pending, and the subtree `_layout` renders was
 unmounted and rebuilt on the other side.
 
 Two things fell out of that. Component state inside the detail panel was
-destroyed, which is how an id typed into Quick Jump vanished the moment you
-picked a different destination. And the fresh mount re-ran the whole data layer:
+destroyed on every param change. And the fresh mount re-ran the whole data layer:
 `/api/auth/session` twice, `auth.getProviders`, `comments.list` and
 `appCatalog.getData` on every param toggle.
 
