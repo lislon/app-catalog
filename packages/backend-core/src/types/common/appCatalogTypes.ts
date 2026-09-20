@@ -58,14 +58,82 @@ export interface QuickJump {
 // APP CATALOG TYPES
 // ============================================================================
 
+/** One recorded re-read of a source, and whether it found the content changed. */
+export interface SourceCheck {
+  /** ISO-8601 timestamp of the check. */
+  date: string
+  changed: boolean
+}
+
+/**
+ * Raw per-source scheduling facts, as the autoupdate loop records them. Supplied
+ * by the sync and stored verbatim; {@link SourcePulse} is what gets derived from
+ * it for display.
+ */
+export interface SourceSchedule {
+  /** When the source was last re-read — a schedule tick, not a change. */
+  lastCheckedAt?: string | null
+  /** Not due for another read before this (includes jitter). */
+  nextCheckAfter?: string | null
+  /** When the content last actually changed, when the loop recorded it absolutely. */
+  lastContentChangeAt?: string | null
+  /** The source's own adaptive interval, in hours. */
+  checkIntervalHours?: number | null
+  /** Recent checks, newest first. Capped by the producer (5 entries today). */
+  changeHistory?: SourceCheck[] | null
+}
+
+/** How often a source has been changing, bucketed from its own check interval. */
+export type SourceCadence =
+  | 'hourly'
+  | 'daily'
+  | 'weekly'
+  | 'monthly'
+  | 'quarterly'
+
+/** Whether a source's reading is still current. Per-source twin of `isStale`. */
+export type SourcePulseState = 'ok' | 'due' | 'stale' | 'never'
+
+/**
+ * Display-ready cadence + freshness for one source. Derived from
+ * {@link SourceSchedule} — see `modules/appCatalog/sourcePulse.ts`.
+ */
+export interface SourcePulse {
+  state: SourcePulseState
+  /** Null until the loop has scheduled this source at all. */
+  intervalHours: number | null
+  cadence: SourceCadence | null
+  lastCheckedAt: string | null
+  /** When the next read is (or was) due. */
+  dueAt: string | null
+  lastContentChangeAt: string | null
+  /**
+   * True when `lastContentChangeAt` is only a LOWER bound: no absolute stamp and
+   * no observed change left inside the capped history window, so all we honestly
+   * know is "older than this". Render it as "over N ago", never as a exact date.
+   */
+  contentChangeIsLowerBound: boolean
+  /** The checks behind the mark, newest first. */
+  checks: SourceCheck[]
+}
+
 /**
  * Source reference with metadata (used in API responses)
  * Note: parseDate is string (ISO-8601) when serialized from API, null when not yet parsed
+ *
+ * Doubles as the shape the SYNC accepts, which is why only `url` is required: the
+ * sync derives `sourceSlug` from the URL and owns `parseDate`, so a producer
+ * supplies the URL plus `schedule` and nothing else. Both are always populated on
+ * the way back out.
  */
 export interface SourceReference {
-  sourceSlug: string
+  sourceSlug?: string
   url: string
-  parseDate: string | null
+  parseDate?: string | null
+  /** Supplied by the sync from the autoupdate registry; not sent to clients. */
+  schedule?: SourceSchedule
+  /** Derived from {@link schedule} on read — what the UI's pulse mark draws. */
+  pulse?: SourcePulse
 }
 
 /**

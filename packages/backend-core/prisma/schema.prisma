@@ -260,5 +260,15 @@ model SourceReference {
   excerpts   String[]   @default([])
   userPrompt String?
 
+  // Per-source schedule from the autoupdate loop — the same three dates
+  // DbResource carries for the whole entry, plus what only a source has: its own
+  // adaptive interval and its own recent check results. Drives the pulse mark.
+  lastCheckedAt       DateTime?
+  nextCheckAfter      DateTime?
+  lastContentChangeAt DateTime?
+  checkIntervalHours  Int?
+  /// Newest-first [{date, changed}], capped by the producer.
+  changeHistory       Json?
+
   @@unique([resourceId, url])
 }
