@@ -48,6 +48,76 @@ export interface SearchResult<T extends SearchableResource> {
   match?: SearchMatch
 }
 
+/**
+ * Latin character sitting on the same physical key as each Cyrillic one
+ * (ЙЦУКЕН against QWERTY).
+ */
+const LATIN_BY_CYRILLIC_KEY: Record<string, string> = {
+  й: 'q',
+  ц: 'w',
+  у: 'e',
+  к: 'r',
+  е: 't',
+  н: 'y',
+  г: 'u',
+  ш: 'i',
+  щ: 'o',
+  з: 'p',
+  х: '[',
+  ъ: ']',
+  ф: 'a',
+  ы: 's',
+  в: 'd',
+  а: 'f',
+  п: 'g',
+  р: 'h',
+  о: 'j',
+  л: 'k',
+  д: 'l',
+  ж: ';',
+  э: "'",
+  я: 'z',
+  ч: 'x',
+  с: 'c',
+  м: 'v',
+  и: 'b',
+  т: 'n',
+  ь: 'm',
+  б: ',',
+  ю: '.',
+  ё: '`',
+}
+
+const CYRILLIC = /[а-яё]/i
+
+/**
+ * Re-read a query as if it had been typed with the keyboard on the Cyrillic
+ * layout: each Cyrillic character becomes the Latin character on the same
+ * physical key, so `пфещк` reads back as `gator`. Anything with no Cyrillic key
+ * is passed through.
+ *
+ * Case is not preserved — callers search case-insensitively.
+ */
+export function cyrillicLayoutToLatin(query: string): string {
+  return Array.from(query)
+    .map((char) => LATIN_BY_CYRILLIC_KEY[char.toLowerCase()] ?? char)
+    .join('')
+}
+
+/**
+ * The query to retry with when a search came back empty, or `null` when there
+ * is nothing else to try. Typing an English name with the keyboard left on the
+ * Cyrillic layout is the one case worth a second pass.
+ */
+function layoutFallbackQuery(
+  searchQuery: string,
+  results: readonly unknown[],
+): string | null {
+  if (results.length > 0 || !CYRILLIC.test(searchQuery)) return null
+  const latin = cyrillicLayoutToLatin(searchQuery)
+  return latin === searchQuery ? null : latin
+}
+
 /** All terms appear in the text, order-independent (AND logic). */
 function allTermsMatcher(terms: string[]): (text: string) => boolean {
   return (text: string) => terms.every((term) => text.includes(term))
@@ -220,6 +290,9 @@ export function searchResourcesRanked<T extends SearchableResource>(
     return a.result.app.displayName.localeCompare(b.result.app.displayName)
   })
 
+  const fallback = layoutFallbackQuery(normalizedQuery, scoredApps)
+  if (fallback) return searchResourcesRanked(resources, fallback)
+
   return scoredApps.map((item) => item.result)
 }
 
@@ -311,6 +384,9 @@ export function searchWithinApp<T extends SearchableResource>(
       ? a.score - b.score
       : byName(a.result.app, b.result.app),
   )
+
+  const fallback = layoutFallbackQuery(normalizedQuery, scored)
+  if (fallback) return searchWithinApp(resources, appSlug, fallback)
 
   return scored.map((item) => item.result)
 }
