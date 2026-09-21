@@ -1,5 +1,335 @@
 # @igstack/app-catalog-frontend-core
 
+## 4.0.0
+
+### Major Changes
+
+- [#211](https://github.com/lislon/app-catalog/pull/211) [`7ce435c`](https://github.com/lislon/app-catalog/commit/7ce435c48819d6562a073d9d6b9461c30a4ae05a) Thanks [@lislon](https://github.com/lislon)! - The day-to-day shelf is now an explicit, additive `placement:day-to-day` tag
+
+  `groupByArea` used to read `universality:everyone` and, on a match, push the
+  resource onto the "Day-to-day tools" shelf **instead of** its own category. That
+  made two unrelated questions share one tag: _how many people use this_ and
+  _where does it appear_. Answering the second one deleted the answer to the
+  first — a resource on the shelf silently vanished from its category section, so
+  a category could render without its best-known members (#132).
+
+  The two concerns are now separate tags:
+  - `universality:*` goes back to meaning reach only, and no longer affects layout
+  - `placement:day-to-day` is opt-in placement, and it is **additive** — the
+    resource is a shortcut at the top _and_ still listed under its category
+
+  ### Breaking
+  - `groupByArea(apps, dayToDayCategories?)` lost its second parameter:
+    `groupByArea(apps)`. Shelf membership is per-resource data now, not UI config.
+  - `AreasSettings.dayToDayCategories` is removed. Tag the resources you want on
+    the shelf with `placement:day-to-day` instead. Note that a category folded
+    this way used to get no section of its own; it now renders one, so give it an
+    entry in `AreasSettings.icons`.
+  - `AreasSettings.dayToDayLabel` and `icons` are unchanged.
+
+  Consumers that relied on `universality:everyone` to fill the shelf must add
+  `placement:day-to-day` to those resources, and should declare the new prefix in
+  their own tag definitions so it stays a known vocabulary rather than a
+  free-form keyword.
+
+  `DAY_TO_DAY_TAG` is exported alongside `DAY_TO_DAY_AREA_KEY` so a consumer can
+  reference the tag without retyping the literal.
+
+### Minor Changes
+
+- [#222](https://github.com/lislon/app-catalog/pull/222) [`2e00035`](https://github.com/lislon/app-catalog/commit/2e00035a66ffa54d07eecbaeb7d75feafa564582) Thanks [@lislon](https://github.com/lislon)! - A measured pass over the Quick Jump row: one inset, one type size, one fill.
+
+  **It stays inside the panel.** Between 640 and 792px the row used to stop
+  wrapping while the panel it sits in was still narrower than the control, so the
+  group overflowed by ~100px, the panel grew a horizontal scrollbar and Jump — the
+  primary action — sat off-screen. The row now wraps at every width, the group
+  cannot exceed its container, and the identifier field can shrink.
+
+  **The row holds exactly one brand fill, and it is on Jump.** The app's own open
+  button and Jump had byte-identical backgrounds, so four elements read as one
+  blob. The open button steps down to `secondary` with a border (without the
+  border it merges into the destination picker instead — the two greys are 0.015
+  apart in lightness) whenever the app also offers a Quick Jump, and keeps its
+  primacy through position and its self-describing label. Both fills darken to
+  5.19:1, up from 4.56:1 — `14px/700` is not large text.
+
+  **Jump presses in rather than hopping.** The lift-and-crouch belongs to a
+  free-standing button; on a segment welded into a bordered frame it covered the
+  frame's top border on hover and opened 3.5px of card above itself on press. It
+  now takes an inset shadow and a darker fill, and the arrival keyframe — caught
+  mid-flight 2px outside the frame — is gone. The open button keeps the motion.
+
+  **The width goes where the text is.** The picker was a fixed 11rem that
+  truncated most destination titles while the field spent 249px on an 8-character
+  id. The picker is now as wide as the app's widest destination (capped), sized
+  from an invisible copy of that label so it cannot move when you switch
+  destinations, and the field is 170px.
+
+  **Everything lines up.** One 12px horizontal inset on the open button and all
+  three segments, one 6px label-to-icon gap, one 14px/20px type scale, and a
+  `min-height` on each segment rather than borrowed from a sibling — which is what
+  left the picker a 20.5px tap target once it stacked (40px now), and made the row
+  33.5px on an app with Quick Jumps but 32px on one without (34px on both now).
+  Inner corners are concentric with the frame, and the dark theme's corner scale
+  now matches the light one instead of quietly being half of it.
+
+  **The dormant Jump describes itself once.** Its `title` said in different words
+  what the hint bubble already says, and the bubble was `aria-hidden`, so a screen
+  reader got neither; the bubble is now the button's `aria-describedby` and is
+  anchored to the field it points at. Tabbing lights the frame on all three
+  segments, not only the field, and the destination menu is never narrower than
+  the picker that opened it.
+
+- [#215](https://github.com/lislon/app-catalog/pull/215) [`dae2587`](https://github.com/lislon/app-catalog/commit/dae2587bf6544fcf259d4a7989ed86effac70e96) Thanks [@lislon](https://github.com/lislon)! - Quick Jump is one control on the app's header instead of a section of its own:
+  `[ destination ▾ | id | Jump ]`, sitting next to the button that opens the app.
+  The section underneath — a column of buttons per identifier, a pin, and a
+  Configure popover for choosing which identifiers to show — is gone. It asked the
+  reader to scan a grid before typing anything, and the thing they came to do
+  (paste an id, land on the page) was three decisions deep.
+
+  What the new shape decides for them: the destination is a picker, not a row of
+  buttons, so the field and the action never move; `Jump` is the only thing that
+  navigates; pressing it while the field is empty puts the caret in the field
+  rather than doing nothing.
+
+  The chosen destination now lives in the url as `?qj=<slug>`, derived from the
+  jump's title (`Tracker — View case` → `tracker.view-case`), so "use this
+  destination on this app" is a link you can send. A `?qj=` that names no jump of
+  the open app is dropped rather than silently resolving to the first one.
+
+  The app's own open button drops the word "Open": it shows the host name followed
+  by the external-link glyph, which already says what pressing it does.
+
+  Also fixed on the way past: the screenshot preview was a clickable `div`, so the
+  gallery could not be opened from the keyboard. It is a labelled button now.
+
+- [#216](https://github.com/lislon/app-catalog/pull/216) [`976e00f`](https://github.com/lislon/app-catalog/commit/976e00fd8993fa328581614a1f6f2346c500075a) Thanks [@lislon](https://github.com/lislon)! - Four corrections to the Quick Jump bar, all from watching it get used.
+
+  **The buttons leap before the click, not after.** Both links open a new tab, and
+  the new tab takes focus the same instant the click lands — so the crouch-and-hop
+  keyframe that used to fire on click ran inside a backgrounded tab, and you only
+  ever saw it when you came back. It is now a `:hover` lift and an `:active`
+  crouch, which happen while you still have the page. The app's own button gets the
+  same motion: both of them are leaving for the app.
+
+  **The header breathes.** The row sat 0.25rem under the app title, close enough to
+  read as part of it. Now 0.75rem.
+
+  **Two labels per destination.** The picker shows the action alone
+  (`Rerun report`); the full `Tracker — Rerun report` stays in the menu,
+  where the choice between systems is actually being made. The picker is where that
+  choice is already over, so it was spending its fixed width on a word you had just
+  read.
+
+  **The dormant Jump explains itself on hover** — a bubble whose tail points at the
+  field rather than at the button under the cursor, and the field lights up at the
+  same time. Hovering something that does nothing is a question; the answer has to
+  be in the place the answer lives.
+
+- [#217](https://github.com/lislon/app-catalog/pull/217) [`65f3938`](https://github.com/lislon/app-catalog/commit/65f393817cf995b379233642323d22c3c447078d) Thanks [@lislon](https://github.com/lislon)! - A design and accessibility review pass over the Quick Jump bar. Everything here
+  was measured in a browser, not eyeballed.
+
+  **The control fitted on a phone about as well as a piano fits in a lift.** At a
+  390px viewport the three segments came to 505px inside a 218px panel — `Jump`,
+  the only thing in the row that navigates, was entirely off-screen, and the page
+  grew a horizontal scrollbar. Every segment was `flex: none` and the field had a
+  fixed `size`, so nothing could give. Below `sm` the picker now takes its own
+  line and the field shares the next one with Jump; from `sm` up nothing changes,
+  so a swapped destination still cannot slide the field sideways.
+
+  **The dormant Jump was not a control.** It was an `<a>` with no `href`, which
+  cannot take focus — so "press it and it tells you where to type" was mouse-only,
+  the hint's `:focus-visible` branch was dead code, and its `aria-disabled` sat on
+  a node no screen reader could reach. It is a `<button>` now, and an `<a>` only
+  once it has somewhere to go.
+
+  **Two WCAG AA failures on the fill both buttons use.** `--primary` under
+  `--primary-foreground` measures 3.8:1, and the usual `bg-primary/90` hover made
+  it worse by fading the fill toward the card rather than darkening it — so the
+  dormant Jump was _more_ legible than the armed one. Both buttons now darken the
+  fill (4.9:1) and darken further on hover (6.4:1). The token itself still owes
+  every other filled button in the app the same fix; that is a brand decision.
+
+  **One focus ring for three focusable segments.** The shell ringed itself on
+  `focus-within`, so tabbing picker → field → Jump looked identical at every stop.
+  The shell's ring is the field's now; the picker and Jump outline themselves.
+
+  **The leap moved the wrong thing.** It was hung on the whole 505px shell, so
+  hovering Jump lifted the field you had just typed into. The shell no longer
+  clips its segments, so Jump leaps on its own.
+
+  Smaller, same pass: the caret sits next to the picker's label instead of 85px
+  away at the far edge, where it read as the field's boundary; the picker and Jump
+  match the field's type size instead of running a size below it; the dormant Jump
+  is tinted toward the action instead of sharing the picker's grey, which had the
+  row reading as two dropdowns around a field; the hairline between the two
+  buttons is gone (it separated a solid pill from a recessed shell — nothing that
+  could be confused — and dangled as an orphan once the row wrapped); and the
+  armed title is the destination rather than the destination plus a URL the
+  browser already shows in the status bar.
+
+- [#212](https://github.com/lislon/app-catalog/pull/212) [`eaa0d66`](https://github.com/lislon/app-catalog/commit/eaa0d66a3366ba3e35fcf841f82726154b943fce) Thanks [@lislon](https://github.com/lislon)! - Quick Jump: paste an id on a resource card and open the matching page
+
+  A resource can now carry deep links that take an identifier. Each entry names
+  the identifier in human words, the link title, and a url template with at most
+  two placeholders — `{{baseHost}}` (the resource's own `appUrl`, trailing slash
+  trimmed) and `{{value}}` (the typed id, url-encoded exactly once):
+
+  ```ts
+  quickJumps: [
+    {
+      identity: 'Case Id',
+      title: 'View case',
+      url: '{{baseHost}}/case/{{value}}',
+    },
+    {
+      identity: 'Case Id',
+      title: 'Audit log',
+      url: '{{baseHost}}/audit?case={{value}}',
+    },
+  ]
+  ```
+
+  The detail panel groups them by `identity` — one column per identifier, in the
+  order the data declares, with one input above its jumps. A jump is a dead,
+  dashed placeholder until its input has a value, then becomes a real link that
+  opens in a new tab; Enter in the input opens the column's first jump. A jump
+  whose template needs a host on a resource that has no `appUrl` is dropped
+  rather than rendered broken.
+
+  Two per-user display choices live in `localStorage` (`ac:quickjump:<slug>`), so
+  they cost no table and no authenticated route: which identifiers to show —
+  picked in a **Configure (shown/total)** popover, defaulting to the first one —
+  and whether to pin the section to the top of the card.
+
+  `identity` is the label itself, so there is no dictionary to register: naming
+  the same identifier on two resources is what links them, and the input's
+  autofill key is derived from it, so the browser offers ids you typed elsewhere.
+
+  Resources without `quickJumps` render exactly as before. `#143`
+
+- [#219](https://github.com/lislon/app-catalog/pull/219) [`596b73a`](https://github.com/lislon/app-catalog/commit/596b73a7b9b4f71943ecf2431ac97e7092bb6f62) Thanks [@lislon](https://github.com/lislon)! - Source pulse: a per-source mark for how volatile a source is and whether its reading is current
+
+  Each source in an entry's Sources list can now carry its own check schedule, and
+  the detail panel draws it. `SourceReference` accepts a `schedule` on sync —
+  `lastCheckedAt`, `nextCheckAfter`, `lastContentChangeAt`, `checkIntervalHours`
+  and a newest-first `changeHistory` of `{ date, changed }` — persisted on five new
+  nullable `SourceReference` columns (migration `20260919000000_add_source_schedule`).
+
+  On read the serializer derives a display-ready `pulse` from it, the same way
+  `freshness` is derived for the entry as a whole, so the UI stays a dumb renderer:
+
+  ```ts
+  { state: 'ok' | 'due' | 'stale' | 'never',
+    intervalHours, cadence: 'hourly' | 'daily' | 'weekly' | 'monthly' | 'quarterly',
+    lastCheckedAt, dueAt, lastContentChangeAt, contentChangeIsLowerBound, checks }
+  ```
+
+  `state` shares its grace period with the entry-level `isStale`, so a source can
+  never disagree with its own entry about being stale. `contentChangeIsLowerBound`
+  is the honest case: `changeHistory` is capped, so once the last observed change
+  ages out all we know is "older than this" — rendered as "over N ago", never as a
+  date.
+
+  The mark itself is one inline SVG, and it keeps its two channels separate:
+  **shape carries volatility** (ticks on a real 90-day axis — tall for a check that
+  found a change, short for one that did not, so a burst of churn looks like a
+  burst) and **colour carries freshness**. Colour never carries it alone — the
+  freshness circle also goes hollow → filled → filled-with-ring, and the tooltip
+  prints the words. The four status hexes are deliberately not themed.
+
+  At rest only the circle is drawn, inside a fixed-width slot, so a list of sources
+  reads as a quiet column and hovering cannot reflow the row. Hover or keyboard
+  focus fades the track in and opens a tooltip that doubles as the legend: every
+  row is prefixed by the very glyph it explains (cadence, last change, last check,
+  next check / was due). Sources the producer has never scheduled carry no
+  `pulse` and simply get no mark, so entries sync'd from bare URLs look exactly as
+  before. `#151`
+
+### Patch Changes
+
+- [#214](https://github.com/lislon/app-catalog/pull/214) [`12e2558`](https://github.com/lislon/app-catalog/commit/12e2558b8123d0ad9adcaccb86f4c9ab2571928b) Thanks [@lislon](https://github.com/lislon)! - Detail panel: description first, access instructions after it
+
+  The prerequisite chain and "How to get access" used to render above the
+  description, so opening a resource led with paperwork before saying what the
+  thing is. They now sit directly below the description, ahead of screenshots.
+  `#144`
+
+- [#227](https://github.com/lislon/app-catalog/pull/227) [`566f4d8`](https://github.com/lislon/app-catalog/commit/566f4d88adfcd492e6ac4fe0ecccc88a94106f49) Thanks [@lislon](https://github.com/lislon)! - Switch on the animation utilities the overlays already ask for. `@import 'tw-animate-css'` had been commented out since the initial refactor, so the `animate-in` / `animate-out` / `fade-in-0` / `zoom-in-95` / `slide-in-from-top-2` classes on the dialog, alert dialog, popover, tooltip, select, dropdown and autocomplete primitives resolved to nothing and every overlay appeared and disappeared instantly. The stylesheet now also honours `prefers-reduced-motion: reduce`, which tw-animate-css does not do itself, and a test asserts the import stays live — a unit test on the class name passes either way, which is how this went unnoticed.
+
+- [#224](https://github.com/lislon/app-catalog/pull/224) [`1e86c9e`](https://github.com/lislon/app-catalog/commit/1e86c9e0dbe819e81290d5b3c2f0ae7c576731e8) Thanks [@lislon](https://github.com/lislon)! - Opening an app's detail panel now puts the caret in the Quick Jump identifier
+  field, so you can open an app and type an id without reaching for the mouse. It
+  re-applies when you move to another app in the same panel, does not scroll the
+  panel to itself, and stands down on coarse pointers, where focusing an input pops
+  the virtual keyboard over half of what you just opened. Apps without a Quick Jump
+  are unaffected — there is nothing to focus.
+
+- [#228](https://github.com/lislon/app-catalog/pull/228) [`47e97c1`](https://github.com/lislon/app-catalog/commit/47e97c12338210221f4ff7dc88159336865f6c34) Thanks [@lislon](https://github.com/lislon)! - An app with no comments now invites you instead of showing an empty form: "Be the first." is a link that slides the composer open and puts the caret in it. When comments already exist the composer is there from the start and does not take focus.
+
+- [#218](https://github.com/lislon/app-catalog/pull/218) [`36f4c36`](https://github.com/lislon/app-catalog/commit/36f4c36ce40122cc638c8db248b3a1add9a9cda0) Thanks [@lislon](https://github.com/lislon)! - Changing a url param no longer tears the page down and rebuilds it.
+
+  Five routes awaited a loader that returned `{}`. Nothing ever read it — there is
+  no `useLoaderData` call anywhere — but awaiting it made every navigation to those
+  routes asynchronous, so a `?qj=`, `?sub=`, `?filterTag=` or `?deprecated=` change
+  re-ran it, the route match went pending, and the subtree `_layout` renders was
+  unmounted and rebuilt on the other side.
+
+  Two things fell out of that. Component state inside the detail panel was
+  destroyed on every param change. And the fresh mount re-ran the whole data layer:
+  `/api/auth/session` twice, `auth.getProviders`, `comments.list` and
+  `appCatalog.getData` on every param toggle.
+
+  The loaders and the module they called are deleted. A test asserts the three
+  render-nothing catalog routes declare none, because the integration test cannot:
+  in jsdom the navigation resolves without the remount, so it passes either way.
+
+- [#223](https://github.com/lislon/app-catalog/pull/223) [`cadc4f7`](https://github.com/lislon/app-catalog/commit/cadc4f70eab46c585644ca7b08b0f71d37669d6d) Thanks [@lislon](https://github.com/lislon)! - The detail panel's Tags list no longer shows `namespace:value` tags. Those drive
+  grouping, faceting and placement — they are indexing machinery, roughly half of
+  all tag references, and say nothing about what an app is for. The colon is the
+  test. Search and filtering still match them, and the section is dropped entirely
+  when an app has nothing else to show, rather than rendering an empty heading.
+
+- [#226](https://github.com/lislon/app-catalog/pull/226) [`a297e00`](https://github.com/lislon/app-catalog/commit/a297e008f756aa8b200884a84bcb43d999519546) Thanks [@lislon](https://github.com/lislon)! - Load the body webfont again. The Google Fonts `@import` in `index.css` sat after `@import 'tailwindcss'`, where a remote import is invalid — so the minifier dropped it and body text silently fell back to a system face on any machine that did not happen to have the family installed locally. The import now comes first, and a test keeps every family named in `--font-sans` / `--font-serif` tied to an actual request.
+
+- [#225](https://github.com/lislon/app-catalog/pull/225) [`ee3510f`](https://github.com/lislon/app-catalog/commit/ee3510f9a5aeb22245797ffa2650dc8b31d8e44d) Thanks [@lislon](https://github.com/lislon)! - Let the quick jump field keep the caret when a detail card opens. The card focuses itself so Esc closes it, and that was taking focus straight back off the field. Esc now also works from inside the field, and cancelling an inline edit with Esc no longer closes the card behind it.
+
+- [#213](https://github.com/lislon/app-catalog/pull/213) [`83bdeed`](https://github.com/lislon/app-catalog/commit/83bdeed12d87e313a94879a153441944886d68c0) Thanks [@lislon](https://github.com/lislon)! - Quick Jump's hover tell now uses the grasshopper mark next to the green `JUMP`
+  word, matching the mockup the section was designed against. It stood in as a
+  lucide glyph, which read as a generic icon rather than as the one recognisable
+  bit of the interaction.
+
+  The test kit registers `vite-plugin-svgr` instead of mocking svg imports one at a
+  time. The old setup only knew about a single file, so any component importing a
+  new `?react` svg threw while rendering — which surfaced as the whole app panel
+  failing to appear, several test files away from the actual cause.
+
+- [#220](https://github.com/lislon/app-catalog/pull/220) [`182f048`](https://github.com/lislon/app-catalog/commit/182f0480f7fa08cc665500bf036ce1465c2cfaeb) Thanks [@lislon](https://github.com/lislon)! - Source pulse: expand a source's track when the whole row is hovered
+
+  The mark sits in a right-hand column, so on a wide detail panel it can end up a
+  few hundred pixels from the URL it describes. Hovering the row — not just the
+  8px circle — now fades that source's track in, which is what ties the two ends
+  of the row together. The tooltip still needs the mark itself. `#151`
+
+- [#221](https://github.com/lislon/app-catalog/pull/221) [`19b6a33`](https://github.com/lislon/app-catalog/commit/19b6a337dcda5176416be6325c06dfb4d60031d4) Thanks [@lislon](https://github.com/lislon)! - Fix the url-synced state hook queueing a navigation on every render.
+
+  `useUrlSyncedState` compared its encoded state against the `useSearch()`
+  snapshot. That snapshot comes from the resolved route match, so while a
+  navigation the hook itself issued is still settling it still reads the
+  pre-navigation params — and since `encode` is an inline arrow at both call
+  sites, the sync effect re-runs on every render. The "already in sync" check
+  therefore never matched: each render queued another `navigate()`, each
+  `navigate()` caused another render. Measured on a production build, one Quick
+  Jump destination change produced 52 navigations in a single burst and ended in
+  React's "Maximum update depth exceeded", which tore the panel down and took the
+  id the user had typed with it (#152).
+
+  The effect now reads the live router location instead. Spreading the live params
+  also fixes a latent clobber: two instances of this hook writing different keys in
+  one tick each spread their own stale snapshot and dropped the other's param.
+
+- Updated dependencies [[`cbec2c5`](https://github.com/lislon/app-catalog/commit/cbec2c5b04ffddbcad3a0e50eef7161044313405)]:
+  - @igstack/app-catalog-shared-core@4.0.0
+
 ## 3.0.0
 
 ### Minor Changes
