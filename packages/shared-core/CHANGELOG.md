@@ -1,5 +1,19 @@
 # @igstack/app-catalog-shared-core
 
+## 4.0.0
+
+### Patch Changes
+
+- [#229](https://github.com/lislon/app-catalog/pull/229) [`cbec2c5`](https://github.com/lislon/app-catalog/commit/cbec2c5b04ffddbcad3a0e50eef7161044313405) Thanks [@lislon](https://github.com/lislon)! - Search: find English names typed on a Cyrillic keyboard layout
+
+  Typing an app name with the keyboard left on the Cyrillic layout produced a
+  query like `пфещк` and no results. When a search comes back empty and the query
+  contains Cyrillic, it is now re-read through the physical keys — `пфещк` becomes
+  `gator` — and searched again. Queries that already have results are untouched,
+  so no existing search changes its results or its ranking. Applies to the
+  `"<app>/<term>"` within-app search too.
+  `#149`
+
 ## 3.0.0
 
 ## 2.0.4

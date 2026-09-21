@@ -1,5 +1,93 @@
 # @igstack/app-catalog-backend-core
 
+## 4.0.0
+
+### Minor Changes
+
+- [#212](https://github.com/lislon/app-catalog/pull/212) [`eaa0d66`](https://github.com/lislon/app-catalog/commit/eaa0d66a3366ba3e35fcf841f82726154b943fce) Thanks [@lislon](https://github.com/lislon)! - Quick Jump: paste an id on a resource card and open the matching page
+
+  A resource can now carry deep links that take an identifier. Each entry names
+  the identifier in human words, the link title, and a url template with at most
+  two placeholders — `{{baseHost}}` (the resource's own `appUrl`, trailing slash
+  trimmed) and `{{value}}` (the typed id, url-encoded exactly once):
+
+  ```ts
+  quickJumps: [
+    {
+      identity: 'Case Id',
+      title: 'View case',
+      url: '{{baseHost}}/case/{{value}}',
+    },
+    {
+      identity: 'Case Id',
+      title: 'Audit log',
+      url: '{{baseHost}}/audit?case={{value}}',
+    },
+  ]
+  ```
+
+  The detail panel groups them by `identity` — one column per identifier, in the
+  order the data declares, with one input above its jumps. A jump is a dead,
+  dashed placeholder until its input has a value, then becomes a real link that
+  opens in a new tab; Enter in the input opens the column's first jump. A jump
+  whose template needs a host on a resource that has no `appUrl` is dropped
+  rather than rendered broken.
+
+  Two per-user display choices live in `localStorage` (`ac:quickjump:<slug>`), so
+  they cost no table and no authenticated route: which identifiers to show —
+  picked in a **Configure (shown/total)** popover, defaulting to the first one —
+  and whether to pin the section to the top of the card.
+
+  `identity` is the label itself, so there is no dictionary to register: naming
+  the same identifier on two resources is what links them, and the input's
+  autofill key is derived from it, so the browser offers ids you typed elsewhere.
+
+  Resources without `quickJumps` render exactly as before. `#143`
+
+- [#219](https://github.com/lislon/app-catalog/pull/219) [`596b73a`](https://github.com/lislon/app-catalog/commit/596b73a7b9b4f71943ecf2431ac97e7092bb6f62) Thanks [@lislon](https://github.com/lislon)! - Source pulse: a per-source mark for how volatile a source is and whether its reading is current
+
+  Each source in an entry's Sources list can now carry its own check schedule, and
+  the detail panel draws it. `SourceReference` accepts a `schedule` on sync —
+  `lastCheckedAt`, `nextCheckAfter`, `lastContentChangeAt`, `checkIntervalHours`
+  and a newest-first `changeHistory` of `{ date, changed }` — persisted on five new
+  nullable `SourceReference` columns (migration `20260919000000_add_source_schedule`).
+
+  On read the serializer derives a display-ready `pulse` from it, the same way
+  `freshness` is derived for the entry as a whole, so the UI stays a dumb renderer:
+
+  ```ts
+  { state: 'ok' | 'due' | 'stale' | 'never',
+    intervalHours, cadence: 'hourly' | 'daily' | 'weekly' | 'monthly' | 'quarterly',
+    lastCheckedAt, dueAt, lastContentChangeAt, contentChangeIsLowerBound, checks }
+  ```
+
+  `state` shares its grace period with the entry-level `isStale`, so a source can
+  never disagree with its own entry about being stale. `contentChangeIsLowerBound`
+  is the honest case: `changeHistory` is capped, so once the last observed change
+  ages out all we know is "older than this" — rendered as "over N ago", never as a
+  date.
+
+  The mark itself is one inline SVG, and it keeps its two channels separate:
+  **shape carries volatility** (ticks on a real 90-day axis — tall for a check that
+  found a change, short for one that did not, so a burst of churn looks like a
+  burst) and **colour carries freshness**. Colour never carries it alone — the
+  freshness circle also goes hollow → filled → filled-with-ring, and the tooltip
+  prints the words. The four status hexes are deliberately not themed.
+
+  At rest only the circle is drawn, inside a fixed-width slot, so a list of sources
+  reads as a quiet column and hovering cannot reflow the row. Hover or keyboard
+  focus fades the track in and opens a tooltip that doubles as the legend: every
+  row is prefixed by the very glyph it explains (cadence, last change, last check,
+  next check / was due). Sources the producer has never scheduled carry no
+  `pulse` and simply get no mark, so entries sync'd from bare URLs look exactly as
+  before. `#151`
+
+### Patch Changes
+
+- Updated dependencies [[`cbec2c5`](https://github.com/lislon/app-catalog/commit/cbec2c5b04ffddbcad3a0e50eef7161044313405)]:
+  - @igstack/app-catalog-shared-core@4.0.0
+  - @igstack/app-catalog-table-sync@4.0.0
+
 ## 3.0.0
 
 ### Patch Changes

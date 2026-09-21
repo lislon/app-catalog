@@ -1,5 +1,111 @@
 # @igstack/app-catalog-test-kit
 
+## 4.0.0
+
+### Patch Changes
+
+- [#213](https://github.com/lislon/app-catalog/pull/213) [`83bdeed`](https://github.com/lislon/app-catalog/commit/83bdeed12d87e313a94879a153441944886d68c0) Thanks [@lislon](https://github.com/lislon)! - Quick Jump's hover tell now uses the grasshopper mark next to the green `JUMP`
+  word, matching the mockup the section was designed against. It stood in as a
+  lucide glyph, which read as a generic icon rather than as the one recognisable
+  bit of the interaction.
+
+  The test kit registers `vite-plugin-svgr` instead of mocking svg imports one at a
+  time. The old setup only knew about a single file, so any component importing a
+  new `?react` svg threw while rendering — which surfaced as the whole app panel
+  failing to appear, several test files away from the actual cause.
+
+- [#215](https://github.com/lislon/app-catalog/pull/215) [`dae2587`](https://github.com/lislon/app-catalog/commit/dae2587bf6544fcf259d4a7989ed86effac70e96) Thanks [@lislon](https://github.com/lislon)! - Quick Jump is one control on the app's header instead of a section of its own:
+  `[ destination ▾ | id | Jump ]`, sitting next to the button that opens the app.
+  The section underneath — a column of buttons per identifier, a pin, and a
+  Configure popover for choosing which identifiers to show — is gone. It asked the
+  reader to scan a grid before typing anything, and the thing they came to do
+  (paste an id, land on the page) was three decisions deep.
+
+  What the new shape decides for them: the destination is a picker, not a row of
+  buttons, so the field and the action never move; `Jump` is the only thing that
+  navigates; pressing it while the field is empty puts the caret in the field
+  rather than doing nothing.
+
+  The chosen destination now lives in the url as `?qj=<slug>`, derived from the
+  jump's title (`Tracker — View case` → `tracker.view-case`), so "use this
+  destination on this app" is a link you can send. A `?qj=` that names no jump of
+  the open app is dropped rather than silently resolving to the first one.
+
+  The app's own open button drops the word "Open": it shows the host name followed
+  by the external-link glyph, which already says what pressing it does.
+
+  Also fixed on the way past: the screenshot preview was a clickable `div`, so the
+  gallery could not be opened from the keyboard. It is a labelled button now.
+
+- [#216](https://github.com/lislon/app-catalog/pull/216) [`976e00f`](https://github.com/lislon/app-catalog/commit/976e00fd8993fa328581614a1f6f2346c500075a) Thanks [@lislon](https://github.com/lislon)! - Four corrections to the Quick Jump bar, all from watching it get used.
+
+  **The buttons leap before the click, not after.** Both links open a new tab, and
+  the new tab takes focus the same instant the click lands — so the crouch-and-hop
+  keyframe that used to fire on click ran inside a backgrounded tab, and you only
+  ever saw it when you came back. It is now a `:hover` lift and an `:active`
+  crouch, which happen while you still have the page. The app's own button gets the
+  same motion: both of them are leaving for the app.
+
+  **The header breathes.** The row sat 0.25rem under the app title, close enough to
+  read as part of it. Now 0.75rem.
+
+  **Two labels per destination.** The picker shows the action alone
+  (`Rerun report`); the full `Tracker — Rerun report` stays in the menu,
+  where the choice between systems is actually being made. The picker is where that
+  choice is already over, so it was spending its fixed width on a word you had just
+  read.
+
+  **The dormant Jump explains itself on hover** — a bubble whose tail points at the
+  field rather than at the button under the cursor, and the field lights up at the
+  same time. Hovering something that does nothing is a question; the answer has to
+  be in the place the answer lives.
+
+- [#217](https://github.com/lislon/app-catalog/pull/217) [`65f3938`](https://github.com/lislon/app-catalog/commit/65f393817cf995b379233642323d22c3c447078d) Thanks [@lislon](https://github.com/lislon)! - A design and accessibility review pass over the Quick Jump bar. Everything here
+  was measured in a browser, not eyeballed.
+
+  **The control fitted on a phone about as well as a piano fits in a lift.** At a
+  390px viewport the three segments came to 505px inside a 218px panel — `Jump`,
+  the only thing in the row that navigates, was entirely off-screen, and the page
+  grew a horizontal scrollbar. Every segment was `flex: none` and the field had a
+  fixed `size`, so nothing could give. Below `sm` the picker now takes its own
+  line and the field shares the next one with Jump; from `sm` up nothing changes,
+  so a swapped destination still cannot slide the field sideways.
+
+  **The dormant Jump was not a control.** It was an `<a>` with no `href`, which
+  cannot take focus — so "press it and it tells you where to type" was mouse-only,
+  the hint's `:focus-visible` branch was dead code, and its `aria-disabled` sat on
+  a node no screen reader could reach. It is a `<button>` now, and an `<a>` only
+  once it has somewhere to go.
+
+  **Two WCAG AA failures on the fill both buttons use.** `--primary` under
+  `--primary-foreground` measures 3.8:1, and the usual `bg-primary/90` hover made
+  it worse by fading the fill toward the card rather than darkening it — so the
+  dormant Jump was _more_ legible than the armed one. Both buttons now darken the
+  fill (4.9:1) and darken further on hover (6.4:1). The token itself still owes
+  every other filled button in the app the same fix; that is a brand decision.
+
+  **One focus ring for three focusable segments.** The shell ringed itself on
+  `focus-within`, so tabbing picker → field → Jump looked identical at every stop.
+  The shell's ring is the field's now; the picker and Jump outline themselves.
+
+  **The leap moved the wrong thing.** It was hung on the whole 505px shell, so
+  hovering Jump lifted the field you had just typed into. The shell no longer
+  clips its segments, so Jump leaps on its own.
+
+  Smaller, same pass: the caret sits next to the picker's label instead of 85px
+  away at the far edge, where it read as the field's boundary; the picker and Jump
+  match the field's type size instead of running a size below it; the dormant Jump
+  is tinted toward the action instead of sharing the picker's grey, which had the
+  row reading as two dropdowns around a field; the hairline between the two
+  buttons is gone (it separated a solid pill from a recessed shell — nothing that
+  could be confused — and dangled as an orphan once the row wrapped); and the
+  armed title is the destination rather than the destination plus a URL the
+  browser already shows in the status bar.
+
+- Updated dependencies [[`12e2558`](https://github.com/lislon/app-catalog/commit/12e2558b8123d0ad9adcaccb86f4c9ab2571928b), [`566f4d8`](https://github.com/lislon/app-catalog/commit/566f4d88adfcd492e6ac4fe0ecccc88a94106f49), [`1e86c9e`](https://github.com/lislon/app-catalog/commit/1e86c9e0dbe819e81290d5b3c2f0ae7c576731e8), [`47e97c1`](https://github.com/lislon/app-catalog/commit/47e97c12338210221f4ff7dc88159336865f6c34), [`7ce435c`](https://github.com/lislon/app-catalog/commit/7ce435c48819d6562a073d9d6b9461c30a4ae05a), [`36f4c36`](https://github.com/lislon/app-catalog/commit/36f4c36ce40122cc638c8db248b3a1add9a9cda0), [`cadc4f7`](https://github.com/lislon/app-catalog/commit/cadc4f70eab46c585644ca7b08b0f71d37669d6d), [`a297e00`](https://github.com/lislon/app-catalog/commit/a297e008f756aa8b200884a84bcb43d999519546), [`ee3510f`](https://github.com/lislon/app-catalog/commit/ee3510f9a5aeb22245797ffa2650dc8b31d8e44d), [`2e00035`](https://github.com/lislon/app-catalog/commit/2e00035a66ffa54d07eecbaeb7d75feafa564582), [`83bdeed`](https://github.com/lislon/app-catalog/commit/83bdeed12d87e313a94879a153441944886d68c0), [`dae2587`](https://github.com/lislon/app-catalog/commit/dae2587bf6544fcf259d4a7989ed86effac70e96), [`976e00f`](https://github.com/lislon/app-catalog/commit/976e00fd8993fa328581614a1f6f2346c500075a), [`65f3938`](https://github.com/lislon/app-catalog/commit/65f393817cf995b379233642323d22c3c447078d), [`eaa0d66`](https://github.com/lislon/app-catalog/commit/eaa0d66a3366ba3e35fcf841f82726154b943fce), [`596b73a`](https://github.com/lislon/app-catalog/commit/596b73a7b9b4f71943ecf2431ac97e7092bb6f62), [`182f048`](https://github.com/lislon/app-catalog/commit/182f0480f7fa08cc665500bf036ce1465c2cfaeb), [`19b6a33`](https://github.com/lislon/app-catalog/commit/19b6a337dcda5176416be6325c06dfb4d60031d4)]:
+  - @igstack/app-catalog-frontend-core@4.0.0
+  - @igstack/app-catalog-backend-core@4.0.0
+
 ## 3.0.0
 
 ### Patch Changes
