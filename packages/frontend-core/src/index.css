@@ -11,7 +11,7 @@
 /* Other module imports this css, and we need to tell tailwind to scan our tsx files */
 @source ".";
 
-/* @import 'tw-animate-css'; */
+@import 'tw-animate-css';
 
 @layer base {
   /* Warm "crayon" palette derived from the hand-drawn app-catalog logo
@@ -247,4 +247,17 @@
 .prose ul {
   list-style-type: disc;
   padding-left: 1.25rem;
+}
+
+/* tw-animate-css ships no reduced-motion rules of its own, so honour the
+   preference here — the overlay animations it provides are all decorative. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
