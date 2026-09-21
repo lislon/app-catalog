@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { SearchableResource } from '../searchResources'
 import {
+  cyrillicLayoutToLatin,
   searchResources,
   searchResourcesRanked,
   searchWithinApp,
@@ -219,5 +220,62 @@ describe('searchWithinApp', () => {
   it('returns nothing for an app without children or a miss', () => {
     expect(searchWithinApp(resources, 'nope', 'biomarkers')).toEqual([])
     expect(searchWithinApp(resources, 'aws-console', 'zzzz')).toEqual([])
+  })
+})
+
+describe('cyrillicLayoutToLatin', () => {
+  it('maps Cyrillic keys to the Latin characters on the same physical keys', () => {
+    expect(cyrillicLayoutToLatin('пфещк')).toBe('gator')
+    expect(cyrillicLayoutToLatin('йцукен')).toBe('qwerty')
+    expect(cyrillicLayoutToLatin('фыв ячс')).toBe('asd zxc')
+  })
+
+  it('leaves characters it has no key for untouched', () => {
+    expect(cyrillicLayoutToLatin('gator')).toBe('gator')
+    expect(cyrillicLayoutToLatin('п1ф')).toBe('g1a')
+  })
+})
+
+describe('Cyrillic-layout fallback', () => {
+  const apps: SearchableResource[] = [
+    makeApp({ slug: 'gator', displayName: 'Gator' }),
+    makeApp({ slug: 'taskflow', displayName: 'TaskFlow', abbreviation: 'tf' }),
+  ]
+
+  it('finds the app typed on the wrong keyboard layout', () => {
+    const results = searchResources(apps, 'Пфещк')
+    expect(results.map((a) => a.slug)).toEqual(['gator'])
+  })
+
+  it('does not re-run when the query as typed already has results', () => {
+    const withCyrillicText = [
+      ...apps,
+      makeApp({ slug: 'notes', displayName: 'Notes', description: 'пфещк' }),
+    ]
+    expect(
+      searchResources(withCyrillicText, 'пфещк').map((a) => a.slug),
+    ).toEqual(['notes'])
+  })
+
+  it('returns nothing for a Cyrillic query that maps to nothing', () => {
+    expect(searchResources(apps, 'щщщ')).toEqual([])
+  })
+
+  it('keeps the match info of the fallback pass', () => {
+    const results = searchResourcesRanked(apps, 'Пфещк')
+    expect(results[0]!.match).toEqual({ field: 'displayName', type: 'exact' })
+  })
+
+  it('applies inside one app too — the "<app>/<term>" form', () => {
+    const resources: SearchableResource[] = [
+      makeApp({ slug: 'aws-console', displayName: 'AWS Console' }),
+      makeChildResource({
+        slug: 'aws-prod',
+        displayName: 'prod-account',
+        parentSlug: 'aws-console',
+      }),
+    ]
+    const results = searchWithinApp(resources, 'aws-console', 'ЗКЩВ')
+    expect(results.map((r) => r.app.slug)).toEqual(['aws-prod'])
   })
 })

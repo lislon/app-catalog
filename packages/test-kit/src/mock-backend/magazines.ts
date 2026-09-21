@@ -101,6 +101,23 @@ function fullMagazine(
         approvalMethodSlug: supportPortal.slug,
         comments: 'Submit a ticket',
       },
+      quickJumps: [
+        {
+          identity: 'Task Id',
+          title: 'Open task',
+          url: '{{baseHost}}/task/{{value}}',
+        },
+        {
+          identity: 'Task Id',
+          title: 'Task history',
+          url: '{{baseHost}}/task/{{value}}/history',
+        },
+        {
+          identity: 'Board Id',
+          title: 'Open board',
+          url: '{{baseHost}}/board/{{value}}',
+        },
+      ],
     })
 
     backendCfg.withApp({

@@ -1,6 +1,5 @@
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 import { z } from 'zod'
-import { appCatalogRouteLoader } from '~/modules/appCatalog/routeLoader'
 
 // A sub-resource's own page. Same search params as the parent app route (the
 // URL-synced filters must survive navigating in and back out), same
@@ -14,14 +13,12 @@ const searchSchema = z.object({
   deprecated: z.string().optional(),
   q: z.string().optional(),
   sub: z.string().optional(),
+  /** Quick Jump's chosen destination (see quickJumpSlug). */
+  qj: z.string().optional(),
 })
 
 export const Route = createFileRoute('/_layout/app/$slug_/sub/$subSlug')({
   component: () => null,
   validateSearch: searchSchema,
   search: { middlewares: [stripSearchParams(['q'])] },
-  async loader() {
-    const appCatalogLoader = await appCatalogRouteLoader()
-    return { appCatalogLoader }
-  },
 })

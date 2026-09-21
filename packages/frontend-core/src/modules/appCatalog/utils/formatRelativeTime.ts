@@ -15,9 +15,15 @@ const DIVISIONS: { amount: number; unit: Intl.RelativeTimeFormatUnit }[] = [
   { amount: Number.POSITIVE_INFINITY, unit: 'year' },
 ]
 
+/**
+ * @param allowFuture keep a future date in the future ("in 3 days"). Off by
+ *   default because almost every timestamp we render already happened; a due
+ *   date is the exception.
+ */
 export function formatRelativeTime(
   iso: string,
   now: number = Date.now(),
+  allowFuture = false,
 ): string {
   const then = Date.parse(iso)
   if (Number.isNaN(then)) return ''
@@ -25,7 +31,8 @@ export function formatRelativeTime(
   // Every timestamp we render already happened, so clamp the future away: a
   // server clock a few seconds ahead of the browser otherwise turns a comment
   // posted a moment ago into "in 4 seconds".
-  let duration = Math.min(0, (then - now) / 1000) // seconds, negative for the past
+  const elapsed = (then - now) / 1000
+  let duration = allowFuture ? elapsed : Math.min(0, elapsed) // seconds, negative for the past
   for (const division of DIVISIONS) {
     if (Math.abs(duration) < division.amount) {
       return rtf.format(Math.round(duration), division.unit)

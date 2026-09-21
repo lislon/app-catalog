@@ -1,12 +1,17 @@
+/* Warm, crafted type to match the hand-drawn logo (see issue #31 redesign):
+   Fraunces = characterful display serif, Nunito Sans = friendly readable body.
+
+   This has to come before every other at-rule: a remote @import that follows
+   any rule is invalid where it stands, so the minifier drops it — and the only
+   symptom is body text quietly falling back to a system face on machines that
+   don't happen to have the family installed. */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Nunito+Sans:wght@400;500;600;700;800&display=swap');
 /* @import url(./modules/resourceJump/ui/JumpMainButton.css); */
 @import 'tailwindcss';
-/* Warm, crafted type to match the hand-drawn logo (see issue #31 redesign):
-   Fraunces = characterful display serif, Nunito Sans = friendly readable body. */
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Nunito+Sans:wght@400;500;600;700;800&display=swap');
 /* Other module imports this css, and we need to tell tailwind to scan our tsx files */
 @source ".";
 
-/* @import 'tw-animate-css'; */
+@import 'tw-animate-css';
 
 @layer base {
   /* Warm "crayon" palette derived from the hand-drawn app-catalog logo
@@ -121,7 +126,10 @@
     --font-mono:
       ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
       'Courier New', monospace;
-    --radius: 0.5rem;
+    /* Matches the light block. Every other radius in the app derives from this
+       one, so the two blocks disagreeing meant dark mode quietly rendered a
+       different corner scale than the design it was drawn against. */
+    --radius: 0.875rem;
     --shadow-2xs: 0px 4px 8px -1px hsl(0 0% 0% / 0.05);
     --shadow-xs: 0px 4px 8px -1px hsl(0 0% 0% / 0.05);
     --shadow-sm:
@@ -239,4 +247,17 @@
 .prose ul {
   list-style-type: disc;
   padding-left: 1.25rem;
+}
+
+/* tw-animate-css ships no reduced-motion rules of its own, so honour the
+   preference here — the overlay animations it provides are all decorative. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

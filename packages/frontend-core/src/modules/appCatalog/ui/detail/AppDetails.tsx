@@ -1,4 +1,7 @@
-import type { Resource } from '@igstack/app-catalog-backend-core'
+import type {
+  Resource,
+  SourceReference,
+} from '@igstack/app-catalog-backend-core'
 import {
   AppWindow,
   CalendarPlus,
@@ -20,12 +23,20 @@ import {
 } from '~/ui/accordion'
 import { AccessRequestSection } from '../components/AccessRequestSection'
 import { AccessPrerequisiteChain } from '../components/AccessPrerequisiteChain'
+import {
+  LEAP,
+  LEAVE_FILL,
+  QUIET_FILL,
+  QuickJumpBar,
+  hasQuickJumps,
+} from '../components/QuickJumpBar'
 import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
 import { PersonBadge } from '../components/PersonBadge'
 import { useUser } from '~/modules/auth'
 import { InlineEditableField } from '../components/InlineEditableField'
 import { MarkdownText } from '../components/MarkdownText'
 import { ScreenshotGallery } from '../components/ScreenshotGallery'
+import { SourcePulse } from '../components/SourcePulse'
 import { useUpdateApp } from '../../hooks/useUpdateApp'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
@@ -164,10 +175,23 @@ export function AppDetails({
   const user = useUser()
   const isAdmin = user?.isAdmin ?? false
 
+  const displayTags = (app.tags ?? []).filter((tag) => !tag.includes(':'))
   const sourceUrls: string[] =
     app.sources?.map((s) => (typeof s === 'string' ? s : s.url)) ?? []
   const displaySources =
     draftSource !== null ? [...sourceUrls, draftSource] : sourceUrls
+  // The list renders bare URLs (they are editable as text), so the pulse has to
+  // be looked up rather than carried alongside. Absent until the autoupdate loop
+  // has seen the source — a freshly added one simply gets no mark.
+  const pulseByUrl = React.useMemo(() => {
+    const byUrl = new Map<string, NonNullable<SourceReference['pulse']>>()
+    for (const source of app.sources ?? []) {
+      if (typeof source !== 'string' && source.pulse) {
+        byUrl.set(source.url, source.pulse)
+      }
+    }
+    return byUrl
+  }, [app.sources])
 
   // Enter: open screenshot gallery
   useHotkeys(
@@ -193,12 +217,17 @@ export function AppDetails({
   )
 
   // Esc: close the details panel (only when gallery is NOT open)
+  //
+  // From inside a text field too: the Quick Jump field holds the caret from the
+  // moment the card opens, so the default "ignore form tags" left the card with
+  // no keyboard way out. A field that wants Esc for itself stops the event —
+  // InlineEditableField does, so Esc there cancels the edit and nothing more.
   useHotkeys(
     'escape',
     () => {
       onClosePanel()
     },
-    { enabled: !isGalleryOpen },
+    { enabled: !isGalleryOpen, enableOnFormTags: ['input'] },
     [isGalleryOpen, onClosePanel],
   )
 
@@ -215,8 +244,9 @@ export function AppDetails({
   return (
     <>
       <div className="flex h-full flex-col p-6">
-        {/* Icon and Title */}
-        <div className="border-b pb-6">
+        {/* Icon and Title — always first: a pinned Quick Jump takes order -1,
+            so the header claims -2 rather than being pushed below it. */}
+        <div className="-order-2 border-b pb-6">
           <div className="flex items-center gap-3">
             <AppIcon app={app} className="size-16" />
             <div className="-mx-3 flex-1 min-w-0">
@@ -254,7 +284,9 @@ export function AppDetails({
                   />
                 </div>
               )}
-              <div className="mt-1 px-3">
+              {/* Open button, then Quick Jump: the host you reach by pressing
+                  it, and the deep link you reach by pasting an id. */}
+              <div className="mt-3 flex flex-wrap items-stretch gap-3 px-3">
                 {isAdmin ? (
                   <InlineEditableField
                     value={app.appUrl ?? ''}
@@ -285,19 +317,30 @@ export function AppDetails({
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => recordClick(app.slug)}
-                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
-                    title={`Open \u2192 ${displayUrl(app.appUrl)}`}
+                    className={cn(
+                      // The row's one inset and icon gap, and its height stated
+                      // rather than left to the taller neighbour.
+                      'inline-flex min-h-[34px] items-center gap-1.5 rounded-md px-3 text-sm font-medium shadow-sm',
+                      // Only ever ONE solid brand fill in this row: it goes to
+                      // Quick Jump's submit when there is one, because that is
+                      // the control that acts on something the user typed.
+                      hasQuickJumps(app) ? QUIET_FILL : LEAVE_FILL,
+                      LEAP,
+                    )}
+                    title={displayUrl(app.appUrl)}
                     aria-label={`Open ${app.displayName} in a new tab (${displayUrl(app.appUrl)})`}
                   >
-                    <ExternalLink className="size-3.5 shrink-0" />
-                    Open{' '}
-                    <span className="max-w-[240px] truncate text-primary-foreground/70 text-xs font-normal">
-                      {displayUrl(app.appUrl)}
+                    {/* "Go to <host>": the verb makes it a thing you press and
+                        the host says where to. The glyph adds "in a new tab". */}
+                    <span className="max-w-[280px] truncate whitespace-nowrap">
+                      Go to {displayUrl(app.appUrl)}
                     </span>
+                    <ExternalLink className="size-3.5 shrink-0" />
                   </a>
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 )}
+                <QuickJumpBar app={app} />
               </div>
               {/* Updated/Added metadata moved to consolidated section before Sources (#55) */}
             </div>
@@ -345,13 +388,6 @@ export function AppDetails({
             )
           })()}
 
-        {/* Two-step access (#38 D): for a nested resource, show the parent-first
-            prerequisite chain before this resource's own access instructions. */}
-        <AccessPrerequisiteChain resource={app} onOpenParent={onAppClick} />
-
-        {/* Access Request Section — hero of the detail, shown before description */}
-        <AccessRequestSection app={app} approvalMethods={approvalMethods} />
-
         {/* Description */}
         <div className="mt-6">
           <h3 className="mb-2 text-sm font-medium">Description</h3>
@@ -374,14 +410,26 @@ export function AppDetails({
           )}
         </div>
 
+        {/* Two-step access (#38 D): for a nested resource, show the parent-first
+            prerequisite chain before this resource's own access instructions. */}
+        <AccessPrerequisiteChain resource={app} onOpenParent={onAppClick} />
+
+        {/* Access Request Section — what the app is comes first, then how to
+            get into it. */}
+        <AccessRequestSection app={app} approvalMethods={approvalMethods} />
+
         {/* Screenshots - Clickable preview */}
         {app.screenshotIds && app.screenshotIds.length > 0 && (
           <div className="mt-6">
             <h3 className="mb-2 text-sm font-medium">
               Screenshots ({app.screenshotIds.length})
             </h3>
-            <div
-              className="cursor-pointer hover:opacity-80 transition-opacity"
+            {/* A button, not a clickable div: the gallery was unreachable by
+                keyboard, and a role + label gives it a stable handle. */}
+            <button
+              type="button"
+              aria-label={`View screenshots of ${app.displayName}`}
+              className="block w-full cursor-pointer text-left hover:opacity-80 transition-opacity"
               onClick={() => handleScreenshotClick(0)}
             >
               <AppScreenshot app={app} />
@@ -390,7 +438,7 @@ export function AppDetails({
                   Click to view all {app.screenshotIds.length} screenshots
                 </p>
               )}
-            </div>
+            </button>
           </div>
         )}
 
@@ -432,12 +480,15 @@ export function AppDetails({
           </div>
         )}
 
-        {/* Tags */}
-        {app.tags && app.tags.length > 0 && (
+        {/* Tags, minus the indexing machinery: `namespace:value` tags drive
+            grouping, faceting and placement, are about half of all tag
+            references, and say nothing about what an app is for. The colon is
+            the test. Search still matches them — only the display drops them. */}
+        {displayTags.length > 0 && (
           <div className="mt-6">
             <h3 className="mb-2 text-sm font-medium">Tags</h3>
             <div className="flex flex-wrap gap-2">
-              {app.tags.map((tag) => (
+              {displayTags.map((tag) => (
                 <Badge key={tag} variant="secondary" className="text-xs">
                   {tag}
                 </Badge>
@@ -548,7 +599,7 @@ export function AppDetails({
                   return (
                     <li
                       key={isDraft ? 'draft' : `${index}-${url}`}
-                      className="flex items-center gap-2 text-xs"
+                      className="group flex items-center gap-2 text-xs"
                     >
                       <span className="text-muted-foreground shrink-0 tabular-nums">
                         {index + 1}.
@@ -595,6 +646,12 @@ export function AppDetails({
                           )
                         }
                       />
+                      {!isDraft && pulseByUrl.has(url) && (
+                        <SourcePulse
+                          pulse={pulseByUrl.get(url)!}
+                          className="ml-auto"
+                        />
+                      )}
                       {!isDraft && (
                         <Button
                           type="button"
@@ -633,7 +690,13 @@ export function AppDetails({
           ) : (
             <ul className="space-y-2">
               {sourceUrls.map((url, index) => (
-                <li key={index} className="flex items-center gap-2 text-xs">
+                // `group` so hovering anywhere on the row fades that source's
+                // track in — the mark sits in a right-hand column, and row hover
+                // is what ties the two ends of a wide row together.
+                <li
+                  key={index}
+                  className="group flex items-center gap-2 text-xs"
+                >
                   <span className="text-muted-foreground shrink-0 tabular-nums">
                     {index + 1}.
                   </span>
@@ -642,13 +705,19 @@ export function AppDetails({
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="hover:text-primary inline-flex items-center gap-1 truncate"
+                      className="hover:text-primary inline-flex min-w-0 items-center gap-1 truncate"
                     >
                       {displayUrl(url)}
                       <ExternalLink className="size-3 shrink-0" />
                     </a>
                   ) : (
                     <span className="text-muted-foreground">—</span>
+                  )}
+                  {pulseByUrl.has(url) && (
+                    <SourcePulse
+                      pulse={pulseByUrl.get(url)!}
+                      className="ml-auto"
+                    />
                   )}
                 </li>
               ))}

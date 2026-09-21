@@ -1,6 +1,5 @@
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 import { z } from 'zod'
-import { appCatalogRouteLoader } from '~/modules/appCatalog/routeLoader'
 import { AppCatalogLayout } from '~/modules/appCatalog/ui/layout/AppCatalogLayout'
 import { ServiceDesksPage } from '~/modules/appCatalog/ui/pages/ServiceDesksPage'
 
@@ -14,10 +13,6 @@ export const Route = createFileRoute('/_layout/service-desks')({
   component: RouteComponent,
   validateSearch: searchSchema,
   search: { middlewares: [stripSearchParams(['q'])] },
-  async loader() {
-    const appCatalogLoader = await appCatalogRouteLoader()
-    return { appCatalogLoader }
-  },
 })
 
 function RouteComponent() {

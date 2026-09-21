@@ -3,7 +3,6 @@ import { betterAuth } from 'better-auth'
 import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { getDbClient } from '../../db'
 
- 
 export type BetterAuth = ReturnType<typeof betterAuth<any>>
 
 export function createAuth(options: BetterAuthOptions): BetterAuth {

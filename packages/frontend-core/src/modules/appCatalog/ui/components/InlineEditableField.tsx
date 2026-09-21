@@ -74,6 +74,10 @@ export function InlineEditableField({
       handleSave()
     }
     if (e.key === 'Escape') {
+      // Esc belongs to the edit while one is open. Unstopped it would reach the
+      // detail card's own Esc handler and close the whole panel behind the
+      // cancelled edit.
+      e.stopPropagation()
       handleCancel()
     }
   }

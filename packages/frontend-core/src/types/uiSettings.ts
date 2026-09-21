@@ -19,11 +19,6 @@ export interface AreasSettings {
    * merged first group. Areas without an icon render title-only.
    */
   icons?: Record<string, AreaIcon>
-  /**
-   * Category values that fold into the day-to-day group instead of getting an
-   * area of their own (e.g. perks, office services).
-   */
-  dayToDayCategories?: string[]
   /** Title of the merged first group. Defaults to "Day-to-day tools". */
   dayToDayLabel?: string
 }

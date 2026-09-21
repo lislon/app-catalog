@@ -32,6 +32,9 @@ declare global {
     // DbResource.tiers - Tier variants (prod/dev)
     type TierVariant = import('./types/index').TierVariant
 
+    // DbResource.quickJumps - Deep links that take one typed identifier
+    type QuickJump = import('./types/index').QuickJump
+
     // DbResource.extra - Arbitrary extra data
     type SubResourceExtra = Record<string, unknown>
   }
