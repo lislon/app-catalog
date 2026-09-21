@@ -37,6 +37,12 @@ export function CommentsSection({ appSlug }: { appSlug: string }) {
   const [draft, setDraft] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editDraft, setEditDraft] = useState('')
+  /**
+   * Most apps have no comments, and an empty form under "no comments yet" is just
+   * noise. So the composer stays behind the invitation until someone accepts it —
+   * which is also what earns the caret: focus follows the click, never the mount.
+   */
+  const [composerOpen, setComposerOpen] = useState(false)
 
   const refresh = () =>
     queryClient.invalidateQueries({ queryKey: listOptions.queryKey })
@@ -73,6 +79,7 @@ export function CommentsSection({ appSlug }: { appSlug: string }) {
 
   // One line for every failed action: three mutations and one query, one place to look.
   const failure = error ?? add.error ?? edit.error ?? remove.error
+  const hasComments = !!comments && comments.length > 0
 
   return (
     <div className="mt-6">
@@ -169,41 +176,61 @@ export function CommentsSection({ appSlug }: { appSlug: string }) {
         </ul>
       ) : (
         <p className="text-muted-foreground text-xs">
-          No comments yet. Be the first.
+          No comments yet.{' '}
+          {!composerOpen && (
+            <button
+              type="button"
+              className="hover:text-foreground underline"
+              onClick={() => setComposerOpen(true)}
+            >
+              Be the first.
+            </button>
+          )}
         </p>
       )}
 
-      <div className="mt-3 space-y-2">
-        <textarea
-          rows={3}
-          className={cn(FIELD_CLASSES)}
-          placeholder="Leave a comment…"
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={(event) => {
-            if (isSubmitChord(event)) {
-              event.preventDefault()
-              post()
-            }
-          }}
-        />
-        <div className="flex items-center gap-3">
-          <Button
-            type="button"
-            size="sm"
-            disabled={!draft.trim() || add.isPending}
-            onClick={post}
-          >
-            {add.isPending ? 'Posting…' : 'Post'}
-          </Button>
-          <span className="text-muted-foreground text-xs">
-            Posted under a nickname. You can edit or delete it for one hour.
-          </span>
+      {(hasComments || composerOpen) && (
+        <div
+          className={cn(
+            'mt-3 space-y-2',
+            composerOpen &&
+              'animate-in fade-in slide-in-from-top-2 duration-200',
+          )}
+        >
+          <textarea
+            autoFocus={composerOpen}
+            rows={3}
+            className={cn(FIELD_CLASSES)}
+            placeholder="Leave a comment…"
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (isSubmitChord(event)) {
+                event.preventDefault()
+                post()
+              }
+            }}
+          />
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              size="sm"
+              disabled={!draft.trim() || add.isPending}
+              onClick={post}
+            >
+              {add.isPending ? 'Posting…' : 'Post'}
+            </Button>
+            <span className="text-muted-foreground text-xs">
+              Posted under a nickname. You can edit or delete it for one hour.
+            </span>
+          </div>
         </div>
-        {failure && (
-          <p className="text-destructive text-xs">{errorMessage(failure)}</p>
-        )}
-      </div>
+      )}
+
+      {/* Outside the composer: a failed list query leaves nothing to collapse into. */}
+      {failure && (
+        <p className="text-destructive mt-2 text-xs">{errorMessage(failure)}</p>
+      )}
     </div>
   )
 }
