@@ -11,6 +11,13 @@ import svgr from 'vite-plugin-svgr'
 export function frontendViteConfig(options?: {
   appRoot?: string
   pwa?: {
+    /**
+     * Register VitePWA. Set `false` in a consumer that registers its own
+     * VitePWA: two registrations both write `sw.js` and
+     * `manifest.webmanifest`, and which precache manifest survives is decided
+     * by plugin order.
+     */
+    enabled?: boolean
     manifest?: Partial<ManifestOptions>
     registerType?: 'autoUpdate' | 'prompt'
     selfDestroying?: boolean
@@ -43,89 +50,93 @@ export function frontendViteConfig(options?: {
     )
   }
 
-  // Configure VitePWA
-  const registerType =
-    options?.pwa?.registerType ||
-    (process.env['VITE_AUTO_UPDATE'] === 'true' ? 'autoUpdate' : 'prompt')
+  // A consumer that registers its own VitePWA passes `pwa.enabled: false`:
+  // two registrations write sw.js and manifest.webmanifest twice, and plugin
+  // order decides which precache manifest survives.
+  if (options?.pwa?.enabled !== false) {
+    const registerType =
+      options?.pwa?.registerType ||
+      (process.env['VITE_AUTO_UPDATE'] === 'true' ? 'autoUpdate' : 'prompt')
 
-  const selfDestroying =
-    options?.pwa?.selfDestroying !== undefined
-      ? options.pwa.selfDestroying
-      : process.env['VITE_SELF_DESTROYING'] === 'true'
-        ? true
-        : undefined
+    const selfDestroying =
+      options?.pwa?.selfDestroying !== undefined
+        ? options.pwa.selfDestroying
+        : process.env['VITE_SELF_DESTROYING'] === 'true'
+          ? true
+          : undefined
 
-  plugins.push(
-    VitePWA({
-      registerType,
-      selfDestroying,
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-      },
-      includeAssets: [
-        'favicon.ico',
-        'apple-touch-180x180.png',
-        'app-catalog-*.png',
-        'app-catalog-square.svg',
-      ],
-      manifest: {
-        name: 'App Catalog',
-        short_name: 'EH',
-        description: 'Jump between environments',
-        theme_color: '#1f2937',
-        background_color: '#ffffff',
-        display: 'standalone',
-        start_url: '/',
-        icons: [
-          {
-            src: 'favicon.ico',
-            sizes: '48x48',
-            type: 'image/x-icon',
-          },
-          {
-            src: 'app-catalog-16x16.png',
-            sizes: '16x16',
-            type: 'image/png',
-          },
-          {
-            src: 'app-catalog-32x32.png',
-            sizes: '32x32',
-            type: 'image/png',
-          },
-          {
-            src: 'app-catalog-48x48.png',
-            sizes: '48x48',
-            type: 'image/png',
-          },
-          {
-            src: 'app-catalog-192x192.png',
-            sizes: '192x192',
-            type: 'image/png',
-          },
-          {
-            src: 'app-catalog-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-          },
-          {
-            src: 'app-catalog-square.svg',
-            sizes: '150x150',
-            type: 'image/svg+xml',
-          },
-          {
-            src: 'app-catalog-square.svg',
-            sizes: '150x150',
-            purpose: 'maskable',
-            type: 'image/svg+xml',
-          },
+    plugins.push(
+      VitePWA({
+        registerType,
+        selfDestroying,
+        workbox: {
+          globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        },
+        includeAssets: [
+          'favicon.ico',
+          'apple-touch-180x180.png',
+          'app-catalog-*.png',
+          'app-catalog-square.svg',
         ],
-        ...options?.pwa?.manifest,
-      },
-      devOptions: {
-        enabled: true,
-      },
-    }),
-  )
+        manifest: {
+          name: 'App Catalog',
+          short_name: 'EH',
+          description: 'Jump between environments',
+          theme_color: '#1f2937',
+          background_color: '#ffffff',
+          display: 'standalone',
+          start_url: '/',
+          icons: [
+            {
+              src: 'favicon.ico',
+              sizes: '48x48',
+              type: 'image/x-icon',
+            },
+            {
+              src: 'app-catalog-16x16.png',
+              sizes: '16x16',
+              type: 'image/png',
+            },
+            {
+              src: 'app-catalog-32x32.png',
+              sizes: '32x32',
+              type: 'image/png',
+            },
+            {
+              src: 'app-catalog-48x48.png',
+              sizes: '48x48',
+              type: 'image/png',
+            },
+            {
+              src: 'app-catalog-192x192.png',
+              sizes: '192x192',
+              type: 'image/png',
+            },
+            {
+              src: 'app-catalog-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+            },
+            {
+              src: 'app-catalog-square.svg',
+              sizes: '150x150',
+              type: 'image/svg+xml',
+            },
+            {
+              src: 'app-catalog-square.svg',
+              sizes: '150x150',
+              purpose: 'maskable',
+              type: 'image/svg+xml',
+            },
+          ],
+          ...options?.pwa?.manifest,
+        },
+        devOptions: {
+          enabled: true,
+        },
+      }),
+    )
+  }
 
   plugins.push(svgr())
   plugins.push(viteReact())
