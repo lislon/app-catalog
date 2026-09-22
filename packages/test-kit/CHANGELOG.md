@@ -1,5 +1,13 @@
 # @igstack/app-catalog-test-kit
 
+## 5.0.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-backend-core@5.0.0
+  - @igstack/app-catalog-frontend-core@5.0.0
+
 ## 4.0.0
 
 ### Patch Changes
