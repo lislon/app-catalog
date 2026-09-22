@@ -80,8 +80,8 @@ export function frontendViteConfig(options?: {
         ],
         manifest: {
           name: 'App Catalog',
-          short_name: 'EH',
-          description: 'Jump between environments',
+          short_name: 'AC',
+          description: 'Application catalog and directory',
           theme_color: '#1f2937',
           background_color: '#ffffff',
           display: 'standalone',
