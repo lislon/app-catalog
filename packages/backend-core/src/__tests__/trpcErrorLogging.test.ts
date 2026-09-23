@@ -42,9 +42,21 @@ describe('tRPC error logging', () => {
     expect(error).not.toHaveBeenCalled()
     expect(info).toHaveBeenCalledTimes(1)
     expect(info).toHaveBeenCalledWith(
-      expect.stringContaining('NOT_FOUND appCatalog.getVersionInfo'),
+      expect.stringContaining('NOT_FOUND "appCatalog.getVersionInfo"'),
     )
-    expect(info).toHaveBeenCalledWith(expect.not.stringContaining('    at '))
+  })
+
+  it('keeps a caller-supplied newline out of the log line', async () => {
+    // The path is URL-decoded before it reaches the formatter, so without
+    // escaping a request could inject a second, forged record.
+    const res = await call('x%0A[tRPC Error] forged')
+
+    expect(res.status).toBe(404)
+    expect(error).not.toHaveBeenCalled()
+    expect(info).toHaveBeenCalledTimes(1)
+    const line: string = info.mock.calls[0]?.[0]
+    expect(line).not.toContain('\n')
+    expect(line).toContain('x\\n[tRPC Error] forged')
   })
 
   it('keeps a procedure failure at error level with its stack', async () => {
