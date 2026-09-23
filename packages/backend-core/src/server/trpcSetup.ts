@@ -2,13 +2,24 @@ import { TRPCError, initTRPC } from '@trpc/server'
 import type { AcTrpcContext } from './acTrpcContext'
 
 export const t = initTRPC.context<AcTrpcContext>().create({
-  errorFormatter({ error, shape }: { error: unknown; shape: unknown }) {
+  errorFormatter({ error, shape }) {
+    // A 4xx is the caller's mistake (unknown path, bad input, no session). One
+    // plain line on stdout is enough; a stack on stderr would make log collectors
+    // file it as status:error next to real failures. Path and message are
+    // caller-controlled (the path is URL-decoded, a zod message spans lines), so
+    // JSON-escape them: a newline would otherwise split the record or forge one.
+    if (shape.data.httpStatus < 500) {
+      console.info(
+        `[tRPC] ${error.code} ${JSON.stringify(shape.data.path ?? null)}: ${JSON.stringify(error.message)}`,
+      )
+      return shape
+    }
     console.error('[tRPC Error]', {
-      path: (shape as { data?: { path?: string } }).data?.path,
-      code: (error as { code?: string }).code,
-      message: (error as { message?: string }).message,
-      cause: (error as { cause?: unknown }).cause,
-      stack: (error as { stack?: string }).stack,
+      path: shape.data.path,
+      code: error.code,
+      message: error.message,
+      cause: error.cause,
+      stack: error.stack,
     })
     return shape
   },
