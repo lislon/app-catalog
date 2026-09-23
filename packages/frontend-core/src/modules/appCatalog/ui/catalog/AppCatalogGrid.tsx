@@ -319,7 +319,8 @@ type ResultRow =
  * indented row under its parent, so a query that only hits a sub-resource
  * (e.g. a cloud account) can be opened directly instead of forcing the user to
  * dig through the parent's detail. ↑↓ moves over every row, ↵ activates the
- * focused one, Esc clears the search.
+ * focused one (the first row until something else is focused), Esc clears the
+ * search.
  */
 function SearchResultsList({
   apps,
@@ -340,7 +341,10 @@ function SearchResultsList({
   keyboardEnabled?: boolean
   selectedSubSlug?: string
 }) {
-  const [focusedIndex, setFocusedIndex] = useState(-1)
+  // The first row starts focused: Enter straight after typing opens it, and the
+  // focus style shows which row that is. Nothing-focused (-1) left Enter dead
+  // until the user pressed ↓ first (#167).
+  const [focusedIndex, setFocusedIndex] = useState(0)
   const [expandedParents, setExpandedParents] = useState<Set<string>>(
     () => new Set(),
   )
@@ -430,9 +434,9 @@ function SearchResultsList({
     [onAppClick, onSubClick],
   )
 
-  // Reset focus and collapse expanded sub-resource lists when the query changes
+  // Back to the first row and collapse expanded sub-resource lists when the query changes
   useEffect(() => {
-    setFocusedIndex(-1)
+    setFocusedIndex(0)
     setExpandedParents(new Set())
   }, [searchValue])
 
