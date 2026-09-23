@@ -124,6 +124,25 @@ function allTermsMatcher(terms: string[]): (text: string) => boolean {
 }
 
 /**
+ * Name comparisons that also ignore whitespace and punctuation, so a CamelCase
+ * name typed as two words (`acme pro` → `AcmePro`) or a dotted abbreviation
+ * (`lis` → `L.I.S.`) still hits the name tiers instead of sinking to the
+ * description. Both sides are expected lower-cased already.
+ */
+function nameMatchers(query: string) {
+  const compact = (s: string) => s.replace(/[^\p{L}\p{N}]+/gu, '')
+  // A query of pure punctuation compacts to '' and would match everything.
+  const compactQuery = compact(query) || query
+  return {
+    exact: (name: string) => name === query || compact(name) === compactQuery,
+    prefix: (name: string) =>
+      name.startsWith(query) || compact(name).startsWith(compactQuery),
+    contains: (name: string) =>
+      name.includes(query) || compact(name).includes(compactQuery),
+  }
+}
+
+/**
  * Search and rank resources by relevance, keeping the match info.
  *
  * Only root resources (no `parentSlug`) are scored and returned. Child
@@ -167,6 +186,7 @@ export function searchResourcesRanked<T extends SearchableResource>(
   // Split query into terms for multi-word matching (AND logic)
   const queryTerms = normalizedQuery.split(/\s+/).filter(Boolean)
   const allTermsMatch = allTermsMatcher(queryTerms)
+  const is = nameMatchers(normalizedQuery)
 
   // Build children lookup: parentSlug -> T[]
   const childrenByParent = new Map<string, T[]>()
@@ -195,24 +215,24 @@ export function searchResourcesRanked<T extends SearchableResource>(
       ) => ({ result: { app, match: { field, type } }, score })
 
       // Check exact matches first - prioritize abbreviation over displayName
-      if (abbreviation && abbreviation === normalizedQuery) {
+      if (abbreviation && is.exact(abbreviation)) {
         return hit('abbreviation', 'exact', 0)
       }
-      if (name === normalizedQuery) {
+      if (is.exact(name)) {
         return hit('displayName', 'exact', 1)
       }
-      if (nicknames.some((n) => n === normalizedQuery)) {
+      if (nicknames.some(is.exact)) {
         return hit('nicknames', 'exact', 2)
       }
 
       // Check prefix matches
-      if (abbreviation && abbreviation.startsWith(normalizedQuery)) {
+      if (abbreviation && is.prefix(abbreviation)) {
         return hit('abbreviation', 'prefix', 3)
       }
-      if (name.startsWith(normalizedQuery)) {
+      if (is.prefix(name)) {
         return hit('displayName', 'prefix', 4)
       }
-      if (nicknames.some((n) => n.startsWith(normalizedQuery))) {
+      if (nicknames.some(is.prefix)) {
         return hit('nicknames', 'prefix', 5)
       }
 
@@ -229,13 +249,13 @@ export function searchResourcesRanked<T extends SearchableResource>(
       }
 
       // Check contains matches - prioritize abbreviation over displayName
-      if (abbreviation && abbreviation.includes(normalizedQuery)) {
+      if (abbreviation && is.contains(abbreviation)) {
         return hit('abbreviation', 'contains', 8)
       }
-      if (name.includes(normalizedQuery)) {
+      if (is.contains(name)) {
         return hit('displayName', 'contains', 9)
       }
-      if (nicknames.some((n) => n.includes(normalizedQuery))) {
+      if (nicknames.some(is.contains)) {
         return hit('nicknames', 'contains', 10)
       }
 
@@ -335,6 +355,7 @@ export function searchWithinApp<T extends SearchableResource>(
 
   const queryTerms = normalizedQuery.split(/\s+/).filter(Boolean)
   const allTermsMatch = allTermsMatcher(queryTerms)
+  const is = nameMatchers(normalizedQuery)
 
   const scored = children
     .map((app): { result: SearchResult<T>; score: number } | null => {
@@ -349,19 +370,13 @@ export function searchWithinApp<T extends SearchableResource>(
         score: number,
       ) => ({ result: { app, match: { field, type } }, score })
 
-      if (name === normalizedQuery) return hit('displayName', 'exact', 0)
-      if (slug === normalizedQuery) return hit('slug', 'exact', 1)
-      if (aliases.some((a) => a === normalizedQuery)) {
-        return hit('aliases', 'exact', 2)
-      }
+      if (is.exact(name)) return hit('displayName', 'exact', 0)
+      if (is.exact(slug)) return hit('slug', 'exact', 1)
+      if (aliases.some(is.exact)) return hit('aliases', 'exact', 2)
 
-      if (name.startsWith(normalizedQuery)) {
-        return hit('displayName', 'prefix', 3)
-      }
-      if (slug.startsWith(normalizedQuery)) return hit('slug', 'prefix', 4)
-      if (aliases.some((a) => a.startsWith(normalizedQuery))) {
-        return hit('aliases', 'prefix', 5)
-      }
+      if (is.prefix(name)) return hit('displayName', 'prefix', 3)
+      if (is.prefix(slug)) return hit('slug', 'prefix', 4)
+      if (aliases.some(is.prefix)) return hit('aliases', 'prefix', 5)
 
       if (allTermsMatch(name)) return hit('displayName', 'contains', 6)
       if (allTermsMatch(slug)) return hit('slug', 'contains', 7)
