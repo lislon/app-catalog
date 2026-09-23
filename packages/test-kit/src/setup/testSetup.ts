@@ -12,15 +12,27 @@ window.scrollTo = vi.fn()
 
 // Clean up after each test
 afterEach(async () => {
-  cleanup()
-  await cleanupTestResources()
-  localStorage.clear()
-  sessionStorage.clear()
+  // The record is module-scoped, so it has to be drained even when cleanup fails:
+  // otherwise a throwing cleanup (a Dexie delete on a closing connection) leaves
+  // this test's requests in the array and fails the NEXT test with them.
+  let cleanupError: unknown
+  try {
+    cleanup()
+    await cleanupTestResources()
+    localStorage.clear()
+    sessionStorage.clear()
+  } catch (error) {
+    cleanupError = error
+  }
+
+  const unhandled = takeUnhandledRequests()
+
+  // A broken teardown is the more fundamental failure, so it wins the report.
+  if (cleanupError) throw cleanupError
 
   // A request nobody mocked means a component ran its error path while the test
   // asserted the happy one. Failing here, not warning, is what makes a missing
   // handler a red test instead of a line in the log (#119).
-  const unhandled = takeUnhandledRequests()
   if (unhandled.length > 0) {
     throw new Error(
       `The mock network had no handler for:\n  ${unhandled.join('\n  ')}\n` +
