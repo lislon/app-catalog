@@ -11,7 +11,11 @@
  *     setupFiles: ['@igstack/app-catalog-test-kit/setup'],
  *   }
  */
-export { given, cleanupTestResources } from './harness/given'
+export {
+  given,
+  cleanupTestResources,
+  takeUnhandledRequests,
+} from './harness/given'
 export type { GivenResult, UiTools } from './harness/given'
 export { MockBackendVerifier } from './harness/MockBackendVerifier'
 

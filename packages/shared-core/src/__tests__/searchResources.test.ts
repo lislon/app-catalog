@@ -125,6 +125,88 @@ describe('searchResources', () => {
   })
 })
 
+describe('whitespace-insensitive name matching', () => {
+  const apps: SearchableResource[] = [
+    makeApp({
+      slug: 'acme-portals',
+      displayName: 'Acme Portals',
+      description: 'Landing page for every portal',
+    }),
+    makeApp({
+      slug: 'ledger',
+      displayName: 'Ledger',
+      description: 'Bookkeeping for the acme pro programme',
+    }),
+    makeApp({
+      slug: 'acme-pro',
+      displayName: 'AcmePro / Partner Portal',
+      description: 'Partner-facing ordering portal',
+    }),
+    makeApp({ slug: 'labvantage', displayName: 'LabVantage' }),
+  ]
+
+  it('ranks a CamelCase name typed as two words above description hits', () => {
+    const results = searchResourcesRanked(apps, 'acme pro')
+    expect(
+      results.map((r) => [r.app.slug, r.match?.field, r.match?.type]),
+    ).toEqual([
+      ['acme-pro', 'displayName', 'prefix'],
+      ['ledger', 'description', 'contains'],
+    ])
+  })
+
+  it('does not let the two-word query prefix-match a different name', () => {
+    expect(searchResources(apps, 'acme pro').map((a) => a.slug)).not.toContain(
+      'acme-portals',
+    )
+  })
+
+  it('matches exact and prefix ignoring whitespace', () => {
+    expect(searchResourcesRanked(apps, 'lab vantage')[0]!.match).toEqual({
+      field: 'displayName',
+      type: 'exact',
+    })
+    expect(searchResourcesRanked(apps, 'lab vant')[0]!.match).toEqual({
+      field: 'displayName',
+      type: 'prefix',
+    })
+  })
+
+  it('applies to abbreviations and nicknames too', () => {
+    const withAliases = [
+      ...apps,
+      makeApp({
+        slug: 'lims',
+        displayName: 'Laboratory Information System',
+        abbreviation: 'L.I.S.',
+        nicknames: ['LabInfo'],
+      }),
+    ]
+    expect(searchResourcesRanked(withAliases, 'lis')[0]!.match).toEqual({
+      field: 'abbreviation',
+      type: 'exact',
+    })
+    expect(searchResourcesRanked(withAliases, 'lab info')[0]!.match).toEqual({
+      field: 'nicknames',
+      type: 'exact',
+    })
+  })
+
+  it('applies inside one app too', () => {
+    const resources: SearchableResource[] = [
+      makeApp({ slug: 'cloud', displayName: 'Cloud' }),
+      makeChildResource({
+        slug: 'cloud-prod',
+        displayName: 'ProdAccount',
+        parentSlug: 'cloud',
+      }),
+    ]
+    expect(
+      searchWithinApp(resources, 'cloud', 'prod account')[0]!.match,
+    ).toEqual({ field: 'displayName', type: 'exact' })
+  })
+})
+
 describe('searchResourcesRanked', () => {
   const apps: SearchableResource[] = [
     makeApp({ slug: 'taskflow', displayName: 'TaskFlow' }),
@@ -277,5 +359,31 @@ describe('Cyrillic-layout fallback', () => {
     ]
     const results = searchWithinApp(resources, 'aws-console', 'ЗКЩВ')
     expect(results.map((r) => r.app.slug)).toEqual(['aws-prod'])
+  })
+})
+
+describe('punctuated and one-letter queries compare raw, not compacted', () => {
+  const apps: SearchableResource[] = [
+    makeApp({ slug: 'csharp-tools', displayName: 'C# Tools' }),
+    makeApp({ slug: 'cpp-builder', displayName: 'C++ Builder' }),
+    makeApp({ slug: 'rnd-portal', displayName: 'R&D Portal' }),
+    makeApp({ slug: 'cloud-console', displayName: 'Cloud Console' }),
+    makeApp({ slug: 'confluence', displayName: 'Confluence' }),
+    makeApp({ slug: 'dashboard', displayName: 'Dashboard' }),
+    makeApp({ slug: 'labvantage', displayName: 'LabVantage' }),
+  ]
+  const slugs = (q: string) => searchResources(apps, q).map((a) => a.slug)
+
+  it('keeps `c#` and `c++` from prefix-matching every name starting with c', () => {
+    expect(slugs('c#')).toEqual(['csharp-tools'])
+    expect(slugs('c++')).toEqual(['cpp-builder'])
+  })
+
+  it('does not let `r&d` match a name merely containing "rd"', () => {
+    expect(slugs('r&d')).toEqual(['rnd-portal'])
+  })
+
+  it('does not let one-letter tokens (`a b`) match a name containing "ab"', () => {
+    expect(slugs('a b')).not.toContain('labvantage')
   })
 })
