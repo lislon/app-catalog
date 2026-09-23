@@ -1,5 +1,13 @@
 # @igstack/app-catalog-shared-core
 
+## 5.0.2
+
+### Patch Changes
+
+- [#245](https://github.com/lislon/app-catalog/pull/245) [`b880a30`](https://github.com/lislon/app-catalog/commit/b880a303b0f593062e87184856e7589c8a2978d1) Thanks [@lislon](https://github.com/lislon)! - Search now matches names ignoring whitespace and punctuation, so a CamelCase app typed as two words (`acme pro` → `AcmePro`) or a dotted abbreviation ranks on the name tiers instead of sinking to the description tier behind unrelated apps. Applies to displayName, abbreviation and nicknames, and to the `<app>/<term>` sub-resource search.
+
+- [#246](https://github.com/lislon/app-catalog/pull/246) [`09c014d`](https://github.com/lislon/app-catalog/commit/09c014d88a7f77afe6e9d0a5d776351e7552295c) Thanks [@lislon](https://github.com/lislon)! - Search: punctuated or one-letter queries (`c#`, `r&d`, `a b`) compare raw again instead of collapsing to a letter-only prefix that matched half the catalog; Enter on a focused result row or button no longer also opens the first result.
+
 ## 5.0.1
 
 ## 5.0.0

@@ -1,5 +1,16 @@
 # @igstack/app-catalog-frontend-core
 
+## 5.0.2
+
+### Patch Changes
+
+- [#244](https://github.com/lislon/app-catalog/pull/244) [`a1f1b23`](https://github.com/lislon/app-catalog/commit/a1f1b238c79758447c81cdcdb569a6af7790062f) Thanks [@lislon](https://github.com/lislon)! - Pressing Enter right after typing a search query opens the first result. The first row is shown focused so it is clear what Enter will open; ↑↓ still move the focus and Esc still clears the search. Previously Enter did nothing until ↓ had been pressed once (#167).
+
+- [#246](https://github.com/lislon/app-catalog/pull/246) [`09c014d`](https://github.com/lislon/app-catalog/commit/09c014d88a7f77afe6e9d0a5d776351e7552295c) Thanks [@lislon](https://github.com/lislon)! - Search: punctuated or one-letter queries (`c#`, `r&d`, `a b`) compare raw again instead of collapsing to a letter-only prefix that matched half the catalog; Enter on a focused result row or button no longer also opens the first result.
+
+- Updated dependencies [[`b880a30`](https://github.com/lislon/app-catalog/commit/b880a303b0f593062e87184856e7589c8a2978d1), [`09c014d`](https://github.com/lislon/app-catalog/commit/09c014d88a7f77afe6e9d0a5d776351e7552295c)]:
+  - @igstack/app-catalog-shared-core@5.0.2
+
 ## 5.0.1
 
 ### Patch Changes

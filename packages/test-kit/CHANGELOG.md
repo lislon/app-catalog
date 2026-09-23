@@ -1,5 +1,17 @@
 # @igstack/app-catalog-test-kit
 
+## 5.0.2
+
+### Patch Changes
+
+- [#243](https://github.com/lislon/app-catalog/pull/243) [`06ccb63`](https://github.com/lislon/app-catalog/commit/06ccb63b3fb2e1a9c256da910f9e7ecf901c4101) Thanks [@lislon](https://github.com/lislon)! - The harness drains its record of unhandled requests even when teardown throws, so a failing cleanup can no longer carry one test's unhandled requests into the next test's report.
+
+- [#242](https://github.com/lislon/app-catalog/pull/242) [`c4d7801`](https://github.com/lislon/app-catalog/commit/c4d780177b340ef5b70424a1e82d96f129f96f80) Thanks [@lislon](https://github.com/lislon)! - The harness stubs `window.scrollTo`, so the router's scroll restoration no longer prints `Error: Not implemented` on every navigation under jsdom, and the mock network answers `comments.list` with an empty list, so an opened resource renders its real empty state instead of a network error. A request the mock network has no handler for now fails the test that made it (listing the requests) instead of printing a warning; `takeUnhandledRequests()` exposes the record.
+
+- Updated dependencies [[`a1f1b23`](https://github.com/lislon/app-catalog/commit/a1f1b238c79758447c81cdcdb569a6af7790062f), [`09c014d`](https://github.com/lislon/app-catalog/commit/09c014d88a7f77afe6e9d0a5d776351e7552295c)]:
+  - @igstack/app-catalog-frontend-core@5.0.2
+  - @igstack/app-catalog-backend-core@5.0.2
+
 ## 5.0.1
 
 ### Patch Changes

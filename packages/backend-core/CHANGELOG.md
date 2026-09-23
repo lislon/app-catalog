@@ -1,5 +1,13 @@
 # @igstack/app-catalog-backend-core
 
+## 5.0.2
+
+### Patch Changes
+
+- Updated dependencies [[`b880a30`](https://github.com/lislon/app-catalog/commit/b880a303b0f593062e87184856e7589c8a2978d1), [`09c014d`](https://github.com/lislon/app-catalog/commit/09c014d88a7f77afe6e9d0a5d776351e7552295c)]:
+  - @igstack/app-catalog-shared-core@5.0.2
+  - @igstack/app-catalog-table-sync@5.0.2
+
 ## 5.0.1
 
 ### Patch Changes
