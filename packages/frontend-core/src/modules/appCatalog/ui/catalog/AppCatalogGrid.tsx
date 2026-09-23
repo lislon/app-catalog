@@ -454,6 +454,14 @@ function SearchResultsList({
         e.preventDefault()
         setFocusedIndex((i) => Math.max(i - 1, 0))
       } else if (e.key === 'Enter') {
+        // A focused row or button activates itself through its native click;
+        // acting here as well would open the first result on top of it.
+        if (e.defaultPrevented) return
+        if (
+          e.target instanceof HTMLElement &&
+          e.target.closest('button, a, [role="option"]')
+        )
+          return
         const row = focusedIndex >= 0 ? rows[focusedIndex] : undefined
         if (row) activateRow(row)
       } else if (e.key === 'Escape') {

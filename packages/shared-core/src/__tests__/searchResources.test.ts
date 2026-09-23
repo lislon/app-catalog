@@ -361,3 +361,29 @@ describe('Cyrillic-layout fallback', () => {
     expect(results.map((r) => r.app.slug)).toEqual(['aws-prod'])
   })
 })
+
+describe('punctuated and one-letter queries compare raw, not compacted', () => {
+  const apps: SearchableResource[] = [
+    makeApp({ slug: 'csharp-tools', displayName: 'C# Tools' }),
+    makeApp({ slug: 'cpp-builder', displayName: 'C++ Builder' }),
+    makeApp({ slug: 'rnd-portal', displayName: 'R&D Portal' }),
+    makeApp({ slug: 'cloud-console', displayName: 'Cloud Console' }),
+    makeApp({ slug: 'confluence', displayName: 'Confluence' }),
+    makeApp({ slug: 'dashboard', displayName: 'Dashboard' }),
+    makeApp({ slug: 'labvantage', displayName: 'LabVantage' }),
+  ]
+  const slugs = (q: string) => searchResources(apps, q).map((a) => a.slug)
+
+  it('keeps `c#` and `c++` from prefix-matching every name starting with c', () => {
+    expect(slugs('c#')).toEqual(['csharp-tools'])
+    expect(slugs('c++')).toEqual(['cpp-builder'])
+  })
+
+  it('does not let `r&d` match a name merely containing "rd"', () => {
+    expect(slugs('r&d')).toEqual(['rnd-portal'])
+  })
+
+  it('does not let one-letter tokens (`a b`) match a name containing "ab"', () => {
+    expect(slugs('a b')).not.toContain('labvantage')
+  })
+})
