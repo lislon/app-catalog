@@ -51,6 +51,16 @@ export interface UiTools {
 let activeServer: SetupServer | null = null
 let activeDb: AcDb | null = null
 
+// Requests the mock network had no handler for, as `METHOD url`. A component that
+// hits one is exercising its error path, so the scenario asserts less than it
+// claims; the setup file fails the test that let it happen (#119).
+const unhandledRequests: string[] = []
+
+/** The unhandled requests recorded so far; clears the record. */
+export function takeUnhandledRequests(): string[] {
+  return unhandledRequests.splice(0)
+}
+
 export async function cleanupTestResources(): Promise<void> {
   // The module-scoped filter store dies with the document in a browser; between
   // tests there is no new document, so reset it by hand.
@@ -117,7 +127,7 @@ export async function given(
   const server = setupServer(...catalog.getHandlers())
   server.listen({
     onUnhandledRequest: (req) => {
-      console.warn(`[MSW] Unhandled: ${req.method} ${req.url}`)
+      unhandledRequests.push(`${req.method} ${req.url}`)
     },
   })
   activeServer = server
