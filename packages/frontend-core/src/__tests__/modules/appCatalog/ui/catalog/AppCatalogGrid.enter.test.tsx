@@ -81,6 +81,20 @@ describe('AppCatalogGrid — Enter on a fresh query', () => {
     expect(onAppClick).not.toHaveBeenCalled()
   })
 
+  it('lets a focused row activate itself once instead of also opening the first result', () => {
+    const onAppClick = renderGrid('alpha')
+    const second = screen.getAllByRole('option')[1]!
+
+    // Enter on a focused row: the browser fires the row's own click; the
+    // document listener must stay out of it or rows[0] opens on top.
+    fireEvent.keyDown(second, { key: 'Enter' })
+    expect(onAppClick).not.toHaveBeenCalled()
+
+    fireEvent.click(second)
+    expect(onAppClick).toHaveBeenCalledTimes(1)
+    expect(onAppClick.mock.calls[0]![0].displayName).toBe(nthResultName(1))
+  })
+
   it('leaves the keyboard to the detail overlay while one is open', () => {
     const onAppClick = renderGrid('alpha', true)
 

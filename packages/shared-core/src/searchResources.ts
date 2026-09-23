@@ -131,14 +131,32 @@ function allTermsMatcher(terms: string[]): (text: string) => boolean {
  */
 function nameMatchers(query: string) {
   const compact = (s: string) => s.replace(/[^\p{L}\p{N}]+/gu, '')
-  // A query of pure punctuation compacts to '' and would match everything.
-  const compactQuery = compact(query) || query
+  // Only a plain-words query is compacted, and only when every word has at
+  // least two characters: `c#`, `r&d` or `a b` would otherwise shrink to a
+  // letter or two and prefix-match half the catalog. Anything else compares
+  // raw, exactly as before the compact form existed.
+  const compactQuery =
+    /^[\p{L}\p{N}\s]+$/u.test(query) &&
+    query.split(/\s+/).every((word) => word.length >= 2)
+      ? compact(query)
+      : null
+  const both =
+    (raw: (name: string) => boolean, compacted: (name: string) => boolean) =>
+    (name: string) =>
+      raw(name) || (compactQuery !== null && compacted(compact(name)))
   return {
-    exact: (name: string) => name === query || compact(name) === compactQuery,
-    prefix: (name: string) =>
-      name.startsWith(query) || compact(name).startsWith(compactQuery),
-    contains: (name: string) =>
-      name.includes(query) || compact(name).includes(compactQuery),
+    exact: both(
+      (name) => name === query,
+      (name) => name === compactQuery,
+    ),
+    prefix: both(
+      (name) => name.startsWith(query),
+      (name) => name.startsWith(compactQuery!),
+    ),
+    contains: both(
+      (name) => name.includes(query),
+      (name) => name.includes(compactQuery!),
+    ),
   }
 }
 
