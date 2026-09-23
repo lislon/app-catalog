@@ -28,6 +28,14 @@ export const SharedNetwork = {
     }
   },
 
+  /** Every opened resource asks for its comments; none have any unless a test says so. */
+  commentsList(): NetworkInterceptor {
+    return {
+      scopeKey: ['comments-list'],
+      handler: trpcMsw.comments.list.query(() => []),
+    }
+  },
+
   authGetSession(service: MockService): NetworkInterceptor {
     return {
       scopeKey: ['auth-session'],
