@@ -34,6 +34,13 @@ export interface UiSettings {
   }
   /** Frontend build identifier baked at build time (e.g., pipeline ID via VITE env var) */
   frontendBuildId?: string
+  /**
+   * URL template for bare chat-channel mentions (`#channel-name`) in catalog
+   * text; `{name}` is replaced by the channel name, e.g.
+   * `https://<workspace>.slack.com/channels/{name}`. Unset = mentions stay
+   * plain text. Kept generic so the core knows no vendor or workspace.
+   */
+  chatChannelUrlTemplate?: string
   /** Area sections on the home view: icons and the day-to-day fold. */
   areas?: AreasSettings
   /** PWA auto-update configuration (idle timeout, check interval, debug) */

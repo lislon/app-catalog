@@ -1,7 +1,9 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import type React from 'react'
 import ReactMarkdown from 'react-markdown'
+import { useUiSettings } from '~/context/UiSettingsContext'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
+import { remarkChatChannels } from './remarkChatChannels'
 
 /** Match a relative internal catalog link: `/app/<slug>` (slug only, no extra path). */
 const INTERNAL_APP_LINK = /^\/app\/([^/?#]+)$/
@@ -68,7 +70,13 @@ export const MarkdownLink = ({
 
 /**
  * Renders user-facing catalog text (descriptions, comments, prompts) as
- * markdown so links become clickable. Links use {@link MarkdownLink}.
+ * markdown so links become clickable. Links use {@link MarkdownLink}; bare
+ * chat-channel mentions (`#name`) become links when the consuming app sets
+ * `UiSettings.chatChannelUrlTemplate`. Every catalog text field must render
+ * through this component so all of them link identically.
+ *
+ * Without a `className` no wrapper element is emitted, so it drops into an
+ * existing `prose` container without changing the DOM.
  */
 export function MarkdownText({
   children,
@@ -77,9 +85,18 @@ export function MarkdownText({
   children: string
   className?: string
 }) {
-  return (
-    <span className={className}>
-      <ReactMarkdown components={{ a: MarkdownLink }}>{children}</ReactMarkdown>
-    </span>
+  const { chatChannelUrlTemplate } = useUiSettings()
+  const markdown = (
+    <ReactMarkdown
+      components={{ a: MarkdownLink }}
+      remarkPlugins={
+        chatChannelUrlTemplate
+          ? [[remarkChatChannels, chatChannelUrlTemplate]]
+          : []
+      }
+    >
+      {children}
+    </ReactMarkdown>
   )
+  return className ? <span className={className}>{markdown}</span> : markdown
 }

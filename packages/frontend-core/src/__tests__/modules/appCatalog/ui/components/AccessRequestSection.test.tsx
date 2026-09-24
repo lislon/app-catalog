@@ -3,9 +3,14 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 
+import { UiSettingsContext } from '~/context/UiSettingsContext'
+import { AppCatalogContext } from '~/modules/appCatalog/context/AppCatalogContext'
+import type { AppCatalogContextIface } from '~/modules/appCatalog/context/AppCatalogContext'
+
 // Badges link to a person's page; no router is mounted here.
 vi.mock('@tanstack/react-router', () => ({
   useSearch: vi.fn(() => ({})),
+  useRouterState: vi.fn(() => '/'),
   Link: ({ children, ...rest }: { children?: React.ReactNode }) => (
     <a {...rest}>{children}</a>
   ),
@@ -64,5 +69,54 @@ describe('AccessRequestSection — roles table', () => {
 
     expect(screen.getByText('—')).toBeInTheDocument()
     expect(screen.queryByText(/LV 1.0 job type/)).toBeNull()
+  })
+})
+
+// The channel mentions live in the access-request text fields, which this
+// section renders itself — so they must go through the same markdown path as
+// the description or the links never appear where the data actually is.
+describe('AccessRequestSection — chat channel mentions', () => {
+  it('links a #channel mention inside comments and post-approval steps', () => {
+    const ctx = {
+      resources: [],
+      isLoadingApps: false,
+      tagsDefinitions: [],
+      approvalMethods: [],
+      persons: [],
+      groups: [],
+    } satisfies AppCatalogContextIface
+
+    render(
+      <UiSettingsContext
+        value={{ chatChannelUrlTemplate: 'https://chat.example.com/c/{name}' }}
+      >
+        <AppCatalogContext value={ctx}>
+          <AccessRequestSection
+            app={
+              {
+                id: 'swaggerhub',
+                slug: 'swaggerhub',
+                displayName: 'SwaggerHub',
+                accessRequest: {
+                  approvalMethodSlug: 'service',
+                  comments: 'For questions, ask in Slack #swaggerhub channel.',
+                  postApprovalInstructions: 'Then say hi in #onboarding.',
+                },
+              } as Resource
+            }
+            approvalMethods={[]}
+          />
+        </AppCatalogContext>
+      </UiSettingsContext>,
+    )
+
+    expect(screen.getByRole('link', { name: '#swaggerhub' })).toHaveAttribute(
+      'href',
+      'https://chat.example.com/c/swaggerhub',
+    )
+    expect(screen.getByRole('link', { name: '#onboarding' })).toHaveAttribute(
+      'href',
+      'https://chat.example.com/c/onboarding',
+    )
   })
 })
