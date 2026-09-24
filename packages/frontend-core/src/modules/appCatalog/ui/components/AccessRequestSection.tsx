@@ -47,6 +47,65 @@ function getApprovalMethodIcon(
   }
 }
 
+/** Roles shown before the rest are folded behind "Show all". */
+const VISIBLE_ROLES = 5
+
+/**
+ * The roles table. A long list (dozens of roles) pushed the approval steps off
+ * screen, so beyond {@link VISIBLE_ROLES} the rest sit behind a toggle.
+ */
+function RolesTable({
+  roles,
+}: {
+  roles: NonNullable<AppAccessRequest['roles']>
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const collapsible = roles.length > VISIBLE_ROLES
+  const shown = collapsible && !expanded ? roles.slice(0, VISIBLE_ROLES) : roles
+
+  return (
+    <div>
+      <h4 className="mb-2 text-sm font-medium">Available Roles</h4>
+      <div className="rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="whitespace-nowrap">Role</TableHead>
+              <TableHead>Description</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {shown.map((role, idx) => (
+              <TableRow key={`${role.displayName}-${idx}`}>
+                <TableCell className="font-medium whitespace-nowrap">
+                  {role.displayName}
+                </TableCell>
+                {/* `adminNotes` is provisioning-only and never shown to
+                    the requester — only `description` belongs here. */}
+                <TableCell className="text-sm text-muted-foreground">
+                  {role.description || '—'}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      {collapsible && (
+        <Button
+          type="button"
+          variant="link"
+          size="sm"
+          className="mt-1 h-auto px-0"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((v) => !v)}
+        >
+          {expanded ? 'Show fewer roles' : `Show all ${roles.length} roles`}
+        </Button>
+      )}
+    </div>
+  )
+}
+
 /**
  * Custom hook for handling copy-to-clipboard functionality with feedback
  * Includes proper cleanup to prevent memory leaks
@@ -282,35 +341,8 @@ export function AccessRequestSection({
         </div>
       )}
 
-      {/* Roles Table */}
       {accessRequest.roles && accessRequest.roles.length > 0 && (
-        <div>
-          <h4 className="mb-2 text-sm font-medium">Available Roles</h4>
-          <div className="rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="whitespace-nowrap">Role</TableHead>
-                  <TableHead>Description</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {accessRequest.roles.map((role, idx) => (
-                  <TableRow key={`${role.displayName}-${idx}`}>
-                    <TableCell className="font-medium whitespace-nowrap">
-                      {role.displayName}
-                    </TableCell>
-                    {/* `adminNotes` is provisioning-only and never shown to
-                        the requester — only `description` belongs here. */}
-                    <TableCell className="text-sm text-muted-foreground">
-                      {role.description || '—'}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+        <RolesTable roles={accessRequest.roles} />
       )}
 
       {/* Approvers */}

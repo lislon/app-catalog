@@ -1,5 +1,5 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 
@@ -52,6 +52,40 @@ describe('AccessRequestSection — roles table', () => {
     expect(screen.getByText('Full administrative access.')).toBeInTheDocument()
     expect(screen.queryByText(/AD Group: SomeApp_Admin/)).toBeNull()
     expect(screen.queryByText(/^Note:/)).toBeNull()
+  })
+
+  // A long role list (one real entry has 47) pushed the approval steps below
+  // the fold; show the first few and let the reader expand the rest.
+  it('collapses a long role list behind a "Show all" toggle', () => {
+    const roles = Array.from({ length: 8 }, (_, i) => ({
+      displayName: `Role ${i + 1}`,
+    }))
+    render(
+      <AccessRequestSection app={appWithRoles(roles)} approvalMethods={[]} />,
+    )
+
+    expect(screen.getByText('Role 5')).toBeInTheDocument()
+    expect(screen.queryByText('Role 6')).toBeNull()
+    const toggle = screen.getByRole('button', { name: 'Show all 8 roles' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+
+    fireEvent.click(toggle)
+    expect(screen.getByText('Role 8')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Show fewer roles' }),
+    ).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('shows five or fewer roles without a toggle', () => {
+    const roles = Array.from({ length: 5 }, (_, i) => ({
+      displayName: `Role ${i + 1}`,
+    }))
+    render(
+      <AccessRequestSection app={appWithRoles(roles)} approvalMethods={[]} />,
+    )
+
+    expect(screen.getByText('Role 5')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Show all/ })).toBeNull()
   })
 
   it('falls back to an em-dash when a role has no description', () => {
