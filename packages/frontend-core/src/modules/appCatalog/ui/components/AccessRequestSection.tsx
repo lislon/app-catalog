@@ -326,27 +326,6 @@ export function AccessRequestSection({
           </div>
         )}
 
-      {/* Documentation URLs */}
-      {accessRequest.urls && accessRequest.urls.length > 0 && (
-        <div>
-          <h4 className="mb-2 text-sm font-medium">Documentation</h4>
-          <div className="flex flex-col gap-1.5">
-            {accessRequest.urls.map((urlObj, idx) => (
-              <a
-                key={`${urlObj.url}-${idx}`}
-                href={urlObj.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1.5"
-              >
-                {urlObj.label || urlObj.url}
-                <ExternalLink className="size-3" />
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Post-Approval Instructions */}
       {accessRequest.postApprovalInstructions &&
         (isTwoStep ? (
@@ -386,6 +365,28 @@ export function AccessRequestSection({
             </AccordionItem>
           </Accordion>
         ))}
+
+      {/* Documentation URLs — box level: they cover the whole process,
+          not one step, so they come after Step 2 */}
+      {accessRequest.urls && accessRequest.urls.length > 0 && (
+        <div>
+          <h4 className="mb-2 text-sm font-medium">Documentation</h4>
+          <div className="flex flex-col gap-1.5">
+            {accessRequest.urls.map((urlObj, idx) => (
+              <a
+                key={`${urlObj.url}-${idx}`}
+                href={urlObj.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1.5"
+              >
+                {urlObj.label || urlObj.url}
+                <ExternalLink className="size-3" />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

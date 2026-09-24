@@ -72,6 +72,45 @@ describe('AccessRequestSection — roles table', () => {
   })
 })
 
+// Documentation links describe the whole access process, not the request
+// step, so in a two-step entry they sat visually inside Step 1 and read as
+// "docs for requesting" — a reader looking for the CLI guide after approval
+// never scrolled back up to find it.
+describe('AccessRequestSection — documentation placement', () => {
+  it('renders Documentation after Step 2, not inside Step 1', () => {
+    render(
+      <AccessRequestSection
+        app={
+          {
+            id: 'cloud',
+            slug: 'cloud',
+            displayName: 'Cloud',
+            accessRequest: {
+              approvalMethodSlug: 'service',
+              comments: 'Request it from the help desk.',
+              postApprovalInstructions: 'Ask the account maintainers.',
+              urls: [
+                { label: 'CLI guide', url: 'https://docs.example.com/cli' },
+              ],
+            },
+          } as Resource
+        }
+        approvalMethods={[]}
+      />,
+    )
+
+    const step2 = screen.getByText('Step 2')
+    const docs = screen.getByRole('heading', { name: 'Documentation' })
+    expect(
+      step2.compareDocumentPosition(docs) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(screen.getByRole('link', { name: /CLI guide/ })).toHaveAttribute(
+      'href',
+      'https://docs.example.com/cli',
+    )
+  })
+})
+
 // The channel mentions live in the access-request text fields, which this
 // section renders itself — so they must go through the same markdown path as
 // the description or the links never appear where the data actually is.
