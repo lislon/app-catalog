@@ -131,6 +131,74 @@ describe('MarkdownText — chat channel mentions', () => {
   })
 })
 
+// Catalog text often pastes a URL without link syntax; it used to render as
+// plain, unclickable text.
+describe('MarkdownText — bare URLs', () => {
+  it('turns a bare URL into a new-tab link', () => {
+    renderMarkdown('Docs: https://a.example/x', null)
+
+    const link = screen.getByRole('link', { name: 'https://a.example/x' })
+    expect(link).toHaveAttribute('href', 'https://a.example/x')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'))
+  })
+
+  it('leaves trailing sentence punctuation outside the link', () => {
+    renderMarkdown(
+      'See https://a.example/page. Or (https://a.example/q).',
+      null,
+    )
+
+    expect(
+      screen.getByRole('link', { name: 'https://a.example/page' }),
+    ).toHaveAttribute('href', 'https://a.example/page')
+    expect(
+      screen.getByRole('link', { name: 'https://a.example/q' }),
+    ).toHaveAttribute('href', 'https://a.example/q')
+  })
+
+  it('leaves an explicit markdown link unchanged', () => {
+    renderMarkdown('[the docs](https://a.example/d)', null)
+
+    expect(screen.getByRole('link', { name: 'the docs' })).toHaveAttribute(
+      'href',
+      'https://a.example/d',
+    )
+  })
+
+  it('keeps a URL inside inline code as code', () => {
+    renderMarkdown('run `curl https://a.example/x`', null)
+
+    expect(screen.queryByRole('link')).toBeNull()
+    expect(screen.getByText('curl https://a.example/x').tagName).toBe('CODE')
+  })
+
+  it('does not treat a URL fragment as a chat channel', () => {
+    renderMarkdown('open https://a.example/sheet#gid and ask #team')
+
+    expect(
+      screen.getByRole('link', { name: 'https://a.example/sheet#gid' }),
+    ).toHaveAttribute('href', 'https://a.example/sheet#gid')
+    expect(screen.getByRole('link', { name: '#team' })).toHaveAttribute(
+      'href',
+      'https://chat.example.com/channels/team',
+    )
+  })
+
+  it('renders GFM tables and strikethrough', () => {
+    renderMarkdown('| a | b |\n| - | - |\n| 1 | 2 |\n\n~~old~~', null)
+
+    expect(screen.getByRole('table')).toBeInTheDocument()
+    expect(screen.getByText('old').tagName).toBe('DEL')
+  })
+
+  it('keeps a single tilde literal ("approximately")', () => {
+    renderMarkdown('takes ~5 min, up to ~10 min', null)
+
+    expect(screen.getByText('takes ~5 min, up to ~10 min').tagName).toBe('P')
+  })
+})
+
 describe('MarkdownText — wrapper element', () => {
   it('adds a wrapper only when a className is given', () => {
     const { container: bare } = renderMarkdown('hello')

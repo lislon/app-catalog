@@ -1,9 +1,20 @@
 import { Link, useRouterState } from '@tanstack/react-router'
 import type React from 'react'
 import ReactMarkdown from 'react-markdown'
+import type { Options } from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useUiSettings } from '~/context/UiSettingsContext'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { remarkChatChannels } from './remarkChatChannels'
+
+/**
+ * Single `~` stays literal: catalog text uses it for "approximately" (`~5 min`),
+ * which default GFM would turn into strikethrough. `~~x~~` still strikes.
+ */
+const GFM: NonNullable<Options['remarkPlugins']>[number] = [
+  remarkGfm,
+  { singleTilde: false },
+]
 
 /** Match a relative internal catalog link: `/app/<slug>` (slug only, no extra path). */
 const INTERNAL_APP_LINK = /^\/app\/([^/?#]+)$/
@@ -70,7 +81,9 @@ export const MarkdownLink = ({
 
 /**
  * Renders user-facing catalog text (descriptions, comments, prompts) as
- * markdown so links become clickable. Links use {@link MarkdownLink}; bare
+ * GitHub-flavoured markdown so links become clickable — bare URLs included
+ * (autolink literals), plus tables and strikethrough. Links use
+ * {@link MarkdownLink}; bare
  * chat-channel mentions (`#name`) become links when the consuming app sets
  * `UiSettings.chatChannelUrlTemplate`. Every catalog text field must render
  * through this component so all of them link identically.
@@ -91,8 +104,8 @@ export function MarkdownText({
       components={{ a: MarkdownLink }}
       remarkPlugins={
         chatChannelUrlTemplate
-          ? [[remarkChatChannels, chatChannelUrlTemplate]]
-          : []
+          ? [GFM, [remarkChatChannels, chatChannelUrlTemplate]]
+          : [GFM]
       }
     >
       {children}
