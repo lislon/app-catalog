@@ -1,5 +1,22 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.1.0
+
+### Minor Changes
+
+- [#259](https://github.com/lislon/app-catalog/pull/259) [`21630f1`](https://github.com/lislon/app-catalog/commit/21630f1f7af88ac2a67ba20a5917a461b708386a) Thanks [@lislon](https://github.com/lislon)! - Catalog text now renders as GitHub-flavoured markdown: bare URLs become clickable links (trailing punctuation stays outside), and tables and `~~strikethrough~~` render. A single `~` stays literal so "~5 min" is not struck through.
+
+- [#261](https://github.com/lislon/app-catalog/pull/261) [`718a460`](https://github.com/lislon/app-catalog/commit/718a4606bb8b5413e4b46f63320bedba53dcc266) Thanks [@lislon](https://github.com/lislon)! - Collapse an access request's roles table after five roles behind a "Show all N roles" toggle.
+
+### Patch Changes
+
+- [#260](https://github.com/lislon/app-catalog/pull/260) [`a215dac`](https://github.com/lislon/app-catalog/commit/a215dacd5338c50e5ff3f5480dcb933be486cdc4) Thanks [@lislon](https://github.com/lislon)! - Show the access-request documentation links after the last step instead of inside the first one, since they cover the whole process.
+
+- [#258](https://github.com/lislon/app-catalog/pull/258) [`4291bc6`](https://github.com/lislon/app-catalog/commit/4291bc65a72662fc23c3b7a8afba1619de3fd8b0) Thanks [@lislon](https://github.com/lislon)! - Remove the unused `slate` and `slate-react` dependencies. No editor uses them any more; they only pulled in a `slate-dom` whose peer range the declared `slate` did not satisfy.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.1.0
+
 ## 6.0.0
 
 ### Minor Changes
