@@ -1,7 +1,7 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
-import { Link, useSearch } from '@tanstack/react-router'
-import { Search } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
+import { Search, X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Badge } from '~/ui/badge'
 import { Input } from '~/ui/input'
 import {
@@ -78,6 +78,33 @@ export function SubResourcesSection({
     () => subResources.find((sr) => sr.slug === selectedSubSlug) ?? null,
     [subResources, selectedSubSlug],
   )
+  const navigate = useNavigate()
+
+  // The row to mark as "this one". It outlives `?sub=` so clearing the filter
+  // brings the siblings back without losing the user's place.
+  const [highlightSlug, setHighlightSlug] = useState(selectedSubSlug)
+  useEffect(() => {
+    if (selectedSubSlug) setHighlightSlug(selectedSubSlug)
+  }, [selectedSubSlug])
+
+  // The search input only mounts once the selection is gone, so focus it then.
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const focusSearchAfterClear = useRef(false)
+  useEffect(() => {
+    if (!selectedSub && focusSearchAfterClear.current) {
+      focusSearchAfterClear.current = false
+      searchInputRef.current?.focus()
+    }
+  }, [selectedSub])
+
+  const clearSelection = () => {
+    focusSearchAfterClear.current = true
+    // A navigation, not a replace, so Back restores the single-row view.
+    void navigate({
+      to: '.',
+      search: (prev) => ({ ...prev, sub: undefined }),
+    })
+  }
 
   // Seed the filter with the incoming query ONLY if it matches a child, so we
   // reveal the matched sub-resource without hiding everything on a non-match.
@@ -146,15 +173,34 @@ export function SubResourcesSection({
 
       {/* Filters */}
       <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-          <Input
-            placeholder="Search resources by name or alias..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-9"
-          />
-        </div>
+        {selectedSub ? (
+          // `?sub=` wins over the search box, so show it where the box would be
+          // and make it dismissible — otherwise the only way out is the URL.
+          <div className="flex flex-1 items-center">
+            <Badge variant="secondary" className="h-9 gap-1 pl-3 pr-1 text-sm">
+              Showing: {selectedSub.displayName}
+              <button
+                type="button"
+                aria-label="Clear sub-resource filter"
+                onClick={clearSelection}
+                className="rounded-sm p-1 hover:bg-muted-foreground/20"
+              >
+                <X className="size-4" />
+              </button>
+            </Badge>
+          </div>
+        ) : (
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+            <Input
+              ref={searchInputRef}
+              placeholder="Search resources by name or alias..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 h-9"
+            />
+          </div>
+        )}
         {uniqueTiers.length > 1 && (
           <Select value={tierFilter} onValueChange={setTierFilter}>
             <SelectTrigger className="w-[130px] h-9">
@@ -205,10 +251,10 @@ export function SubResourcesSection({
                     // The row the user asked for, so it reads as "this one" even
                     // once the filter is cleared and its siblings come back.
                     aria-current={
-                      sr.slug === selectedSubSlug ? 'true' : undefined
+                      sr.slug === highlightSlug ? 'true' : undefined
                     }
                     className={
-                      sr.slug === selectedSubSlug ? 'bg-primary/[0.06]' : ''
+                      sr.slug === highlightSlug ? 'bg-primary/[0.06]' : ''
                     }
                   >
                     <TableCell>
