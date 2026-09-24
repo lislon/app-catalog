@@ -1,5 +1,5 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 
@@ -54,6 +54,40 @@ describe('AccessRequestSection — roles table', () => {
     expect(screen.queryByText(/^Note:/)).toBeNull()
   })
 
+  // A long role list (one real entry has 47) pushed the approval steps below
+  // the fold; show the first few and let the reader expand the rest.
+  it('collapses a long role list behind a "Show all" toggle', () => {
+    const roles = Array.from({ length: 8 }, (_, i) => ({
+      displayName: `Role ${i + 1}`,
+    }))
+    render(
+      <AccessRequestSection app={appWithRoles(roles)} approvalMethods={[]} />,
+    )
+
+    expect(screen.getByText('Role 5')).toBeInTheDocument()
+    expect(screen.queryByText('Role 6')).toBeNull()
+    const toggle = screen.getByRole('button', { name: 'Show all 8 roles' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+
+    fireEvent.click(toggle)
+    expect(screen.getByText('Role 8')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Show fewer roles' }),
+    ).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('shows five or fewer roles without a toggle', () => {
+    const roles = Array.from({ length: 5 }, (_, i) => ({
+      displayName: `Role ${i + 1}`,
+    }))
+    render(
+      <AccessRequestSection app={appWithRoles(roles)} approvalMethods={[]} />,
+    )
+
+    expect(screen.getByText('Role 5')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Show all/ })).toBeNull()
+  })
+
   it('falls back to an em-dash when a role has no description', () => {
     render(
       <AccessRequestSection
@@ -69,6 +103,45 @@ describe('AccessRequestSection — roles table', () => {
 
     expect(screen.getByText('—')).toBeInTheDocument()
     expect(screen.queryByText(/LV 1.0 job type/)).toBeNull()
+  })
+})
+
+// Documentation links describe the whole access process, not the request
+// step, so in a two-step entry they sat visually inside Step 1 and read as
+// "docs for requesting" — a reader looking for the CLI guide after approval
+// never scrolled back up to find it.
+describe('AccessRequestSection — documentation placement', () => {
+  it('renders Documentation after Step 2, not inside Step 1', () => {
+    render(
+      <AccessRequestSection
+        app={
+          {
+            id: 'cloud',
+            slug: 'cloud',
+            displayName: 'Cloud',
+            accessRequest: {
+              approvalMethodSlug: 'service',
+              comments: 'Request it from the help desk.',
+              postApprovalInstructions: 'Ask the account maintainers.',
+              urls: [
+                { label: 'CLI guide', url: 'https://docs.example.com/cli' },
+              ],
+            },
+          } as Resource
+        }
+        approvalMethods={[]}
+      />,
+    )
+
+    const step2 = screen.getByText('Step 2')
+    const docs = screen.getByRole('heading', { name: 'Documentation' })
+    expect(
+      step2.compareDocumentPosition(docs) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(screen.getByRole('link', { name: /CLI guide/ })).toHaveAttribute(
+      'href',
+      'https://docs.example.com/cli',
+    )
   })
 })
 
