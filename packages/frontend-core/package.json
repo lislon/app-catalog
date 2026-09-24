@@ -121,6 +121,7 @@
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^4.6.5",
     "react-router-dom": "7.0.2",
+    "remark-gfm": "^4.0.1",
     "sleep-promise": "^9.1.0",
     "superjson": "catalog:",
     "tailwind-merge": "^3.3.1",
