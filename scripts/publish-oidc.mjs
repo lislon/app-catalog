@@ -9,6 +9,10 @@
 //      versions inside the tarball (npm alone cannot do this), then
 //   2) `npm publish <tarball>` — the npm CLI (>=11.5.1) performs the OIDC mint.
 //
+// Creates no git tags. `changesets/action` only pushes local tags and only
+// creates GitHub releases for the `New tag:` lines in the publish output, so
+// the `changeset:publish` script runs `changeset tag` after this one.
+//
 // Idempotent: a package whose exact version already exists on the registry is
 // skipped (EPUBLISHCONFLICT / "cannot publish over"), so partial-failure reruns
 // are safe.
