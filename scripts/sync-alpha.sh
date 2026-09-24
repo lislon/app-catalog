@@ -27,5 +27,5 @@ elif [ -n "$(gh pr list --base alpha --head main --state open --json number --jq
 else
   gh pr create --base alpha --head main \
     --title 'chore: sync alpha with main' \
-    --body 'alpha has commits main does not, so it cannot be fast-forwarded. Merge this to bring the released versions and consumed changesets back to alpha (#166).'
+    --body 'alpha has commits main does not, so it cannot be fast-forwarded. Merge this to bring the released versions and consumed changesets back to alpha (#166). Use a merge commit, not squash or rebase: new SHAs keep alpha diverged, and every later release opens another of these PRs.'
 fi
