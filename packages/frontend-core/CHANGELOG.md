@@ -1,5 +1,22 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.0.0
+
+### Minor Changes
+
+- [#249](https://github.com/lislon/app-catalog/pull/249) [`1cf922f`](https://github.com/lislon/app-catalog/commit/1cf922f1525561aee784882f857f5adceea569a3) Thanks [@lislon](https://github.com/lislon)! - Bare chat-channel mentions such as `#swaggerhub` in catalog text now render as
+  links when the consuming app sets `UiSettings.chatChannelUrlTemplate` (for
+  example `https://<workspace>.slack.com/channels/{name}`); without it they stay
+  plain text. Existing links, link fragments, inline code and digits-only
+  mentions are left alone. Access-request comments, request prompts and
+  post-approval steps now render through the same markdown component as the
+  description, so links behave identically in every text field.
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.0.0
+
 ## 5.0.2
 
 ### Patch Changes
