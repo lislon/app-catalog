@@ -5,7 +5,6 @@ import type {
 } from '@igstack/app-catalog-backend-core'
 import { Bot, Check, Copy, ExternalLink, Settings, Users } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import ReactMarkdown from 'react-markdown'
 import { Button } from '~/ui/button'
 import {
   Accordion,
@@ -21,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '~/ui/table'
-import { MarkdownLink } from './MarkdownText'
+import { MarkdownText } from './MarkdownText'
 import { PersonOrGroupBadge } from './PersonBadge'
 
 // Constants
@@ -265,9 +264,7 @@ export function AccessRequestSection({
         <div className="text-sm inline-flex items-center gap-2">
           <span className="whitespace-nowrap shrink-0">Request Prompt:</span>
           <span className="prose prose-sm inline [&>*]:inline [&>*]:m-0">
-            <ReactMarkdown components={{ a: MarkdownLink }}>
-              {accessRequest.requestPrompt}
-            </ReactMarkdown>
+            <MarkdownText>{accessRequest.requestPrompt}</MarkdownText>
           </span>
           <CopyButton
             onCopy={handleCopyPrompt}
@@ -281,9 +278,7 @@ export function AccessRequestSection({
       {/* Comments */}
       {accessRequest.comments && (
         <div className="text-sm text-muted-foreground prose prose-sm max-w-none">
-          <ReactMarkdown components={{ a: MarkdownLink }}>
-            {accessRequest.comments}
-          </ReactMarkdown>
+          <MarkdownText>{accessRequest.comments}</MarkdownText>
         </div>
       )}
 
@@ -366,9 +361,9 @@ export function AccessRequestSection({
               </span>
             </div>
             <div className="text-sm text-muted-foreground prose prose-sm max-w-none [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">
-              <ReactMarkdown components={{ a: MarkdownLink }}>
+              <MarkdownText>
                 {accessRequest.postApprovalInstructions}
-              </ReactMarkdown>
+              </MarkdownText>
             </div>
           </div>
         ) : (
@@ -383,9 +378,9 @@ export function AccessRequestSection({
               </AccordionTrigger>
               <AccordionContent className="pb-3">
                 <div className="text-sm text-muted-foreground prose prose-sm max-w-none [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5">
-                  <ReactMarkdown components={{ a: MarkdownLink }}>
+                  <MarkdownText>
                     {accessRequest.postApprovalInstructions}
-                  </ReactMarkdown>
+                  </MarkdownText>
                 </div>
               </AccordionContent>
             </AccordionItem>
