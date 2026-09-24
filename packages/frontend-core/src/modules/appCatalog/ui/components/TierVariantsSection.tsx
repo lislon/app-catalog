@@ -5,7 +5,7 @@ import type {
 } from '@igstack/app-catalog-backend-core'
 import { Bot, ExternalLinkIcon, Settings, Users } from 'lucide-react'
 import { useState } from 'react'
-import ReactMarkdown from 'react-markdown'
+import { MarkdownText } from './MarkdownText'
 import { Badge } from '~/ui/badge'
 import {
   Table,
@@ -113,7 +113,7 @@ function TierAccessDetail({
         <div className="pl-5 space-y-1.5 text-xs">
           {accessRequest.comments && (
             <div className="text-muted-foreground prose prose-xs max-w-none">
-              <ReactMarkdown>{accessRequest.comments}</ReactMarkdown>
+              <MarkdownText>{accessRequest.comments}</MarkdownText>
             </div>
           )}
           {accessRequest.urls && accessRequest.urls.length > 0 && (
