@@ -13,9 +13,9 @@
 // creates GitHub releases for the `New tag:` lines in the publish output, so
 // the `changeset:publish` script runs `changeset tag` after this one.
 //
-// Idempotent: a package whose exact version already exists on the registry is
-// skipped (EPUBLISHCONFLICT / "cannot publish over"), so partial-failure reruns
-// are safe.
+// Idempotent: a package whose exact version is already on the registry is
+// skipped before packing, so partial-failure reruns and `main` pushes that
+// carry no new version are safe.
 //
 // Usage: node scripts/publish-oidc.mjs --tag <dist-tag>
 import { execFileSync } from 'node:child_process';
@@ -42,12 +42,26 @@ const pkgs = readdirSync(PKG_DIR)
 
 console.log(`Publishing ${pkgs.length} package(s) with tag "${tag}" via npm OIDC`);
 
+// `npm view <pkg>@<version>` exits non-zero (E404) when that version is absent.
+const isPublished = (label) => {
+  try {
+    execFileSync('npm', ['view', label, 'version'], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 const packDir = mkdtempSync(join(tmpdir(), 'oidc-pack-'));
 let failed = false;
 
 for (const dir of pkgs) {
   const meta = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
   const label = `${meta.name}@${meta.version}`;
+  if (isPublished(label)) {
+    console.log(`↷ skip ${label} (already on registry)`);
+    continue;
+  }
   try {
     // pnpm pack resolves workspace:* -> concrete versions in the tarball
     execFileSync('pnpm', ['pack', '--pack-destination', packDir], {
@@ -75,14 +89,9 @@ for (const dir of pkgs) {
       { stdio: 'inherit' },
     );
     console.log(`✓ published ${label}`);
-  } catch (e) {
-    const out = String(e.stdout || '') + String(e.stderr || '') + String(e.message || '');
-    if (/EPUBLISHCONFLICT|cannot publish over|previously published|409/i.test(out)) {
-      console.log(`↷ skip ${label} (already on registry)`);
-    } else {
-      console.error(`✗ publish failed for ${label}`);
-      failed = true;
-    }
+  } catch {
+    console.error(`✗ publish failed for ${label}`);
+    failed = true;
   }
 }
 
