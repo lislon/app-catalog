@@ -1,12 +1,15 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 
 // The component reads `?sub=` and links rows to a child's own page; neither is
 // under test here, so stub the router rather than mounting one.
+const routerSearch: { sub?: string } = {}
+const navigate = vi.fn()
 vi.mock('@tanstack/react-router', () => ({
-  useSearch: vi.fn(() => ({})),
+  useSearch: vi.fn(() => routerSearch),
+  useNavigate: vi.fn(() => navigate),
   Link: ({ children, ...rest }: { children?: React.ReactNode }) => (
     <a {...rest}>{children}</a>
   ),
@@ -90,5 +93,48 @@ describe('SubResourcesSection — account id as deep link', () => {
       'href',
       'https://portal.example/b',
     )
+  })
+})
+
+// A `?sub=` deep link singles out one row; the table must say so and offer a
+// way back to the full list without editing the URL.
+describe('SubResourcesSection — clearing the ?sub= selection', () => {
+  const rows = [sub('a', {}), sub('b', {}), sub('c', {})]
+
+  it('shows the selection as a dismissible filter that restores every row', () => {
+    routerSearch.sub = 'b'
+    navigate.mockClear()
+    const { rerender } = render(
+      <SubResourcesSection parentSlug="p" subResources={rows} />,
+    )
+    expect(screen.getByText('Sub-Resources (1 of 3)')).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Clear sub-resource filter' }),
+    )
+    const { search } = navigate.mock.calls[0]![0] as {
+      search: (prev: object) => object
+    }
+    expect(search({ sub: 'b', q: 'x' })).toEqual({ sub: undefined, q: 'x' })
+
+    // The router drops `sub` from the URL, which re-renders the section.
+    routerSearch.sub = undefined
+    rerender(<SubResourcesSection parentSlug="p" subResources={rows} />)
+    expect(screen.getByText('Sub-Resources (3 of 3)')).toBeInTheDocument()
+    expect(
+      screen.getByPlaceholderText('Search resources by name or alias...'),
+    ).toHaveFocus()
+    // The user keeps their place: the row they came for is still marked.
+    expect(
+      screen.getByText('b', { selector: 'a' }).closest('tr'),
+    ).toHaveAttribute('aria-current', 'true')
+  })
+
+  it('shows no clear control without a selection', () => {
+    routerSearch.sub = undefined
+    render(<SubResourcesSection parentSlug="p" subResources={rows} />)
+    expect(
+      screen.queryByRole('button', { name: 'Clear sub-resource filter' }),
+    ).not.toBeInTheDocument()
   })
 })
