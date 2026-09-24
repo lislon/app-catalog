@@ -30,6 +30,8 @@ jobs:
         run: pnpm run prisma:generate
       - name: Run Checks
         run: pnpm run test:pr --parallel=3
+      - name: Self-check the alpha sync script
+        run: bash scripts/sync-alpha.test.sh
   versions:
     name: Registry Versions
     runs-on: ubuntu-latest
