@@ -141,6 +141,20 @@ jobs:
         env:
           CHANGESETS_PUBLISHED: ${{ steps.changesets.outputs.published }}
 
+  sync-alpha:
+    name: Sync alpha with main
+    needs: test-and-publish
+    if: github.repository_owner == 'lislon' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.1
+        with:
+          fetch-depth: 0
+      - name: Fast-forward alpha, or open a main -> alpha PR
+        run: bash scripts/sync-alpha.sh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   # push:
   #   needs: test-and-publish
   #   if: ${{ needs.build.outputs.new-release-published == 'true' &&
