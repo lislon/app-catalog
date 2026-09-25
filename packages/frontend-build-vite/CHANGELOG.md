@@ -1,5 +1,11 @@
 # @igstack/app-catalog-frontend-build-vite
 
+## 6.1.3
+
+### Patch Changes
+
+- [#272](https://github.com/lislon/app-catalog/pull/272) [`7dc0c6f`](https://github.com/lislon/app-catalog/commit/7dc0c6fdfdf026897e2525b7b1612df3148194b0) Thanks [@lislon](https://github.com/lislon)! - Split the frontend bundle: devtools are dev-only, the detail card loads on first open, and React/TanStack/tRPC get their own long-cached vendor chunks (#120).
+
 ## 6.1.2
 
 ## 6.1.1
