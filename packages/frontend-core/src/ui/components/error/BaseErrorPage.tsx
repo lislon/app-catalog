@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
+import { Devtools } from '~/ui/layout/Devtools'
 import { MainLayout } from '~/ui/layout/MainLayout'
 import { TopLevelProvidersForErrors } from '~/ui/layout/TopLevelProvidersForErrors'
 import { useQueryClient } from '@tanstack/react-query'
@@ -20,8 +19,7 @@ export function BaseErrorPage({ children }: BaseErrorPageProps) {
     <TopLevelProvidersForErrors>
       <MainLayout>
         {children}
-        <TanStackRouterDevtools />
-        <ReactQueryDevtools initialIsOpen={false} client={queryClient} />
+        <Devtools client={queryClient} />
       </MainLayout>
     </TopLevelProvidersForErrors>
   )

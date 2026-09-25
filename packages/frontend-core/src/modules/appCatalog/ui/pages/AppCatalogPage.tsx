@@ -1,10 +1,17 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { useCallback, useEffect, useMemo } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useMemo } from 'react'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
 import { AppCatalogGrid } from '../catalog/AppCatalogGrid'
-import { AppDetailPanel } from '../catalog/AppDetailPanel'
+
+// The detail card (and the markdown stack it renders) loads on first open, not
+// with the catalog grid every visitor sees first (#120).
+const AppDetailPanel = lazy(() =>
+  import('../catalog/AppDetailPanel').then((m) => ({
+    default: m.AppDetailPanel,
+  })),
+)
 
 export function AppCatalogPage({
   selectedSlug,
@@ -162,13 +169,15 @@ export function AppCatalogPage({
       />
       {/* #38 item B: the detail as a card over the catalog backdrop. */}
       {selectedApp && (
-        <AppDetailPanel
-          app={selectedApp}
-          subResource={selectedSub}
-          onClose={() => void navigate({ to: '/' })}
-          onAppClick={handleAppClick}
-          onBackToParent={handleBackToParent}
-        />
+        <Suspense fallback={null}>
+          <AppDetailPanel
+            app={selectedApp}
+            subResource={selectedSub}
+            onClose={() => void navigate({ to: '/' })}
+            onAppClick={handleAppClick}
+            onBackToParent={handleBackToParent}
+          />
+        </Suspense>
       )}
     </div>
   )

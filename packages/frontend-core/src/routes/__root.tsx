@@ -1,5 +1,4 @@
 import { Outlet, createRootRouteWithContext } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import type { AcRouterContext } from '~/types/types'
 import { RootErrorPage } from '~/ui/components/error/RootErrorPage'
 import { NotFoundError } from '~/ui/error/NotFoundError'
@@ -31,7 +30,6 @@ function RootRoute() {
   return (
     <div className="min-h-screen bg-base-200">
       <Outlet />
-      {import.meta.env.MODE === 'dev' ? <TanStackRouterDevtools /> : null}
     </div>
   )
 }

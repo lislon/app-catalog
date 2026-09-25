@@ -2,8 +2,6 @@ import React, { Suspense, useMemo, useState } from 'react'
 
 import type { TRPCRouter } from '@igstack/app-catalog-backend-core'
 import type { QueryClient } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import type { TRPCClient } from '@trpc/client'
 import { ThemeProvider } from '~/components/theme-provider'
 import { AuthProvider } from '~/modules/auth'
@@ -13,6 +11,7 @@ import { GlobalConfigProvider } from '~/modules/config/GlobalConfigContext'
 import { makePluginInterfaceForCore } from '~/modules/pluginCore/makePluginManagerContext'
 import { PluginManagerContextProvider } from '~/modules/pluginCore/PluginManagerContext'
 import { TooltipProvider } from '~/ui/tooltip'
+import { Devtools } from './Devtools'
 import { LoadingScreen } from './LoadingScreen'
 
 export interface MainLayoutProps {
@@ -53,11 +52,7 @@ export function TopLevelProviders({ children, queryClient }: MainLayoutProps) {
                 >
                   {children}
                   <LoginModal />
-                  <TanStackRouterDevtools />
-                  <ReactQueryDevtools
-                    initialIsOpen={false}
-                    client={queryClient}
-                  />
+                  <Devtools client={queryClient} />
                 </PluginManagerContextProvider>
               </GlobalConfigProvider>
             </Suspense>
