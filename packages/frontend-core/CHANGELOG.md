@@ -1,5 +1,14 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.1.1
+
+### Patch Changes
+
+- [#263](https://github.com/lislon/app-catalog/pull/263) [`e1a98b1`](https://github.com/lislon/app-catalog/commit/e1a98b1caea40cfd4b7c1b0f16d7311604e0b477) Thanks [@lislon](https://github.com/lislon)! - A sub-resource deep link now shows its selection as a dismissible "Showing: <name>" filter above the table; clearing it restores every row, keeps the row highlighted, and focuses the search box.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.1.1
+
 ## 6.1.0
 
 ### Minor Changes

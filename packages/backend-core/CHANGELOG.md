@@ -1,5 +1,13 @@
 # @igstack/app-catalog-backend-core
 
+## 6.1.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.1.1
+  - @igstack/app-catalog-table-sync@6.1.1
+
 ## 6.1.0
 
 ### Patch Changes
