@@ -184,6 +184,24 @@ export function frontendViteConfig(options?: {
       conditions: ['my-custom-condition'],
     },
     publicDir: '.vite-merged-public',
+    build: {
+      rollupOptions: {
+        output: {
+          // Stable vendor code gets its own chunks so their hashes — and the
+          // browser's cached copies — survive app-only deploys (#120).
+          manualChunks: (id: string) => {
+            const pkg =
+              /[\\/]node_modules[\\/](react-dom|react|scheduler|@tanstack|@trpc)[\\/]/.exec(
+                id,
+              )?.[1]
+            if (!pkg) return undefined
+            return pkg.startsWith('@')
+              ? `vendor-${pkg.slice(1)}`
+              : 'vendor-react'
+          },
+        },
+      },
+    },
     plugins,
   } satisfies UserConfig
 }
