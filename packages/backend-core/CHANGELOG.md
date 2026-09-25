@@ -1,5 +1,15 @@
 # @igstack/app-catalog-backend-core
 
+## 6.1.2
+
+### Patch Changes
+
+- [#269](https://github.com/lislon/app-catalog/pull/269) [`ad5aa81`](https://github.com/lislon/app-catalog/commit/ad5aa811599919bb0b679affe87e5d35c338fb5d) Thanks [@lislon](https://github.com/lislon)! - Icon and asset uploads now run on multer 2.x; the 1.x line was deprecated upstream over unpatched vulnerabilities.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.1.2
+  - @igstack/app-catalog-table-sync@6.1.2
+
 ## 6.1.1
 
 ### Patch Changes
