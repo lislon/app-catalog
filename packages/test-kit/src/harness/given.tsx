@@ -174,10 +174,7 @@ export async function given(
     typeof sessionResponse === 'object' &&
     'user' in sessionResponse
   ) {
-    localStorage.setItem(
-      'ac_auth_user',
-      JSON.stringify((sessionResponse as { user: unknown }).user),
-    )
+    localStorage.setItem('ac_auth_user', JSON.stringify(sessionResponse.user))
   }
 
   // 8. Render

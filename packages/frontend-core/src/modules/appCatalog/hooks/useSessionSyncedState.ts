@@ -39,19 +39,19 @@ export function useSessionSyncedState<T>({
   key,
   defaultValue,
 }: UseSessionSyncedStateOptions<T>): [T, (value: T) => void] {
-  const [state, setStateInternal] = useState<T>(
+  const [state, setState] = useState<T>(
     () => (store.get(key) as T | undefined) ?? defaultValue,
   )
 
-  const setState = useCallback(
+  const setAndPersist = useCallback(
     (value: T) => {
-      setStateInternal(value)
+      setState(value)
       store.set(key, value)
     },
     [key],
   )
 
-  return [state, setState]
+  return [state, setAndPersist]
 }
 
 /**

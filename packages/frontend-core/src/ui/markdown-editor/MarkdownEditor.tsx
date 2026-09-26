@@ -28,7 +28,7 @@ export function MarkdownEditor({
 }: MarkdownEditorProps) {
   const [mode, setMode] = useState<'visual' | 'raw'>('visual')
   const [rawValue, setRawValue] = useState(value)
-  const isInternalChange = useRef(false)
+  const isInternalChangeRef = useRef(false)
 
   const editor = useEditor({
     extensions: [
@@ -47,7 +47,7 @@ export function MarkdownEditor({
     content: value,
     editable: !disabled,
     onUpdate: ({ editor: editorInstance }) => {
-      isInternalChange.current = true
+      isInternalChangeRef.current = true
       const markdown = editorInstance.storage.markdown.getMarkdown()
       onChange(markdown)
       setRawValue(markdown)
@@ -56,8 +56,8 @@ export function MarkdownEditor({
 
   // Sync external value changes to editor
   useEffect(() => {
-    if (!editor || isInternalChange.current) {
-      isInternalChange.current = false
+    if (!editor || isInternalChangeRef.current) {
+      isInternalChangeRef.current = false
       return
     }
 

@@ -5,8 +5,11 @@ import {
   getParentResource,
 } from '~/modules/appCatalog/utils/resolveHelpers'
 
-const r = (over: Partial<Resource> & { slug: string }): Resource =>
-  ({ id: over.slug, displayName: over.slug, ...over }) as Resource
+const r = (over: Partial<Resource> & { slug: string }): Resource => ({
+  id: over.slug,
+  displayName: over.slug,
+  ...over,
+})
 
 describe('getParentResource', () => {
   it('returns undefined for a root resource', () => {

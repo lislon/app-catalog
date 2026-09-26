@@ -11,7 +11,7 @@ function resource(slug: string, appUrl?: string): Resource {
     slug,
     displayName: slug,
     appUrl,
-  } as Resource
+  }
 }
 
 const parent = resource('cloud-console', 'https://console.example')

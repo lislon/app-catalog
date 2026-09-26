@@ -15,7 +15,7 @@ function pwaPluginNames(plugins: unknown): string[] {
     return plugins.flatMap((plugin) => pwaPluginNames(plugin))
   }
   if (plugins && typeof plugins === 'object' && 'name' in plugins) {
-    const { name } = plugins as { name: unknown }
+    const { name } = plugins
     return typeof name === 'string' && name.includes('pwa') ? [name] : []
   }
   return []

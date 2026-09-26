@@ -81,6 +81,10 @@ export function EditableListField<T>({
     },
   ]
 
+  // TanStack Table hands back functions the React Compiler cannot memoize safely,
+  // so it skips this component. Nothing to fix short of dropping the library; the
+  // rule stays on so a *different* incompatible library still gets caught.
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table
   const table = useReactTable({
     data: value,
     columns: columnsWithActions,

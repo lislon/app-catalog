@@ -82,9 +82,7 @@ export function tableSyncPrisma<
             where: whereGlobal,
           }
         : {}
-      return (await prismOperations.findMany(
-        findManyArgs,
-      )) as MakeTFromPrismaModel<TPrismaModelName>[]
+      return await prismOperations.findMany(findManyArgs)
     },
     writeAll: async (createData, update, deleteIds) => {
       const prismaUniqKey = params.uniqColumns.join('_')
@@ -191,7 +189,7 @@ export function tableSyncPrisma<
             const newVar = await txOps.create({
               data: dataMappedElement,
             })
-            results.push(newVar as MakeTFromPrismaModel<TPrismaModelName>)
+            results.push(newVar)
           }
         }
 

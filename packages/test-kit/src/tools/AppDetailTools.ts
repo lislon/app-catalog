@@ -252,7 +252,7 @@ export class AppDetailTools {
   ): HTMLElement | null {
     const headings = container.querySelectorAll('h3')
     for (const h of headings) {
-      if (h.textContent.includes(text)) return h as HTMLElement
+      if (h.textContent.includes(text)) return h
     }
     return null
   }
