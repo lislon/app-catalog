@@ -296,6 +296,9 @@ export function SourcePulse({
 }) {
   // One timestamp for the whole render, so the mark and its legend cannot
   // disagree about "now" by a few milliseconds.
+  // Reading the clock during render is deliberate; making it pure would change when
+  // the readout refreshes, which is tracked separately.
+  // eslint-disable-next-line @eslint-react/purity
   const now = Date.now()
 
   return (

@@ -114,21 +114,17 @@ describe('AccessRequestSection — documentation placement', () => {
   it('renders Documentation after Step 2, not inside Step 1', () => {
     render(
       <AccessRequestSection
-        app={
-          {
-            id: 'cloud',
-            slug: 'cloud',
-            displayName: 'Cloud',
-            accessRequest: {
-              approvalMethodSlug: 'service',
-              comments: 'Request it from the help desk.',
-              postApprovalInstructions: 'Ask the account maintainers.',
-              urls: [
-                { label: 'CLI guide', url: 'https://docs.example.com/cli' },
-              ],
-            },
-          } as Resource
-        }
+        app={{
+          id: 'cloud',
+          slug: 'cloud',
+          displayName: 'Cloud',
+          accessRequest: {
+            approvalMethodSlug: 'service',
+            comments: 'Request it from the help desk.',
+            postApprovalInstructions: 'Ask the account maintainers.',
+            urls: [{ label: 'CLI guide', url: 'https://docs.example.com/cli' }],
+          },
+        }}
         approvalMethods={[]}
       />,
     )
@@ -165,18 +161,16 @@ describe('AccessRequestSection — chat channel mentions', () => {
       >
         <AppCatalogContext value={ctx}>
           <AccessRequestSection
-            app={
-              {
-                id: 'swaggerhub',
-                slug: 'swaggerhub',
-                displayName: 'SwaggerHub',
-                accessRequest: {
-                  approvalMethodSlug: 'service',
-                  comments: 'For questions, ask in Slack #swaggerhub channel.',
-                  postApprovalInstructions: 'Then say hi in #onboarding.',
-                },
-              } as Resource
-            }
+            app={{
+              id: 'swaggerhub',
+              slug: 'swaggerhub',
+              displayName: 'SwaggerHub',
+              accessRequest: {
+                approvalMethodSlug: 'service',
+                comments: 'For questions, ask in Slack #swaggerhub channel.',
+                postApprovalInstructions: 'Then say hi in #onboarding.',
+              },
+            }}
             approvalMethods={[]}
           />
         </AppCatalogContext>

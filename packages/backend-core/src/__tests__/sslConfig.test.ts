@@ -19,7 +19,7 @@ describe('buildPgSslConfig', () => {
   afterEach(() => rmSync(dir, { recursive: true, force: true }))
 
   const env = (over: Record<string, string | undefined>): NodeJS.ProcessEnv =>
-    over as NodeJS.ProcessEnv
+    over
 
   it('returns undefined when PGSSLMODE is unset (leave pg defaults)', () => {
     expect(buildPgSslConfig(env({}))).toBeUndefined()
