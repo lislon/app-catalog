@@ -56,21 +56,37 @@ export default [
       // The compiler-adjacent checks the two plugins SHARE (purity,
       // set-state-in-render, static-components, use-memo, error-boundaries,
       // unsupported-syntax) already arrive via @eslint-react's own `recommended`
-      // spread above, so they are not repeated here.
+      // spread above, so they are not repeated here. The severities are not
+      // identical between the two plugins — @eslint-react ships `purity` as a
+      // warning where react-hooks has it as an error — which is left as-is rather
+      // than folded into this change.
       'react-hooks/exhaustive-deps': 'error',
       'react-hooks/rules-of-hooks': 'error',
 
-      // React Compiler rules only this plugin ships.
+      // React Compiler rules only this plugin ships. Note no React Compiler is
+      // configured here — `viteReact()` runs with no babel plugins — so these are
+      // compiler-READINESS checks, not descriptions of current runtime behaviour.
+      // They are worth keeping on so the codebase stays eligible: today they cost
+      // nothing, and they stop the gap from quietly widening.
       'react-hooks/immutability': 'error',
       'react-hooks/refs': 'error',
       'react-hooks/preserve-manual-memoization': 'error',
       // Reports a component the compiler must skip because a library hands back
       // values it cannot memoize safely. Two known sites (TanStack Table) carry a
       // local suppression naming the library, which is what keeps this rule useful
-      // for the next such library instead of switching it off wholesale.
+      // for the next such library instead of switching it off wholesale. Raised from
+      // the `warn` that `recommended` ships, so a new one fails rather than scrolls
+      // past: the whole point is being told about it.
       'react-hooks/incompatible-library': 'error',
       // Reassigning module scope during render. Off for test files only, below.
       'react-hooks/globals': 'error',
+      // Both check the React Compiler's own configuration rather than component
+      // code: `config` validates a compiler config comment, `gating` validates the
+      // gating option. Nothing configures the compiler here, so both are vacuous
+      // today and report nothing — on anyway, so that whoever does enable the
+      // compiler gets told immediately if they configure it wrong.
+      'react-hooks/config': 'error',
+      'react-hooks/gating': 'error',
       // Off, to stay consistent with `@eslint-react/set-state-in-effect` above,
       // which the project has an explicit recorded position against. The two are the
       // same check under two plugin names, so enabling one and not the other would
