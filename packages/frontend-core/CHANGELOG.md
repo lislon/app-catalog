@@ -1,5 +1,28 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.1.4
+
+### Patch Changes
+
+- [#277](https://github.com/lislon/app-catalog/pull/277) [`f79b46f`](https://github.com/lislon/app-catalog/commit/f79b46ff5607d9acfa54f8738dc73f9f7e2e36ec) Thanks [@lislon](https://github.com/lislon)! - Adopt the remaining React Compiler lint rules
+
+  `eslint-plugin-react-hooks` ships five checks that its `recommended` preset turns
+  on and the previous lint config left undecided. Each is now stated explicitly with
+  its reason: `immutability`, `refs`, `preserve-manual-memoization` and
+  `incompatible-library` are on, `globals` is on outside test files, and
+  `set-state-in-effect` stays off so it agrees with the `@eslint-react` rule of the
+  same name rather than contradicting it.
+
+  No React Compiler is configured in this package, so these are readiness checks
+  rather than descriptions of current behaviour: nothing in the shipped bundle changes.
+  The one finding worth naming is the access-request section's copy-prompt callback,
+  which depended on an optional-chained member expression — a dependency the compiler
+  cannot preserve. It reads through a plain binding now. Under plain React that
+  dependency was already correct, so this is lint conformance, not a fixed bug.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.1.4
+
 ## 6.1.3
 
 ### Patch Changes
