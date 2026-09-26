@@ -49,22 +49,44 @@ export default [
       // '@eslint-react': pluginReact,
     },
     rules: {
-      // Deliberately not `...pluginReactHooks.configs.recommended.rules`. Under
-      // react-hooks 7 that preset also turns on the rules only this plugin has —
-      // preserve-manual-memoization, incompatible-library, globals, immutability,
-      // refs. Those are a new class of check rather than part of the eslint 10 move,
-      // so they are left for their own change. The two rules below are exactly what
-      // `recommended` contributed under react-hooks 5, so coverage is unchanged.
+      // Deliberately not `...pluginReactHooks.configs.recommended.rules`: that
+      // preset would decide the React Compiler rules below by omission. Each one is
+      // stated here with its reason instead.
       //
-      // Note the compiler-adjacent checks the two plugins SHARE (purity,
+      // The compiler-adjacent checks the two plugins SHARE (purity,
       // set-state-in-render, static-components, use-memo, error-boundaries,
-      // unsupported-syntax) do arrive, via @eslint-react's own `recommended` spread
-      // above. Skipping this preset does not opt out of those.
-      // '@eslint-react/no-unstable-context-value': 'off',
-      // '@eslint-react/no-unstable-default-props': 'off',
-      // '@eslint-react/dom/no-missing-button-type': 'off',
+      // unsupported-syntax) already arrive via @eslint-react's own `recommended`
+      // spread above, so they are not repeated here.
       'react-hooks/exhaustive-deps': 'error',
       'react-hooks/rules-of-hooks': 'error',
+
+      // React Compiler rules only this plugin ships.
+      'react-hooks/immutability': 'error',
+      'react-hooks/refs': 'error',
+      'react-hooks/preserve-manual-memoization': 'error',
+      // Reports a component the compiler must skip because a library hands back
+      // values it cannot memoize safely. Two known sites (TanStack Table) carry a
+      // local suppression naming the library, which is what keeps this rule useful
+      // for the next such library instead of switching it off wholesale.
+      'react-hooks/incompatible-library': 'error',
+      // Reassigning module scope during render. Off for test files only, below.
+      'react-hooks/globals': 'error',
+      // Off, to stay consistent with `@eslint-react/set-state-in-effect` above,
+      // which the project has an explicit recorded position against. The two are the
+      // same check under two plugin names, so enabling one and not the other would
+      // report the same 9 call sites as both allowed and forbidden. Changing the
+      // position means refactoring those 9 sites, not flipping this line.
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
+  {
+    // A test probe publishes its setState to module scope during render so `act()`
+    // can drive it. Doing that from an effect instead would run it after the hook's
+    // own sync effect and change the render timing these tests exist to pin. Test
+    // files are never compiled by the React Compiler, so the rule buys nothing here.
+    files: ['**/*.spec.ts*', '**/*.test.ts*', '**/*.test-d.ts*'],
+    rules: {
+      'react-hooks/globals': 'off',
     },
   },
 ] as Linter.Config[]

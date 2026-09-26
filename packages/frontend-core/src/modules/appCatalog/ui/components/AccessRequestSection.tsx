@@ -229,11 +229,16 @@ export function AccessRequestSection({
     (m) => m.slug === accessRequest?.approvalMethodSlug,
   )
 
+  // Read through a plain binding rather than depending on
+  // `accessRequest?.requestPrompt` directly: the React Compiler cannot preserve a
+  // manual memo whose dependency is an optional-chained member expression, so it
+  // drops this useCallback and the button gets a new handler every render.
+  const requestPrompt = accessRequest?.requestPrompt
   const handleCopyPrompt = useCallback(() => {
-    if (accessRequest?.requestPrompt) {
-      copyToClipboard(accessRequest.requestPrompt, 'prompt')
+    if (requestPrompt) {
+      copyToClipboard(requestPrompt, 'prompt')
     }
-  }, [accessRequest?.requestPrompt, copyToClipboard])
+  }, [requestPrompt, copyToClipboard])
 
   // Early return if no access request
   if (!accessRequest) return null
