@@ -74,7 +74,13 @@ catalog:
   vitest: ^4.1.2
   zod: ^4.3.5
 
+# Overrides live here and nowhere else. pnpm also accepts a `pnpm.overrides` key in
+# package.json, and when both exist that one wins outright -- it is not merged -- so a
+# second copy here would be silently dead config. pnpm 11 stops reading the package.json
+# field entirely.
 overrides:
-  '@ai-sdk/provider-utils': 4.0.45
+  '@igstack/app-catalog-backend-core': 'workspace:*'
+  '@igstack/app-catalog-frontend': 'workspace:*'
+  eslint-plugin-import-x: ^4.17.1
 
 linkWorkspacePackages: true

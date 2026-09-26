@@ -105,12 +105,5 @@
     "vite": "catalog:",
     "vitest": "catalog:"
   },
-  "packageManager": "pnpm@10.30.2",
-  "pnpm": {
-    "overrides": {
-      "@igstack/app-catalog-backend-core": "workspace:*",
-      "@igstack/app-catalog-frontend": "workspace:*",
-      "eslint-plugin-import-x": "^4.17.1"
-    }
-  }
+  "packageManager": "pnpm@10.30.2"
 }
