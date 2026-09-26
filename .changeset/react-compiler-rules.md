@@ -11,7 +11,9 @@ its reason: `immutability`, `refs`, `preserve-manual-memoization` and
 `set-state-in-effect` stays off so it agrees with the `@eslint-react` rule of the
 same name rather than contradicting it.
 
-One real finding came out of it: the access-request section's copy-prompt callback
-depended on an optional-chained member expression, which the compiler cannot
-preserve, so the memo was being dropped on every render. It now reads through a
-plain binding.
+No React Compiler is configured in this package, so these are readiness checks
+rather than descriptions of current behaviour: nothing in the shipped bundle changes.
+The one finding worth naming is the access-request section's copy-prompt callback,
+which depended on an optional-chained member expression — a dependency the compiler
+cannot preserve. It reads through a plain binding now. Under plain React that
+dependency was already correct, so this is lint conformance, not a fixed bug.
