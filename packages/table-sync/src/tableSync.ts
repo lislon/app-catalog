@@ -100,7 +100,7 @@ export function tableSync<
             where: pick<T, TUniqColumns>(update, params.uniqColumns),
           }
         }),
-        deletedIds as T[TId][],
+        deletedIds,
       )
 
       const findActual = (key: Pick<T, TUniqColumns[number]>) => {

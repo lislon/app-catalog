@@ -71,11 +71,11 @@ globalThis.IntersectionObserver = class IntersectionObserver {
   readonly root = null
   readonly rootMargin = ''
   readonly thresholds = []
-} as unknown as typeof IntersectionObserver
+}
 
 // Mock ResizeObserver — required by embla-carousel ResizeHandler in jsdom
 globalThis.ResizeObserver = class ResizeObserver {
   observe() {}
   unobserve() {}
   disconnect() {}
-} as unknown as typeof ResizeObserver
+}

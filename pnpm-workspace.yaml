@@ -16,7 +16,7 @@ catalog:
   '@prisma/adapter-pg': ^7.4.2
   '@prisma/client': ^7.4.2
   '@tailwindcss/vite': ^4.0.5
-  '@tanstack/eslint-config': ^0.3.4
+  '@tanstack/eslint-config': ^0.4.0
   '@tanstack/query-sync-storage-persister': ^5.80.6
   '@tanstack/react-query': ^5.90.12
   '@tanstack/react-query-devtools': ^5.91.1
@@ -39,17 +39,16 @@ catalog:
   '@types/pg': ^8.18.0
   '@types/react': ^19.0.8
   '@types/react-dom': ^19.1.6
-  '@typescript-eslint/eslint-plugin': ^8.42.0
-  '@typescript-eslint/parser': ^8.42.0
+  '@typescript-eslint/eslint-plugin': ^8.70.1
+  '@typescript-eslint/parser': ^8.70.1
   '@vitejs/plugin-react': ^4.3.4
   '@vitest/ui': ^4.1.2
   cross-env: ^7.0.3
   dotenv-defaults: 5.0.2
   esbuild: ^0.25.5
-  eslint: ^9.22.0
-  eslint-plugin-import: 2.31.0
-  eslint-plugin-react-hooks: ^5.2.0
-  eslint-plugin-unused-imports: ^4.2.0
+  eslint: ^10.11.0
+  eslint-plugin-react-hooks: ^7.1.1
+  eslint-plugin-unused-imports: ^4.4.1
   express: ^5.1.0
   multer: ^2.4.0
   pg: ^8.20.0
@@ -65,7 +64,7 @@ catalog:
   tslib: ^2.3.0
   tsx: ^4.19.4
   typescript: 5.9.3
-  typescript-eslint: ^8.42.0
+  typescript-eslint: ^8.70.1
   vite: ^6.3.5
   vite-plugin-node: ^5.0.1
   vite-plugin-pwa: ^1.0.0

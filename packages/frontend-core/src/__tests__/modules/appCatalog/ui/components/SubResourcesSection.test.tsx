@@ -26,7 +26,7 @@ function sub(slug: string, extra: unknown, appUrl?: string): Resource {
     parentSlug: 'cloud-console',
     appUrl,
     extra: extra as Resource['extra'],
-  } as Resource
+  }
 }
 
 // A cloud account row shows its account id; when the entry also carries its own

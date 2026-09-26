@@ -89,16 +89,16 @@ export function SubResourcesSection({
 
   // The search input only mounts once the selection is gone, so focus it then.
   const searchInputRef = useRef<HTMLInputElement>(null)
-  const focusSearchAfterClear = useRef(false)
+  const focusSearchAfterClearRef = useRef(false)
   useEffect(() => {
-    if (!selectedSub && focusSearchAfterClear.current) {
-      focusSearchAfterClear.current = false
+    if (!selectedSub && focusSearchAfterClearRef.current) {
+      focusSearchAfterClearRef.current = false
       searchInputRef.current?.focus()
     }
   }, [selectedSub])
 
   const clearSelection = () => {
-    focusSearchAfterClear.current = true
+    focusSearchAfterClearRef.current = true
     // A navigation, not a replace, so Back restores the single-row view.
     void navigate({
       to: '.',

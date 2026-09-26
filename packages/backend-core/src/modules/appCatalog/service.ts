@@ -8,10 +8,7 @@ import type {
   Resource,
   SourceCheck,
 } from '../../types/common/appCatalogTypes'
-import type {
-  CustomConfig,
-  ServiceConfig,
-} from '../../types/common/approvalMethodTypes'
+import type { ServiceConfig } from '../../types/common/approvalMethodTypes'
 import type { Group, Person } from '../../types/common/personGroupTypes'
 import { omit } from 'radashi'
 import { parseSourceSlug } from '../../utils/parseSourceSlug'
@@ -106,26 +103,26 @@ export async function getApprovalMethodsFromPrisma(): Promise<
         return {
           ...baseFields,
           type: 'custom' as const,
-          config: config as CustomConfig,
+          config: config,
         }
       case 'noAccessRequired':
         return {
           ...baseFields,
           type: 'noAccessRequired' as const,
-          config: config as CustomConfig,
+          config: config,
         }
       case 'unknown':
         return {
           ...baseFields,
           type: 'unknown' as const,
-          config: config as CustomConfig,
+          config: config,
         }
       case 'personTeam':
         // Legacy: map personTeam to custom
         return {
           ...baseFields,
           type: 'custom' as const,
-          config: config as CustomConfig,
+          config: config,
         }
     }
   })
@@ -157,7 +154,7 @@ function rowToResource(row: ResourceRowWithSourceRefs): Resource {
   const iconName = row.iconName == null ? undefined : row.iconName
   const abbreviation = row.abbreviation == null ? undefined : row.abbreviation
   const nicknames = (row.nicknames as unknown as string[] | null)?.length
-    ? (row.nicknames as unknown as string[])
+    ? row.nicknames
     : undefined
   const deprecated =
     row.deprecated == null
@@ -166,7 +163,7 @@ function rowToResource(row: ResourceRowWithSourceRefs): Resource {
   const aiPrompt = row.aiPrompt == null ? undefined : row.aiPrompt
   const aiMemory = row.aiMemory == null ? undefined : row.aiMemory
   const urlIssues = (row.urlIssues as unknown as string[] | null)?.length
-    ? (row.urlIssues as unknown as string[])
+    ? row.urlIssues
     : undefined
   const tiers =
     row.tiers == null ? undefined : (row.tiers as unknown as Resource['tiers'])
@@ -213,9 +210,7 @@ function rowToResource(row: ResourceRowWithSourceRefs): Resource {
     ownerPersonSlug: row.ownerPersonSlug ?? undefined,
     approverSlugs: row.approverSlugs.length ? row.approverSlugs : undefined,
     accessComments: row.accessComments ?? undefined,
-    extra: row.extra
-      ? (row.extra as unknown as Record<string, unknown>)
-      : undefined,
+    extra: row.extra ? row.extra : undefined,
     // Only surface freshness once the app has actually been scanned.
     freshness: freshness.lastCheckedAt ? freshness : undefined,
     createdAt: row.createdAt.toISOString(),
