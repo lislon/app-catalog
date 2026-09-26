@@ -36,6 +36,11 @@ export default [
       '@eslint-react/dom-no-missing-button-type': 'error',
       '@eslint-react/dom-no-missing-iframe-sandbox': 'error',
       '@eslint-react/dom-no-unsafe-target-blank': 'error',
+      // @eslint-react 5's `recommended` added its own copies of these two. The
+      // react-hooks block below owns them, so the duplicates are off rather than
+      // reporting every violation twice.
+      '@eslint-react/rules-of-hooks': 'off',
+      '@eslint-react/exhaustive-deps': 'off',
     },
   },
   {
@@ -44,15 +49,17 @@ export default [
       // '@eslint-react': pluginReact,
     },
     rules: {
-      // Deliberately not `...pluginReactHooks.configs.recommended.rules`: from
-      // eslint-plugin-react-hooks 7 that preset also turns on the React Compiler
-      // rule set (set-state-in-effect, purity, globals, incompatible-library,
-      // preserve-manual-memoization). Those are new checks rather than part of the
-      // eslint 10 move, and one of them — set-state-in-effect — is a pattern this
-      // repo already takes an explicit position on (see the override above). The two
-      // rules below are exactly what `recommended` contributed under react-hooks 5,
-      // so rule coverage is unchanged. Adopting the compiler rules is tracked
-      // separately.
+      // Deliberately not `...pluginReactHooks.configs.recommended.rules`. Under
+      // react-hooks 7 that preset also turns on the rules only this plugin has —
+      // preserve-manual-memoization, incompatible-library, globals, immutability,
+      // refs. Those are a new class of check rather than part of the eslint 10 move,
+      // so they are left for their own change. The two rules below are exactly what
+      // `recommended` contributed under react-hooks 5, so coverage is unchanged.
+      //
+      // Note the compiler-adjacent checks the two plugins SHARE (purity,
+      // set-state-in-render, static-components, use-memo, error-boundaries,
+      // unsupported-syntax) do arrive, via @eslint-react's own `recommended` spread
+      // above. Skipping this preset does not opt out of those.
       // '@eslint-react/no-unstable-context-value': 'off',
       // '@eslint-react/no-unstable-default-props': 'off',
       // '@eslint-react/dom/no-missing-button-type': 'off',

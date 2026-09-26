@@ -296,8 +296,9 @@ export function SourcePulse({
 }) {
   // One timestamp for the whole render, so the mark and its legend cannot
   // disagree about "now" by a few milliseconds.
-  // Reading the clock during render is deliberate; making it pure would change when
-  // the readout refreshes, which is tracked separately.
+  // Reading the clock during render is deliberate. Making it pure would change when
+  // the readout refreshes — today it re-reads on any parent re-render — and that is a
+  // behaviour question, not a lint fix, so it is left as a suppression on purpose.
   // eslint-disable-next-line @eslint-react/purity
   const now = Date.now()
 
