@@ -43,28 +43,25 @@ export function createAuthRouter(
         })
       }
 
-      // Add OAuth providers from plugins (like Okta via genericOAuth)
+      // Add OAuth providers from plugins (like Okta via genericOAuth). They are
+      // absent from socialProviders above: the plugin only merges them into the
+      // auth context at init time, not into the static options.
       if (authOptions?.plugins) {
         const plugins = authOptions.plugins
         plugins.forEach((plugin: BetterAuthPlugin) => {
-          const pluginWithConfig = plugin as BetterAuthPlugin & {
-            options?: {
-              config?: { providerId?: string }[]
+          if (plugin.id !== 'generic-oauth' || !plugin.options?.config) {
+            return
+          }
+          const configs: { providerId?: string }[] = Array.isArray(
+            plugin.options.config,
+          )
+            ? plugin.options.config
+            : [plugin.options.config]
+          configs.forEach((config) => {
+            if (config.providerId) {
+              providers.push(config.providerId)
             }
-          }
-          if (
-            pluginWithConfig.id === 'generic-oauth' &&
-            pluginWithConfig.options?.config
-          ) {
-            const configs = Array.isArray(pluginWithConfig.options.config)
-              ? pluginWithConfig.options.config
-              : [pluginWithConfig.options.config]
-            configs.forEach((config) => {
-              if (config.providerId) {
-                providers.push(config.providerId)
-              }
-            })
-          }
+          })
         })
       }
 
