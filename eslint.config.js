@@ -32,17 +32,34 @@ const config = [
       'no-case-declarations': 'off',
     },
   },
-  // React rules live at the workspace root, not in one package's config: every
-  // package that ships React needs them, and `frontend-core` was the only one
-  // that had them. `test-kit` is published, so a hook bug there reaches
-  // consumers. Scoped to ts+tsx rather than tsx alone because custom hooks and
-  // non-JSX helpers live in `.ts` files, which is where `rules-of-hooks` and
-  // `exhaustive-deps` earn their keep. Packages with no React are unaffected:
-  // these rules only fire on component/hook shapes.
   {
-    name: 'app-catalog/react',
+    files: ['**/*.spec.ts*', '**/*.test.ts*', '**/*.test-d.ts*'],
+    plugins: { vitest },
+    rules: vitest.configs.recommended.rules,
+    settings: { vitest: { typecheck: true } },
+  },
+]
+
+// The React rule blocks, kept out of the default export so that only packages
+// that ship React opt into them, and so the decisions below live in exactly one
+// place instead of being copied per package. `frontend-core` used to be the only
+// config registering them, which left `test-kit` — a published package — with no
+// hook rules at all.
+//
+// Not folded into the default export, because these rules are not inert on
+// non-React code: `@eslint-react/no-unnecessary-use-prefix` keys off the `use`
+// name prefix alone, so a backend `useTransaction()` helper would fail lint with
+// a message about React render phases. Package-path globs cannot express this
+// either — a package-level config re-bases `files` patterns to its own directory,
+// so a root-relative path would silently match nothing there.
+//
+// `.ts` as well as `.tsx`: custom hooks and non-JSX helpers live in `.ts` files,
+// which is where `rules-of-hooks` and `exhaustive-deps` earn their keep.
+export const reactConfigs = /** @type {import('eslint').Linter.Config[]} */ ([
+  {
     files: ['**/*.{ts,tsx}'],
     ...pluginReact.configs.recommended,
+    name: 'app-catalog/react',
     rules: {
       ...pluginReact.configs.recommended.rules,
       '@eslint-react/no-array-index-key': 'off',
@@ -125,12 +142,6 @@ const config = [
     },
   },
   {
-    files: ['**/*.spec.ts*', '**/*.test.ts*', '**/*.test-d.ts*'],
-    plugins: { vitest },
-    rules: vitest.configs.recommended.rules,
-    settings: { vitest: { typecheck: true } },
-  },
-  {
     // A test probe publishes its setState to module scope during render so `act()`
     // can drive it. Doing that from an effect instead would run it after the hook's
     // own sync effect and change the render timing these tests exist to pin. Test
@@ -141,7 +152,7 @@ const config = [
       'react-hooks/globals': 'off',
     },
   },
-]
+])
 
 // Asserted, not annotated: the plugins' own config/plugin types are not
 // assignable to `Linter.Config`, which is why the package-level configs cast too.
