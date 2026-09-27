@@ -41,7 +41,7 @@
   },
   "dependencies": {
     "@ai-sdk/mcp": "1.0.70",
-    "@better-auth/prisma-adapter": "^1.5.3",
+    "@better-auth/prisma-adapter": "^1.7.0",
     "@igstack/app-catalog-shared-core": "workspace:*",
     "@igstack/app-catalog-table-sync": "workspace:*",
     "@kubernetes/client-node": "^1.2.0",
