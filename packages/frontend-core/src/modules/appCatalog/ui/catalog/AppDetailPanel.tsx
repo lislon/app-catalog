@@ -44,10 +44,17 @@ export function AppDetailPanel({
   // Unless something inside already took the caret — the Quick Jump field does,
   // and it has the better claim: a child's effect runs before its parent's, so
   // without this guard the card would take focus straight back off it.
+  //
+  // Runs again whenever the card navigates to another resource, keyed the same
+  // way the body below is: that navigation destroys whatever was focused (the
+  // "View replacement" button, a prerequisite's parent), and without this the
+  // caret would land on <body> — where the next Tab walks the catalog grid
+  // behind the scrim, since the card has no focus trap.
+  const shownSlug = subResource?.slug ?? app.slug
   useEffect(() => {
     const dialog = dialogRef.current
     if (dialog && !dialog.contains(document.activeElement)) dialog.focus()
-  }, [])
+  }, [shownSlug])
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-6 md:p-10">
@@ -90,7 +97,7 @@ export function AppDetailPanel({
             would restart the open animation and re-run the mount-focus effect
             on every in-card navigation. */}
         <div
-          key={subResource?.slug ?? app.slug}
+          key={shownSlug}
           className="max-h-[85vh] overflow-y-auto px-6 py-5 sm:px-8 sm:py-7"
         >
           {subResource ? (

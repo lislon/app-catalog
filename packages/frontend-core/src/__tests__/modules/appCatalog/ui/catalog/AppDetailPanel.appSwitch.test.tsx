@@ -27,7 +27,10 @@ vi.mock('~/modules/appCatalog/hooks/useUpdateApp', () => ({
   useUpdateApp: vi.fn(() => ({ mutate: vi.fn() })),
 }))
 vi.mock('~/modules/appCatalog/ui/context/AppCatalogFiltersContext', () => ({
-  useAppCatalogFilters: vi.fn(() => ({ selectedTags: [], toggleTag: vi.fn() })),
+  useAppCatalogFilters: vi.fn(() => ({
+    state: { searchValue: '' },
+    actions: {},
+  })),
 }))
 vi.mock('~/modules/auth', () => ({ useUser: vi.fn(() => null) }))
 vi.mock('~/modules/appCatalog/ui/detail/CommentsSection', () => ({
@@ -92,18 +95,69 @@ describe('AppDetailPanel — navigating from one app to another', () => {
   // would throw the reader's own expansion away mid-read. Re-rendering the same
   // app must leave the table exactly as they left it.
   it('keeps the expansion when the same app re-renders', () => {
-    const app = appWithRoles('labvantage', 8)
-    const { rerender } = render(<AppDetailPanel app={app} onClose={vi.fn()} />)
+    const { rerender } = render(
+      <AppDetailPanel app={appWithRoles('labvantage', 8)} onClose={vi.fn()} />,
+    )
 
     fireEvent.click(
       screen.getByRole('button', { name: /Show all \(8\) roles/ }),
     )
-    rerender(<AppDetailPanel app={app} onClose={vi.fn()} />)
+    // A fresh object for the same app, which is what a refetch hands down: an
+    // identity-based key would throw the reader's own expansion away here.
+    rerender(
+      <AppDetailPanel app={appWithRoles('labvantage', 8)} onClose={vi.fn()} />,
+    )
 
     expect(
       screen.getByRole('button', { name: 'Show fewer roles' }),
     ).toHaveAttribute('aria-expanded', 'true')
     // 8 roles + the collapse row.
     expect(roleRowCount()).toBe(9)
+  })
+})
+
+// The card body remounts, the dialog around it must not: keying the dialog too
+// would restart its open animation and re-run its mount-focus effect on every
+// in-card navigation.
+describe('AppDetailPanel — what the remount leaves alone', () => {
+  it('keeps the same dialog element across an app switch', () => {
+    const { rerender } = render(
+      <AppDetailPanel app={appWithRoles('labvantage', 8)} onClose={vi.fn()} />,
+    )
+    const dialog = screen.getByRole('dialog')
+
+    rerender(
+      <AppDetailPanel app={appWithRoles('alation', 7)} onClose={vi.fn()} />,
+    )
+
+    expect(screen.getByRole('dialog')).toBe(dialog)
+  })
+})
+
+// The navigation destroys whatever was focused inside the card, and the card
+// has no focus trap -- so a caret left on <body> means the next Tab walks the
+// catalog grid behind the scrim instead of the card in front of it.
+describe('AppDetailPanel — focus after an app switch', () => {
+  it('takes the caret back into the card', () => {
+    const { rerender } = render(
+      <AppDetailPanel app={appWithRoles('labvantage', 8)} onClose={vi.fn()} />,
+    )
+    // Stands in for the control that was activated to navigate ("View
+    // replacement", a prerequisite's parent): focused, and inside the body
+    // that is about to be replaced.
+    const toggle = screen.getByRole('button', {
+      name: /Show all \(8\) roles/,
+    })
+    toggle.focus()
+    expect(toggle).toHaveFocus()
+
+    rerender(
+      <AppDetailPanel app={appWithRoles('alation', 7)} onClose={vi.fn()} />,
+    )
+
+    expect(document.activeElement).not.toBe(document.body)
+    expect(screen.getByRole('dialog')).toContainElement(
+      document.activeElement as HTMLElement,
+    )
   })
 })
