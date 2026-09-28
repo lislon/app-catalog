@@ -191,7 +191,7 @@ export function Header({ middle }: HeaderProps) {
           <Link to="/">
             <AppCatalogLogo className="h-16 w-16" />
           </Link>
-          <div className="flex flex-col">
+          <div className="flex flex-col items-start">
             <Link to="/" className="font-serif text-lg font-semibold">
               App Catalog
             </Link>

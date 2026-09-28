@@ -4,6 +4,7 @@ import { Suspense, lazy, useCallback, useEffect, useMemo } from 'react'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
 import { AppCatalogGrid } from '../catalog/AppCatalogGrid'
+import { AttributionFooter } from '../catalog/AttributionFooter'
 
 // The detail card (and the markdown stack it renders) loads on first open, not
 // with the catalog grid every visitor sees first (#120).
@@ -167,6 +168,8 @@ export function AppCatalogPage({
         detailOpen={selectedApp !== null}
         selectedSubSlug={highlightSubSlug}
       />
+      {/* Outside the grid's 1000px column so its rule spans the full width. */}
+      <AttributionFooter />
       {/* #38 item B: the detail as a card over the catalog backdrop. */}
       {selectedApp && (
         <Suspense fallback={null}>
