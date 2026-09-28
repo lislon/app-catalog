@@ -78,7 +78,21 @@ export function AppDetailPanel({
         >
           <X className="size-4" />
         </button>
-        <div className="max-h-[85vh] overflow-y-auto px-6 py-5 sm:px-8 sm:py-7">
+        {/* Keyed by the resource on screen, so the body remounts when the card
+            navigates from one app to another ("View replacement", an access
+            prerequisite's parent) instead of updating in place. Everything
+            per-app inside it is component state with no reset of its own — the
+            roles table's expansion, the icon/screenshot error flags, a draft
+            source edit — and it used to arrive at the next app still carrying
+            the previous one's, plus the previous scroll offset.
+
+            The key is here and not on the outer dialog on purpose: that one
+            would restart the open animation and re-run the mount-focus effect
+            on every in-card navigation. */}
+        <div
+          key={subResource?.slug ?? app.slug}
+          className="max-h-[85vh] overflow-y-auto px-6 py-5 sm:px-8 sm:py-7"
+        >
           {subResource ? (
             <SubResourceDetailPanel
               subResource={subResource}
