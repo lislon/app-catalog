@@ -67,7 +67,7 @@ export function AttributionFooter({
       className={
         isPopover
           ? 'border-t bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground'
-          : 'mt-16 border-t border-border/60 pt-5 text-center text-[12.5px] text-muted-foreground'
+          : 'mt-4 border-t border-border/60 pt-5 text-center text-[12.5px] text-muted-foreground'
       }
     >
       {attribution.madeBy && <span>{attribution.madeBy}</span>}
