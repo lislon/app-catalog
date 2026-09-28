@@ -39,13 +39,15 @@ const resolvable = {
   tokenUrl: 'https://example.com/oauth2/v1/token',
 }
 
-// `.invalid` is reserved and unresolvable (RFC 6761), so discovery fails fast
-// offline -- which is exactly the transient-outage condition this guards.
+// Port 1 on the loopback refuses instantly, with no DNS lookup and no reliance
+// on the CI network -- which is exactly the unreachable-discovery-endpoint
+// condition this guards. better-auth passes no timeout to its fetch, so a host
+// that black-holed the connection instead would hang to vitest's default.
 const unresolvable = {
   providerId: 'okta',
   clientId: 'id',
   clientSecret: 'secret',
-  discoveryUrl: 'https://example.invalid/.well-known/openid-configuration',
+  discoveryUrl: 'http://127.0.0.1:1/.well-known/openid-configuration',
 }
 
 describe('auth getProviders', () => {
@@ -65,8 +67,10 @@ describe('auth getProviders', () => {
       }),
     )
 
-    expect(names).toContain('github')
-    expect(names).toContain('okta')
+    // The plugin prepends its providers, so the order is upstream's to choose --
+    // but the set is not, and toContain alone would pass on a duplicate or an
+    // extra name.
+    expect([...names].sort()).toEqual(['github', 'okta'])
   })
 
   // better-auth 1.7 resolves OIDC discovery once, in the plugin's init, and
