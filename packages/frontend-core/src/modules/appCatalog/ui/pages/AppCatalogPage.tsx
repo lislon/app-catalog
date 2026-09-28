@@ -152,7 +152,10 @@ export function AppCatalogPage({
   // stable` reserves the track so a shorter results list doesn't shift the hero
   // sideways when the scrollbar disappears.
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto [scrollbar-gutter:stable]">
+    // `pb-24` lives here, on whatever ends up last — the footer when the app
+    // configures one, the final card row otherwise — so nothing sits flush
+    // against the bottom edge or under the floating support bubble.
+    <div className="flex-1 min-h-0 overflow-y-auto [scrollbar-gutter:stable] pb-24">
       <AppCatalogGrid
         apps={rootResources.filter(
           (a) => filterState.showDeprecated || !a.deprecated,
