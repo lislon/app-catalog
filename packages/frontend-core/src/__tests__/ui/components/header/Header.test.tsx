@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 
 import type { AppVersionInfo } from '@igstack/app-catalog-backend-core'
+import { UiSettingsContext } from '~/context/UiSettingsContext'
 import { VersionPopover } from '~/ui/components/header/Header'
 
 const versions: AppVersionInfo = {
@@ -49,6 +50,53 @@ describe('VersionPopover', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Close' }))
     expect(screen.queryByText('0.18.6')).not.toBeInTheDocument()
+  })
+
+  it('shows the configured author and support channel inside the popover', () => {
+    render(
+      <UiSettingsContext
+        value={{
+          chatChannelUrlTemplate: 'https://chat.test/channels/{name}',
+          attribution: {
+            madeBy: 'by Some Author',
+            supportChannel: 'help-desk',
+          },
+        }}
+      >
+        <VersionPopover versions={versions} />
+      </UiSettingsContext>,
+    )
+
+    expect(screen.queryByText('by Some Author')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByTestId('version-info-trigger'))
+
+    expect(screen.getByText('by Some Author')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '#help-desk' })).toHaveAttribute(
+      'href',
+      'https://chat.test/channels/help-desk',
+    )
+  })
+
+  it('keeps the support channel as plain text without a channel URL template', () => {
+    render(
+      <UiSettingsContext
+        value={{ attribution: { supportChannel: 'help-desk' } }}
+      >
+        <VersionPopover versions={versions} />
+      </UiSettingsContext>,
+    )
+    fireEvent.click(screen.getByTestId('version-info-trigger'))
+
+    expect(screen.getByText('#help-desk')).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: '#help-desk' })).toBeNull()
+  })
+
+  it('renders no attribution block when the app configures none', () => {
+    render(<VersionPopover versions={versions} />)
+    fireEvent.click(screen.getByTestId('version-info-trigger'))
+
+    expect(screen.queryByText(/^by /)).not.toBeInTheDocument()
   })
 
   it('renders "local" without a popover when running local-only', () => {

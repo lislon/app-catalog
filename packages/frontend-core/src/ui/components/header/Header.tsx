@@ -10,6 +10,7 @@ import AppCatalogLogo from '~/assets/app-catalog.svg?react'
 import { useTRPC } from '~/api/infra/trpc'
 import { ThemeSwitcher } from '~/components/ThemeSwitcher'
 import { AppCatalogContext } from '~/modules/appCatalog/context/AppCatalogContext'
+import { AttributionFooter } from '~/modules/appCatalog/ui/catalog/AttributionFooter'
 import {
   useAuth,
   useAuthActions,
@@ -154,6 +155,7 @@ export function VersionPopover({ versions }: { versions: AppVersionInfo }) {
         <div className="px-3 py-1">
           <VersionDisplay versions={versions} />
         </div>
+        <AttributionFooter variant="popover" />
       </PopoverContent>
     </Popover>
   )
@@ -193,14 +195,9 @@ export function Header({ middle }: HeaderProps) {
             <Link to="/" className="font-serif text-lg font-semibold">
               App Catalog
             </Link>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-muted-foreground/60">
-                by Igor Golovin
-              </span>
-              {appCatalogContextMaybe?.versions && (
-                <VersionPopover versions={appCatalogContextMaybe.versions} />
-              )}
-            </div>
+            {appCatalogContextMaybe?.versions && (
+              <VersionPopover versions={appCatalogContextMaybe.versions} />
+            )}
           </div>
         </div>
       </div>
