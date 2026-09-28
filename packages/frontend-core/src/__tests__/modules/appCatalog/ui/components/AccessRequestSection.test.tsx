@@ -81,6 +81,10 @@ describe('AccessRequestSection — roles table', () => {
     // 5 visible roles + the control row: the table visibly continues past the
     // last data row.
     expect(body?.querySelectorAll('tr')).toHaveLength(6)
+    // The whole point of the row is that it spans the table. Without the
+    // colSpan the control shrinks into the first column and the row goes
+    // ragged, while every assertion above still passes.
+    expect(row?.querySelector('td')).toHaveAttribute('colspan', '2')
   })
 
   it('keeps the control in the same place when expanded, so the layout does not jump', () => {

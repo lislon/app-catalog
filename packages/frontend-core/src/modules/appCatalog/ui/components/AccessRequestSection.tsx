@@ -110,7 +110,11 @@ function RolesTable({
                     type="button"
                     aria-expanded={expanded}
                     onClick={() => setExpanded((v) => !v)}
-                    className="flex w-full cursor-pointer items-center gap-2 p-2 text-left text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    // The focus ring is drawn INSIDE the border box: the
+                    // table's container is `overflow-x-auto`, which clips an
+                    // outline drawn outside it, and this button's edges are
+                    // flush with that clip box on three sides.
+                    className="flex w-full cursor-pointer items-center gap-2 p-2 text-left text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
                   >
                     <MoreHorizontal className="size-4 shrink-0" />
                     {expanded
