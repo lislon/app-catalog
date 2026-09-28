@@ -1,5 +1,14 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.2.1
+
+### Patch Changes
+
+- [#293](https://github.com/lislon/app-catalog/pull/293) [`1032057`](https://github.com/lislon/app-catalog/commit/1032057ee18d8dcd7b8713dc8878df925158cd38) Thanks [@lislon](https://github.com/lislon)! - Two header/footer polish fixes: the version chip is now only as wide as its own text (it sat in a stretching column, so its background ran the full width of the title above it), and the home view's attribution rule now spans the full window instead of stopping at the catalog column's edges.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.2.1
+
 ## 6.2.0
 
 ### Minor Changes
