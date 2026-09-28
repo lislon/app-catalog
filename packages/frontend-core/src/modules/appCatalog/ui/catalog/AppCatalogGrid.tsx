@@ -689,7 +689,7 @@ export function AppCatalogGrid({
   }, [])
 
   return (
-    <div className="mx-auto w-full max-w-[1000px] pb-24">
+    <div className="mx-auto w-full max-w-[1000px] pb-8">
       {/* hero */}
       <div className="text-center pt-10 pb-1.5">
         <h1 className="font-serif font-semibold text-[30px] tracking-tight m-0 mb-1.5">
