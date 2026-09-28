@@ -3,7 +3,15 @@ import type {
   AppApprovalMethod,
   Resource,
 } from '@igstack/app-catalog-backend-core'
-import { Bot, Check, Copy, ExternalLink, Settings, Users } from 'lucide-react'
+import {
+  Bot,
+  Check,
+  Copy,
+  ExternalLink,
+  MoreHorizontal,
+  Settings,
+  Users,
+} from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '~/ui/button'
 import {
@@ -47,7 +55,7 @@ function getApprovalMethodIcon(
   }
 }
 
-/** Roles shown before the rest are folded behind "Show all". */
+/** Roles shown before the rest are folded behind the table's last row. */
 const VISIBLE_ROLES = 5
 
 /**
@@ -87,21 +95,34 @@ function RolesTable({
                 </TableCell>
               </TableRow>
             ))}
+            {/* The control is the table's last row, not a link under the
+                table: a table whose border closes under its last data row
+                reads as the complete list, and a standalone link below it
+                went unnoticed. Same shape the search results use for their
+                hidden sub-resources. */}
+            {collapsible && (
+              <TableRow>
+                <TableCell colSpan={2} className="p-0">
+                  {/* A real <button> filling the cell: the whole row is
+                      clickable, and focus plus Enter/Space come from the
+                      platform rather than from a key handler on a <tr>. */}
+                  <button
+                    type="button"
+                    aria-expanded={expanded}
+                    onClick={() => setExpanded((v) => !v)}
+                    className="flex w-full cursor-pointer items-center gap-2 p-2 text-left text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    <MoreHorizontal className="size-4 shrink-0" />
+                    {expanded
+                      ? 'Show fewer roles'
+                      : `Show all (${roles.length}) roles`}
+                  </button>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </div>
-      {collapsible && (
-        <Button
-          type="button"
-          variant="link"
-          size="sm"
-          className="mt-1 h-auto px-0"
-          aria-expanded={expanded}
-          onClick={() => setExpanded((v) => !v)}
-        >
-          {expanded ? 'Show fewer roles' : `Show all ${roles.length} roles`}
-        </Button>
-      )}
     </div>
   )
 }
