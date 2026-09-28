@@ -46,13 +46,19 @@ export interface UiSettings {
   /** PWA auto-update configuration (idle timeout, check interval, debug) */
   pwaAutoUpdate?: PwaAutoUpdateOptions
   /**
-   * Optional attribution shown as a subtle footer line on the home view.
-   * Kept generic here (no hard-coded names/links) so the OSS core stays
-   * vendor-neutral; the consuming app supplies its own author + repo links.
+   * Optional attribution shown as a subtle footer line on the home view and in
+   * the header's version popover. Kept generic here (no hard-coded
+   * names/links) so the OSS core stays vendor-neutral; the consuming app
+   * supplies its own author, repo links and support channel.
    */
   attribution?: {
     /** e.g. "Made by <name>" — rendered verbatim. */
     madeBy?: string
+    /**
+     * Chat channel where users can ask for help, without the `#`. Linked via
+     * {@link UiSettings.chatChannelUrlTemplate}; plain text when that is unset.
+     */
+    supportChannel?: string
     /** Labeled links; `kind` lets the UI hint open-source vs proprietary. */
     links?: {
       label: string
