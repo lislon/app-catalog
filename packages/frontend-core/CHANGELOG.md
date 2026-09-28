@@ -1,5 +1,14 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.2.2
+
+### Patch Changes
+
+- [#296](https://github.com/lislon/app-catalog/pull/296) [`26bd122`](https://github.com/lislon/app-catalog/commit/26bd122103d2747f951a6bb0938c977f17391904) Thanks [@lislon](https://github.com/lislon)! - Fix the catalog page's bottom spacing. The bottom clearance now sits on the scroll container, so it applies to whatever ends the page — the attribution footer or the last card row — instead of leaving a ~160px band above the footer's rule and no padding at all below its text.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.2.2
+
 ## 6.2.1
 
 ### Patch Changes
