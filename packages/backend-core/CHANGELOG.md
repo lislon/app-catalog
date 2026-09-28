@@ -1,5 +1,37 @@
 # @igstack/app-catalog-backend-core
 
+## 6.1.6
+
+### Patch Changes
+
+- [#286](https://github.com/lislon/app-catalog/pull/286) [`f47da70`](https://github.com/lislon/app-catalog/commit/f47da707ea28b93a0e4c5e39102e84af13d69065) Thanks [@lislon](https://github.com/lislon)! - Drop the unused `@better-auth/prisma-adapter` dependency
+
+  `backend-core` imports `prismaAdapter` from `better-auth/adapters/prisma`, which
+  better-auth serves out of its own hard dependency on the adapter -- the direct
+  declaration here was never imported by anything. It was not harmless: a consumer
+  resolving it independently of better-auth's exact pin gets a second physical copy of
+  the adapter in the image, on a version whose peer range disagrees with the one
+  better-auth installed, which is where the unmet-peer warning on every install was
+  coming from.
+
+- [#287](https://github.com/lislon/app-catalog/pull/287) [`ee9f506`](https://github.com/lislon/app-catalog/commit/ee9f5067e350a0a35507fb982c5574f24b8c669f) Thanks [@lislon](https://github.com/lislon)! - Derive the sign-in provider list from the providers better-auth actually resolved
+
+  `getProviders` read the static `betterAuthOptions`, so it listed every configured
+  provider whether or not the server could serve it. Since better-auth 1.7 the
+  generic OAuth plugin resolves OIDC discovery once, in its `init`, and silently
+  skips a provider whose discovery document failed to load — for the whole life of
+  that process, with no retry. The sign-in page kept offering the button and the
+  click answered `404 Provider not found`, which reads as a frontend bug and, with
+  more than one replica, only on some of them.
+
+  It now reads `auth.$context`, which holds both built-in social providers and the
+  generic ones that survived discovery. A provider the server cannot serve is no
+  longer offered.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.1.6
+  - @igstack/app-catalog-table-sync@6.1.6
+
 ## 6.1.5
 
 ### Patch Changes
