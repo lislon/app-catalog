@@ -1,5 +1,12 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.1.6
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.1.6
+
 ## 6.1.5
 
 ### Patch Changes
