@@ -1,5 +1,16 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.2.0
+
+### Minor Changes
+
+- [#290](https://github.com/lislon/app-catalog/pull/290) [`12c1343`](https://github.com/lislon/app-catalog/commit/12c1343ac9ca456e464834a9b73fc247e4a8e3aa) Thanks [@lislon](https://github.com/lislon)! - Move the attribution line out of the header and into the version popover, and let the consuming app configure a support channel (`attribution.supportChannel`). The channel renders as a chat-mark link built from the existing `chatChannelUrlTemplate`, and stays plain text when no template is set. The header now shows only the title and the version chip.
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.2.0
+
 ## 6.1.6
 
 ### Patch Changes
