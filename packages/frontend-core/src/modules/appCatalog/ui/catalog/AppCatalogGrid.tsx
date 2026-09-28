@@ -5,7 +5,6 @@ import { cn } from '~/lib/utils'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { markdownToPlainText } from '../../utils/markdownToPlainText'
 import { pickNewThisWeek } from '../../utils/launcherHelpers'
-import { AttributionFooter } from './AttributionFooter'
 import { ResourceIcon } from './ResourceIcon'
 import { searchResources } from '@igstack/app-catalog-shared-core'
 import { Highlight } from '../components/Highlight'
@@ -823,8 +822,6 @@ export function AppCatalogGrid({
               />
             ))}
           </section>
-
-          <AttributionFooter />
         </>
       )}
     </div>
