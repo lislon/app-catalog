@@ -1,4 +1,3 @@
-import type { BetterAuthPlugin } from 'better-auth'
 import type { TRPCRootObject } from '@trpc/server'
 import type { AcTrpcContext } from '../../server/acTrpcContext'
 import type { BetterAuth } from './auth'
@@ -25,47 +24,20 @@ export function createAuthRouter(
         isAdmin: ctx.isAdmin,
       }
     }),
-    getProviders: publicProcedure.query(() => {
-      // Return configured social providers and OAuth providers from plugins
-      const providers: string[] = []
-      const authOptions = auth?.options
+    getProviders: publicProcedure.query(async () => {
+      // Read the providers better-auth actually resolved, not the static
+      // config. The generic OAuth plugin resolves OIDC discovery once, in its
+      // init, and silently skips a provider whose discovery document failed to
+      // load -- for the whole life of that process. Deriving the list from the
+      // static config would keep offering a sign-in button that answers 404
+      // "Provider not found". The resolved context holds both halves: built-in
+      // social providers and the generic ones that survived discovery.
+      const authContext = await auth?.$context
 
-      // Add built-in social providers (github, google, etc.)
-      if (authOptions?.socialProviders) {
-        const socialProviders = authOptions.socialProviders as Record<
-          string,
-          unknown
-        >
-        Object.keys(socialProviders).forEach((key) => {
-          if (socialProviders[key]) {
-            providers.push(key)
-          }
-        })
+      return {
+        providers: authContext?.socialProviders.map((p) => p.id) ?? [],
+        devLoginEnabled: options?.devLoginEnabled ?? false,
       }
-
-      // Add OAuth providers from plugins (like Okta via genericOAuth). They are
-      // absent from socialProviders above: the plugin only merges them into the
-      // auth context at init time, not into the static options.
-      if (authOptions?.plugins) {
-        const plugins = authOptions.plugins
-        plugins.forEach((plugin: BetterAuthPlugin) => {
-          if (plugin.id !== 'generic-oauth' || !plugin.options?.config) {
-            return
-          }
-          const configs: { providerId?: string }[] = Array.isArray(
-            plugin.options.config,
-          )
-            ? plugin.options.config
-            : [plugin.options.config]
-          configs.forEach((config) => {
-            if (config.providerId) {
-              providers.push(config.providerId)
-            }
-          })
-        })
-      }
-
-      return { providers, devLoginEnabled: options?.devLoginEnabled ?? false }
     }),
   })
 }
