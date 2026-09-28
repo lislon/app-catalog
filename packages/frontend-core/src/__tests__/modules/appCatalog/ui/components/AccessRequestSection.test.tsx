@@ -54,9 +54,13 @@ describe('AccessRequestSection — roles table', () => {
     expect(screen.queryByText(/^Note:/)).toBeNull()
   })
 
-  // A long role list (one real entry has 47) pushed the approval steps below
+  // A long role list (one real entry has 54) pushed the approval steps below
   // the fold; show the first few and let the reader expand the rest.
-  it('collapses a long role list behind a "Show all" toggle', () => {
+  //
+  // The control has to live in the table's LAST BODY ROW, not under the table:
+  // a table whose border closes under its last visible row reads as the
+  // complete list, and the standalone link below it went unnoticed.
+  it('ends a truncated table with the expand row, inside the table body', () => {
     const roles = Array.from({ length: 8 }, (_, i) => ({
       displayName: `Role ${i + 1}`,
     }))
@@ -66,17 +70,43 @@ describe('AccessRequestSection — roles table', () => {
 
     expect(screen.getByText('Role 5')).toBeInTheDocument()
     expect(screen.queryByText('Role 6')).toBeNull()
-    const toggle = screen.getByRole('button', { name: 'Show all 8 roles' })
+
+    const toggle = screen.getByRole('button', { name: /Show all \(8\) roles/ })
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
 
-    fireEvent.click(toggle)
-    expect(screen.getByText('Role 8')).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Show fewer roles' }),
-    ).toHaveAttribute('aria-expanded', 'true')
+    const row = toggle.closest('tr')
+    const body = row?.parentElement
+    expect(body?.tagName).toBe('TBODY')
+    expect(row).toBe(body?.lastElementChild)
+    // 5 visible roles + the control row: the table visibly continues past the
+    // last data row.
+    expect(body?.querySelectorAll('tr')).toHaveLength(6)
   })
 
-  it('shows five or fewer roles without a toggle', () => {
+  it('keeps the control in the same place when expanded, so the layout does not jump', () => {
+    const roles = Array.from({ length: 8 }, (_, i) => ({
+      displayName: `Role ${i + 1}`,
+    }))
+    render(
+      <AccessRequestSection app={appWithRoles(roles)} approvalMethods={[]} />,
+    )
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Show all \(8\) roles/ }),
+    )
+
+    expect(screen.getByText('Role 8')).toBeInTheDocument()
+    const toggle = screen.getByRole('button', { name: 'Show fewer roles' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+
+    const row = toggle.closest('tr')
+    const body = row?.parentElement
+    expect(body?.tagName).toBe('TBODY')
+    expect(row).toBe(body?.lastElementChild)
+    expect(body?.querySelectorAll('tr')).toHaveLength(9)
+  })
+
+  it('shows five or fewer roles without a toggle, and with no extra row', () => {
     const roles = Array.from({ length: 5 }, (_, i) => ({
       displayName: `Role ${i + 1}`,
     }))
@@ -84,8 +114,29 @@ describe('AccessRequestSection — roles table', () => {
       <AccessRequestSection app={appWithRoles(roles)} approvalMethods={[]} />,
     )
 
-    expect(screen.getByText('Role 5')).toBeInTheDocument()
+    const lastRole = screen.getByText('Role 5')
+    expect(lastRole).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Show all/ })).toBeNull()
+    expect(lastRole.closest('tbody')?.querySelectorAll('tr')).toHaveLength(5)
+  })
+
+  // Keyboard activation is inherited, not implemented: a native <button> gets
+  // focus, Enter and Space from the platform. jsdom does not turn Enter into a
+  // click, so asserting that here would only re-test fireEvent -- assert the
+  // element type the behaviour follows from instead. A <tr role="button"> would
+  // need its own key handling and would not satisfy this.
+  it('uses a focusable native button, so Enter and Space work without handlers', () => {
+    const roles = Array.from({ length: 8 }, (_, i) => ({
+      displayName: `Role ${i + 1}`,
+    }))
+    render(
+      <AccessRequestSection app={appWithRoles(roles)} approvalMethods={[]} />,
+    )
+
+    const toggle = screen.getByRole('button', { name: /Show all \(8\) roles/ })
+    expect(toggle.tagName).toBe('BUTTON')
+    toggle.focus()
+    expect(toggle).toHaveFocus()
   })
 
   it('falls back to an em-dash when a role has no description', () => {
