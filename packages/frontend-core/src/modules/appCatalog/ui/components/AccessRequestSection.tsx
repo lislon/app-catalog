@@ -12,6 +12,7 @@ import {
   Settings,
   Users,
 } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '~/ui/button'
 import {
@@ -218,6 +219,31 @@ function CopyButton({
   )
 }
 
+/**
+ * Wording for an entry whose access route is not written down. Which one is
+ * honest depends on whether a contact is actually rendered for the reader.
+ */
+const UNDOCUMENTED_WITH_CONTACT =
+  'Access process not documented yet — contact the owner below to find out.'
+const UNDOCUMENTED_WITHOUT_CONTACT =
+  'Access process not documented yet, and no owner is listed for this app.'
+
+/**
+ * The frame every access state renders into, including the empty one — an
+ * entry with no access data still gets the heading, because a missing box
+ * reads as "nothing to do here" rather than "we have not documented this".
+ */
+function AccessBox({ children }: { children: ReactNode }) {
+  return (
+    <div className="mt-6 rounded-lg border-[1.5px] border-primary/40 bg-primary/[0.03] p-4 space-y-4">
+      <h3 className="text-sm font-semibold text-foreground">
+        How to get access
+      </h3>
+      {children}
+    </div>
+  )
+}
+
 export function AccessRequestSection({
   app,
   approvalMethods,
@@ -265,8 +291,20 @@ export function AccessRequestSection({
     }
   }, [requestPrompt, copyToClipboard])
 
-  // Early return if no access request
-  if (!accessRequest) return null
+  // Nothing is written down anywhere: no `accessRequest`, no approvers, no
+  // owner, no comments. This used to `return null`, so the card showed no
+  // "How to get access" box at all and the reader could not tell an
+  // undocumented entry from one that needs no request (#181). Keep the box and
+  // say plainly that we do not know.
+  if (!accessRequest) {
+    return (
+      <AccessBox>
+        <p className="text-sm text-muted-foreground">
+          {UNDOCUMENTED_WITHOUT_CONTACT}
+        </p>
+      </AccessBox>
+    )
+  }
 
   // Access UX (#31): some methods carry no clickable target — `noAccessRequired`
   // (open), `unknown` (undocumented), and bare `custom` with no comments. The
@@ -281,17 +319,19 @@ export function AccessRequestSection({
   const isUndocumented =
     approvalMethod?.type === 'unknown' ||
     (approvalMethod?.type === 'custom' && !hasWrittenSteps)
+  // "the owner below" is either the Approvers block in this box or the owner
+  // block further down the detail page, and BOTH are conditional — so an entry
+  // with neither was telling the reader to go and contact nobody.
+  const hasContact =
+    (accessRequest.approverSlugs?.length ?? 0) > 0 ||
+    Boolean(app.ownerPersonSlug)
   // Two-step: has a primary request action AND follow-up post-approval steps
   const isTwoStep = Boolean(
     hasWrittenSteps && accessRequest.postApprovalInstructions,
   )
 
   return (
-    <div className="mt-6 rounded-lg border-[1.5px] border-primary/40 bg-primary/[0.03] p-4 space-y-4">
-      <h3 className="text-sm font-semibold text-foreground">
-        How to get access
-      </h3>
-
+    <AccessBox>
       {isOpen && (
         <p className="text-sm font-medium text-primary">
           ✓ Open to everyone — no request needed. Just open it.
@@ -300,8 +340,9 @@ export function AccessRequestSection({
 
       {isUndocumented && (
         <p className="text-sm text-muted-foreground">
-          Access process not documented yet — contact the owner below to find
-          out.
+          {hasContact
+            ? UNDOCUMENTED_WITH_CONTACT
+            : UNDOCUMENTED_WITHOUT_CONTACT}
         </p>
       )}
 
@@ -449,6 +490,6 @@ export function AccessRequestSection({
           </div>
         </div>
       )}
-    </div>
+    </AccessBox>
   )
 }
