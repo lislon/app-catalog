@@ -6,6 +6,14 @@ export const EDIT_WINDOW_MS = 60 * 60 * 1000
 
 export const MAX_BODY_LENGTH = 1000
 
+/**
+ * What a maintainer did with a comment. Null while nobody has looked at it.
+ *
+ * Mirrors the Prisma enum rather than importing it, so the view type stays
+ * usable on the client.
+ */
+export type CommentStatus = 'applied' | 'acknowledged'
+
 /** One comment as a client sees it. Never carries an author hash. */
 export interface CommentView {
   id: string
@@ -14,6 +22,14 @@ export interface CommentView {
   createdAt: string
   /** Null when the comment has never been edited. */
   editedAt: string | null
+  /**
+   * Null until a maintainer reviews the comment. `applied` is deliberately
+   * visible to everyone: it tells the next reader that comments reach a human
+   * and change the catalog.
+   */
+  status: CommentStatus | null
+  /** One answer from the maintainers, or null. */
+  reviewerReply: string | null
   /** Whether this browser wrote it — what makes Edit and Delete appear. */
   isMine: boolean
   /**
@@ -33,6 +49,8 @@ function toView(
     body: string
     editedAt: Date | null
     createdAt: Date
+    status?: CommentStatus | null
+    reviewerReply?: string | null
   },
   visitor: Visitor | null,
 ): CommentView {
@@ -43,6 +61,8 @@ function toView(
     body: row.body,
     createdAt: row.createdAt.toISOString(),
     editedAt: row.editedAt?.toISOString() ?? null,
+    status: row.status ?? null,
+    reviewerReply: row.reviewerReply ?? null,
     isMine,
     canEditUntil: isMine
       ? new Date(row.createdAt.getTime() + EDIT_WINDOW_MS).toISOString()

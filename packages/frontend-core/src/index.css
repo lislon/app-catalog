@@ -249,6 +249,32 @@
   padding-left: 1.25rem;
 }
 
+/* Comment review labels. Plain CSS rather than utilities: there is no success
+   token in the palette, and a tinted chip needs a colour the theme does not
+   name. `--chart-3` is the palette's green and already shifts for dark mode. */
+.comment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.comment-chip-applied {
+  color: color-mix(in oklab, var(--chart-3) 75%, var(--foreground));
+  background: color-mix(in oklab, var(--chart-3) 16%, var(--card));
+  border: 1px solid color-mix(in oklab, var(--chart-3) 35%, var(--card));
+}
+.comment-chip-seen {
+  color: var(--muted-foreground);
+  background: var(--muted);
+  border: 1px solid var(--border);
+  font-weight: 400;
+}
+
 /* tw-animate-css ships no reduced-motion rules of its own, so honour the
    preference here — the overlay animations it provides are all decorative. */
 @media (prefers-reduced-motion: reduce) {
