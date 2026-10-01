@@ -150,6 +150,7 @@ function rowToResource(row: ResourceRowWithSourceRefs): Resource {
     }),
   }))
   const notes = row.notes == null ? undefined : row.notes
+  const background = row.background == null ? undefined : row.background
   const appUrl = row.appUrl == null ? undefined : row.appUrl
   const iconName = row.iconName == null ? undefined : row.iconName
   const abbreviation = row.abbreviation == null ? undefined : row.abbreviation
@@ -192,6 +193,7 @@ function rowToResource(row: ResourceRowWithSourceRefs): Resource {
     accessRequest,
     teams,
     notes,
+    background,
     tags,
     appUrl,
     iconName,

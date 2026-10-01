@@ -23,6 +23,46 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Something went wrong'
 }
 
+/**
+ * What a maintainer did with a comment, as the reader sees it.
+ *
+ * `applied` is the point of the whole thing: a comment that improved the entry
+ * gets public credit, so the next person can see that commenting changes the
+ * catalog. Nobody sets these from the UI — the review tooling writes them.
+ */
+const STATUS_LABELS = {
+  applied: {
+    text: '✓ Applied — thank you!',
+    className: 'comment-chip-applied',
+    title:
+      'This comment improved the entry — the catalog now carries what it said.',
+  },
+  acknowledged: {
+    text: 'Seen',
+    className: 'comment-chip-seen',
+    title: 'A maintainer read this comment and left the entry as it was.',
+  },
+} as const
+
+function StatusChip({ status }: { status: 'applied' | 'acknowledged' }) {
+  const label = STATUS_LABELS[status]
+  return (
+    <span className={cn('comment-chip', label.className)} title={label.title}>
+      {label.text}
+    </span>
+  )
+}
+
+/** The maintainers' answer, attributed to the team rather than a pseudonym. */
+function ReviewerReply({ reply }: { reply: string }) {
+  return (
+    <div className="border-primary/45 bg-muted/60 mt-1.5 rounded-r-lg border-l-2 px-2.5 py-1.5">
+      <span className="text-muted-foreground font-medium">Catalog team</span>
+      <p className="mt-0.5 whitespace-pre-wrap">{reply}</p>
+    </div>
+  )
+}
+
 /** Cmd/Ctrl+Enter submits; plain Enter keeps making paragraphs. */
 function isSubmitChord(event: React.KeyboardEvent): boolean {
   return event.key === 'Enter' && (event.metaKey || event.ctrlKey)
@@ -80,6 +120,7 @@ export function CommentsSection({ appSlug }: { appSlug: string }) {
   // One line for every failed action: three mutations and one query, one place to look.
   const failure = error ?? add.error ?? edit.error ?? remove.error
   const hasComments = !!comments && comments.length > 0
+  const hasLabelled = !!comments?.some((comment) => comment.status)
 
   return (
     <div className="mt-6">
@@ -110,6 +151,7 @@ export function CommentsSection({ appSlug }: { appSlug: string }) {
                   </span>
                   <span>{formatRelativeTime(comment.createdAt)}</span>
                   {comment.editedAt && <span>(edited)</span>}
+                  {comment.status && <StatusChip status={comment.status} />}
                   {canEdit && editingId !== comment.id && (
                     <>
                       <button
@@ -170,11 +212,29 @@ export function CommentsSection({ appSlug }: { appSlug: string }) {
                 ) : (
                   <p className="mt-0.5 whitespace-pre-wrap">{comment.body}</p>
                 )}
+
+                {comment.reviewerReply && (
+                  <ReviewerReply reply={comment.reviewerReply} />
+                )}
               </li>
             )
           })}
         </ul>
-      ) : (
+      ) : null}
+
+      {/* A chip nobody can decode motivates nobody — but the legend is noise on
+          an entry where no comment has been reviewed yet, so it comes and goes
+          with the chips. */}
+      {hasLabelled && (
+        <p className="text-muted-foreground border-border mt-3 border-t pt-2.5 text-[0.6875rem] leading-relaxed">
+          <StatusChip status="applied" /> means the comment improved this entry
+          — the catalog now carries what it said.{' '}
+          <StatusChip status="acknowledged" /> means a maintainer read it and
+          left the entry as it was.
+        </p>
+      )}
+
+      {!isLoading && !hasComments && (
         <p className="text-muted-foreground text-xs">
           No comments yet.{' '}
           {!composerOpen && (
