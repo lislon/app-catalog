@@ -25,13 +25,32 @@ fi
 # Bumps every publishable version, writes the CHANGELOGs, deletes the consumed
 # changesets and relocks.
 pnpm run changeset:version
+
+# AFTER the bump, not before: the guard compares what the tree declares against
+# what the registry serves, so a capture taken before versioning sees "declared ==
+# served" for everything, finds nothing to expect, and passes no matter what the
+# publish does. That is how it ended up inert the first time this ran.
+${GUARD:-node scripts/dist-tag-guard.mjs} capture --tag latest \
+  --out "${RUNNER_TEMP:-/tmp}/dist-tags-before.json"
+
 pnpm run build:all
-# write-git-sha + publish each package with npm OIDC + `changeset tag`.
+# write-git-sha + publish each package with npm OIDC.
 pnpm run changeset:publish
 
-# Read the tags now, while HEAD is still the commit `changeset tag` tagged — the
-# version commit below moves HEAD past them.
-tags="$(git tag --points-at HEAD)"
+# The tag list comes from the manifests, not from git. `changeset tag` reports
+# "New tag: …" for each package, but relying on that left the first real release
+# with no tags and no releases at all — so this derives the names from what was
+# just published and tags the commit itself.
+tags="$(node -e '
+  const fs = require("fs")
+  for (const dir of fs.readdirSync("packages")) {
+    const path = `packages/${dir}/package.json`
+    if (!fs.existsSync(path)) continue
+    const pkg = JSON.parse(fs.readFileSync(path, "utf8"))
+    if (pkg.private || !pkg.name || !pkg.version) continue
+    console.log(`${pkg.name}@${pkg.version}`)
+  }
+')"
 
 version="$(node -p "require('./packages/backend-core/package.json').version")"
 
@@ -43,12 +62,13 @@ git add -A
 git commit -m "chore: version packages ${version} [skip ci]"
 git push origin "HEAD:${1:-main}"
 
-# Lightweight tags, which `--follow-tags` ignores, so they have to be named
-# explicitly or the tag trail never leaves the runner.
-if [ -n "${tags}" ]; then
-  # shellcheck disable=SC2086 # one argument per tag is the point
-  git push origin ${tags}
-fi
+# Tag the version commit, then push the tags by name: they are lightweight, so
+# `--follow-tags` would leave every one of them behind in the runner.
+for tag in ${tags}; do
+  git tag -f "${tag}"
+done
+# shellcheck disable=SC2086 # one argument per tag is the point
+git push origin ${tags}
 
 # One GitHub release per tag, with that package's new CHANGELOG section as the
 # body. `changesets/action` used to do this; it is the only part of the release
@@ -58,7 +78,12 @@ for tag in ${tags}; do
   pkg="${tag%@*}"
   changelog="packages/${pkg##*app-catalog-}/CHANGELOG.md"
   notes="$(awk '/^## /{if (seen++) exit; next} seen' "${changelog}" 2>/dev/null || true)"
-  gh release create "${tag}" --title "${tag}" --notes "${notes:-Released ${version}.}" ||
+  # A lockstep package's section is blank — it carries no changes of its own — and
+  # `--notes ""` is rejected, so say that instead of shipping an empty release.
+  if [ -z "$(printf '%s' "${notes}" | tr -d '[:space:]')" ]; then
+    notes="Released ${version} in lockstep with the other core packages; no changes of its own."
+  fi
+  gh release create "${tag}" --title "${tag}" --notes "${notes}" ||
     echo "warning: could not create a release for ${tag}" >&2
 done
 

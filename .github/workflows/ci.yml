@@ -119,24 +119,25 @@ jobs:
       - name: Check declared versions against the registry (main)
         if: github.ref == 'refs/heads/main'
         run: node scripts/check-registry-versions.mjs
-      - name: Capture npm dist-tags before release (main)
-        if: github.ref == 'refs/heads/main'
-        run: node scripts/dist-tag-guard.mjs capture --tag latest --out "$RUNNER_TEMP/dist-tags-before.json"
       - name: Version, publish and record (main)
         id: release
         if: github.ref == 'refs/heads/main'
         # One merge publishes. This replaced `changesets/action`, which only
         # opened a "version packages" PR and left the actual release to a second
         # merge — the step a release has silently stalled on, with every check
-        # green. A push carrying no changeset is a no-op. Why it publishes before
-        # it records: scripts/release-main.sh.
+        # green. A push carrying no changeset is a no-op. The script also takes
+        # the dist-tag capture the assert below reads, because that capture is
+        # only meaningful *after* the version bump. Why it publishes before it
+        # records: scripts/release-main.sh.
         run: bash scripts/release-main.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Assert the @latest tag moved (main)
-        if: github.ref == 'refs/heads/main'
-        # Only asserts for packages that declared an unpublished version *before*
-        # the release ran, so a push carrying no changeset stays green.
+        if: github.ref == 'refs/heads/main' && steps.release.outputs.published == 'true'
+        # Reads the capture the release step took after versioning: for every
+        # package whose freshly-bumped version the registry did not serve, the tag
+        # must now serve it. Skipped when nothing was released — that run takes no
+        # capture, so there is no file to read and nothing to prove.
         run: node scripts/dist-tag-guard.mjs assert --before "$RUNNER_TEMP/dist-tags-before.json" --mode release
         env:
           CHANGESETS_PUBLISHED: ${{ steps.release.outputs.published }}
