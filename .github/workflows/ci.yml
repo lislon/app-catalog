@@ -9,7 +9,6 @@ on:
   push:
     branches:
       - main
-      - alpha
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.number || github.ref }}
@@ -36,7 +35,7 @@ jobs:
       - name: Setup Tools
         uses: tanstack/config/.github/setup@main
       - name: Ensure npm supports OIDC trusted publishing (>=11.5.1)
-        if: github.ref == 'refs/heads/alpha' || github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
         run: |
           need="11.5.1"
           have="$(npm --version)"
@@ -52,108 +51,30 @@ jobs:
       - name: Run Tests
         run: pnpm run test:ci --parallel=3
 
-      # Alpha releases with @alpha tag (direct publish, no PR)
-      - name: Create snapshot changeset if none exists (alpha)
-        if: github.ref == 'refs/heads/alpha'
-        run: |
-          if [ ! "$(ls -A .changeset/*.md 2>/dev/null | grep -v README)" ]; then
-            echo "No changeset found, creating one..."
-            cat > .changeset/snapshot-release.md << 'EOF'
-          ---
-          "@igstack/app-catalog-backend-core": patch
-          "@igstack/app-catalog-frontend-core": patch
-          "@igstack/app-catalog-shared-core": patch
-          "@igstack/app-catalog-table-sync": patch
-          "@igstack/app-catalog-test-kit": patch
-          "@igstack/app-catalog-frontend-build-vite": patch
-          ---
-
-          Snapshot release from alpha branch
-          EOF
-          fi
-      - name: Version packages (alpha snapshot)
-        if: github.ref == 'refs/heads/alpha'
-        run: pnpm changeset version --snapshot alpha
-        env:
-          # Required by @changesets/changelog-github to resolve PR/commit links
-          # when a real changeset file is present (snapshot-only changesets skip this).
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Update lockfile (alpha)
-        if: github.ref == 'refs/heads/alpha'
-        run: pnpm install --no-frozen-lockfile
-      - name: Build packages (alpha)
-        if: github.ref == 'refs/heads/alpha'
-        run: pnpm run build:all
-      - name: Bake git SHA into package.json (alpha)
-        if: github.ref == 'refs/heads/alpha'
-        run: node scripts/write-git-sha.mjs "${{ github.sha }}"
-      - name: Capture npm dist-tags before publish (alpha)
-        if: github.ref == 'refs/heads/alpha'
-        run: node scripts/dist-tag-guard.mjs capture --tag alpha --out "$RUNNER_TEMP/dist-tags-before.json"
-      - name: Publish to @alpha tag
-        if: github.ref == 'refs/heads/alpha'
-        # Publish via the npm CLI so npm's OIDC trusted-publishing is used
-        # (no NPM_TOKEN). pnpm packs each package (rewriting workspace:* to
-        # concrete versions); npm publishes the tarballs with provenance.
-        run: node scripts/publish-oidc.mjs --tag alpha
-      - name: Assert the @alpha tag moved (alpha)
-        if: github.ref == 'refs/heads/alpha'
-        # A version already on the registry is only a warning, so the publish
-        # step exits 0 even when it shipped nothing. Prove the tag moved.
-        run: node scripts/dist-tag-guard.mjs assert --before "$RUNNER_TEMP/dist-tags-before.json" --mode snapshot
-
-      # Nothing is committed back to this branch. The snapshot version bump, the
-      # refreshed lockfile and the consumed changeset all live only in the
-      # runner's working tree, on purpose. A former step here staged and pushed
-      # them, which caused two separate failures:
-      #   * it froze the version base — once `X-alpha-<timestamp>` is committed, a
-      #     `patch` of it resolves back to `X`, so every later snapshot shared one
-      #     base forever and the pre-release tag sat semver-BELOW `latest`, which
-      #     no dependency range can promote.
-      #   * it committed the changeset deletion, so the stable branch never saw
-      #     the changeset and every stable release needed a manual cherry-pick.
-      # `packages/*/package.json` must therefore stay at the version the stable
-      # branch declares; `scripts/check-registry-versions.mjs` guards that.
-
-      # Stable releases for main branch
+      # Releases: one branch, one channel, one merge.
       - name: Check declared versions against the registry (main)
         if: github.ref == 'refs/heads/main'
         run: node scripts/check-registry-versions.mjs
       - name: Capture npm dist-tags before release (main)
         if: github.ref == 'refs/heads/main'
         run: node scripts/dist-tag-guard.mjs capture --tag latest --out "$RUNNER_TEMP/dist-tags-before.json"
-      - name: Run Changesets (main)
-        id: changesets
+      - name: Version, publish and record (main)
+        id: release
         if: github.ref == 'refs/heads/main'
-        uses: changesets/action@v1.5.3
-        with:
-          version: pnpm run changeset:version
-          publish: pnpm run changeset:publish
-          commit: 'chore: version packages'
-          title: 'chore: version packages'
+        # Publishes @latest and commits the version bump back, so merging a PR
+        # with a changeset is the whole release. A push with no changeset is a
+        # no-op. See scripts/release-main.sh for why it publishes before it
+        # records.
+        run: bash scripts/release-main.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Assert the @latest tag moved (main)
         if: github.ref == 'refs/heads/main'
         # Only asserts for packages that declared an unpublished version *before*
-        # the action ran, so a push that merely opens the version PR stays green.
-        run: node scripts/dist-tag-guard.mjs assert --before "$RUNNER_TEMP/dist-tags-before.json" --mode release
+        # the release ran, so a push carrying no changeset stays green.
+        run: node scripts/dist-tag-guard.mjs assert --before "$RUNNER_TEMP/dist-tags-before.json"
         env:
-          CHANGESETS_PUBLISHED: ${{ steps.changesets.outputs.published }}
-
-  sync-alpha:
-    name: Sync alpha with main
-    needs: test-and-publish
-    if: github.repository_owner == 'lislon' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6.0.1
-        with:
-          fetch-depth: 0
-      - name: Fast-forward alpha, or open a main -> alpha PR
-        run: bash scripts/sync-alpha.sh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHANGESETS_PUBLISHED: ${{ steps.release.outputs.published }}
 
   # push:
   #   needs: test-and-publish

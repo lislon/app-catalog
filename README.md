@@ -46,4 +46,9 @@ prisma generate
 npx prisma migrate dev
 ```
 
-# Test alpha snapshot
+## Releasing
+
+One branch, one channel. `main` is the default branch and the only one that
+publishes: merge a PR that carries a changeset and CI versions the packages,
+publishes them to `latest`, and commits the version bump back. A PR with no
+changeset releases nothing.

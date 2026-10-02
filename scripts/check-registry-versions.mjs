@@ -15,11 +15,10 @@
  * a genuine version regression fails the job. Runs on pull requests and on
  * pushes to the stable branch, so a direct push is covered too.
  *
- * SCOPE LIMIT — this cannot detect a stalled pre-release channel. It compares
- * against the `latest` tag only and skips any declared pre-release outright, so
- * an `@alpha` that has not moved in months looks clean here. Do not rely on it
- * for that; whether a publish actually moved a dist-tag is proved by
- * `scripts/dist-tag-guard.mjs`, which runs on both publish paths.
+ * SCOPE LIMIT — this proves nothing about whether a publish happened. It only
+ * compares what the branch declares against what `latest` already serves, and
+ * skips any declared pre-release outright. That a publish actually moved the
+ * dist-tag is proved by `scripts/dist-tag-guard.mjs` on the release path.
  */
 import { execFileSync } from 'node:child_process'
 import { readdirSync, readFileSync } from 'node:fs'
