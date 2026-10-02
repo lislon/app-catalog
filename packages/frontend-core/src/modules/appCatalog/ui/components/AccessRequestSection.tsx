@@ -3,7 +3,16 @@ import type {
   AppApprovalMethod,
   Resource,
 } from '@igstack/app-catalog-backend-core'
-import { Bot, Check, Copy, ExternalLink, Settings, Users } from 'lucide-react'
+import {
+  Bot,
+  Check,
+  Copy,
+  ExternalLink,
+  MoreHorizontal,
+  Settings,
+  Users,
+} from 'lucide-react'
+import type { ReactNode } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '~/ui/button'
 import {
@@ -47,7 +56,7 @@ function getApprovalMethodIcon(
   }
 }
 
-/** Roles shown before the rest are folded behind "Show all". */
+/** Roles shown before the rest are folded behind the table's last row. */
 const VISIBLE_ROLES = 5
 
 /**
@@ -87,21 +96,38 @@ function RolesTable({
                 </TableCell>
               </TableRow>
             ))}
+            {/* The control is the table's last row, not a link under the
+                table: a table whose border closes under its last data row
+                reads as the complete list, and a standalone link below it
+                went unnoticed. Same shape the search results use for their
+                hidden sub-resources. */}
+            {collapsible && (
+              <TableRow>
+                <TableCell colSpan={2} className="p-0">
+                  {/* A real <button> filling the cell: the whole row is
+                      clickable, and focus plus Enter/Space come from the
+                      platform rather than from a key handler on a <tr>. */}
+                  <button
+                    type="button"
+                    aria-expanded={expanded}
+                    onClick={() => setExpanded((v) => !v)}
+                    // The focus ring is drawn INSIDE the border box: the
+                    // table's container is `overflow-x-auto`, which clips an
+                    // outline drawn outside it, and this button's edges are
+                    // flush with that clip box on three sides.
+                    className="flex w-full cursor-pointer items-center gap-2 p-2 text-left text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+                  >
+                    <MoreHorizontal className="size-4 shrink-0" />
+                    {expanded
+                      ? 'Show fewer roles'
+                      : `Show all (${roles.length}) roles`}
+                  </button>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </div>
-      {collapsible && (
-        <Button
-          type="button"
-          variant="link"
-          size="sm"
-          className="mt-1 h-auto px-0"
-          aria-expanded={expanded}
-          onClick={() => setExpanded((v) => !v)}
-        >
-          {expanded ? 'Show fewer roles' : `Show all ${roles.length} roles`}
-        </Button>
-      )}
     </div>
   )
 }
@@ -193,6 +219,31 @@ function CopyButton({
   )
 }
 
+/**
+ * Wording for an entry whose access route is not written down. Which one is
+ * honest depends on whether a contact is actually rendered for the reader.
+ */
+const UNDOCUMENTED_WITH_CONTACT =
+  'Access process not documented yet — contact the owner below to find out.'
+const UNDOCUMENTED_WITHOUT_CONTACT =
+  'Access process not documented yet, and no owner is listed for this app.'
+
+/**
+ * The frame every access state renders into, including the empty one — an
+ * entry with no access data still gets the heading, because a missing box
+ * reads as "nothing to do here" rather than "we have not documented this".
+ */
+function AccessBox({ children }: { children: ReactNode }) {
+  return (
+    <div className="mt-6 rounded-lg border-[1.5px] border-primary/40 bg-primary/[0.03] p-4 space-y-4">
+      <h3 className="text-sm font-semibold text-foreground">
+        How to get access
+      </h3>
+      {children}
+    </div>
+  )
+}
+
 export function AccessRequestSection({
   app,
   approvalMethods,
@@ -240,8 +291,20 @@ export function AccessRequestSection({
     }
   }, [requestPrompt, copyToClipboard])
 
-  // Early return if no access request
-  if (!accessRequest) return null
+  // Nothing is written down anywhere: no `accessRequest`, no approvers, no
+  // owner, no comments. This used to `return null`, so the card showed no
+  // "How to get access" box at all and the reader could not tell an
+  // undocumented entry from one that needs no request (#181). Keep the box and
+  // say plainly that we do not know.
+  if (!accessRequest) {
+    return (
+      <AccessBox>
+        <p className="text-sm text-muted-foreground">
+          {UNDOCUMENTED_WITHOUT_CONTACT}
+        </p>
+      </AccessBox>
+    )
+  }
 
   // Access UX (#31): some methods carry no clickable target — `noAccessRequired`
   // (open), `unknown` (undocumented), and bare `custom` with no comments. The
@@ -256,17 +319,19 @@ export function AccessRequestSection({
   const isUndocumented =
     approvalMethod?.type === 'unknown' ||
     (approvalMethod?.type === 'custom' && !hasWrittenSteps)
+  // "the owner below" is either the Approvers block in this box or the owner
+  // block further down the detail page, and BOTH are conditional — so an entry
+  // with neither was telling the reader to go and contact nobody.
+  const hasContact =
+    (accessRequest.approverSlugs?.length ?? 0) > 0 ||
+    Boolean(app.ownerPersonSlug)
   // Two-step: has a primary request action AND follow-up post-approval steps
   const isTwoStep = Boolean(
     hasWrittenSteps && accessRequest.postApprovalInstructions,
   )
 
   return (
-    <div className="mt-6 rounded-lg border-[1.5px] border-primary/40 bg-primary/[0.03] p-4 space-y-4">
-      <h3 className="text-sm font-semibold text-foreground">
-        How to get access
-      </h3>
-
+    <AccessBox>
       {isOpen && (
         <p className="text-sm font-medium text-primary">
           ✓ Open to everyone — no request needed. Just open it.
@@ -275,8 +340,9 @@ export function AccessRequestSection({
 
       {isUndocumented && (
         <p className="text-sm text-muted-foreground">
-          Access process not documented yet — contact the owner below to find
-          out.
+          {hasContact
+            ? UNDOCUMENTED_WITH_CONTACT
+            : UNDOCUMENTED_WITHOUT_CONTACT}
         </p>
       )}
 
@@ -424,6 +490,6 @@ export function AccessRequestSection({
           </div>
         </div>
       )}
-    </div>
+    </AccessBox>
   )
 }

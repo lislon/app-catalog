@@ -138,6 +138,9 @@ model DbResource {
   /// [AccessRequest] - Per-resource approval configuration linking to ApprovalMethod
   accessRequest              Json?
   notes                      String?
+  // Historical context: when and why the app was built, and for whom. Context a
+  // reader may want after the instructions, never instead of them.
+  background                 String?
   tags                       String[]          @default([])
   appUrl                     String?
   /// [AppLink[]]
@@ -184,6 +187,14 @@ model DbResource {
   @@index([parentSlug])
 }
 
+/// What came of a comment once a maintainer read it.
+enum CommentStatus {
+  /// The comment improved the catalog — the entry now carries what it said.
+  applied
+  /// Read, entry left as it was.
+  acknowledged
+}
+
 /// A visitor's comment on one resource.
 ///
 /// The catalog is browsable without logging in, so a comment carries no user id.
@@ -203,6 +214,13 @@ model DbComment {
   body        String
   // Set on a later edit, so the UI can mark a comment as edited. Null when never edited.
   editedAt    DateTime?
+  // What a maintainer did with the comment. Null until someone reviews it; the UI
+  // shows a label for the other two so a commenter can see their note landed.
+  // Written out of band (review tooling), never by a visitor.
+  status      CommentStatus?
+  // One short answer from the maintainers, shown under the comment body.
+  reviewerReply String?
+  reviewedAt    DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 

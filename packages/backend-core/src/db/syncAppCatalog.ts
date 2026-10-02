@@ -300,6 +300,7 @@ export async function syncAppCatalog(
         teams: resource.teams ?? [],
         accessRequest: resource.accessRequest ?? null,
         notes: resource.notes ?? null,
+        background: resource.background ?? null,
         tags: resource.tags ?? [],
         appUrl: resource.appUrl ?? null,
         links: resource.links ?? null,

@@ -511,6 +511,20 @@ export function AppDetails({
           </div>
         )}
 
+        {/* Background: why the app exists at all. Deliberately late and quiet —
+            a reader who came to get access has already passed everything they
+            need, and history should not compete with the description. */}
+        {app.background && (
+          <div className="mt-6">
+            <h3 className="text-muted-foreground mb-2 text-xs font-medium">
+              Background
+            </h3>
+            <MarkdownText className="prose prose-sm text-muted-foreground max-w-none text-sm [&_p]:mt-0 [&_p]:mb-2 [&_p:last-child]:mb-0">
+              {app.background}
+            </MarkdownText>
+          </div>
+        )}
+
         {/* Technical information: AI-facing fields, de-emphasized/collapsed */}
         {(app.aiPrompt || app.aiMemory) && (
           <Accordion type="single" collapsible className="mt-6">

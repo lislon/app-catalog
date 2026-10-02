@@ -1,6 +1,10 @@
 import { z } from 'zod'
 import { getDbClient } from '../../db'
-import { generateChecksum, getImageDimensions } from '../assets/assetUtils'
+import {
+  generateChecksum,
+  getImageDimensions,
+  mimeTypeForAsset,
+} from '../assets/assetUtils'
 import { getExtensionFromMimeType } from './iconUtils'
 import { adminProcedure, publicProcedure, router } from '../../server/trpcSetup'
 
@@ -83,7 +87,7 @@ export function createIconRouter() {
             assetType: 'icon',
             content: new Uint8Array(buffer),
             checksum,
-            mimeType: input.mimeType,
+            mimeType: mimeTypeForAsset(name, input.mimeType),
             fileSize: input.fileSize,
             width,
             height,
@@ -172,7 +176,7 @@ export function createIconRouter() {
         // Return base64 encoded content
         return {
           content: Buffer.from(asset.content).toString('base64'),
-          mimeType: asset.mimeType,
+          mimeType: mimeTypeForAsset(asset.name, asset.mimeType),
           name: asset.name,
         }
       }),

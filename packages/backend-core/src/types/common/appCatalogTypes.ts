@@ -170,6 +170,15 @@ export interface Resource {
   teams?: string[]
   accessRequest?: AppAccessRequest
   notes?: string
+  /**
+   * Historical context: when and why the app was built, and who it was built
+   * for. Rendered low on the detail card — background for a reader who wants
+   * it, never the instructions, which belong in `description`.
+   *
+   * Only set when a source says so plainly. An entry with no historical signal
+   * leaves this empty rather than guessing.
+   */
+  background?: string
   tags?: string[]
   appUrl?: string
   links?: { url: string; title?: string }[]
