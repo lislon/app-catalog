@@ -1,5 +1,80 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.3.0
+
+### Minor Changes
+
+- [#305](https://github.com/lislon/app-catalog/pull/305) [`ff1b865`](https://github.com/lislon/app-catalog/commit/ff1b865ee95f29d19f5678074ca32c13381b5b16) Thanks [@lislon](https://github.com/lislon)! - Show what came of a comment. A comment was a write-only channel: someone took
+  the trouble to correct an entry, the correction was folded in, and nothing on the
+  page ever said so -- which is a poor argument for anyone to leave the next one.
+
+  A comment can now carry a status and one short reply from the maintainers.
+  `Applied -- thank you!` means the comment improved the entry; `Seen` means it was
+  read and the entry stayed as it was; an unreviewed comment shows nothing at all.
+  A one-line legend explains both, and appears only once some comment on that entry
+  carries a label.
+
+  Both are read-only in the UI and have no control to set them -- they are written
+  out of band by review tooling, so this adds no moderation surface and no auth.
+
+- [#305](https://github.com/lislon/app-catalog/pull/305) [`ff1b865`](https://github.com/lislon/app-catalog/commit/ff1b865ee95f29d19f5678074ca32c13381b5b16) Thanks [@lislon](https://github.com/lislon)! - Add an optional `background` field to a catalog entry, rendered as its own
+  section low on the detail card.
+
+  Some of what people contribute about an app is history, not instructions: when
+  it was built, why, and who it was built for. There was nowhere to put it.
+  `description` has to stay plain instructions for a new user, and the agent-facing
+  fields are not shown to people, so that context either bloated the description or
+  was dropped.
+
+  The section renders only when the field is set, sits after the primary content,
+  and is styled quieter than the description -- it is context for a reader who
+  wants it, not something anyone needs in order to use the app. Deprecation and
+  replacement stay in `deprecated`; this field is history only.
+
+### Patch Changes
+
+- [#303](https://github.com/lislon/app-catalog/pull/303) [`4b7fab9`](https://github.com/lislon/app-catalog/commit/4b7fab9bd4a721f7f726c01d55cb972505e5332c) Thanks [@lislon](https://github.com/lislon)! - Always render the "How to get access" box, and stop promising a contact that
+  is not there. An entry with no access fields at all returned `null`, so its
+  card jumped from the description straight to the sources with no access
+  heading anywhere -- indistinguishable from an app that needs no request, on
+  every such entry. It now says the process is not documented yet, which is the
+  rule the `custom` path already followed.
+
+  That line also pointed at "the owner below" without checking one exists. The
+  approvers block and the detail page's owner block are both conditional, so an
+  entry with neither sent the reader to contact nobody; the wording now depends
+  on whether a contact is actually rendered.
+
+- [#302](https://github.com/lislon/app-catalog/pull/302) [`746cb8b`](https://github.com/lislon/app-catalog/commit/746cb8b8ea315692017815bdc6de92738f70f6b0) Thanks [@lislon](https://github.com/lislon)! - Take the caret back into the detail card when it navigates from one app to
+  another. The card body now remounts on that navigation, which destroys
+  whatever was focused (the "View replacement" button, an access
+  prerequisite's parent), while the card's focus effect only ran on mount --
+  so focus landed on `<body>` and the next Tab walked the catalog grid behind
+  the scrim, the card having no focus trap. The effect now runs per resource
+  shown, and still yields to a child that has already taken the caret.
+
+- [#301](https://github.com/lislon/app-catalog/pull/301) [`c91e417`](https://github.com/lislon/app-catalog/commit/c91e4176f3f99e59dfac25c64c1ee18d6efe53ba) Thanks [@lislon](https://github.com/lislon)! - Reset the detail card's per-app state when it navigates from one app to
+  another. Following "View replacement" or an access prerequisite's parent
+  swaps the app in place, and nothing down to the roles table was keyed by
+  it, so the next app arrived with the previous one's expanded roles table
+  (pushing its approvers and post-approval steps below the fold), a carried
+  over icon/screenshot error flag, a leftover draft source edit, and the
+  previous scroll offset. The card body is now keyed by the resource it
+  shows.
+
+- [#300](https://github.com/lislon/app-catalog/pull/300) [`4d92d5f`](https://github.com/lislon/app-catalog/commit/4d92d5f80aa5a34fa5082f4208e35c1dff0325f1) Thanks [@lislon](https://github.com/lislon)! - Give the roles table's expand row a visible focus ring. It was a plain
+  button with no focus-visible styling, and the ring had to be drawn inside
+  the border box anyway: the table container is `overflow-x-auto`, which
+  clips an outline drawn outside it, and the control's edges sit flush with
+  that clip box.
+
+- [#299](https://github.com/lislon/app-catalog/pull/299) [`b65bb01`](https://github.com/lislon/app-catalog/commit/b65bb01746c4172f6afacb6c7f135a6d9854e84f) Thanks [@lislon](https://github.com/lislon)! - Move a truncated roles table's expander into the table: the last body row now
+  carries an ellipsis plus "Show all (N) roles", so the table visibly continues
+  past its last data row. The old standalone link under the closed table border
+  read as "list complete" and went unnoticed.
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.3.0
+
 ## 6.2.2
 
 ### Patch Changes

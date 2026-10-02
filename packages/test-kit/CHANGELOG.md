@@ -1,5 +1,13 @@
 # @igstack/app-catalog-test-kit
 
+## 6.3.0
+
+### Patch Changes
+
+- Updated dependencies [[`4b7fab9`](https://github.com/lislon/app-catalog/commit/4b7fab9bd4a721f7f726c01d55cb972505e5332c), [`bc8ebc0`](https://github.com/lislon/app-catalog/commit/bc8ebc0d927306a363791ec55bfa2d5cb52ef79b), [`ff1b865`](https://github.com/lislon/app-catalog/commit/ff1b865ee95f29d19f5678074ca32c13381b5b16), [`ff1b865`](https://github.com/lislon/app-catalog/commit/ff1b865ee95f29d19f5678074ca32c13381b5b16), [`746cb8b`](https://github.com/lislon/app-catalog/commit/746cb8b8ea315692017815bdc6de92738f70f6b0), [`c91e417`](https://github.com/lislon/app-catalog/commit/c91e4176f3f99e59dfac25c64c1ee18d6efe53ba), [`4d92d5f`](https://github.com/lislon/app-catalog/commit/4d92d5f80aa5a34fa5082f4208e35c1dff0325f1), [`b65bb01`](https://github.com/lislon/app-catalog/commit/b65bb01746c4172f6afacb6c7f135a6d9854e84f)]:
+  - @igstack/app-catalog-frontend-core@6.3.0
+  - @igstack/app-catalog-backend-core@6.3.0
+
 ## 6.2.2
 
 ### Patch Changes

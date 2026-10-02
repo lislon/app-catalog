@@ -1,5 +1,64 @@
 # @igstack/app-catalog-backend-core
 
+## 6.3.0
+
+### Minor Changes
+
+- [#305](https://github.com/lislon/app-catalog/pull/305) [`ff1b865`](https://github.com/lislon/app-catalog/commit/ff1b865ee95f29d19f5678074ca32c13381b5b16) Thanks [@lislon](https://github.com/lislon)! - Show what came of a comment. A comment was a write-only channel: someone took
+  the trouble to correct an entry, the correction was folded in, and nothing on the
+  page ever said so -- which is a poor argument for anyone to leave the next one.
+
+  A comment can now carry a status and one short reply from the maintainers.
+  `Applied -- thank you!` means the comment improved the entry; `Seen` means it was
+  read and the entry stayed as it was; an unreviewed comment shows nothing at all.
+  A one-line legend explains both, and appears only once some comment on that entry
+  carries a label.
+
+  Both are read-only in the UI and have no control to set them -- they are written
+  out of band by review tooling, so this adds no moderation surface and no auth.
+
+- [#305](https://github.com/lislon/app-catalog/pull/305) [`ff1b865`](https://github.com/lislon/app-catalog/commit/ff1b865ee95f29d19f5678074ca32c13381b5b16) Thanks [@lislon](https://github.com/lislon)! - Add an optional `background` field to a catalog entry, rendered as its own
+  section low on the detail card.
+
+  Some of what people contribute about an app is history, not instructions: when
+  it was built, why, and who it was built for. There was nowhere to put it.
+  `description` has to stay plain instructions for a new user, and the agent-facing
+  fields are not shown to people, so that context either bloated the description or
+  was dropped.
+
+  The section renders only when the field is set, sits after the primary content,
+  and is styled quieter than the description -- it is context for a reader who
+  wants it, not something anyone needs in order to use the app. Deprecation and
+  replacement stay in `deprecated`; this field is history only.
+
+### Patch Changes
+
+- [#306](https://github.com/lislon/app-catalog/pull/306) [`bc8ebc0`](https://github.com/lislon/app-catalog/commit/bc8ebc0d927306a363791ec55bfa2d5cb52ef79b) Thanks [@lislon](https://github.com/lislon)! - Decide an asset's content type from its filename extension rather than from the
+  `mimeType` column.
+
+  That column held whatever the image library detected at upload time, and a wrong
+  value was permanent: behind an `X-Content-Type-Options: nosniff` proxy a browser
+  refuses to render an unrecognised type in an `<img>`, so an icon silently
+  degraded to its placeholder with nothing in the logs. One such value (`image/svg`
+  for an SVG) was mapped away earlier; the open-ended `image/${format}` fallback
+  that produced it could still mint `image/<anything>` for the next unmapped
+  format, so it is gone — an unrecognised file is now `application/octet-stream`.
+
+  Also in this change:
+  - Icon and screenshot routes derive the served type the same way, so a row
+    already stored with a bad type renders correctly without a re-sync.
+  - Asset and screenshot URLs may carry the file extension (`/<id>.png`), which
+    gives a browser, a cache and "save image as" the real type; the extension-less
+    form keeps working.
+  - Uploads record the type from the uploaded filename instead of a client-supplied
+    header, and the asset upload route reads the filename from `originalname`
+    (`filename` is unset under in-memory storage, so no extension reached the
+    derivation at all).
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.3.0
+  - @igstack/app-catalog-table-sync@6.3.0
+
 ## 6.2.2
 
 ### Patch Changes
