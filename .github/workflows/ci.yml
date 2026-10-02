@@ -122,24 +122,24 @@ jobs:
       - name: Capture npm dist-tags before release (main)
         if: github.ref == 'refs/heads/main'
         run: node scripts/dist-tag-guard.mjs capture --tag latest --out "$RUNNER_TEMP/dist-tags-before.json"
-      - name: Run Changesets (main)
-        id: changesets
+      - name: Version, publish and record (main)
+        id: release
         if: github.ref == 'refs/heads/main'
-        uses: changesets/action@v1.5.3
-        with:
-          version: pnpm run changeset:version
-          publish: pnpm run changeset:publish
-          commit: 'chore: version packages'
-          title: 'chore: version packages'
+        # One merge publishes. This replaced `changesets/action`, which only
+        # opened a "version packages" PR and left the actual release to a second
+        # merge — the step a release has silently stalled on, with every check
+        # green. A push carrying no changeset is a no-op. Why it publishes before
+        # it records: scripts/release-main.sh.
+        run: bash scripts/release-main.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Assert the @latest tag moved (main)
         if: github.ref == 'refs/heads/main'
         # Only asserts for packages that declared an unpublished version *before*
-        # the action ran, so a push that merely opens the version PR stays green.
+        # the release ran, so a push carrying no changeset stays green.
         run: node scripts/dist-tag-guard.mjs assert --before "$RUNNER_TEMP/dist-tags-before.json" --mode release
         env:
-          CHANGESETS_PUBLISHED: ${{ steps.changesets.outputs.published }}
+          CHANGESETS_PUBLISHED: ${{ steps.release.outputs.published }}
 
   sync-alpha:
     name: Sync alpha with main
