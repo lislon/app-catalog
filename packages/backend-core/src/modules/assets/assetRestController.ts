@@ -2,7 +2,13 @@ import type { Request, Response, Router } from 'express'
 import multer from 'multer'
 import sharp from 'sharp'
 import { getDbClient } from '../../db'
-import { getImageFormat, isRasterImage, resizeImage } from './assetUtils'
+import {
+  getImageFormat,
+  isRasterImage,
+  mimeTypeForAsset,
+  resizeImage,
+  stripAssetExtension,
+} from './assetUtils'
 import { upsertAsset } from './upsertAsset'
 import { isNotModified, setRevalidatingCacheHeaders } from './assetCache'
 
@@ -82,7 +88,10 @@ export function registerAssetRestController(
           prisma,
           buffer: req.file.buffer,
           name,
-          originalFilename: req.file.filename,
+          // `filename` is only set by multer's disk storage; in memory the
+          // uploaded name lives in `originalname`, and it is what decides the
+          // stored content type.
+          originalFilename: req.file.originalname,
           assetType,
         })
 
@@ -97,7 +106,7 @@ export function registerAssetRestController(
   // Get asset binary by ID
   router.get(`${basePath}/:id`, async (req: Request, res: Response) => {
     try {
-      const { id } = req.params
+      const id = stripAssetExtension(req.params['id'] ?? '')
 
       const asset = await prisma.dbAsset.findUnique({
         where: { id },
@@ -122,11 +131,11 @@ export function registerAssetRestController(
       const width = wParam ? Number.parseInt(wParam, 10) : undefined
 
       let outBuffer: Uint8Array = asset.content
-      let outMime = asset.mimeType
+      let outMime = mimeTypeForAsset(asset.name, asset.mimeType)
 
       const shouldResize =
         resizeEnabled &&
-        isRasterImage(asset.mimeType) &&
+        isRasterImage(outMime) &&
         !!width &&
         Number.isFinite(width) &&
         width > 0
@@ -143,7 +152,7 @@ export function registerAssetRestController(
       }
 
       if (shouldResize) {
-        const fmt = getImageFormat(asset.mimeType) || 'jpeg'
+        const fmt = getImageFormat(outMime) || 'jpeg'
         const buf = await resizeImage(
           Buffer.from(asset.content),
           width,
@@ -231,13 +240,11 @@ export function registerAssetRestController(
         const width = wParam ? Number.parseInt(wParam, 10) : undefined
 
         let outBuffer: Uint8Array = asset.content
-        let outMime = asset.mimeType
+        let outMime = mimeTypeForAsset(asset.name, asset.mimeType)
 
-        const isRaster =
-          asset.mimeType.startsWith('image/') && !asset.mimeType.includes('svg')
         const shouldResize =
           resizeEnabled &&
-          isRaster &&
+          isRasterImage(outMime) &&
           !!width &&
           Number.isFinite(width) &&
           width > 0
@@ -254,11 +261,7 @@ export function registerAssetRestController(
         }
 
         if (shouldResize) {
-          const fmt = asset.mimeType.includes('png')
-            ? 'png'
-            : asset.mimeType.includes('webp')
-              ? 'webp'
-              : 'jpeg'
+          const fmt = getImageFormat(outMime) || 'jpeg'
 
           let buf: Buffer
           const pipeline = sharp(Buffer.from(asset.content)).resize({

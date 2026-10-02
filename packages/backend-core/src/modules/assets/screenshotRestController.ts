@@ -2,6 +2,7 @@ import type { Request, Response, Router } from 'express'
 import sharp from 'sharp'
 import { getDbClient } from '../../db'
 import { isNotModified, setRevalidatingCacheHeaders } from './assetCache'
+import { mimeTypeForAsset, stripAssetExtension } from './assetUtils'
 
 export interface ScreenshotRestControllerConfig {
   /**
@@ -123,7 +124,7 @@ export function registerScreenshotRestController(
   // Get screenshot binary by ID
   router.get(`${basePath}/:id`, async (req: Request, res: Response) => {
     try {
-      const { id } = req.params
+      const id = stripAssetExtension(req.params['id'] ?? '')
       const sizeParam = req.query.size as string | undefined
       const targetSize = sizeParam ? parseInt(sizeParam, 10) : undefined
 
@@ -172,7 +173,10 @@ export function registerScreenshotRestController(
       }
 
       // Set appropriate headers
-      res.setHeader('Content-Type', screenshot.mimeType)
+      res.setHeader(
+        'Content-Type',
+        mimeTypeForAsset(screenshot.name, screenshot.mimeType),
+      )
       res.setHeader(
         'Content-Disposition',
         `inline; filename="${screenshot.name}"`,
