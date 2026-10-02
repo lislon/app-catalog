@@ -7,6 +7,7 @@ import {
   isNotModified,
   setRevalidatingCacheHeaders,
 } from '../assets/assetCache'
+import { mimeTypeForAsset } from '../assets/assetUtils'
 
 // Configure multer for memory storage
 const upload = multer({
@@ -81,7 +82,9 @@ export function registerIconRestController(
             name,
             assetType: 'icon',
             content: new Uint8Array(req.file.buffer),
-            mimeType: req.file.mimetype,
+            // The stored name always carries an extension by now, and it — not
+            // the client's claimed content type — decides how the icon is served.
+            mimeType: mimeTypeForAsset(name, req.file.mimetype),
             fileSize: req.file.size,
             checksum,
           },
@@ -132,7 +135,7 @@ export function registerIconRestController(
       }
 
       // Set appropriate headers
-      res.setHeader('Content-Type', icon.mimeType)
+      res.setHeader('Content-Type', mimeTypeForAsset(icon.name, icon.mimeType))
       res.setHeader('Content-Disposition', `inline; filename="${icon.name}"`)
 
       // Send binary content

@@ -1,6 +1,11 @@
 import { createHash } from 'node:crypto'
 import type { FormatEnum } from 'sharp'
 import sharp from 'sharp'
+import {
+  getExtensionFromFilename,
+  getMimeTypeFromExtension,
+  isKnownImageMimeType,
+} from '../icons/iconUtils'
 import type { ParseAssetParams, ParseAssetReturn } from './assetRestController'
 
 /**
@@ -84,6 +89,36 @@ export function isRasterImage(mimeType: string): boolean {
   return mimeType.startsWith('image/') && !mimeType.includes('svg')
 }
 
+/**
+ * The content type an asset is served (and stored) with.
+ *
+ * The filename's extension decides, because it is the one piece of the asset a
+ * human chose and a reader can see. `sharp`'s detected format is only a fallback
+ * for a file that arrived without a usable extension, and an unrecognised value
+ * degrades to `application/octet-stream` rather than being turned into an
+ * `image/<whatever-the-library-called-it>` type that no browser accepts.
+ */
+export function mimeTypeForAsset(
+  filename: string | undefined,
+  fallback?: string,
+): string {
+  const byExtension = getMimeTypeFromExtension(
+    getExtensionFromFilename(filename ?? ''),
+  )
+  if (byExtension !== 'application/octet-stream') return byExtension
+  if (fallback && isKnownImageMimeType(fallback)) return fallback.toLowerCase()
+  return 'application/octet-stream'
+}
+
+/**
+ * `<id>.png` -> `<id>`. Asset URLs may carry the file extension so that a
+ * browser, a CDN and "save image as" all see the real file type; the stored id
+ * itself never contains a dot, so stripping one is unambiguous.
+ */
+export function stripAssetExtension(id: string): string {
+  return id.replace(/\.[A-Za-z0-9]+$/, '')
+}
+
 export async function parseAssetMeta(
   p: ParseAssetParams,
 ): Promise<ParseAssetReturn> {
@@ -100,16 +135,16 @@ export async function parseAssetMeta(
     gif: 'image/gif',
     heif: 'image/heif',
     svg: 'image/svg+xml',
-    raw: 'application/octet-stream',
   }
 
   return {
     checksum: generateChecksum(p.buffer),
     width,
     height,
-    mimeType: format
-      ? (formatToMime[format] ?? `image/${format}`)
-      : 'application/octet-stream',
+    mimeType: mimeTypeForAsset(
+      p.originalFilename,
+      format ? formatToMime[format] : undefined,
+    ),
     fileSize: size || 0,
   }
 }
