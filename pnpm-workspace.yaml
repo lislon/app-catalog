@@ -74,8 +74,6 @@ catalog:
 # second copy here would be silently dead config. pnpm 11 stops reading the package.json
 # field entirely.
 overrides:
-  '@igstack/app-catalog-backend-core': 'workspace:*'
-  '@igstack/app-catalog-frontend': 'workspace:*'
   eslint-plugin-import-x: ^4.17.1
 
 linkWorkspacePackages: true
