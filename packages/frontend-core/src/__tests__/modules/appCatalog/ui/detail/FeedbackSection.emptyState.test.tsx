@@ -15,8 +15,15 @@ vi.mock('@tanstack/react-query', () => ({
     data: { items: state.items, openCount: 0 },
     isLoading: false,
   })),
-  useMutation: vi.fn(() => ({
-    mutate: (vars: unknown) => state.sent.push(vars),
+  // `mutate` runs the success callback, so the stub can represent a completed send
+  // and not just an attempted one. Without that, anything the component does on
+  // success — clearing the stored draft, closing the composer — is unreachable from
+  // a test, and a fixture that cannot express success quietly stops guarding it.
+  useMutation: vi.fn((options?: { onSuccess?: () => void }) => ({
+    mutate: (vars: unknown) => {
+      state.sent.push(vars)
+      options?.onSuccess?.()
+    },
     isPending: false,
   })),
   useQueryClient: vi.fn(() => ({ invalidateQueries: vi.fn() })),
@@ -103,5 +110,59 @@ describe('FeedbackSection — composer', () => {
 
     await userEvent.click(send)
     expect(state.sent).toEqual([{ resourceSlug: 'example-app', body: '' }])
+  })
+
+  /**
+   * The detail card mounts this inside a tab panel, and a panel is unmounted while
+   * its tab is inactive — so an unmount is a routine event here, not an edge case.
+   * Component state alone would drop whatever someone had typed.
+   */
+  it('keeps a half-typed draft across an unmount, and reopens the composer for it', async () => {
+    sessionStorage.clear()
+    state.items = []
+    const first = render(<FeedbackSection appSlug="example-app" />)
+
+    await userEvent.click(
+      screen.getByRole('button', { name: new RegExp(SUGGEST) }),
+    )
+    await userEvent.type(
+      screen.getByPlaceholderText('What should change?'),
+      'half a thought',
+    )
+
+    // Leaving the tab unmounts the panel.
+    first.unmount()
+    render(<FeedbackSection appSlug="example-app" />)
+
+    const recovered = screen.getByPlaceholderText('What should change?')
+    expect(recovered).toHaveValue('half a thought')
+  })
+
+  it('does not leak a draft between entries, and clears it once sent', async () => {
+    sessionStorage.clear()
+    state.items = []
+    state.sent = []
+    const first = render(<FeedbackSection appSlug="example-app" />)
+    await userEvent.click(
+      screen.getByRole('button', { name: new RegExp(SUGGEST) }),
+    )
+    await userEvent.type(
+      screen.getByPlaceholderText('What should change?'),
+      'about this one',
+    )
+    first.unmount()
+
+    // A different entry starts clean rather than inheriting the neighbour's draft.
+    const other = render(<FeedbackSection appSlug="other-app" />)
+    expect(screen.queryByPlaceholderText('What should change?')).toBeNull()
+    other.unmount()
+
+    // Back on the original, send it, and the stored draft goes with it.
+    render(<FeedbackSection appSlug="example-app" />)
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(state.sent).toEqual([
+      { resourceSlug: 'example-app', body: 'about this one' },
+    ])
+    expect(sessionStorage.getItem('ac.feedback.draft.example-app')).toBeNull()
   })
 })

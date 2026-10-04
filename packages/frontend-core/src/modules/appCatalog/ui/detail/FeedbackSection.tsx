@@ -74,20 +74,64 @@ function isSubmitChord(event: React.KeyboardEvent): boolean {
   return event.key === 'Enter' && (event.metaKey || event.ctrlKey)
 }
 
+/**
+ * Where a half-typed draft lives while it is not submitted.
+ *
+ * The detail card mounts this section inside a tab panel, and a panel is unmounted
+ * while its tab is not the active one — so component state alone loses whatever
+ * someone had typed the moment they look at another tab, and again if they close the
+ * card. Losing someone's words is the one failure this feature cannot afford: the
+ * whole premise is that reporting costs almost nothing, and "I typed it and it
+ * vanished" is how a person learns not to bother.
+ *
+ * Session rather than local storage: a draft is in-flight work, not a preference,
+ * and it should not still be waiting weeks later in a browser nobody remembers using.
+ * Keyed by slug so two entries do not share one draft.
+ */
+function draftKey(slug: string): string {
+  return `ac.feedback.draft.${slug}`
+}
+
+function readDraft(slug: string): string {
+  try {
+    return sessionStorage.getItem(draftKey(slug)) ?? ''
+  } catch {
+    // Storage can throw outright in a locked-down context; a lost draft is not
+    // worth taking the section down over.
+    return ''
+  }
+}
+
+function writeDraft(slug: string, value: string): void {
+  try {
+    if (value) sessionStorage.setItem(draftKey(slug), value)
+    else sessionStorage.removeItem(draftKey(slug))
+  } catch {
+    /* see readDraft */
+  }
+}
+
 export function FeedbackSection({ appSlug }: { appSlug: string }) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const listOptions = trpc.feedback.list.queryOptions({ resourceSlug: appSlug })
   const { data, isLoading, error } = useQuery(listOptions)
 
-  const [draft, setDraft] = useState('')
+  // Seeded from storage so a draft survives the tab panel unmounting under it.
+  const [draft, setDraft] = useState(() => readDraft(appSlug))
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editDraft, setEditDraft] = useState('')
   /**
    * The composer stays behind the invitation until someone accepts it — which is also
-   * what earns the caret: focus follows the click, never the mount.
+   * what earns the caret: focus follows the click, never the mount. A recovered draft
+   * reopens it, otherwise the text would be held but invisible.
    */
-  const [composerOpen, setComposerOpen] = useState(false)
+  const [composerOpen, setComposerOpen] = useState(() => !!readDraft(appSlug))
+
+  const updateDraft = (value: string) => {
+    setDraft(value)
+    writeDraft(appSlug, value)
+  }
 
   const refresh = () =>
     queryClient.invalidateQueries({ queryKey: listOptions.queryKey })
@@ -95,7 +139,8 @@ export function FeedbackSection({ appSlug }: { appSlug: string }) {
   const add = useMutation(
     trpc.feedback.add.mutationOptions({
       onSuccess: () => {
-        setDraft('')
+        // Sent: the draft is no longer in flight, so it should not come back.
+        updateDraft('')
         setComposerOpen(false)
         void refresh()
       },
@@ -254,7 +299,7 @@ export function FeedbackSection({ appSlug }: { appSlug: string }) {
             className={cn(FIELD_CLASSES)}
             placeholder="What should change?"
             value={draft}
-            onChange={(event) => setDraft(event.target.value)}
+            onChange={(event) => updateDraft(event.target.value)}
             onKeyDown={(event) => {
               if (isSubmitChord(event)) {
                 event.preventDefault()
