@@ -313,6 +313,7 @@ export async function syncAppCatalog(
         urlIssues: resource.urlIssues ?? [],
         tiers: resource.tiers ?? null,
         quickJumps: resource.quickJumps ?? null,
+        childrenLabel: resource.childrenLabel ?? null,
         // Fields from former SubResource
         parentSlug: resource.parentSlug ?? null,
         tier: resource.tier ?? null,

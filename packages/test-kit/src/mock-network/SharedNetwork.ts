@@ -3,6 +3,7 @@ import { createTRPCMsw, httpLink } from 'msw-trpc'
 import type { TRPCRouter } from '@igstack/app-catalog-backend-core'
 import type { MockService } from '../mock-backend/MockService'
 import type { NetworkInterceptor } from './NetworkCatalog'
+import type { MockFeedbackStore } from './MockFeedbackStore'
 
 const trpcMsw = createTRPCMsw<TRPCRouter>({
   links: [httpLink({ url: '/api/trpc' })],
@@ -29,26 +30,90 @@ export const SharedNetwork = {
   },
 
   /**
-   * Every opened resource asks for its feedback; none has any unless a test says so.
+   * Every opened resource asks for its feedback.
    *
    * The shape is `{ items, openCount }` rather than a bare array, because the open
    * count travels with the list — the badge would otherwise need a second round trip.
    */
-  feedbackList(): NetworkInterceptor {
+  feedbackList(store: MockFeedbackStore): NetworkInterceptor {
     return {
       scopeKey: ['feedback-list'],
-      handler: trpcMsw.feedback.list.query(() => ({
-        items: [],
-        openCount: 0,
-      })),
+      handler: trpcMsw.feedback.list.query(({ input }) =>
+        store.listFor(input.resourceSlug),
+      ),
     }
   },
 
   /** The visitor's own feedback, across entries. Empty means the header renders nothing. */
-  feedbackMine(): NetworkInterceptor {
+  feedbackMine(store: MockFeedbackStore): NetworkInterceptor {
     return {
       scopeKey: ['feedback-mine'],
-      handler: trpcMsw.feedback.mine.query(() => []),
+      handler: trpcMsw.feedback.mine.query(() => store.mine()),
+    }
+  },
+
+  /** Posting a correction, so a scenario can observe its own write. */
+  feedbackAdd(store: MockFeedbackStore): NetworkInterceptor {
+    return {
+      scopeKey: ['feedback-add'],
+      handler: trpcMsw.feedback.add.mutation(({ input }) => store.add(input)),
+    }
+  },
+
+  feedbackEdit(store: MockFeedbackStore): NetworkInterceptor {
+    return {
+      scopeKey: ['feedback-edit'],
+      handler: trpcMsw.feedback.edit.mutation(({ input }) => {
+        store.edit(input.id, input.body)
+        return { ok: true } as never
+      }),
+    }
+  },
+
+  feedbackDismiss(store: MockFeedbackStore): NetworkInterceptor {
+    return {
+      scopeKey: ['feedback-dismiss'],
+      handler: trpcMsw.feedback.dismiss.mutation(({ input }) => {
+        store.dismiss(input.id)
+        return { ok: true } as never
+      }),
+    }
+  },
+
+  /**
+   * The attachment upload, which is a plain REST route rather than tRPC because it
+   * carries multipart bodies.
+   */
+  feedbackAttachmentUpload(store: MockFeedbackStore): NetworkInterceptor {
+    return {
+      scopeKey: ['feedback-attachment-upload'],
+      handler: http.post(
+        /\/api\/feedback-attachments\/upload/,
+        async ({ request }) => {
+          // Counted off the raw body rather than `request.formData()`.
+          //
+          // The handler runs on Node's undici, whose multipart parser asserts each
+          // part is an undici `File`; a file the page created is a jsdom `File`, a
+          // different class, so the assert fails and the request 500s. There is no
+          // flag for that — the two realms simply disagree — so the body is read as
+          // text, which needs no File at all.
+          const raw = await request.text()
+          const parts = raw.match(/name="image"/g) ?? []
+          return HttpResponse.json({ ids: store.uploadImages(parts.length) })
+        },
+      ),
+    }
+  },
+
+  /** The stored image. One transparent pixel — the bytes are not what is under test. */
+  feedbackAttachmentBinary(): NetworkInterceptor {
+    return {
+      scopeKey: ['feedback-attachment-binary'],
+      handler: http.get(/\/api\/feedback-attachments\/[^/]+$/, () =>
+        HttpResponse.arrayBuffer(PLACEHOLDER_PNG.buffer, {
+          headers: { 'Content-Type': 'image/webp' },
+        }),
+      ),
     }
   },
 

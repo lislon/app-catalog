@@ -192,20 +192,41 @@ export async function addFeedback(
     }
   }
 
-  const row = await getDbClient().dbFeedback.create({
-    data: {
-      resourceId,
-      subject: resourceId ? null : subject!.trim().slice(0, MAX_SUBJECT_LENGTH),
-      authorHash: actor.hash,
-      authorAlias: actor.alias,
-      body: normaliseBody(body),
-      // Only claim attachments this browser uploaded and nobody has claimed yet, so an
-      // id guessed from someone else's upload cannot be attached to your feedback.
-      attachments: {
-        connect: attachmentIds.map((id) => ({ id })),
+  const row = await getDbClient().$transaction(async (tx) => {
+    const created = await tx.dbFeedback.create({
+      data: {
+        resourceId,
+        subject: resourceId
+          ? null
+          : subject!.trim().slice(0, MAX_SUBJECT_LENGTH),
+        authorHash: actor.hash,
+        authorAlias: actor.alias,
+        body: normaliseBody(body),
       },
-    },
-    include: WITH_RELATIONS,
+      select: { id: true },
+    })
+
+    // Claim only images this browser uploaded and nobody has claimed yet, so an id
+    // guessed from someone else's upload cannot be pulled onto your feedback.
+    //
+    // `updateMany` with the conditions in the WHERE, rather than a nested `connect`:
+    // `connect` takes only the id, and because `feedbackId` is a single FK it would
+    // MOVE a claimed image off its owner's feedback instead of refusing.
+    if (attachmentIds.length > 0) {
+      await tx.dbFeedbackAttachment.updateMany({
+        where: {
+          id: { in: attachmentIds },
+          authorHash: actor.hash,
+          feedbackId: null,
+        },
+        data: { feedbackId: created.id },
+      })
+    }
+
+    return tx.dbFeedback.findUniqueOrThrow({
+      where: { id: created.id },
+      include: WITH_RELATIONS,
+    })
   })
   return toView(row, actor)
 }

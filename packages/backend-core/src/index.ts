@@ -75,6 +75,11 @@ export {
   type ScreenshotRestControllerConfig,
 } from './modules/assets/screenshotRestController'
 
+export {
+  registerFeedbackAttachmentController,
+  type FeedbackAttachmentControllerConfig,
+} from './modules/feedback/feedbackAttachmentController'
+
 export { syncAssets, type SyncAssetsConfig } from './modules/assets/syncAssets'
 
 // App Catalog utilities

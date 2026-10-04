@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useTRPC } from '~/api/infra/trpc'
 import { Button } from '~/ui/button'
 import { cn } from '~/lib/utils'
@@ -111,7 +112,111 @@ function writeDraft(slug: string, value: string): void {
   }
 }
 
-export function FeedbackSection({ appSlug }: { appSlug: string }) {
+/** Mirrors the server's cap, which refuses anything above it regardless. */
+const MAX_ATTACHMENTS = 3
+
+const UPLOAD_URL = '/api/feedback-attachments/upload'
+
+/** One already-uploaded image waiting to be submitted with the words. */
+interface PendingImage {
+  id: string
+  name: string
+}
+
+/**
+ * Images are uploaded the moment they are picked, so the draft holds ids rather than
+ * files — which is also why they have to persist alongside the text. A tab panel
+ * unmounts whenever its tab is not the active one, and someone who attached three
+ * screenshots and glanced at Overview should not come back to none.
+ *
+ * Dropping an id here does NOT delete the image; the server sweeps whatever is never
+ * submitted. That keeps "remove" instant and offline-safe.
+ */
+function attachmentsKey(slug: string): string {
+  return `ac.feedback.images.${slug}`
+}
+
+function readAttachments(slug: string): PendingImage[] {
+  try {
+    const raw = sessionStorage.getItem(attachmentsKey(slug))
+    if (!raw) return []
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter(
+      (entry): entry is PendingImage =>
+        typeof entry === 'object' &&
+        entry !== null &&
+        typeof (entry as PendingImage).id === 'string' &&
+        typeof (entry as PendingImage).name === 'string',
+    )
+  } catch {
+    // Unparseable or unreadable storage is the same as no attachments — see readDraft.
+    return []
+  }
+}
+
+function writeAttachments(slug: string, images: PendingImage[]): void {
+  try {
+    if (images.length > 0) {
+      sessionStorage.setItem(attachmentsKey(slug), JSON.stringify(images))
+    } else {
+      sessionStorage.removeItem(attachmentsKey(slug))
+    }
+  } catch {
+    /* see readDraft */
+  }
+}
+
+/** The stored image, at whatever size the browser lays it out. */
+function attachmentUrl(id: string): string {
+  return `/api/feedback-attachments/${id}`
+}
+
+/**
+ * Images already submitted with a request. A thumbnail strip rather than inline
+ * full-width: the words are the substance and a screenshot is the evidence, so it
+ * should be glanceable and openable, not dominate the row.
+ */
+function AttachmentStrip({ ids }: { ids: string[] }) {
+  if (ids.length === 0) return null
+  return (
+    <ul className="mt-1.5 flex flex-wrap gap-1.5">
+      {ids.map((id) => (
+        <li key={id}>
+          <a
+            href={attachmentUrl(id)}
+            target="_blank"
+            rel="noreferrer"
+            className="border-border hover:border-ring block overflow-hidden rounded border transition-colors"
+          >
+            <img
+              src={attachmentUrl(id)}
+              alt="Attached screenshot"
+              loading="lazy"
+              className="h-16 w-24 object-cover"
+            />
+          </a>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+export function FeedbackSection({
+  appSlug,
+  /**
+   * Asked to open by the card's band, which is where the affordance now lives —
+   * at the foot of this panel it was below the fold of a tab nobody opens unless
+   * they already know what is in it.
+   *
+   * A count of how many times it has asked, so a second ask re-opens the composer
+   * the first one closed on send. A boolean could not say "again".
+   */
+  openComposer = 0,
+}: {
+  appSlug: string
+  openComposer?: number
+}) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const listOptions = trpc.feedback.list.queryOptions({ resourceSlug: appSlug })
@@ -119,6 +224,11 @@ export function FeedbackSection({ appSlug }: { appSlug: string }) {
 
   // Seeded from storage so a draft survives the tab panel unmounting under it.
   const [draft, setDraft] = useState(() => readDraft(appSlug))
+  const [images, setImages] = useState<PendingImage[]>(() =>
+    readAttachments(appSlug),
+  )
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editDraft, setEditDraft] = useState('')
   /**
@@ -126,11 +236,100 @@ export function FeedbackSection({ appSlug }: { appSlug: string }) {
    * what earns the caret: focus follows the click, never the mount. A recovered draft
    * reopens it, otherwise the text would be held but invisible.
    */
-  const [composerOpen, setComposerOpen] = useState(() => !!readDraft(appSlug))
+  const [composerOpen, setComposerOpen] = useState(
+    () =>
+      openComposer > 0 ||
+      !!readDraft(appSlug) ||
+      readAttachments(appSlug).length > 0,
+  )
+
+  // The band asked for the composer while this panel was unmounted, so honour it on
+  // arrival. The request is NOT cleared from here: doing so removed the tab from the
+  // strip (it only exists when there is something in it), which bounced the active
+  // tab back to the first one — the composer was deleting the tab it had opened.
+  useEffect(() => {
+    if (openComposer > 0) setComposerOpen(true)
+  }, [openComposer])
 
   const updateDraft = (value: string) => {
     setDraft(value)
     writeDraft(appSlug, value)
+  }
+
+  const updateImages = (next: PendingImage[]) => {
+    setImages(next)
+    writeAttachments(appSlug, next)
+  }
+
+  /**
+   * Upload on pick, not on send.
+   *
+   * It costs a round trip before anyone has committed to posting, and it buys the two
+   * things that matter: the person sees whether their screenshot actually arrived
+   * while they can still do something about it, and Send stays a single fast request
+   * that cannot half-fail with three images in flight.
+   */
+  const attach = async (picked: FileList | null) => {
+    const files = [...(picked ?? [])]
+    if (files.length === 0) return
+
+    const room = MAX_ATTACHMENTS - images.length
+    if (room <= 0) {
+      setUploadError(`Up to ${MAX_ATTACHMENTS} images`)
+      return
+    }
+
+    setUploadError(null)
+    setUploading(true)
+    try {
+      const form = new FormData()
+      for (const file of files.slice(0, room)) form.append('image', file)
+
+      const response = await fetch(UPLOAD_URL, {
+        method: 'POST',
+        body: form,
+        // The visitor cookie is the identity the upload is recorded against, and it
+        // is httpOnly — so it has to ride along explicitly.
+        credentials: 'same-origin',
+      })
+      // Unknown rather than a declared shape: this is a JSON body off the wire, and
+      // the error path exists precisely for responses that are not what we expect.
+      const payload: unknown = await response.json().catch(() => null)
+      const field = (key: string): unknown =>
+        typeof payload === 'object' && payload !== null
+          ? (payload as Record<string, unknown>)[key]
+          : undefined
+
+      if (!response.ok) {
+        const reported = field('error')
+        setUploadError(
+          typeof reported === 'string'
+            ? reported
+            : 'Could not attach that image',
+        )
+        return
+      }
+
+      const ids = field('ids')
+      if (!Array.isArray(ids)) {
+        setUploadError('Could not attach that image')
+        return
+      }
+      updateImages([
+        ...images,
+        ...ids.map((id, index) => ({
+          id: String(id),
+          name: files[index]?.name ?? 'image',
+        })),
+      ])
+      if (files.length > room) {
+        setUploadError(`Only the first ${room} were attached`)
+      }
+    } catch {
+      setUploadError('Could not attach that image')
+    } finally {
+      setUploading(false)
+    }
   }
 
   const refresh = () =>
@@ -141,6 +340,8 @@ export function FeedbackSection({ appSlug }: { appSlug: string }) {
       onSuccess: () => {
         // Sent: the draft is no longer in flight, so it should not come back.
         updateDraft('')
+        updateImages([])
+        setUploadError(null)
         setComposerOpen(false)
         void refresh()
       },
@@ -158,8 +359,15 @@ export function FeedbackSection({ appSlug }: { appSlug: string }) {
     trpc.feedback.dismiss.mutationOptions({ onSuccess: () => void refresh() }),
   )
 
-  /** Both fields are optional, so this submits whatever there is — including nothing. */
-  const send = () => add.mutate({ resourceSlug: appSlug, body: draft.trim() })
+  /** Every field is optional, so this submits whatever there is — including nothing. */
+  const send = () =>
+    add.mutate({
+      resourceSlug: appSlug,
+      body: draft.trim(),
+      ...(images.length > 0
+        ? { attachmentIds: images.map((image) => image.id) }
+        : {}),
+    })
 
   const saveEdit = (id: string) => {
     const body = editDraft.trim()
@@ -269,14 +477,33 @@ export function FeedbackSection({ appSlug }: { appSlug: string }) {
                     </div>
                   </div>
                 ) : item.body ? (
-                  <p className="mt-0.5 whitespace-pre-wrap">{item.body}</p>
+                  <p
+                    data-feedback-body=""
+                    className="mt-0.5 whitespace-pre-wrap"
+                  >
+                    {item.body}
+                  </p>
+                ) : item.attachmentIds.length > 0 ? (
+                  // The screenshot IS the detail — saying "no detail given" over a
+                  // picture of the problem would read as the catalog ignoring it.
+                  <p
+                    data-feedback-body=""
+                    className="text-muted-foreground mt-0.5 italic"
+                  >
+                    Screenshot only — no words added.
+                  </p>
                 ) : (
                   // A bare flag: no words, still a signal. Say so rather than
                   // rendering an empty row someone has to interpret.
-                  <p className="text-muted-foreground mt-0.5 italic">
+                  <p
+                    data-feedback-body=""
+                    className="text-muted-foreground mt-0.5 italic"
+                  >
                     Flagged as out of date — no detail given.
                   </p>
                 )}
+
+                <AttachmentStrip ids={item.attachmentIds} />
 
                 {item.reviewerReply && (
                   <ReviewerReply reply={item.reviewerReply} />
@@ -286,9 +513,7 @@ export function FeedbackSection({ appSlug }: { appSlug: string }) {
           })}
         </ul>
       ) : (
-        <p className="text-muted-foreground text-xs">
-          Nothing here yet. Spotted something out of date or missing?
-        </p>
+        <p className="text-muted-foreground text-xs">Nothing here yet.</p>
       )}
 
       {composerOpen ? (
@@ -307,33 +532,69 @@ export function FeedbackSection({ appSlug }: { appSlug: string }) {
               }
             }}
           />
-          <div className="flex items-center gap-3">
+          {images.length > 0 && (
+            <ul className="flex flex-wrap gap-2">
+              {images.map((image) => (
+                <li key={image.id} className="relative">
+                  <img
+                    src={attachmentUrl(image.id)}
+                    alt={image.name}
+                    className="border-border h-16 w-24 rounded border object-cover"
+                  />
+                  <button
+                    type="button"
+                    aria-label={`Remove ${image.name}`}
+                    onClick={() =>
+                      updateImages(images.filter((i) => i.id !== image.id))
+                    }
+                    className="bg-background/90 text-muted-foreground hover:text-foreground absolute -top-1.5 -right-1.5 rounded-full border p-0.5 leading-none"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="flex flex-wrap items-center gap-3">
             <Button
               type="button"
               size="sm"
-              disabled={add.isPending}
+              disabled={add.isPending || uploading}
               onClick={send}
             >
               {add.isPending ? 'Sending…' : 'Send'}
             </Button>
+
+            {images.length < MAX_ATTACHMENTS && (
+              <label className="text-muted-foreground hover:text-foreground cursor-pointer text-xs underline decoration-dotted underline-offset-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="sr-only"
+                  disabled={uploading}
+                  onChange={(event) => {
+                    void attach(event.target.files)
+                    // Cleared so picking the SAME file again still fires a change.
+                    event.target.value = ''
+                  }}
+                />
+                {uploading ? 'Attaching…' : 'Attach a screenshot'}
+              </label>
+            )}
+
             <span className="text-muted-foreground text-xs">
               Posted under a nickname. You can edit it for an hour, or withdraw
               it until someone answers.
             </span>
           </div>
+
+          {uploadError && (
+            <p className="text-destructive text-xs">{uploadError}</p>
+          )}
         </div>
-      ) : (
-        <div className="mt-3">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => setComposerOpen(true)}
-          >
-            ✎ Suggest a change
-          </Button>
-        </div>
-      )}
+      ) : null}
 
       {/* Outside the composer: a failed list query leaves nothing to collapse into. */}
       {failure && (

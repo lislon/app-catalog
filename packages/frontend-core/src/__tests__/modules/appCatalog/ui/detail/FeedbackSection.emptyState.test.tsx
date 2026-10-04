@@ -42,31 +42,30 @@ vi.mock('~/api/infra/trpc', () => ({
 const { FeedbackSection } =
   await import('~/modules/appCatalog/ui/detail/FeedbackSection')
 
-const SUGGEST = 'Suggest a change'
-
 describe('FeedbackSection — composer', () => {
-  it('keeps the composer behind the invitation until it is clicked', async () => {
+  it('stays closed until something asks for it', () => {
     state.items = []
     render(<FeedbackSection appSlug="example-app" />)
 
     expect(screen.getByText(/Nothing here yet/)).toBeInTheDocument()
     expect(screen.queryByPlaceholderText('What should change?')).toBeNull()
-
-    await userEvent.click(
-      screen.getByRole('button', { name: /Suggest a change/ }),
-    )
-
-    const field = screen.getByPlaceholderText('What should change?')
-    expect(field).toBeInTheDocument()
-    // Focus follows the click, never the mount — the click is what earns the caret.
-    expect(field).toHaveFocus()
-    // One affordance at a time: the button hides once it has done its job.
+    // The affordance lives in the card's band now, not in this panel — down here
+    // it was below the fold of a tab, which is why it moved.
     expect(
-      screen.queryByRole('button', { name: new RegExp(SUGGEST) }),
+      screen.queryByRole('button', { name: /Suggest a change/ }),
     ).toBeNull()
   })
 
-  it('offers the same single affordance when feedback already exists', () => {
+  it('opens and takes the caret when the band asks', () => {
+    state.items = []
+    render(<FeedbackSection appSlug="example-app" openComposer={1} />)
+
+    const field = screen.getByPlaceholderText('What should change?')
+    expect(field).toBeInTheDocument()
+    expect(field).toHaveFocus()
+  })
+
+  it('does not auto-open just because feedback exists', () => {
     state.items = [
       {
         id: 'c1',
@@ -87,22 +86,13 @@ describe('FeedbackSection — composer', () => {
     ]
     render(<FeedbackSection appSlug="example-app" />)
 
-    // Not auto-opened, and no second label for the same action.
     expect(screen.queryByPlaceholderText('What should change?')).toBeNull()
-    expect(
-      screen.getByRole('button', { name: new RegExp(SUGGEST) }),
-    ).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Add a note' })).toBeNull()
   })
 
   it('sends with nothing typed — a bare flag is a valid signal', async () => {
     state.items = []
     state.sent = []
-    render(<FeedbackSection appSlug="example-app" />)
-
-    await userEvent.click(
-      screen.getByRole('button', { name: new RegExp(SUGGEST) }),
-    )
+    render(<FeedbackSection appSlug="example-app" openComposer={1} />)
 
     const send = screen.getByRole('button', { name: 'Send' })
     // The whole point: no words, no image, still submittable.
@@ -120,11 +110,10 @@ describe('FeedbackSection — composer', () => {
   it('keeps a half-typed draft across an unmount, and reopens the composer for it', async () => {
     sessionStorage.clear()
     state.items = []
-    const first = render(<FeedbackSection appSlug="example-app" />)
-
-    await userEvent.click(
-      screen.getByRole('button', { name: new RegExp(SUGGEST) }),
+    const first = render(
+      <FeedbackSection appSlug="example-app" openComposer={1} />,
     )
+
     await userEvent.type(
       screen.getByPlaceholderText('What should change?'),
       'half a thought',
@@ -138,13 +127,37 @@ describe('FeedbackSection — composer', () => {
     expect(recovered).toHaveValue('half a thought')
   })
 
+  /**
+   * The composer closes itself on send, so the band has to be able to say "again".
+   * It used to pass a boolean, which cannot: the second click left the prop at
+   * `true`, the effect did not re-run, and the button was dead for the rest of the
+   * card's life — you could file one correction per entry and no more. Caught by
+   * sending twice in a real browser, which is the only place it showed.
+   */
+  it('reopens for a second request after the first one was sent', async () => {
+    sessionStorage.clear()
+    state.items = []
+    state.sent = []
+    const view = render(
+      <FeedbackSection appSlug="example-app" openComposer={1} />,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(screen.queryByPlaceholderText('What should change?')).toBeNull()
+
+    // The band asking a second time — a new count, same requested tab.
+    view.rerender(<FeedbackSection appSlug="example-app" openComposer={2} />)
+    expect(
+      screen.getByPlaceholderText('What should change?'),
+    ).toBeInTheDocument()
+  })
+
   it('does not leak a draft between entries, and clears it once sent', async () => {
     sessionStorage.clear()
     state.items = []
     state.sent = []
-    const first = render(<FeedbackSection appSlug="example-app" />)
-    await userEvent.click(
-      screen.getByRole('button', { name: new RegExp(SUGGEST) }),
+    const first = render(
+      <FeedbackSection appSlug="example-app" openComposer={1} />,
     )
     await userEvent.type(
       screen.getByPlaceholderText('What should change?'),

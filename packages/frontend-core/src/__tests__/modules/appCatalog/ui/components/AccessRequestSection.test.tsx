@@ -184,12 +184,14 @@ describe('AccessRequestSection — entries with no access information', () => {
     displayName: 'Ghost',
   }
 
-  it('still renders the box, instead of nothing, when every access field is empty', () => {
+  it('still says something, instead of nothing, when every access field is empty', () => {
     render(<AccessRequestSection app={bare} approvalMethods={[]} />)
 
-    expect(
-      screen.getByRole('heading', { name: 'How to get access' }),
-    ).toBeInTheDocument()
+    // The frame and its "How to get access" heading were removed when access
+    // became its own tab — the tab's label states that, and a heading repeating
+    // the tab you just clicked is the same fact twice. What #181 actually
+    // guarantees is that the reader is TOLD we do not know, rather than shown an
+    // empty panel, so that is what this asserts.
     expect(screen.getByText(/not documented yet/)).toBeInTheDocument()
   })
 

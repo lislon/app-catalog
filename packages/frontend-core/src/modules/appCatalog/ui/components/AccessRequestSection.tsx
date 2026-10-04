@@ -235,10 +235,15 @@ const UNDOCUMENTED_WITHOUT_CONTACT =
  */
 function AccessBox({ children }: { children: ReactNode }) {
   return (
-    <div className="mt-6 rounded-lg border-[1.5px] border-primary/40 bg-primary/[0.03] p-4 space-y-4">
-      <h3 className="text-sm font-semibold text-foreground">
-        How to get access
-      </h3>
+    // No frame and no heading. Both existed to mark this out as THE thing on a long
+    // scrolling card; now it is its own tab, so the tab's label already says what
+    // this is and the panel edge already bounds it. A box inside a box, under a
+    // heading that repeats the tab you just clicked, is two statements of the same
+    // fact and ink the reader has to look past.
+    // A stable anchor for tests, because neither of the old handles survives: the
+    // heading is gone, and a sub-resource page has no tab panel to read either.
+    // Text and structure both move; this does not.
+    <div data-access-section="" className="space-y-4">
       {children}
     </div>
   )

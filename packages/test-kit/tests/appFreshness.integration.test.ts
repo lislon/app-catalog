@@ -10,6 +10,9 @@ import { given, magazine } from '@igstack/app-catalog-test-kit'
 const DAY = 24 * 60 * 60 * 1000
 const iso = (msAgo: number) => new Date(Date.now() - msAgo).toISOString()
 
+// The dates live on the card's Metadata tab, so every case opens it first —
+// including the "no line" case. Asserting the absence from another tab would
+// pass whether or not the line works, which is worse than having no test.
 describe('App freshness line', () => {
   it('shows an "Updated" freshness line when the app has freshness', async () => {
     const { ui } = await given(
@@ -28,6 +31,7 @@ describe('App freshness line', () => {
     )
 
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
+    await ui.app.openTab('documentation')
     expect(screen.getByText(/Updated/i)).toBeInTheDocument()
     // fresh → no stale note
     expect(screen.queryByText(/may be out of date/i)).toBeNull()
@@ -50,6 +54,7 @@ describe('App freshness line', () => {
     )
 
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
+    await ui.app.openTab('documentation')
     expect(screen.getByText(/may be out of date/i)).toBeInTheDocument()
   })
 
@@ -65,6 +70,7 @@ describe('App freshness line', () => {
       { initialRoute: '/app/dated-app' },
     )
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
+    await ui.app.openTab('documentation')
     expect(screen.getByText(/Added/i)).toBeInTheDocument()
   })
 
@@ -87,6 +93,7 @@ describe('App freshness line', () => {
     )
 
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
+    await ui.app.openTab('documentation')
     const line = screen.getByText(/Updated/i)
     expect(line).toHaveTextContent(/months ago/i)
     expect(line).not.toHaveTextContent(/hour/i)
@@ -111,6 +118,7 @@ describe('App freshness line', () => {
     )
 
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
+    await ui.app.openTab('documentation')
     expect(screen.getByText(/Updated/i)).toHaveTextContent(/3 days ago/i)
   })
 
@@ -127,6 +135,7 @@ describe('App freshness line', () => {
     )
 
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
+    await ui.app.openTab('documentation')
     expect(screen.queryByText(/Updated/i)).toBeNull()
   })
 })

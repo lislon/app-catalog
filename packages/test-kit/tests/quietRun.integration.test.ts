@@ -27,6 +27,9 @@ describe('a green run is a quiet run', () => {
       initialRoute: '/app/taskflow',
     })
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
+    // The comments query only fires once its tab mounts the section, so the
+    // path this test exists to exercise has to be opened deliberately.
+    await ui.app.openTab('notes')
     await waitFor(() =>
       expect(screen.getByText(/Nothing here yet/)).toBeVisible(),
     )

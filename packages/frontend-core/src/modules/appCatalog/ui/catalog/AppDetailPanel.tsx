@@ -1,6 +1,6 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
 import { X } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { SubResourceDetailPanel } from '../components/SubResourceDetailPanel'
 import { AppDetails } from '../detail/AppDetails'
@@ -37,6 +37,47 @@ export function AppDetailPanel({
 }) {
   const { approvalMethods } = useAppCatalogContext()
   const dialogRef = useRef<HTMLDivElement>(null)
+
+  /**
+   * Centre the card ONCE when it opens, then hold that position.
+   *
+   * `my-auto` centred it on every render, so each panel height change pushed both
+   * edges and half the delta became upward movement of everything above it —
+   * including the tab strip, which moved 113px and took the control the user had
+   * just clicked with it (CLS 0.19, "needs improvement").
+   *
+   * Top-anchoring fixed the shift but looked wrong: a short card sat high on the
+   * page. So pin the centred offset instead. The card still opens centred, and
+   * anything that grows it afterwards extends downward only — which is what a
+   * reader expects when they open a tab with more in it.
+   *
+   * Only on open and on resize. Deliberately NOT on content change: reacting to
+   * content is precisely the bug.
+   */
+  useLayoutEffect(() => {
+    const card = dialogRef.current
+    const scroller = card?.parentElement
+    if (!card || !scroller) return
+
+    const pinCentre = () => {
+      card.style.marginTop = '0px'
+      const style = getComputedStyle(scroller)
+      const usable =
+        scroller.clientHeight -
+        parseFloat(style.paddingTop) -
+        parseFloat(style.paddingBottom)
+      const slack = usable - card.offsetHeight
+      // Negative slack means the card is already taller than the viewport; leave it
+      // at the top and let the overlay scroll, rather than pushing its head off.
+      card.style.marginTop = `${Math.max(0, Math.round(slack / 2))}px`
+    }
+
+    pinCentre()
+    window.addEventListener('resize', pinCentre)
+    return () => window.removeEventListener('resize', pinCentre)
+    // Keyed on the opened entry: a different card is a new open, and should
+    // re-centre for its own height.
+  }, [app.slug, subResource?.slug])
 
   // Focus the dialog on mount so Esc hotkeys fire immediately, even when
   // the card was opened by a mouse click (which leaves focus on the grid row).
@@ -75,7 +116,10 @@ export function AppDetailPanel({
         aria-modal="true"
         aria-label={`${subResource?.displayName ?? app.displayName} details`}
         tabIndex={-1}
-        className="relative w-full max-w-[min(1120px,94vw)] my-auto rounded-[var(--radius)] border border-border bg-background shadow-2xl animate-in fade-in zoom-in-95 duration-200 outline-none"
+        // Centred on open, then held — see the pin effect above. `my-auto` is
+        // deliberately absent: it re-centres on EVERY height change, which is the
+        // layout-shift bug.
+        className="relative w-full max-w-[min(1120px,94vw)] rounded-[var(--radius)] border border-border bg-background shadow-2xl animate-in fade-in zoom-in-95 duration-200 outline-none"
       >
         <button
           type="button"

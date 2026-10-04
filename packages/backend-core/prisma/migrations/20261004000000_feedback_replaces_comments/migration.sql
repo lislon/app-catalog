@@ -24,6 +24,7 @@ CREATE TABLE "DbFeedback" (
 CREATE TABLE "DbFeedbackAttachment" (
     "id" TEXT NOT NULL,
     "feedbackId" TEXT,
+    "authorHash" TEXT NOT NULL,
     "content" BYTEA NOT NULL,
     "mimeType" TEXT NOT NULL,
     "fileSize" INTEGER NOT NULL,
@@ -47,6 +48,10 @@ CREATE INDEX "DbFeedback_status_createdAt_idx" ON "DbFeedback"("status", "create
 
 -- CreateIndex
 CREATE INDEX "DbFeedbackAttachment_feedbackId_idx" ON "DbFeedbackAttachment"("feedbackId");
+
+-- CreateIndex
+-- Covers both the ownership check on submit and the orphan sweep.
+CREATE INDEX "DbFeedbackAttachment_authorHash_createdAt_idx" ON "DbFeedbackAttachment"("authorHash", "createdAt");
 
 -- AddForeignKey
 ALTER TABLE "DbFeedback" ADD CONSTRAINT "DbFeedback_resourceId_fkey" FOREIGN KEY ("resourceId") REFERENCES "DbResource"("id") ON DELETE CASCADE ON UPDATE CASCADE;

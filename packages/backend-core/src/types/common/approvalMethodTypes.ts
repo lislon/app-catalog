@@ -58,6 +58,18 @@ export type ApprovalMethod = {
    */
   displayName: string
   /**
+   * One or two words for places that cannot afford `displayName`, above all the
+   * detail card's access tab — which names the route it describes, so the reader
+   * knows what they are in for before they open it.
+   *
+   * `displayName` is written to stand alone in prose and routinely will not fit:
+   * a name ending in "Bot" or "Portal" repeats what the context already says,
+   * and the longest in use runs past thirty characters. Falls back to
+   * `displayName` when unset, so this is only worth setting where that reads
+   * badly in a tab.
+   */
+  shortName?: string
+  /**
    * Optionally - older name of approval method if there were migration in organization.
    */
   deprecatedAliases?: string[]

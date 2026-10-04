@@ -25,8 +25,14 @@
   "targetDefaults": {
     "prisma:generate": {
       "cache": true,
+      // Keyed and output by workspace path, because the generated client belongs to
+      // backend-core wherever the target runs from. Only backend-core declares this
+      // target: a second project generating the same client into the same directory
+      // means two cache entries owning one output, which silently restored a stale
+      // client over a fresh one, and made the generator append its imports twice
+      // until the bundle would not parse.
       "inputs": [
-        "{projectRoot}/prisma/schema.prisma",
+        "{workspaceRoot}/packages/backend-core/prisma/schema.prisma",
         "{workspaceRoot}/package.json"
       ],
       "outputs": ["{workspaceRoot}/packages/backend-core/src/generated"]

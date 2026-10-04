@@ -115,6 +115,7 @@ model DbApprovalMethod {
   slug              String             @id
   type              ApprovalMethodType
   displayName       String
+  shortName         String? // One or two words for tight spots (the detail card's access tab); falls back to displayName
   /// [ApprovalMethodConfig] - Type-specific configuration
   config            Json?
   deprecatedAliases String[]           @default([]) // Old URLs that should redirect to this method
@@ -156,6 +157,7 @@ model DbResource {
   tiers                      Json?
   /// [QuickJump[]]
   quickJumps                 Json?
+  childrenLabel              String? // Plural noun for this resource's children ("Accounts"); set on the parent, names its tab
   sourceRefs                 SourceReference[]
   feedback                   DbFeedback[]
   // Self-referential tree: sub-resources point to their parent
@@ -264,6 +266,11 @@ model DbFeedbackAttachment {
   feedbackId String?
   feedback   DbFeedback? @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
 
+  /// Who uploaded it, so submitting can only claim your OWN unclaimed images. Without
+  /// this, `feedbackId` being a single FK means attaching a guessed id would MOVE that
+  /// image off somebody else's feedback.
+  authorHash String
+
   /// Re-encoded by sharp before storage, so this is always one of our own formats and
   /// never whatever bytes arrived.
   content  Bytes
@@ -278,6 +285,7 @@ model DbFeedbackAttachment {
   createdAt DateTime @default(now())
 
   @@index([feedbackId])
+  @@index([authorHash, createdAt])
 }
 
 model DbAppTagDefinition {
