@@ -33,8 +33,8 @@ vi.mock('~/modules/appCatalog/ui/context/AppCatalogFiltersContext', () => ({
   })),
 }))
 vi.mock('~/modules/auth', () => ({ useUser: vi.fn(() => null) }))
-vi.mock('~/modules/appCatalog/ui/detail/CommentsSection', () => ({
-  CommentsSection: () => <div />,
+vi.mock('~/modules/appCatalog/ui/detail/FeedbackSection', () => ({
+  FeedbackSection: () => <div />,
 }))
 
 const { AppDetailPanel } =

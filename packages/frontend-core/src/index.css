@@ -249,9 +249,32 @@
   padding-left: 1.25rem;
 }
 
-/* Comment review labels. Plain CSS rather than utilities: there is no success
-   token in the palette, and a tinted chip needs a colour the theme does not
-   name. `--chart-3` is the palette's green and already shifts for dark mode. */
+/* A section heading inside the detail card.
+   These were 14px/500 labelling 14px/400 body — one dimension of difference, a
+   100-unit weight delta, which is why they read as pale despite measuring 13.99:1
+   against the page. They are already full ink, so there is nothing to darken; the
+   fix is register. 11px bold uppercase with tracking reads as a label rather than
+   a slightly bolder sentence. No per-section rule: rules separate peers of equal
+   weight and add ink at every boundary. */
+.section-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--foreground);
+  line-height: 1.4;
+}
+
+/* Review labels. Plain CSS rather than utilities: there is no success token in the
+   palette, and a tinted chip needs a colour the theme does not name. `--chart-3` is
+   the palette's green and already shifts for dark mode.
+
+   Mix percentages are low on purpose. At 75%/72% these measured 3.55:1 and 3.24:1
+   against the cream page — under the 4.5:1 floor for 11px text — and the old 600/700
+   weights were compensating for that, which is why they shouted and were still hard
+   to read. Lowering the mix raises contrast in both themes, so there is no .dark
+   override. Verify any change by measurement, not by eye: 60%/55% looks fine and
+   still fails. */
 .comment-chip {
   display: inline-flex;
   align-items: center;
@@ -259,12 +282,13 @@
   border-radius: 999px;
   padding: 0.05rem 0.5rem;
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.5;
   white-space: nowrap;
 }
 .comment-chip-applied {
-  color: color-mix(in oklab, var(--chart-3) 75%, var(--foreground));
+  /* 5.46:1 light, 7.67:1 dark */
+  color: color-mix(in oklab, var(--chart-3) 50%, var(--foreground));
   background: color-mix(in oklab, var(--chart-3) 16%, var(--card));
   border: 1px solid color-mix(in oklab, var(--chart-3) 35%, var(--card));
 }
@@ -273,6 +297,27 @@
   background: var(--muted);
   border: 1px solid var(--border);
   font-weight: 400;
+}
+
+/* How many items are still waiting on a maintainer. Amber rather than red: an entry
+   with open feedback is disputed, not broken, and red is already the withdraw
+   affordance in the same thread. 5.45:1 light, 8.08:1 dark. */
+.feedback-open-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15rem;
+  border-radius: 999px;
+  padding: 0.15rem 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  color: color-mix(in oklab, var(--chart-4) 45%, var(--foreground));
+  background: color-mix(in oklab, var(--chart-4) 18%, var(--card));
+  border: 1px solid color-mix(in oklab, var(--chart-4) 38%, var(--card));
 }
 
 /* tw-animate-css ships no reduced-motion rules of its own, so honour the

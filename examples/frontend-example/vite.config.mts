@@ -44,18 +44,37 @@ const config = defineConfig(({ mode }) => {
     resolve: {
       ...cfg.resolve,
       conditions: ['my-custom-condition'],
-      // Resolve to source files for HMR in development
-      alias: {
-        '@igstack/app-catalog-frontend-core': fileURLToPath(
-          new URL('../../packages/frontend-core/src/index.tsx', import.meta.url),
-        ),
-        '@igstack/app-catalog-shared-core': fileURLToPath(
-          new URL('../../packages/shared-core/src/index.ts', import.meta.url),
-        ),
-        '~': fileURLToPath(
-          new URL('../../packages/frontend-core/src', import.meta.url),
-        ),
-      },
+      // Resolve to source files for HMR in development.
+      //
+      // Exact-match (`find: /^…$/`) rather than the object form, which prefix-matches:
+      // with a prefix alias, importing the package's `./index.css` subpath resolved to
+      // `src/index.tsx/index.css` and died with ENOTDIR. Anchoring the pattern leaves
+      // subpaths to the package's own `exports` map, which already points
+      // `my-custom-condition` at source — so the stylesheet and the entry both resolve
+      // the way a real consumer's would.
+      alias: [
+        {
+          find: /^@igstack\/app-catalog-frontend-core$/,
+          replacement: fileURLToPath(
+            new URL(
+              '../../packages/frontend-core/src/index.tsx',
+              import.meta.url,
+            ),
+          ),
+        },
+        {
+          find: /^@igstack\/app-catalog-shared-core$/,
+          replacement: fileURLToPath(
+            new URL('../../packages/shared-core/src/index.ts', import.meta.url),
+          ),
+        },
+        {
+          find: '~',
+          replacement: fileURLToPath(
+            new URL('../../packages/frontend-core/src', import.meta.url),
+          ),
+        },
+      ],
     },
 
     build: {

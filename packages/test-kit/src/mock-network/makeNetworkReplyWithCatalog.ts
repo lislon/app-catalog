@@ -8,7 +8,8 @@ export function makeNetworkReplyWithCatalog(
   const catalog = new NetworkCatalog()
 
   catalog.add(SharedNetwork.appCatalogQuery(service))
-  catalog.add(SharedNetwork.commentsList())
+  catalog.add(SharedNetwork.feedbackList())
+  catalog.add(SharedNetwork.feedbackMine())
   catalog.add(SharedNetwork.authGetSession(service))
   catalog.add(SharedNetwork.authGetProviders())
   catalog.add(SharedNetwork.authSignOut())

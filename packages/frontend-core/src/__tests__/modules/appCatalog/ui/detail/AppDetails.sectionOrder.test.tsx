@@ -30,8 +30,8 @@ vi.mock('~/modules/appCatalog/ui/context/AppCatalogFiltersContext', () => ({
   useAppCatalogFilters: vi.fn(() => ({ selectedTags: [], toggleTag: vi.fn() })),
 }))
 vi.mock('~/modules/auth', () => ({ useUser: vi.fn(() => null) }))
-vi.mock('~/modules/appCatalog/ui/detail/CommentsSection', () => ({
-  CommentsSection: () => <div />,
+vi.mock('~/modules/appCatalog/ui/detail/FeedbackSection', () => ({
+  FeedbackSection: () => <div />,
 }))
 
 const { AppDetails } = await import('~/modules/appCatalog/ui/detail/AppDetails')

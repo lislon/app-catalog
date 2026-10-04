@@ -22,13 +22,13 @@ describe('a green run is a quiet run', () => {
     expect(() => window.scrollTo(0, 0)).not.toThrow()
   })
 
-  it('answers the comments query of an opened resource instead of leaving it unhandled', async () => {
+  it('answers the feedback query of an opened resource instead of leaving it unhandled', async () => {
     const { ui } = await given(magazine.full(), {
       initialRoute: '/app/taskflow',
     })
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
     await waitFor(() =>
-      expect(screen.getByText(/No comments yet\./)).toBeVisible(),
+      expect(screen.getByText(/Nothing here yet/)).toBeVisible(),
     )
 
     expect(takeUnhandledRequests()).toEqual([])

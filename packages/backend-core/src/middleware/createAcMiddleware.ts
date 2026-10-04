@@ -12,7 +12,7 @@ import { createTrpcRouter } from '../server/controller'
 import { createAcTrpcContext } from '../server/acTrpcContext'
 import { createAuth } from '../modules/auth/auth'
 import { createMockUserFromDevConfig } from '../modules/auth/devMockUserUtils'
-import { resolveVisitor } from '../modules/comments/visitorIdentity'
+import { resolveActor } from '../modules/visitor/visitorIdentity'
 
 export async function createAcMiddleware(
   options: AcMiddlewareOptions,
@@ -82,8 +82,9 @@ export async function createAcMiddleware(
       user,
       isAdmin,
       // Issued here, on every request, so the cookie already exists by the time
-      // someone writes a comment.
-      visitor: resolveVisitor(req, res),
+      // someone sends feedback. Falls back to the anonymous browser when there is no
+      // signed-in user, which today is always.
+      actor: resolveActor(req, res, user?.id ?? null),
     })
   }
 

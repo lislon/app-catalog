@@ -28,11 +28,27 @@ export const SharedNetwork = {
     }
   },
 
-  /** Every opened resource asks for its comments; none have any unless a test says so. */
-  commentsList(): NetworkInterceptor {
+  /**
+   * Every opened resource asks for its feedback; none has any unless a test says so.
+   *
+   * The shape is `{ items, openCount }` rather than a bare array, because the open
+   * count travels with the list — the badge would otherwise need a second round trip.
+   */
+  feedbackList(): NetworkInterceptor {
     return {
-      scopeKey: ['comments-list'],
-      handler: trpcMsw.comments.list.query(() => []),
+      scopeKey: ['feedback-list'],
+      handler: trpcMsw.feedback.list.query(() => ({
+        items: [],
+        openCount: 0,
+      })),
+    }
+  },
+
+  /** The visitor's own feedback, across entries. Empty means the header renders nothing. */
+  feedbackMine(): NetworkInterceptor {
+    return {
+      scopeKey: ['feedback-mine'],
+      handler: trpcMsw.feedback.mine.query(() => []),
     }
   },
 

@@ -44,7 +44,7 @@ import { formatRelativeTime } from '../../utils/formatRelativeTime'
 import { TierVariantsSection } from '../components/TierVariantsSection'
 import { SubResourcesSection } from '../components/SubResourcesSection'
 import { getChildResources } from '../../utils/resolveHelpers'
-import { CommentsSection } from './CommentsSection'
+import { FeedbackSection } from './FeedbackSection'
 import { displayUrl } from '~/modules/appCatalog/utils/displayUrl'
 
 function getIconUrl(iconName: string): string {
@@ -741,7 +741,7 @@ export function AppDetails({
 
         {/* Freshness now shown near the header (see "Updated …" above). */}
 
-        <CommentsSection appSlug={app.slug} />
+        <FeedbackSection appSlug={app.slug} />
       </div>
 
       {/* Screenshot Gallery Dialog */}

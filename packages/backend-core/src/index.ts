@@ -27,14 +27,29 @@ export { registerAuthRoutes } from './modules/auth/registerAuthRoutes'
 export { createAuthRouter, type AuthRouter } from './modules/auth/authRouter'
 
 // Comments
-// CommentView is part of the router's inferred type, so it has to be nameable
+// FeedbackView is part of the router's inferred type, so it has to be nameable
 // from outside the package or every consumer's `useTRPC` becomes unportable.
-export { createCommentsRouter } from './modules/comments/commentsRouter'
+export { createFeedbackRouter } from './modules/feedback/feedbackRouter'
 export {
   EDIT_WINDOW_MS,
+  MAX_ATTACHMENTS,
   MAX_BODY_LENGTH,
-  type CommentView,
-} from './modules/comments/service'
+  MAX_SUBJECT_LENGTH,
+  type FeedbackList,
+  type FeedbackView,
+} from './modules/feedback/service'
+// The identity every surface shares — rows store `hash`, clients may hold `publicId`,
+// and `visitorFromSeed` is how a test or a dev session becomes a chosen visitor.
+export {
+  publicIdFromHash,
+  resolveActor,
+  resolveVisitor,
+  visitorFromSeed,
+  VISITOR_COOKIE,
+  type Actor,
+  type ActorKind,
+  type Visitor,
+} from './modules/visitor/visitorIdentity'
 
 // Icon management
 export {
