@@ -179,7 +179,26 @@ export function AppCatalogPage({
           <AppDetailPanel
             app={selectedApp}
             subResource={selectedSub}
-            onClose={() => void navigate({ to: '/' })}
+            onClose={() =>
+              void navigate({
+                to: '/',
+                /**
+                 * Drop the card's own params, keep the catalog's.
+                 *
+                 * `navigate({ to: '/' })` alone preserves the whole search object, so
+                 * closing a card left `?tab=notes` (and `?sub=`, `?qj=`) behind on the
+                 * catalog, where they mean nothing — and a link copied afterwards
+                 * carried them. Clearing the lot instead would throw away the
+                 * visitor's filters, which belong to the catalog and outlive any card.
+                 */
+                search: (prev) => ({
+                  ...prev,
+                  tab: undefined,
+                  sub: undefined,
+                  qj: undefined,
+                }),
+              })
+            }
             onAppClick={handleAppClick}
             onBackToParent={handleBackToParent}
           />

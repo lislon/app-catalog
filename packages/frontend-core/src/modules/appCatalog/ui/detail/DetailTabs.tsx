@@ -73,10 +73,17 @@ export function DetailTabs({
   /** Cancels the dialog's own padding so the tint reaches the card's edges. */
   bandClassName?: string
 }) {
+  /**
+   * The first tab is what the card opens on, so naming it in the URL says nothing.
+   * `encode` returning undefined drops the param, which keeps `?tab=` out of a link
+   * until someone has actually chosen something other than the default — and keeps a
+   * shared link honest about what the sender was looking at.
+   */
+  const defaultTabId = tabs[0]?.id
   const [urlTab, setUrlTab] = useUrlSyncedState<string>({
     key: 'tab',
     defaultValue: '',
-    encode: (value) => value || undefined,
+    encode: (value) => (value && value !== defaultTabId ? value : undefined),
   })
 
   const ids = tabs.map((t) => t.id)

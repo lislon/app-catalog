@@ -102,6 +102,30 @@ describe('the tab strip', () => {
     expect(wroteTab).toBe(true)
   })
 
+  /**
+   * The card opens on the first tab, so naming it in `?tab=` says nothing — and it
+   * made every shared link carry a param the sender never chose. Only a tab that is
+   * NOT the default belongs in the url.
+   */
+  it('keeps the default tab out of the url', () => {
+    render(<AppDetails app={withUrl} onClosePanel={vi.fn()} />)
+
+    // Go somewhere else, then come back to the first tab.
+    fireEvent.click(screen.getByRole('tab', { name: /^access/i }))
+    navigate.mockClear()
+    fireEvent.click(screen.getByRole('tab', { name: /^overview/i }))
+
+    const wroteDefault = navigate.mock.calls.some(
+      ([arg]) =>
+        (arg as { search?: Record<string, unknown> }).search?.tab ===
+        'overview',
+    )
+    expect(
+      wroteDefault,
+      'returning to the default tab must clear ?tab=, not set it',
+    ).toBe(false)
+  })
+
   it('opens on the tab named in the url', () => {
     search.tab = 'documentation'
     render(<AppDetails app={withUrl} onClosePanel={vi.fn()} />)
