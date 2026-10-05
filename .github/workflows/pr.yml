@@ -46,6 +46,10 @@ jobs:
         run: node scripts/check-registry-versions.mjs
   e2e:
     name: E2E Tests
+    # A stalled job that GitHub cancels loses its logs entirely (BlobNotFound),
+    # which makes the stall undiagnosable. An explicit timeout turns it into a
+    # failure instead, and a failure keeps its log.
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -62,6 +66,10 @@ jobs:
         run: pnpm --filter=@igstack/app-catalog-frontend-example run e2e
   preview:
     name: Preview
+    # A stalled job that GitHub cancels loses its logs entirely (BlobNotFound),
+    # which makes the stall undiagnosable. An explicit timeout turns it into a
+    # failure instead, and a failure keeps its log.
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

@@ -13,6 +13,7 @@ import { useUiSettings } from '~/context/UiSettingsContext'
 import type { AreaIcon } from '~/types/uiSettings'
 import { AppCatalogContext } from '../../context/AppCatalogContext'
 import { areaLabel, groupByArea } from '../../utils/areaGrouping'
+import { RequestAppDialog } from './RequestAppDialog'
 
 /**
  * Adaptive-home discovery spine (issue #38, increment 1) — matches the
@@ -347,6 +348,9 @@ function SearchResultsList({
   const [expandedParents, setExpandedParents] = useState<Set<string>>(
     () => new Set(),
   )
+  // Asking for something absent. Local state rather than a url param: a half-typed
+  // request has no business in a shareable link.
+  const [requestOpen, setRequestOpen] = useState(false)
 
   const results = useMemo(
     () => searchResources(apps, searchValue),
@@ -482,6 +486,26 @@ function SearchResultsList({
           ? `No results for "${searchValue}"`
           : `${matchCount} result${matchCount === 1 ? '' : 's'}`}
       </div>
+
+      {/* A zero-result search is the most informative moment in the catalog: someone
+          has said exactly what they expected to find. Showing only "No results"
+          throws that away and leaves them with nowhere to go. */}
+      {matchCount === 0 && !didDeprecatedFallback && (
+        <div className="mb-3 px-1">
+          <button
+            type="button"
+            onClick={() => setRequestOpen(true)}
+            className="text-sm underline decoration-dotted underline-offset-2 hover:text-foreground text-muted-foreground"
+          >
+            Not in the catalog? Ask for it to be added
+          </button>
+        </div>
+      )}
+      <RequestAppDialog
+        open={requestOpen}
+        onOpenChange={setRequestOpen}
+        initialSubject={searchValue}
+      />
 
       {/* #11: deprecated-only fallback notice */}
       {didDeprecatedFallback && (
