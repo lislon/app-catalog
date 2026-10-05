@@ -33,7 +33,7 @@
     "compile": "tsc --build",
     "dev": "tsx watch src/index.ts",
     "fix": "prettier --write ./src && eslint --fix ./src",
-    "prisma:generate": "prisma generate",
+    "prisma:generate": "rm -rf src/generated && prisma generate",
     "test:eslint": "eslint ./src --max-warnings=0",
     "test:types": "tsc --noEmit",
     "test:unit": "vitest",

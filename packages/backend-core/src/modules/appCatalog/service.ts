@@ -205,6 +205,7 @@ function rowToResource(row: ResourceRowWithSourceRefs): Resource {
     urlIssues,
     tiers,
     quickJumps,
+    childrenLabel: row.childrenLabel ?? undefined,
     // Fields from former SubResource
     parentSlug: row.parentSlug ?? undefined,
     tier: row.tier ?? undefined,

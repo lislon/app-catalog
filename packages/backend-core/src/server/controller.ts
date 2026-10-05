@@ -8,7 +8,7 @@ import type { Resource } from '../types/common/appCatalogTypes'
 
 import type { BetterAuth } from '../modules/auth/auth'
 import { createAuthRouter } from '../modules/auth/authRouter.js'
-import { createCommentsRouter } from '../modules/comments/commentsRouter'
+import { createFeedbackRouter } from '../modules/feedback/feedbackRouter'
 import { publicProcedure, router, t } from './trpcSetup'
 import { z } from 'zod'
 
@@ -67,7 +67,7 @@ export function createTrpcRouter(
         }),
     }),
 
-    comments: createCommentsRouter(),
+    feedback: createFeedbackRouter(),
 
     // Auth routes (requires auth instance)
     auth: createAuthRouter(t, auth, options),

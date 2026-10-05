@@ -104,7 +104,10 @@ export function SubResourceDetailPanel({
 
       {/* Two-step access section */}
       {hasAnyAccess && (
-        <div className="mt-6 space-y-6">
+        // The whole two-step region carries the anchor: the step labels naming
+        // the parent live out here, not inside the nested AccessRequestSections,
+        // so anchoring only those dropped the parent from the chain.
+        <div data-access-section="" className="mt-6 space-y-6">
           <h3 className="text-sm font-medium">How to get access</h3>
 
           {hasTwoStepAccess ? (

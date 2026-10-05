@@ -81,7 +81,7 @@ describe('Header login affordance', () => {
 
   it('still shows the user menu once authenticated', () => {
     state.isAuthenticated = true
-    state.user = { name: 'Igor Golovin', email: 'igolovin@natera.com' }
+    state.user = { name: 'Igor Golovin', email: 'igor@example.com' }
     render(<Header />)
 
     expect(screen.getByTestId('user-avatar-button')).toBeInTheDocument()

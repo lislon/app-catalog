@@ -29,6 +29,7 @@ describe('Sources list marker alignment (#28)', () => {
     await waitFor(() => {
       expect(ui.catalog.isDetailPanelOpen()).toBe(true)
     })
+    await ui.app.openTab('documentation')
 
     // Locate the numbered markers in the "Sources" list.
     const markers = Array.from(document.querySelectorAll('li > span')).filter(

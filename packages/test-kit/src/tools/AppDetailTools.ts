@@ -1,5 +1,19 @@
-import { screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+
+/**
+ * Tabs in the detail card. The ids are the card's public contract — they appear
+ * in `?tab=` and in each tab's element id — so selecting by id rather than by
+ * visible label keeps these tools working when a label changes. The access tab
+ * names its route ("Access — Free") and the children tab is named by the parent
+ * ("Accounts"), so neither label is a stable handle.
+ */
+export type AppDetailTabId =
+  | 'overview'
+  | 'access'
+  | 'resources'
+  | 'documentation'
+  | 'notes'
 
 export interface AppVisibleData {
   title: string
@@ -14,13 +28,57 @@ export class AppDetailTools {
   private user = userEvent.setup()
 
   /**
+   * Select a tab in the detail card.
+   *
+   * For tests that read the card through `screen` rather than through these
+   * tools: the content they are looking for may be one tab over. The getters
+   * below switch tabs for themselves.
+   */
+  async openTab(id: AppDetailTabId): Promise<void> {
+    const tab = this.findTab(id)
+    if (!tab) {
+      throw new Error(
+        `Tab "${id}" is not present in the open detail card. Present: [${this.presentTabs().join(', ')}]`,
+      )
+    }
+    await this.user.click(tab)
+  }
+
+  /** Which tabs this entry actually has — `resources` only when it has any. */
+  presentTabs(): AppDetailTabId[] {
+    return Array.from(
+      document.querySelectorAll<HTMLElement>('[role="tab"][id^="detail-tab-"]'),
+    ).map((el) => el.id.replace('detail-tab-', '') as AppDetailTabId)
+  }
+
+  private findTab(id: AppDetailTabId): HTMLElement | null {
+    return document.getElementById(`detail-tab-${id}`)
+  }
+
+  /**
+   * Make a tab's panel the rendered one, synchronously.
+   *
+   * The getters below are sync and existing callers depend on that, so this
+   * uses `fireEvent` rather than `userEvent`. A no-op when the tab is already
+   * selected, so repeated reads do not thrash the card.
+   */
+  private ensureTab(id: AppDetailTabId): void {
+    const tab = this.findTab(id)
+    if (!tab || tab.getAttribute('aria-selected') === 'true') return
+    fireEvent.click(tab)
+  }
+
+  /**
    * Scrape all visible data from the app detail panel into a structured object.
    */
   getVisibleData(): AppVisibleData {
+    // Description, tags and screenshots are Overview content; title, url and
+    // the deprecation notice are in the band and visible from every tab.
+    this.ensureTab('overview')
     const panel = this.getPanel()
 
-    // Title: the large text in the header area
-    const titleEl = panel.querySelector('.text-2xl')
+    // Title: the name inside the door at the top of the card
+    const titleEl = panel.querySelector('.app-door__title')
     const title = titleEl?.textContent.trim() ?? ''
 
     // Description
@@ -93,6 +151,7 @@ export class AppDetailTools {
     /** Name of the row marked `aria-current` — the one the user asked for. */
     currentName: string | null
   } | null {
+    this.ensureTab('resources')
     const panel = this.getPanel()
     const heading = Array.from(panel.querySelectorAll('div')).find((el) =>
       el.textContent.match(/Sub-Resources \(\d+ of \d+\)/),
@@ -119,6 +178,7 @@ export class AppDetailTools {
 
   /** Open a sub-resource's own page from the parent's sub-resource table. */
   async clickSubResourceInTable(displayName: string): Promise<void> {
+    this.ensureTab('resources')
     const panel = this.getPanel()
     const links = Array.from(
       panel.querySelectorAll<HTMLElement>('table tbody tr td .font-medium'),
@@ -134,16 +194,39 @@ export class AppDetailTools {
   }
 
   /**
-   * Read the "How to get access" section text from the detail panel.
-   * Returns null if the section is not present.
+   * Read the access instructions from the detail panel.
+   * Returns null if the tab is not present.
+   *
+   * Reads the TAB PANEL rather than hunting a "How to get access" heading: that
+   * heading and the frame around it were removed when access became its own tab,
+   * because the tab's own label already states what the panel is. Anchoring on the
+   * panel is also sturdier — it survives the next heading rewording, which is what
+   * broke this getter and nine tests through it.
    */
   getAccessText(): string | null {
+    this.ensureTab('access')
     const panel = this.getPanel()
-    const heading = this.findHeading(panel, 'How to get access')
-    if (!heading) return null
-    // The section is the heading plus its following content wrapper.
-    const container = heading.parentElement ?? heading
-    return container.textContent.trim()
+    // The section's own anchor first: a sub-resource page renders these
+    // instructions with no tab strip at all, so reading the tab panel found
+    // nothing there and returned an empty string rather than failing loudly.
+    // ALL of them: the prerequisite chain and the instructions are two siblings
+    // carrying the same anchor, and reading only the first dropped the parent's
+    // name from a two-step chain.
+    // Outermost only: a sub-resource page nests an AccessRequestSection inside its
+    // own two-step region, and both carry the anchor. Taking all of them would read
+    // the inner text twice.
+    const all = [...panel.querySelectorAll('[data-access-section]')]
+    const parts = all.filter(
+      (el) => !all.some((other) => other !== el && other.contains(el)),
+    )
+    if (parts.length === 0) {
+      const tabPanel = panel.querySelector('[role="tabpanel"]')
+      return tabPanel ? tabPanel.textContent.trim() : null
+    }
+    return parts
+      .map((el) => el.textContent.trim())
+      .filter(Boolean)
+      .join('\n')
   }
 
   screenshots = {
@@ -151,6 +234,7 @@ export class AppDetailTools {
      * Click the screenshot preview to open the gallery modal.
      */
     open: async (): Promise<void> => {
+      this.ensureTab('overview')
       const panel = this.getPanel()
       // By label, not by `.cursor-pointer`: that matched whichever styled
       // control happened to come first in the panel.
@@ -164,6 +248,86 @@ export class AppDetailTools {
     },
   }
 
+  /**
+   * Asking for a correction, as a passing visitor does it.
+   *
+   * The composer is NOT in the notes panel — the affordance is in the card's band,
+   * because at the foot of a tab it sat below the fold of a tab nobody opens unless
+   * they already know what is in it. So `open()` goes through the band, which is also
+   * what brings the notes tab forward.
+   */
+  feedback = {
+    /** Click the band's "Suggest a change". */
+    open: async (): Promise<void> => {
+      const button = screen.getByRole('button', { name: /Suggest a change/i })
+      await this.user.click(button)
+    },
+
+    describe: async (text: string): Promise<void> => {
+      const field = screen.getByPlaceholderText('What should change?')
+      await this.user.clear(field)
+      await this.user.type(field, text)
+    },
+
+    /**
+     * Attach `count` images through the real file input.
+     *
+     * A `File` with no bytes on purpose: the upload is mocked, and what this has to
+     * prove is that the composer carries the returned ids through to submit.
+     */
+    attachImages: async (count = 1): Promise<void> => {
+      const input =
+        document.querySelector<HTMLInputElement>('input[type="file"]')
+      if (!input) {
+        throw new Error(
+          'No file input in the composer — is it open? Call feedback.open() first.',
+        )
+      }
+      const files = Array.from(
+        { length: count },
+        (_, i) =>
+          new File([new Uint8Array([1])], `shot-${i}.png`, {
+            type: 'image/png',
+          }),
+      )
+      await this.user.upload(input, files)
+    },
+
+    send: async (): Promise<void> => {
+      await this.user.click(screen.getByRole('button', { name: 'Send' }))
+    },
+
+    /** Bodies of the items in the thread, in the order shown. */
+    threadBodies: (): string[] => {
+      this.ensureTab('notes')
+      const panel = this.getPanel()
+      return Array.from(
+        panel.querySelectorAll<HTMLElement>('[data-feedback-body]'),
+      ).map((el) => el.textContent.trim())
+    },
+
+    /** How many attached images the thread shows across all items. */
+    threadImageCount: (): number => {
+      this.ensureTab('notes')
+      return this.getPanel().querySelectorAll('img[alt="Attached screenshot"]')
+        .length
+    },
+
+    /** The "N open" count beside the heading, or 0 when it is absent. */
+    openCount: (): number => {
+      this.ensureTab('notes')
+      const label = this.getPanel().querySelector(
+        '[aria-label$="awaiting review"]',
+      )
+      const match = /^(\d+)/.exec(label?.textContent ?? '')
+      return match ? Number(match[1]) : 0
+    },
+
+    /** Whether the composer is currently on screen. */
+    isComposerOpen: (): boolean =>
+      !!document.querySelector('textarea[placeholder="What should change?"]'),
+  }
+
   /** Click the "View replacement: <App>" link in a deprecated app's panel. */
   async clickViewReplacement(): Promise<void> {
     const btn = screen.getByRole('button', { name: /View replacement:/i })
@@ -173,7 +337,7 @@ export class AppDetailTools {
   /** The title shown in the currently open detail panel (empty if none). */
   getOpenTitle(): string {
     const panel = this.getPanel()
-    return panel.querySelector('.text-2xl')?.textContent.trim() ?? ''
+    return panel.querySelector('.app-door__title')?.textContent.trim() ?? ''
   }
 
   /**

@@ -33,8 +33,8 @@ vi.mock('~/modules/appCatalog/ui/context/AppCatalogFiltersContext', () => ({
   })),
 }))
 vi.mock('~/modules/auth', () => ({ useUser: vi.fn(() => null) }))
-vi.mock('~/modules/appCatalog/ui/detail/CommentsSection', () => ({
-  CommentsSection: () => <div />,
+vi.mock('~/modules/appCatalog/ui/detail/FeedbackSection', () => ({
+  FeedbackSection: () => <div />,
 }))
 
 const { AppDetailPanel } =
@@ -62,6 +62,13 @@ function roleRowCount() {
     ?.querySelectorAll('tr').length
 }
 
+// The roles table lives behind the access tab, so every assertion about it has
+// to open that tab first. An app switch remounts the card body and resets the
+// card to its first tab, so this is needed again on the far side of a switch.
+function openAccessTab() {
+  fireEvent.click(screen.getByRole('tab', { name: /^access/i }))
+}
+
 // Two flows reach a different app without closing the card: "View replacement"
 // on a deprecated entry, and an access prerequisite's parent. Both swap the
 // `app` prop, and nothing in the chain down to the roles table was keyed by it,
@@ -74,6 +81,7 @@ describe('AppDetailPanel — navigating from one app to another', () => {
       <AppDetailPanel app={appWithRoles('labvantage', 8)} onClose={vi.fn()} />,
     )
 
+    openAccessTab()
     fireEvent.click(
       screen.getByRole('button', { name: /Show all \(8\) roles/ }),
     )
@@ -84,6 +92,7 @@ describe('AppDetailPanel — navigating from one app to another', () => {
     rerender(
       <AppDetailPanel app={appWithRoles('alation', 7)} onClose={vi.fn()} />,
     )
+    openAccessTab()
 
     const toggle = screen.getByRole('button', { name: /Show all \(7\) roles/ })
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
@@ -99,11 +108,14 @@ describe('AppDetailPanel — navigating from one app to another', () => {
       <AppDetailPanel app={appWithRoles('labvantage', 8)} onClose={vi.fn()} />,
     )
 
+    openAccessTab()
     fireEvent.click(
       screen.getByRole('button', { name: /Show all \(8\) roles/ }),
     )
     // A fresh object for the same app, which is what a refetch hands down: an
     // identity-based key would throw the reader's own expansion away here.
+    // No tab click on this side — the panel stays mounted through a same-app
+    // rerender, which is precisely what keeps the expansion.
     rerender(
       <AppDetailPanel app={appWithRoles('labvantage', 8)} onClose={vi.fn()} />,
     )
@@ -144,7 +156,9 @@ describe('AppDetailPanel — focus after an app switch', () => {
     )
     // Stands in for the control that was activated to navigate ("View
     // replacement", a prerequisite's parent): focused, and inside the body
-    // that is about to be replaced.
+    // that is about to be replaced. Deliberately a control inside a tab panel,
+    // which is where most of the card's focusable content now lives.
+    openAccessTab()
     const toggle = screen.getByRole('button', {
       name: /Show all \(8\) roles/,
     })

@@ -115,6 +115,7 @@ model DbApprovalMethod {
   slug              String             @id
   type              ApprovalMethodType
   displayName       String
+  shortName         String? // One or two words for tight spots (the detail card's access tab); falls back to displayName
   /// [ApprovalMethodConfig] - Type-specific configuration
   config            Json?
   deprecatedAliases String[]           @default([]) // Old URLs that should redirect to this method
@@ -156,8 +157,9 @@ model DbResource {
   tiers                      Json?
   /// [QuickJump[]]
   quickJumps                 Json?
+  childrenLabel              String? // Plural noun for this resource's children ("Accounts"); set on the parent, names its tab
   sourceRefs                 SourceReference[]
-  comments                   DbComment[]
+  feedback                   DbFeedback[]
   // Self-referential tree: sub-resources point to their parent
   parentSlug                 String?
   parent                     DbResource?       @relation("ResourceTree", fields: [parentSlug], references: [slug])
@@ -195,37 +197,95 @@ enum CommentStatus {
   acknowledged
 }
 
-/// A visitor's comment on one resource.
+/// One piece of visitor input about the catalog: a note, a correction, or an ask for
+/// something that is not in the catalog yet.
 ///
-/// The catalog is browsable without logging in, so a comment carries no user id.
-/// Instead the server issues an opaque visitor token in an httpOnly cookie and
-/// stores its hash: enough to let an author edit or delete their own comment for
-/// a short window, and nothing a reader can forge.
-model DbComment {
-  id         String     @id @default(cuid())
-  // The resource's id, not its slug — a slug is user-facing and gets renamed.
-  resourceId String
-  resource   DbResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
-  // sha256 of the visitor token. Authorises edit/delete; never sent to a client.
+/// Browsable without logging in, so this carries no user id. The server issues an
+/// opaque visitor token in an httpOnly cookie and stores its hash: enough to let an
+/// author edit or withdraw their own, and nothing a reader can forge.
+///
+/// There is deliberately no `kind` discriminator. "Is anyone waiting on this" is
+/// `status IS NULL`, and "is this about an entry or about the catalog" is whether
+/// `resourceId` is set — so an enum would encode nothing the row does not already say,
+/// and asking a visitor to classify their own report costs more than it buys.
+model DbFeedback {
+  id String @id @default(cuid())
+
+  /// Null for a catalog-level ask ("please add X") — there is no entry to hang it on.
+  /// The resource's id, not its slug: a slug is user-facing and gets renamed.
+  resourceId String?
+  resource   DbResource? @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  /// What the visitor was looking for when nothing matched. Set only when resourceId is
+  /// null — it is the whole substance of a new-app ask, and the thing we research.
+  subject String?
+
+  /// sha256 of the visitor token. Authorises edit/withdraw; never sent to a client.
   authorHash String
-  // The pseudonym shown next to the comment, stored rather than derived at render
-  // time so editing the wordlist later cannot rename everybody's history.
+  /// The pseudonym shown alongside, stored rather than derived at render time so
+  /// widening the wordlist later cannot rename everybody's history.
   authorAlias String
-  body        String
-  // Set on a later edit, so the UI can mark a comment as edited. Null when never edited.
-  editedAt    DateTime?
-  // What a maintainer did with the comment. Null until someone reviews it; the UI
-  // shows a label for the other two so a commenter can see their note landed.
-  // Written out of band (review tooling), never by a visitor.
-  status      CommentStatus?
-  // One short answer from the maintainers, shown under the comment body.
+
+  /// Optional: a bare flag with no words is a valid signal, and the cheapest one a
+  /// passing visitor can send.
+  body String?
+
+  attachments DbFeedbackAttachment[]
+
+  /// Set on a later edit, so the UI can mark it edited. Null when never edited.
+  editedAt DateTime?
+
+  /// What a maintainer did with it. Null until reviewed — which is also what "open"
+  /// means, so pending needs no stored value. Written out of band by review tooling,
+  /// never by a visitor.
+  status        CommentStatus?
   reviewerReply String?
   reviewedAt    DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([resourceId, createdAt])
   @@index([authorHash])
+  /// Drives the unreviewed counts on both surfaces: open items, newest first.
+  @@index([status, createdAt])
+}
+
+/// An image attached to one piece of feedback.
+///
+/// Deliberately not a DbAsset: that model's `name` is `@unique` and that namespace holds
+/// published, reviewed assets, so an unreviewed stranger's upload must not be able to
+/// squat `jira.svg`. Promoting an attached logo into a real icon is an explicit
+/// maintainer step through the existing upsertAsset.
+model DbFeedbackAttachment {
+  id String @id @default(cuid())
+
+  /// Null between upload and submit: an image is stored before the feedback row exists,
+  /// so abandoning the form leaves an orphan image rather than half-written feedback.
+  /// A sweep deletes orphans older than a day.
+  feedbackId String?
+  feedback   DbFeedback? @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+
+  /// Who uploaded it, so submitting can only claim your OWN unclaimed images. Without
+  /// this, `feedbackId` being a single FK means attaching a guessed id would MOVE that
+  /// image off somebody else's feedback.
+  authorHash String
+
+  /// Re-encoded by sharp before storage, so this is always one of our own formats and
+  /// never whatever bytes arrived.
+  content  Bytes
+  mimeType String
+  fileSize Int
+  checksum String
+  width    Int?
+  height   Int?
+  /// The uploader's filename, shown to a maintainer. Never used as a path or a key.
+  originalFilename String
+
+  createdAt DateTime @default(now())
+
+  @@index([feedbackId])
+  @@index([authorHash, createdAt])
 }
 
 model DbAppTagDefinition {

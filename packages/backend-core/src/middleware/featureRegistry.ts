@@ -8,6 +8,7 @@ import type {
 import { registerIconRestController } from '../modules/icons/iconRestController'
 import { registerAssetRestController } from '../modules/assets/assetRestController'
 import { registerScreenshotRestController } from '../modules/assets/screenshotRestController'
+import { registerFeedbackAttachmentController } from '../modules/feedback/feedbackAttachmentController'
 import { createMockSessionResponse } from '../modules/auth/devMockUserUtils'
 import { getCookie } from '../utils/cookies'
 
@@ -130,6 +131,12 @@ export function registerFeatures(
   // Screenshots
   registerScreenshotRestController(router, {
     basePath: `${basePath}/screenshots`,
+  })
+
+  // Images on a correction request. Kept off the asset endpoints on purpose — these
+  // are visitor uploads and must not share a namespace with published artwork.
+  registerFeedbackAttachmentController(router, {
+    basePath: `${basePath}/feedback-attachments`,
   })
 
   // Optional toggleable features

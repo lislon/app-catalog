@@ -3,7 +3,7 @@ import {
   VISITOR_COOKIE,
   aliasForHash,
   resolveVisitor,
-} from '../modules/comments/visitorIdentity'
+} from '../modules/visitor/visitorIdentity'
 
 /**
  * A comment carries no user id — the catalog is browsable logged out. The visitor

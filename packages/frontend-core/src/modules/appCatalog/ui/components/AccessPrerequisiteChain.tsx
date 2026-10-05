@@ -31,6 +31,9 @@ export function AccessPrerequisiteChain({
 
   return (
     <div
+      // Part of the access story, so it carries the same anchor the instructions
+      // do — a reader (and a test) wants the whole chain, not half of it.
+      data-access-section=""
       className="mt-6 rounded-lg border-[1.5px] border-primary/40 bg-primary/[0.03] p-4"
       role="note"
       aria-label="Access requires prerequisite steps"

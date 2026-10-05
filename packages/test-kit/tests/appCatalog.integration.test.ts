@@ -541,8 +541,8 @@ describe('App Catalog Integration', () => {
       magazine.custom(({ backendCfg }) => {
         const method = backendCfg.withApprovalMethod({
           type: 'service',
-          displayName: 'Natero Bot',
-          config: { url: 'https://natero.example.com' },
+          displayName: 'Access Bot',
+          config: { url: 'https://bot.example.com' },
         })
         backendCfg.withApp({
           displayName: 'Two-Step App',
@@ -557,6 +557,7 @@ describe('App Catalog Integration', () => {
     )
     await ui.catalog.openApp('Two-Step App')
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
+    await ui.app.openTab('access')
     expect(screen.getByText('Step 1')).toBeInTheDocument()
     expect(screen.getByText('Step 2')).toBeInTheDocument()
     expect(
@@ -569,8 +570,8 @@ describe('App Catalog Integration', () => {
       magazine.custom(({ backendCfg }) => {
         const method = backendCfg.withApprovalMethod({
           type: 'service',
-          displayName: 'Natero Bot',
-          config: { url: 'https://natero.example.com' },
+          displayName: 'Access Bot',
+          config: { url: 'https://bot.example.com' },
         })
         backendCfg.withApp({
           displayName: 'Single-Step App',

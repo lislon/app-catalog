@@ -10,8 +10,22 @@ import packageJson from './package.json'
 
 const config = defineConfig(({ mode }) => {
   const backendEnvPath = path.resolve(import.meta.dirname, '../backend-example')
-  const env = { ...process.env, ...loadEnv(mode, backendEnvPath), ...loadEnv(mode, import.meta.dirname) }
 
+  // `loadEnv` filters to the `VITE_` prefix unless told otherwise, so the two port
+  // variables below were read from `process.env` ONLY — a `.env` setting them was
+  // loaded and silently discarded. The proxy then fell back to 4500, nothing
+  // answered there, and every request through the dev server returned 500 while the
+  // backend itself was perfectly healthy. Named explicitly rather than loading every
+  // variable: the backend's `.env` holds credentials that have no business here.
+  const PORT_PREFIXES = ['VITE_', 'PORT', 'DEV_FRONTEND_PORT']
+  const env = {
+    ...process.env,
+    ...loadEnv(mode, backendEnvPath, PORT_PREFIXES),
+    ...loadEnv(mode, import.meta.dirname, PORT_PREFIXES),
+  }
+
+  // DEV_FRONTEND_PORT is this dev server; PORT is the BACKEND it proxies to. They are
+  // easy to mix up, and setting PORT to the frontend's port makes it proxy to itself.
   const frontendPort = Number.parseInt(env.DEV_FRONTEND_PORT || '9500', 10)
   const backendPort = Number.parseInt(env.PORT || '4500', 10)
 
@@ -44,18 +58,37 @@ const config = defineConfig(({ mode }) => {
     resolve: {
       ...cfg.resolve,
       conditions: ['my-custom-condition'],
-      // Resolve to source files for HMR in development
-      alias: {
-        '@igstack/app-catalog-frontend-core': fileURLToPath(
-          new URL('../../packages/frontend-core/src/index.tsx', import.meta.url),
-        ),
-        '@igstack/app-catalog-shared-core': fileURLToPath(
-          new URL('../../packages/shared-core/src/index.ts', import.meta.url),
-        ),
-        '~': fileURLToPath(
-          new URL('../../packages/frontend-core/src', import.meta.url),
-        ),
-      },
+      // Resolve to source files for HMR in development.
+      //
+      // Exact-match (`find: /^…$/`) rather than the object form, which prefix-matches:
+      // with a prefix alias, importing the package's `./index.css` subpath resolved to
+      // `src/index.tsx/index.css` and died with ENOTDIR. Anchoring the pattern leaves
+      // subpaths to the package's own `exports` map, which already points
+      // `my-custom-condition` at source — so the stylesheet and the entry both resolve
+      // the way a real consumer's would.
+      alias: [
+        {
+          find: /^@igstack\/app-catalog-frontend-core$/,
+          replacement: fileURLToPath(
+            new URL(
+              '../../packages/frontend-core/src/index.tsx',
+              import.meta.url,
+            ),
+          ),
+        },
+        {
+          find: /^@igstack\/app-catalog-shared-core$/,
+          replacement: fileURLToPath(
+            new URL('../../packages/shared-core/src/index.ts', import.meta.url),
+          ),
+        },
+        {
+          find: '~',
+          replacement: fileURLToPath(
+            new URL('../../packages/frontend-core/src', import.meta.url),
+          ),
+        },
+      ],
     },
 
     build: {

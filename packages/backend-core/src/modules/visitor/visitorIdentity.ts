@@ -18,6 +18,25 @@ export interface Visitor {
   alias: string
 }
 
+/** Who the server thinks is acting, whether or not they ever signed in. */
+export type ActorKind = 'user' | 'visitor'
+
+/**
+ * One identity for every surface that needs one.
+ *
+ * `hash` is the secret-derived half: it authorises editing and withdrawing, is stored on
+ * rows, and never leaves the server. `publicId` is the half a client may hold — it
+ * identifies without authorising, which is what analytics needs and what the httpOnly
+ * cookie deliberately cannot give it. Same split better-auth already uses between its
+ * session cookie and `user.id`.
+ */
+export interface Actor {
+  hash: string
+  publicId: string
+  alias: string
+  kind: ActorKind
+}
+
 const ADJECTIVES = [
   'Ancient',
   'Brave',
@@ -143,4 +162,69 @@ export function resolveVisitor(
 
   const hash = hashToken(token)
   return { hash, alias: aliasForHash(hash) }
+}
+
+/**
+ * A non-authorising id derived from the hash.
+ *
+ * Safe to hand a client: knowing it proves nothing and authorises nothing, because the
+ * check is always against the full hash of the cookie the browser actually sent.
+ */
+export function publicIdFromHash(hash: string): string {
+  return hash.slice(0, 16)
+}
+
+/**
+ * Who is acting, signed in or not.
+ *
+ * `userId` is passed in rather than looked up, so this stays synchronous and testable in
+ * a node environment — the caller already has the session when it builds the request
+ * context. When login arrives this starts returning `kind: 'user'` and nothing
+ * downstream has to change.
+ */
+export function resolveActor(
+  req: { headers: { cookie?: string } },
+  res?: Parameters<typeof resolveVisitor>[1],
+  userId?: string | null,
+): Actor | null {
+  if (userId) {
+    return {
+      hash: hashToken(`user:${userId}`),
+      publicId: publicIdFromHash(hashToken(`user:${userId}`)),
+      alias: aliasForHash(hashToken(`user:${userId}`)),
+      kind: 'user',
+    }
+  }
+  const visitor = resolveVisitor(req, res)
+  if (!visitor) return null
+  return {
+    hash: visitor.hash,
+    publicId: publicIdFromHash(visitor.hash),
+    alias: visitor.alias,
+    kind: 'visitor',
+  }
+}
+
+/**
+ * A deterministic identity from a seed, for tests and local development.
+ *
+ * Returns the raw token *and* its hash, so a database fixture and a browser cookie can
+ * refer to the same person: seed rows with `hash`, hand the browser `token`. Without
+ * this, nothing scoped to one visitor is testable — the cookie is httpOnly on purpose,
+ * so page scripts cannot set it.
+ */
+export function visitorFromSeed(seed: string): {
+  token: string
+  hash: string
+  publicId: string
+  alias: string
+} {
+  const token = createHash('sha256').update(`seed:${seed}`).digest('hex')
+  const hash = hashToken(token)
+  return {
+    token,
+    hash,
+    publicId: publicIdFromHash(hash),
+    alias: aliasForHash(hash),
+  }
 }

@@ -203,6 +203,18 @@ export interface Resource {
   tiers?: TierVariant[]
   /** Deep links that take one typed identifier — see {@link QuickJump}. */
   quickJumps?: QuickJump[]
+  /**
+   * What this resource's children are called, as a plural noun ("Accounts",
+   * "Namespaces", "Databases"). Set on the PARENT, not the children.
+   *
+   * The detail card names its children tab with this. Children are modelled as
+   * plain resources carrying a `parentSlug`, so nothing in the data says what
+   * kind of thing they are — and a tab reading "Accounts 430" tells the reader
+   * what is in there, where the generic fallback tells them nothing. Omit it and
+   * the card says "Resources"; only the handful of entries that actually have
+   * children need to set it.
+   */
+  childrenLabel?: string
 
   // --- Fields merged from former SubResource ---
   /** Slug of parent resource (undefined for top-level applications) */

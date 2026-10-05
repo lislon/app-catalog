@@ -199,3 +199,69 @@ Then('{string} is listed as an approver', (_world, slug: string) => {
   expect(text).toContain('Approvers')
   expect(text).toContain(slug)
 })
+
+// --- Asking for a correction -------------------------------------------------
+//
+// The persona is a passer-by, not a maintainer: they noticed one wrong thing while
+// trying to get their job done, and they will only report it if doing so costs
+// almost nothing. Every step below is therefore something a person does without
+// reading any instructions.
+
+When('I ask to suggest a change', async () => {
+  await ui().app.feedback.open()
+})
+
+When('I describe the correction as {string}', async (_world, text: string) => {
+  await ui().app.feedback.describe(text)
+})
+
+When('I attach a screenshot', async () => {
+  await ui().app.feedback.attachImages(1)
+})
+
+When('I attach {int} screenshots', async (_world, count: number) => {
+  await ui().app.feedback.attachImages(count)
+})
+
+When('I send the correction', async () => {
+  await ui().app.feedback.send()
+})
+
+Then('the composer is open', async () => {
+  await waitFor(() => {
+    expect(ui().app.feedback.isComposerOpen()).toBe(true)
+  })
+})
+
+Then('the composer is closed', async () => {
+  await waitFor(() => {
+    expect(ui().app.feedback.isComposerOpen()).toBe(false)
+  })
+})
+
+Then('the notes thread shows {string}', async (_world, text: string) => {
+  await waitFor(() => {
+    expect(ui().app.feedback.threadBodies()).toContain(text)
+  })
+})
+
+Then('the notes thread shows {int} items', async (_world, count: number) => {
+  await waitFor(() => {
+    expect(ui().app.feedback.threadBodies()).toHaveLength(count)
+  })
+})
+
+Then(
+  'the notes thread shows {int} attached images',
+  async (_world, count: number) => {
+    await waitFor(() => {
+      expect(ui().app.feedback.threadImageCount()).toBe(count)
+    })
+  },
+)
+
+Then('{int} requests are awaiting review', async (_world, count: number) => {
+  await waitFor(() => {
+    expect(ui().app.feedback.openCount()).toBe(count)
+  })
+})

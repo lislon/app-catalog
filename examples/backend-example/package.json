@@ -13,7 +13,6 @@
     "dev": "tsx watch --conditions=my-custom-condition --include ../../packages/backend-core/src src/index.ts",
     "dev:postgres": "docker-compose up -d && tsx watch src/index.ts",
     "fix": "prettier --write ./src && eslint --fix ./src",
-    "prisma:generate": "prisma generate --schema=../../packages/backend-core/prisma/schema.prisma",
     "prisma:push": "prisma db push --schema=../../packages/backend-core/prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema=../../packages/backend-core/prisma/schema.prisma",
     "start": "node dist/index.js",
