@@ -46,6 +46,10 @@ Do NOT flag:
 - Generic technical terms used in a generic context
 - Example domain names ending in .example.com
 - Common fictional placeholder names (e.g. TaskFlow, TeamChat, Support Portal)
+- The npm scope, package names, module paths and import specifiers that this
+  repository itself publishes under. They are how the published code refers to
+  itself, not a disclosure about who operates what. A changeset or a lockfile
+  cannot name a package without them.
 
 Reply with EXACTLY one of:
   CLEAN — no company-specific content detected
