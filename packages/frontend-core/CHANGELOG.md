@@ -1,5 +1,14 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.5.2
+
+### Patch Changes
+
+- [#316](https://github.com/lislon/app-catalog/pull/316) [`0fe507e`](https://github.com/lislon/app-catalog/commit/0fe507e24f3965c3576f723d6786c2989e88d010) Thanks [@lislon](https://github.com/lislon)! - Shrink the quick jump row to its own content instead of stretching it across the entry card, and clip the card's rounded corners so the scrolling body no longer paints over them.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.5.2
+
 ## 6.5.1
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@igstack/app-catalog-frontend-core",
-  "version": "6.5.1",
+  "version": "6.5.2",
   "description": "Frontend core library for App Catalog",
   "homepage": "https://github.com/lislon/app-catalog",
   "repository": {
@@ -163,5 +163,5 @@
     "vite": "catalog:",
     "vite-plugin-svgr": "catalog:"
   },
-  "gitHead": "7cbf1fcb729e81ce7e6b582aeb15324a7cde00cb"
+  "gitHead": "2e87f4aaf3ae71d52feac41c681f22234637e73d"
 }
