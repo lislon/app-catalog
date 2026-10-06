@@ -14,6 +14,7 @@ import {
   createAcRouter,
   seedSessionState,
 } from '@igstack/app-catalog-frontend-core/internal'
+import type { AcPlugin } from '@igstack/app-catalog-frontend-core'
 
 import { MockDb } from '../mock-backend/MockDb'
 import { MockUserContext } from '../mock-backend/MockUserContext'
@@ -78,7 +79,16 @@ export async function cleanupTestResources(): Promise<void> {
 
 export async function given(
   magazine: Magazine,
-  opts: { initialRoute?: string; seedSearch?: string } = {},
+  opts: {
+    initialRoute?: string
+    seedSearch?: string
+    /**
+     * Plugins to mount, exactly as the app ships them. Without this the harness
+     * hard-codes App's props, so a deployment's own suites cannot exercise a
+     * plugin at all — which is where a plugin most needs covering.
+     */
+    extensions?: readonly AcPlugin[]
+  } = {},
 ): Promise<GivenResult> {
   // Clean up any previous resources
   await cleanupTestResources()
@@ -184,6 +194,7 @@ export async function given(
       queryClient={queryClient}
       trpcClient={trpcClient}
       db={acDb}
+      extensions={opts.extensions}
     />,
   )
 
