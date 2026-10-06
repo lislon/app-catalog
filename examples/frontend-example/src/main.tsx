@@ -12,11 +12,13 @@ import type {
 import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 
+import { plugins } from './plugins'
+
 const uiSettings: UiSettings = {
   // Bare `#channel` mentions in catalog text link here; drop to keep them plain.
   chatChannelUrlTemplate: 'https://chat.example.com/channels/{name}',
 }
-const props = { ...appPropsFactory(), uiSettings }
+const props = { ...appPropsFactory(), uiSettings, extensions: plugins }
 
 function PwaWrapper({ children }: { children: React.ReactNode }) {
   const [handle, setHandle] = useState<PwaUpdateHandle | undefined>(undefined)
