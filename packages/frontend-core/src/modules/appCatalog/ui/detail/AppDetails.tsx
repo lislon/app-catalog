@@ -31,6 +31,7 @@ import { formatRelativeTime } from '../../utils/formatRelativeTime'
 import { TierVariantsSection } from '../components/TierVariantsSection'
 import { SubResourcesSection } from '../components/SubResourcesSection'
 import { getChildResources } from '../../utils/resolveHelpers'
+import { ResourceDetailAccessActions } from '~/modules/extensions'
 import { FeedbackSection } from './FeedbackSection'
 import { displayUrl } from '~/modules/appCatalog/utils/displayUrl'
 import { accessTabLabel } from '~/modules/appCatalog/utils/accessTabLabel'
@@ -173,6 +174,31 @@ export function AppDetails({
   const children = React.useMemo(
     () => getChildResources(allResources, app.slug),
     [allResources, app.slug],
+  )
+
+  // `app` is whatever resource the card shows, a nested one included, so the
+  // parent has to be looked up rather than assumed absent. A plugin uses its
+  // presence to tell a sub-resource view from a top-level one.
+  const parent = React.useMemo(
+    () =>
+      app.parentSlug
+        ? allResources.find((r) => r.slug === app.parentSlug)
+        : undefined,
+    [allResources, app.parentSlug],
+  )
+
+  // What a plugin slot in the band receives. Memoised so a plugin that
+  // memoises on its props is not defeated by a new object every render.
+  const accessActionsCtx = React.useMemo(
+    () => ({
+      resource: app,
+      parent,
+      subResources: parent
+        ? getChildResources(allResources, parent.slug)
+        : children,
+      user: user ? { email: user.email, isAdmin } : null,
+    }),
+    [app, parent, allResources, children, user, isAdmin],
   )
 
   // Enter: open screenshot gallery
@@ -650,15 +676,24 @@ export function AppDetails({
             card to find. Up here it is present on every tab, which is the whole
             reason the band does not scroll away.
             `mr-10` keeps it clear of the dialog's own close button at top-right. */}
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="ml-auto mr-10"
-          onClick={() => setComposeRequests((n) => n + 1)}
-        >
-          ✎ Suggest a change
-        </Button>
+        {/* Plugin actions sit beside "Suggest a change", sharing its reasoning:
+            the band is mounted on every tab and never scrolls away. A slot in a
+            tab panel would be invisible until a second click, and one inside
+            SubResourceDetailPanel's `hasAnyAccess` gate would vanish for exactly
+            the resources that need help most.
+            Renders nothing when no plugin contributes, so the band keeps its
+            current shape in the open-source build. */}
+        <div className="ml-auto mr-10 flex items-center gap-2">
+          <ResourceDetailAccessActions {...accessActionsCtx} />
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setComposeRequests((n) => n + 1)}
+          >
+            ✎ Suggest a change
+          </Button>
+        </div>
       </div>
 
       {app.nicknames && app.nicknames.length > 0 && (

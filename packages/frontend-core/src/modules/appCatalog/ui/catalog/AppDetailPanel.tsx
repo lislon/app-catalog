@@ -1,7 +1,13 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
 import { X } from 'lucide-react'
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
+import {
+  ResourceDetailAccessActions,
+  ResourceDetailProvider,
+} from '~/modules/extensions'
+import { useOptionalUser } from '~/modules/auth'
+import { getChildResources } from '../../utils/resolveHelpers'
 import { SubResourceDetailPanel } from '../components/SubResourceDetailPanel'
 import { AppDetails } from '../detail/AppDetails'
 
@@ -35,7 +41,20 @@ export function AppDetailPanel({
   /** Clears `?sub=` and returns to the parent's detail. */
   onBackToParent?: () => void
 }) {
-  const { approvalMethods } = useAppCatalogContext()
+  const { approvalMethods, resources: allResources } = useAppCatalogContext()
+  const user = useOptionalUser()
+
+  // The sub-resource branch has no band of its own, so its slot payload is
+  // assembled here, where the catalog context already is, and handed down.
+  const subResourceActionsCtx = useMemo(
+    () => ({
+      resource: subResource ?? app,
+      parent: subResource ? app : undefined,
+      subResources: getChildResources(allResources, app.slug),
+      user: user ? { email: user.email, isAdmin: user.isAdmin ?? false } : null,
+    }),
+    [subResource, app, allResources, user],
+  )
   const dialogRef = useRef<HTMLDivElement>(null)
 
   /**
@@ -147,20 +166,31 @@ export function AppDetailPanel({
           key={shownSlug}
           className="max-h-[85vh] overflow-y-auto px-6 py-5 sm:px-8 sm:py-7"
         >
-          {subResource ? (
-            <SubResourceDetailPanel
-              subResource={subResource}
-              parent={app}
-              approvalMethods={approvalMethods}
-              onBack={onBackToParent ?? onClose}
-            />
-          ) : (
-            <AppDetails
-              app={app}
-              onAppClick={onAppClick}
-              onClosePanel={onClose}
-            />
-          )}
+          {/* Inside the key, so anything a plugin provides here is scoped to
+              the resource on screen and is discarded when the card navigates.
+              Renders its children untouched when no plugin contributes. */}
+          <ResourceDetailProvider
+            resource={subResource ?? app}
+            parent={subResource ? app : undefined}
+          >
+            {subResource ? (
+              <SubResourceDetailPanel
+                subResource={subResource}
+                parent={app}
+                approvalMethods={approvalMethods}
+                onBack={onBackToParent ?? onClose}
+                actions={
+                  <ResourceDetailAccessActions {...subResourceActionsCtx} />
+                }
+              />
+            ) : (
+              <AppDetails
+                app={app}
+                onAppClick={onAppClick}
+                onClosePanel={onClose}
+              />
+            )}
+          </ResourceDetailProvider>
         </div>
       </div>
     </div>

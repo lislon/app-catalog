@@ -9,6 +9,8 @@ import type { createAcRouter } from './util/createAcRouter'
 import { TRPCProvider } from './api/infra/trpc'
 import type { UiSettings } from './types/uiSettings'
 import { UiSettingsContext } from './context/UiSettingsContext'
+import { ExtensionsContext } from './modules/extensions'
+import type { AcPlugin } from './modules/extensions'
 
 export interface AppProps {
   router: ReturnType<typeof createAcRouter>
@@ -16,6 +18,14 @@ export interface AppProps {
   trpcClient: TRPCClient<TRPCRouter>
   db: AcDb
   uiSettings?: UiSettings
+  /**
+   * Deployment-specific UI, rendered at the slots the core declares. Optional:
+   * with none registered every slot renders nothing and the UI is identical to
+   * one with no slots at all.
+   *
+   * Must be a module-level constant — see `AcPlugin`.
+   */
+  extensions?: readonly AcPlugin[]
 }
 
 export function App({
@@ -24,13 +34,17 @@ export function App({
   trpcClient,
   db,
   uiSettings,
+  extensions,
 }: AppProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <TRPCProvider queryClient={queryClient} trpcClient={trpcClient}>
         <DbProvider db={db}>
           <UiSettingsContext value={uiSettings}>
-            <RouterProvider router={router} />
+            {/* Above the router, so a slot anywhere in the tree can read it. */}
+            <ExtensionsContext value={extensions}>
+              <RouterProvider router={router} />
+            </ExtensionsContext>
           </UiSettingsContext>
         </DbProvider>
       </TRPCProvider>
