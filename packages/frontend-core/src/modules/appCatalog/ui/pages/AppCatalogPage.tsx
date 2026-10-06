@@ -121,6 +121,36 @@ export function AppCatalogPage({
   }
 
   // The app whose detail card is open over the catalog backdrop.
+  /**
+   * Strip the card's own params once no card is open.
+   *
+   * Clearing them inside the close handler does not hold: `useUrlSyncedState` only
+   * ever pushes its state OUT to the url, so the tab strip — still mounted for one
+   * more render — sees the url disagreeing with its own state and writes `tab` straight
+   * back. Two owners, and the one on its way out gets the last word. Measured on a
+   * live host: `?tab=notes` survived the close every time.
+   *
+   * Doing it here instead means one owner decides, and it decides AFTER the strip has
+   * gone, so there is nothing left to argue with. Only the card's params go; the
+   * catalog's own state (filters, recents, the deprecated toggle) outlives any card.
+   */
+  useEffect(() => {
+    if (selectedSlug || subPageSlug) return
+    const stale = ['tab', 'sub', 'qj'].filter(
+      (key) => (search as Record<string, unknown>)[key] !== undefined,
+    )
+    if (stale.length === 0) return
+    void navigate({
+      to: '/',
+      replace: true,
+      search: (prev) => {
+        const next = { ...(prev as Record<string, unknown>) }
+        for (const key of stale) delete next[key]
+        return next
+      },
+    })
+  }, [selectedSlug, subPageSlug, search, navigate])
+
   const selectedApp = useMemo(
     () =>
       selectedAppSlug
@@ -179,26 +209,7 @@ export function AppCatalogPage({
           <AppDetailPanel
             app={selectedApp}
             subResource={selectedSub}
-            onClose={() =>
-              void navigate({
-                to: '/',
-                /**
-                 * Drop the card's own params, keep the catalog's.
-                 *
-                 * `navigate({ to: '/' })` alone preserves the whole search object, so
-                 * closing a card left `?tab=notes` (and `?sub=`, `?qj=`) behind on the
-                 * catalog, where they mean nothing — and a link copied afterwards
-                 * carried them. Clearing the lot instead would throw away the
-                 * visitor's filters, which belong to the catalog and outlive any card.
-                 */
-                search: (prev) => ({
-                  ...prev,
-                  tab: undefined,
-                  sub: undefined,
-                  qj: undefined,
-                }),
-              })
-            }
+            onClose={() => void navigate({ to: '/' })}
             onAppClick={handleAppClick}
             onBackToParent={handleBackToParent}
           />
