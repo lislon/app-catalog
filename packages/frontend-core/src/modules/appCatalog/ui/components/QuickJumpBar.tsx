@@ -202,7 +202,10 @@ export function QuickJumpBar({ app }: { app: Resource }) {
         // too, and a shell that stays unlit for two of its three ends reads as
         // if tabbing had left the control.
         'has-[:focus-visible]:border-ring has-[:focus-visible]:ring-[3px] has-[:focus-visible]:ring-ring/25',
-        'sm:w-auto',
+        // `w-fit`, not `w-auto`: the row is a block-level flex box on its own
+        // line, so `auto` stretches it across the card and leaves the card's
+        // own white after Jump. Only `fit-content` shrink-wraps it.
+        'sm:w-fit',
       )}
     >
       {jumps.length > 1 ? (

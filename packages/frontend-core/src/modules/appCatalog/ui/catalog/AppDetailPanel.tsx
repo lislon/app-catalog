@@ -119,7 +119,10 @@ export function AppDetailPanel({
         // Centred on open, then held — see the pin effect above. `my-auto` is
         // deliberately absent: it re-centres on EVERY height change, which is the
         // layout-shift bug.
-        className="relative w-full max-w-[min(1120px,94vw)] rounded-[var(--radius)] border border-border bg-background shadow-2xl animate-in fade-in zoom-in-95 duration-200 outline-none"
+        // `overflow-hidden` belongs on the rounded box: the scrolling child
+        // below carries the band's tint to its own square corners and paints
+        // them over this radius, so the card's top corners read as cut off.
+        className="relative w-full max-w-[min(1120px,94vw)] overflow-hidden rounded-[var(--radius)] border border-border bg-background shadow-2xl animate-in fade-in zoom-in-95 duration-200 outline-none"
       >
         <button
           type="button"
