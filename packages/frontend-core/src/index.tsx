@@ -6,8 +6,8 @@ export {
   DAY_TO_DAY_AREA_KEY,
   DAY_TO_DAY_TAG,
 } from './modules/appCatalog/utils/areaGrouping'
-export { PwaAutoUpdateProvider, usePwaAutoUpdate } from './modules/pwa'
-export type { PwaAutoUpdateOptions, PwaUpdateHandle } from './modules/pwa'
+export { PwaAutoUpdateProvider, usePwaAutoUpdate } from './modules/pwa/index'
+export type { PwaAutoUpdateOptions, PwaUpdateHandle } from './modules/pwa/index'
 
 // ── Plugins ───────────────────────────────────────────────────────────────────
 // A deployment registers these via <App extensions={[...]} />. `Resource` is
@@ -20,5 +20,5 @@ export type {
   PluginUser,
   SlotSpec,
   WrapperSpec,
-} from './modules/extensions'
+} from './modules/extensions/index'
 export type { Resource } from '@igstack/app-catalog-backend-core'
