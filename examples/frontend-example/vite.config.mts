@@ -62,16 +62,30 @@ const config = defineConfig(({ mode }) => {
       //
       // Exact-match (`find: /^…$/`) rather than the object form, which prefix-matches:
       // with a prefix alias, importing the package's `./index.css` subpath resolved to
-      // `src/index.tsx/index.css` and died with ENOTDIR. Anchoring the pattern leaves
-      // subpaths to the package's own `exports` map, which already points
-      // `my-custom-condition` at source — so the stylesheet and the entry both resolve
-      // the way a real consumer's would.
+      // `src/index.tsx/index.css` and died with ENOTDIR.
+      //
+      // The stylesheet then needs an alias of its own. `conditions` above do NOT apply
+      // to CSS, so that subpath goes through the package's `exports` map and lands on
+      // the core's BUILT `dist/index.css` — which is only as fresh as the last
+      // `pnpm run build` in frontend-core. Without this, plain-CSS rules added to the
+      // core are missing here (they render unstyled, silently), and a newly used
+      // utility class gets no rule at all, because the Tailwind `@source` inside that
+      // built file scans `dist/esm/**/*.js` rather than the source you just edited.
       alias: [
         {
           find: /^@igstack\/app-catalog-frontend-core$/,
           replacement: fileURLToPath(
             new URL(
               '../../packages/frontend-core/src/index.tsx',
+              import.meta.url,
+            ),
+          ),
+        },
+        {
+          find: /^@igstack\/app-catalog-frontend-core\/index\.css$/,
+          replacement: fileURLToPath(
+            new URL(
+              '../../packages/frontend-core/src/index.css',
               import.meta.url,
             ),
           ),
