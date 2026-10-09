@@ -1,5 +1,6 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 
@@ -7,7 +8,10 @@ import '@testing-library/jest-dom/vitest'
 // (to single out the row), so it is set on the shared router mock rather than
 // passed in. Everything else in the data layer is stubbed; the chain under test
 // is AppDetails -> DetailTabs -> SubResourcesSection.
-const search = { sub: 'parent-two', tab: undefined as string | undefined }
+const search = {
+  sub: 'parent-two' as string | undefined,
+  tab: undefined as string | undefined,
+}
 
 vi.mock('@tanstack/react-router', () => ({
   useSearch: vi.fn(() => search),
@@ -121,5 +125,43 @@ describe('AppDetails — arriving with ?sub=', () => {
     render(<AppDetails app={unnamed as Resource} onClosePanel={vi.fn()} />)
 
     expect(screen.getByRole('tab', { name: /resources/i })).toBeVisible()
+  })
+
+  // The tab and the panel it opens have to agree. They used to be independent:
+  // the tab read childrenLabel while the panel hard-coded "Sub-Resources", so
+  // naming the children renamed the tab and left the heading under it
+  // contradicting the tab the user just clicked.
+  it('uses childrenLabel for the panel heading and the filter, not just the tab', async () => {
+    render(<AppDetails app={parent} onClosePanel={vi.fn()} />)
+    await userEvent.click(screen.getByRole('tab', { name: /accounts/i }))
+
+    expect(await screen.findByText(/^Accounts \(\d+ of \d+\)$/)).toBeVisible()
+    expect(screen.queryByText(/Sub-Resources/)).not.toBeInTheDocument()
+  })
+
+  it('names the children in the filter placeholder too', async () => {
+    // The shared mock pins `?sub=`, which swaps the search box for a dismissible
+    // "Showing: …" badge — so the placeholder only exists with no row singled out.
+    search.sub = undefined
+    try {
+      render(<AppDetails app={parent} onClosePanel={vi.fn()} />)
+      await userEvent.click(screen.getByRole('tab', { name: /accounts/i }))
+
+      expect(
+        await screen.findByPlaceholderText(/Search Accounts by name or alias/i),
+      ).toBeVisible()
+    } finally {
+      search.sub = 'parent-two'
+    }
+  })
+
+  it('keeps the generic heading when the parent does not name its children', async () => {
+    const { childrenLabel: _omitted, ...unnamed } = parent
+    render(<AppDetails app={unnamed as Resource} onClosePanel={vi.fn()} />)
+    await userEvent.click(screen.getByRole('tab', { name: /resources/i }))
+
+    expect(
+      await screen.findByText(/^Sub-Resources \(\d+ of \d+\)$/),
+    ).toBeVisible()
   })
 })

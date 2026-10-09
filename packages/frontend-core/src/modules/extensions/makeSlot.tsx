@@ -81,9 +81,21 @@ export function makeSlot<TProps>(slotName: string) {
  * Folded right-to-left so the FIRST plugin in the array ends up outermost, which
  * makes nesting order readable from the array itself.
  *
- * Note the fallback differs from a leaf slot's: it is the accumulated children,
- * never `null`. A wrapper only decorates — usually by providing context — so a
- * broken one must not blank the core subtree it was wrapping.
+ * Note both fallbacks differ from a leaf slot's: they are the accumulated
+ * children, never `null`. A wrapper only decorates — usually by providing
+ * context — so neither a broken one nor a suspending one may blank the core
+ * subtree it was wrapping.
+ *
+ * The `Suspense` matters as much as the boundary. Without it a wrapper that
+ * suspends bubbles to the nearest boundary above, which for the detail card is
+ * `AppCatalogPage`'s `<Suspense fallback={null}>` — so one plugin fetching
+ * something would make the entire card disappear until it resolved. Falling
+ * back to `acc` instead renders the core subtree immediately, just without the
+ * decoration, and it arrives when the plugin is ready.
+ *
+ * A consequence worth stating: while suspended, descendants see no context from
+ * this wrapper. A wrapper whose children cannot cope with that should not
+ * suspend — it should render children and fetch inside its own subtree.
  */
 export function makeWrapper<TProps>(wrapperName: string) {
   function Wrapper(props: TProps & { children: ReactNode }): ReactNode {
@@ -99,7 +111,9 @@ export function makeWrapper<TProps>(wrapperName: string) {
           fallbackRender={() => acc}
           onError={(error) => reportSlotError(plugin.name, wrapperName, error)}
         >
-          <Contribution render={render} props={{ ...rest, children: acc }} />
+          <Suspense fallback={acc}>
+            <Contribution render={render} props={{ ...rest, children: acc }} />
+          </Suspense>
         </ErrorBoundary>
       )
     }, children)

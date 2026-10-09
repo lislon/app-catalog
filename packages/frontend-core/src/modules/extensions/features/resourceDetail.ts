@@ -25,6 +25,28 @@ export interface ResourceDetailSlots {
     subResources: Resource[]
     user: PluginUser | null
   }
+
+  /**
+   * One cell per row of the sub-resources table, in a column of its own.
+   *
+   * Called once per rendered row, which is the opposite shape to
+   * `resourceDetailAccessActions` — that one is called once and handed the whole
+   * list. Use this when the action belongs to a single child.
+   *
+   * Two things to know before filling it. The table renders EVERY row with no
+   * virtualisation, so a contribution here is mounted as many times as the
+   * family has children (hundreds, in a large catalog) — keep the cell cheap and
+   * defer anything expensive until it is interacted with. And the column only
+   * appears when a plugin actually fills it, so a build with no plugin renders
+   * the table exactly as before.
+   */
+  resourceSubResourceRowActions: {
+    /** The child this row is showing. */
+    resource: Resource
+    /** The entry the row hangs off. Always present here, unlike the header slot. */
+    parent: Resource
+    user: PluginUser | null
+  }
 }
 
 /**
@@ -46,4 +68,7 @@ const mkSlot = slotFactory<ResourceDetailSlots>()
 const mkWrapper = wrapperFactory<ResourceDetailWrappers>()
 
 export const ResourceDetailAccessActions = mkSlot('resourceDetailAccessActions')
+export const ResourceSubResourceRowActions = mkSlot(
+  'resourceSubResourceRowActions',
+)
 export const ResourceDetailProvider = mkWrapper('resourceDetailProvider')

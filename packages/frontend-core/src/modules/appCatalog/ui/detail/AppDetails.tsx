@@ -372,7 +372,9 @@ export function AppDetails({
                     <SubResourcesSection
                       subResources={children}
                       parentSlug={app.slug}
+                      parent={app}
                       initialSearch={filterState.searchValue}
+                      childrenLabel={app.childrenLabel}
                     />
                   </div>
                 )}

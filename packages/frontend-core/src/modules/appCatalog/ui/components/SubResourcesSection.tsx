@@ -21,11 +21,24 @@ import {
   SelectValue,
 } from '~/ui/select'
 import { markdownToPlainText } from '~/modules/appCatalog/utils/markdownToPlainText'
+import {
+  ResourceSubResourceRowActions,
+  usePluginUser,
+  useSlotFilled,
+} from '~/modules/extensions/index'
 
 interface SubResourcesSectionProps {
   subResources: Resource[]
   /** Slug of the parent, for linking to a child's own page. */
   parentSlug: string
+  /**
+   * The parent itself, for the row-actions slot's payload.
+   *
+   * Optional, and the Admin column is skipped without it: a row action is about
+   * a child *of something*, and a plugin deciding whether it applies needs the
+   * parent to decide against.
+   */
+  parent?: Resource
   /**
    * Initial filter text (#38 item C). When the user reached this app by
    * searching a term that matched a sub-resource, seed the sub-resource filter
@@ -34,6 +47,14 @@ interface SubResourcesSectionProps {
    * account is pre-filtered). Only applied when it actually matches a child.
    */
   initialSearch?: string
+  /**
+   * What this app calls its children, from the parent's `childrenLabel`.
+   *
+   * The tab above already uses it, so without it here the tab and the panel it
+   * opens disagree — "AWS Accounts" over a heading that says "Sub-Resources".
+   * Defaults to the same generic wording the tab falls back to.
+   */
+  childrenLabel?: string
 }
 
 function getTierBadgeVariant(
@@ -66,8 +87,20 @@ function getTierDisplayLabel(tierSlug: string): string {
 export function SubResourcesSection({
   subResources,
   parentSlug,
+  parent,
   initialSearch,
+  childrenLabel,
 }: SubResourcesSectionProps) {
+  // `useSlotFilled`, not "render it and see": the column is layout, so the
+  // header has to be decided before any cell renders.
+  //
+  // ONE flag for the header, the cells and the empty row's colSpan. Deriving it
+  // separately per site is how a header appears over a column with no cells —
+  // the parent check only guarded the cells at first, and the header rendered
+  // anyway.
+  const showAdminColumn =
+    useSlotFilled('resourceSubResourceRowActions') && parent !== undefined
+  const user = usePluginUser()
   // `?sub=<slug>` — the one sub-resource the user asked for, by clicking its row
   // in the search results. It wins over the query-seeded filter below: a query
   // like "project" matches every child, so seeding with it would bury the row
@@ -150,10 +183,12 @@ export function SubResourcesSection({
           sr.displayName.toLowerCase().includes(q) ||
           (sr.aliases ?? []).some((a) => a.toLowerCase().includes(q)) ||
           (sr.description?.toLowerCase().includes(q) ?? false) ||
+          // `extra` is nullable on a served resource, and the cast hid that:
+          // dereferencing it threw a TypeError the moment anything typed into
+          // this box met a child without it, taking the whole table down.
           (
-            (sr.extra as Record<string, unknown>).awsAccountId as
-              | string
-              | undefined
+            (sr.extra as Record<string, unknown> | null | undefined)
+              ?.awsAccountId as string | undefined
           )?.includes(q) === true,
       )
     }
@@ -166,8 +201,20 @@ export function SubResourcesSection({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <div className="text-sm font-medium">
-          Sub-Resources ({filtered.length} of {subResources.length})
+        {/* `data-testid`, because the label is now deployment-defined: the test
+            kit used to locate this heading by matching the literal string
+            "Sub-Resources (n of m)", which silently stopped finding it the
+            moment a catalog named its children something else. */}
+        <div
+          data-testid="sub-resources-heading"
+          className="text-sm font-medium"
+        >
+          {/* Each site keeps the exact wording it had before `childrenLabel`
+              existed, so a deployment that names nothing renders identically —
+              the heading and the placeholder never agreed, and quietly making
+              them agree would change every existing catalog. */}
+          {childrenLabel ?? 'Sub-Resources'} ({filtered.length} of{' '}
+          {subResources.length})
         </div>
       </div>
 
@@ -194,7 +241,11 @@ export function SubResourcesSection({
             <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
             <Input
               ref={searchInputRef}
-              placeholder="Search resources by name or alias..."
+              // Verbatim, not lower-cased: the deployment chose the casing and
+              // an acronym does not survive it — "AWS Accounts" became
+              // "Search aws accounts…". The no-label default stays lowercase
+              // because that is the wording this placeholder already had.
+              placeholder={`Search ${childrenLabel ?? 'resources'} by name or alias...`}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 h-9"
@@ -218,9 +269,12 @@ export function SubResourcesSection({
         )}
       </div>
 
-      {/* Table */}
-      <div className="rounded-lg border max-h-[400px] overflow-auto">
-        <Table>
+      {/* Table.
+          The vertical scroll sits on the Table's own wrapper rather than here,
+          so the sticky header below pins to the element that actually scrolls —
+          see the comment on `stickyHeader`. */}
+      <div className="rounded-lg border overflow-hidden">
+        <Table stickyHeader className="max-h-[400px]">
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
@@ -228,13 +282,19 @@ export function SubResourcesSection({
               <TableHead>Owner</TableHead>
               <TableHead>Approvers</TableHead>
               <TableHead className="w-[140px]">AWS Account</TableHead>
+              {/* Only when something fills it: an empty column with a header and
+                  no cells is worse than no column, and the open-source build
+                  registers no plugins at all. */}
+              {showAdminColumn && (
+                <TableHead className="w-[168px]">Admin</TableHead>
+              )}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={showAdminColumn ? 6 : 5}
                   className="text-center text-muted-foreground py-8"
                 >
                   No resources match your filters
@@ -253,9 +313,15 @@ export function SubResourcesSection({
                     aria-current={
                       sr.slug === highlightSlug ? 'true' : undefined
                     }
-                    className={
+                    // `group` so a row-slot contribution can react to the row
+                    // being hovered or focused (`group-hover:`,
+                    // `group-focus-within:`). A plugin cannot add this itself —
+                    // it renders inside the cell, not on the row — and the
+                    // alternative is every plugin hand-rolling a `tr:hover &`
+                    // arbitrary variant.
+                    className={`group ${
                       sr.slug === highlightSlug ? 'bg-primary/[0.06]' : ''
-                    }
+                    }`}
                   >
                     <TableCell>
                       {/* A real link, not a click handler on the row: this is a
@@ -333,6 +399,23 @@ export function SubResourcesSection({
                         )
                       })()}
                     </TableCell>
+                    {/* No second `parent &&` guard: TypeScript infers a type
+                        predicate for `showAdminColumn` from the
+                        `parent !== undefined` in its initialiser, so this
+                        branch already narrows `parent` to a Resource. */}
+                    {showAdminColumn && (
+                      // `relative`, so a contribution can position something
+                      // against the cell — a resting-state glyph under a
+                      // hover-revealed control, for instance. A plugin cannot
+                      // add it, because the cell is the core's.
+                      <TableCell className="relative w-[168px]">
+                        <ResourceSubResourceRowActions
+                          resource={sr}
+                          parent={parent}
+                          user={user}
+                        />
+                      </TableCell>
+                    )}
                   </TableRow>
                 )
               })

@@ -1,9 +1,13 @@
+import { useMemo } from 'react'
 import type { ReactNode } from 'react'
+import { useOptionalUser } from '~/modules/auth/AuthContext'
 import type {
   ResourceDetailSlots,
   ResourceDetailWrappers,
 } from './features/resourceDetail'
-import type { AssertDisjoint } from './types'
+import type { AssertDisjoint, PluginUser } from './types'
+
+import { useExtensions } from './ExtensionsContext'
 
 export { ExtensionsContext, useExtensions } from './ExtensionsContext'
 export { slotFactory, wrapperFactory } from './factories'
@@ -12,6 +16,7 @@ export type { PluginUser, PluginRegistration } from './types'
 export type { AssertDisjoint } from './types'
 export {
   ResourceDetailAccessActions,
+  ResourceSubResourceRowActions,
   ResourceDetailProvider,
 } from './features/resourceDetail'
 export type {
@@ -71,4 +76,43 @@ export interface AcPlugin {
   name: string
   slots?: PluginSlots
   wrappers?: PluginWrappers
+}
+
+/**
+ * Whether any registered plugin fills this slot.
+ *
+ * For the cases where rendering the slot is not enough and the core has to
+ * change its own layout around it — a table column, say, which would otherwise
+ * be an empty column with a header and no cells in every build that registers
+ * nothing. Rendering an empty slot costs nothing; reserving space for one is
+ * what this is for.
+ *
+ * Use it ONLY for layout. A slot must never be the only route to something the
+ * core itself needs, so branching behaviour on a plugin's presence is a design
+ * smell even where branching layout is not.
+ */
+export function useSlotFilled(slot: keyof SlotSpec): boolean {
+  return useExtensions().some((plugin) => Boolean(plugin.slots?.[slot]))
+}
+
+/**
+ * The signed-in user, reduced to what slots are given.
+ *
+ * One place, so two slots cannot disagree about the shape — and deliberately a
+ * projection rather than the real user object: the core's `User` is free to grow
+ * fields, and handing a plugin the whole thing would make every one of them part
+ * of the published slot contract.
+ *
+ * Returns `null` with no `AuthProvider` above it. The detail card renders inside
+ * the catalog panel, which some suites mount outside the provider, and throwing
+ * there would make a plugin's presence break unrelated tests.
+ */
+export function usePluginUser(): PluginUser | null {
+  const user = useOptionalUser()
+  return useMemo(
+    // `?? false`, because admin is a capability: absent must read as "not an
+    // admin", never as undefined leaking into a plugin's own check.
+    () => (user ? { email: user.email, isAdmin: user.isAdmin ?? false } : null),
+    [user],
+  )
 }

@@ -153,12 +153,14 @@ export class AppDetailTools {
   } | null {
     this.ensureTab('resources')
     const panel = this.getPanel()
-    const heading = Array.from(panel.querySelectorAll('div')).find((el) =>
-      el.textContent.match(/Sub-Resources \(\d+ of \d+\)/),
-    )
+    // By test id, not by the heading's text: the label comes from the parent's
+    // `childrenLabel`, so a catalog that calls its children anything other than
+    // "Sub-Resources" used to make this return null — reading as "this app has
+    // no children" rather than as a broken selector.
+    const heading = panel.querySelector('[data-testid="sub-resources-heading"]')
     if (!heading) return null
 
-    const match = heading.textContent.match(/Sub-Resources \((\d+) of (\d+)\)/)
+    const match = heading.textContent.match(/\((\d+) of (\d+)\)/)
     const visible = match?.[1] ? parseInt(match[1], 10) : 0
     const total = match?.[2] ? parseInt(match[2], 10) : 0
 

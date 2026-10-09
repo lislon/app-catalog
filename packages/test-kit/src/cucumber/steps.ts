@@ -14,7 +14,13 @@
  * registers its own fixture:
  *
  *   registerCatalog('production', myMagazine)
+ *
+ * …or, when that deployment ships plugins, with the plugins it ships, so every
+ * scenario exercises the app as it is actually built:
+ *
+ *   registerCatalog('production', myMagazine, { extensions: plugins })
  */
+import type { AcPlugin } from '@igstack/app-catalog-frontend-core'
 import { waitFor } from '@testing-library/react'
 import { Given, Then, When } from 'quickpickle'
 import { expect } from 'vitest'
@@ -23,13 +29,28 @@ import type { GivenResult } from '../harness/given'
 import { magazine } from '../mock-backend/magazines'
 import type { Magazine } from '../mock-backend/magazines'
 
-const catalogs = new Map<string, Magazine>([
-  ['sub-resources', magazine.subResources()],
+interface RegisteredCatalog {
+  fixture: Magazine
+  /**
+   * Plugins to mount for every scenario using this catalog. It belongs to the
+   * registration rather than to a step, because the plugins a deployment ships
+   * are a property of that deployment, not something a scenario chooses — and a
+   * .feature file must not have to name them to exercise them.
+   */
+  extensions?: readonly AcPlugin[]
+}
+
+const catalogs = new Map<string, RegisteredCatalog>([
+  ['sub-resources', { fixture: magazine.subResources() }],
 ])
 
 /** Make a fixture available to `Given the "<name>" catalog`. */
-export function registerCatalog(name: string, fixture: Magazine): void {
-  catalogs.set(name, fixture)
+export function registerCatalog(
+  name: string,
+  fixture: Magazine,
+  opts: { extensions?: readonly AcPlugin[] } = {},
+): void {
+  catalogs.set(name, { fixture, ...opts })
 }
 
 // One scenario at a time: vitest isolates per file and quickpickle runs a
@@ -43,13 +64,13 @@ function ui() {
 }
 
 Given('the {string} catalog', async (_world, name: string) => {
-  const fixture = catalogs.get(name)
-  if (!fixture) {
+  const entry = catalogs.get(name)
+  if (!entry) {
     throw new Error(
       `Unknown catalog "${name}". Registered: [${[...catalogs.keys()].join(', ')}]`,
     )
   }
-  current = await given(fixture)
+  current = await given(entry.fixture, { extensions: entry.extensions })
 })
 
 When('I search for {string}', async (_world, query: string) => {

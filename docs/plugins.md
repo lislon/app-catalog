@@ -156,7 +156,11 @@ export interface ResourceDetailSlots {
     subResources: Resource[] // children of (parent ?? resource)
     user: PluginUser | null
   }
-  resourceDetailHeaderNotice: { resource: Resource }
+  resourceSubResourceRowActions: {
+    resource: Resource // the child this table row is showing
+    parent: Resource // always set here, unlike the header slot above
+    user: PluginUser | null
+  }
 }
 export interface ResourceDetailWrappers {
   resourceDetailProvider: { resource: Resource; parent?: Resource }
@@ -166,7 +170,7 @@ const mkSlot = slotFactory<ResourceDetailSlots>()
 const mkWrap = wrapperFactory<ResourceDetailWrappers>()
 
 export const ResourceDetailAccessActions = mkSlot('resourceDetailAccessActions')
-export const ResourceDetailHeaderNotice = mkSlot('resourceDetailHeaderNotice')
+export const ResourceSubResourceRowActions = mkSlot('resourceSubResourceRowActions')
 export const ResourceDetailProvider = mkWrap('resourceDetailProvider')
 ```
 
@@ -210,7 +214,6 @@ Call sites use the composed namespace, so a slot name is never written as a stri
 ```tsx
 // modules/appCatalog/ui/detail/AppDetails.tsx
 import { Plugin } from '~/modules/extensions'
-
 ;<ResourceDetailAccessActions resource={app} parent={parent} subResources={children} user={user} />
 ```
 
@@ -225,7 +228,7 @@ Errors this produces, verified under `strict: true`:
 TS2322  Type 'boolean' is not assignable to type
         '{ DUPLICATE_SLOT_ID: "resourceDetailAccessActions"; }'
 TS2345  Argument of type '"resourceDetailAcessActions"' is not assignable to parameter
-        of type '"resourceDetailAccessActions" | "resourceDetailHeaderNotice"'
+        of type '"resourceDetailAccessActions" | "resourceSubResourceRowActions"'
 TS2339  Property 'user' does not exist on type '{ resource: Resource; }'
 TS2353  'nopeNotASlot' does not exist in type 'PluginSlots'
 ```
@@ -331,16 +334,26 @@ in tests (see §12) and in logs, rather than appearing as a silently missing but
 
 ## 6. Suspense and async
 
-**The trap:** `AppCatalogPage.tsx:178` wraps the lazily-loaded detail panel in
+**The trap:** `AppCatalogPage.tsx:208` wraps the lazily-loaded detail panel in
 `<Suspense fallback={null}>`. A plugin that suspends anywhere inside the detail card — any
-`useSuspenseQuery`, any lazy import — bubbles to _that_ boundary, and because its fallback is `null`
-**the entire detail card disappears** until the plugin's data arrives.
+`useSuspenseQuery`, any lazy import — would bubble to _that_ boundary, and because its fallback is
+`null` **the entire detail card would disappear** until the plugin's data arrived.
 
-Two consequences:
+The core prevents that by giving every contribution its own `Suspense`, so the suspension is
+contained to the slot's own region. The two fallbacks differ on purpose:
 
-1. Give each slot its own `<Suspense>` with a non-null fallback, so a suspending plugin degrades to a
-   skeleton in its own box.
-2. Prefer non-suspending data access in plugins (`useQuery` with an explicit `isPending` branch) over
+- **Leaf slots** fall back to `null`. The contribution's region is simply absent until it resolves,
+  which is the same as that plugin not being registered — nothing else on the card is affected.
+- **Wrappers** fall back to the children they were wrapping, matching their error fallback. A
+  wrapper only decorates, so neither failing nor suspending may blank the subtree. The consequence:
+  while suspended its descendants see no context from it, so a wrapper whose children depend on that
+  context should not suspend at all — render children and fetch inside its own subtree.
+
+So the contract is containment, not a skeleton. Two things follow for a plugin author:
+
+1. If you want a loading state rather than a blank region, render it yourself. The core's `null`
+   fallback deliberately shows nothing, because it cannot know what shape your contribution has.
+2. Prefer non-suspending data access (`useQuery` with an explicit `isPending` branch) over
    `useSuspenseQuery`. The loading state then renders inside the plugin, where it belongs.
 
 ```tsx
@@ -556,7 +569,7 @@ it('contains a crashing plugin', async () => {
   const boom: AcPlugin = {
     name: 'boom',
     slots: {
-      resourceDetailHeaderNotice: () => {
+      resourceDetailAccessActions: () => {
         throw new Error('x')
       },
     },

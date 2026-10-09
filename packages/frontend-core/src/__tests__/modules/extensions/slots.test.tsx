@@ -166,3 +166,87 @@ describe('wrapper slot', () => {
     onError.mockRestore()
   })
 })
+
+describe('a suspending contribution', () => {
+  /** Suspends once, then resolves — a stand-in for any lazy import or query. */
+  function makeSuspender(label: string) {
+    let resolved = false
+    let release!: () => void
+    const ready = new Promise<void>((r) => {
+      release = () => {
+        resolved = true
+        r()
+      }
+    })
+    // Renders its children, so the wrapper case below is a faithful wrapper
+    // rather than something that merely replaces the subtree.
+    function Suspender({ children }: { children?: ReactNode }) {
+      if (!resolved) throw ready
+      return (
+        <b>
+          {label}
+          {children}
+        </b>
+      )
+    }
+    return { Suspender, release }
+  }
+
+  it('does not blank the host while a leaf slot suspends', async () => {
+    const { Suspender, release } = makeSuspender('arrived')
+    const plugins: AcPlugin[] = [
+      {
+        name: 'slow',
+        slots: { resourceDetailAccessActions: () => <Suspender /> },
+      },
+    ]
+
+    mount(
+      plugins,
+      <div>
+        <span>host</span>
+        <ResourceDetailAccessActions {...ctx} />
+      </div>,
+    )
+
+    // Contained: the host is still there, only the plugin's region is empty.
+    expect(screen.getByText('host')).toBeInTheDocument()
+    expect(screen.queryByText('arrived')).not.toBeInTheDocument()
+
+    release()
+    expect(await screen.findByText('arrived')).toBeInTheDocument()
+    expect(screen.getByText('host')).toBeInTheDocument()
+  })
+
+  it('keeps a wrapper’s children visible while the wrapper suspends', async () => {
+    // The asymmetry that matters: a wrapper only decorates, so suspending must
+    // not take the core subtree it was wrapping off the screen. Without its own
+    // Suspense this bubbles to the detail card's `fallback={null}` and the whole
+    // card disappears until the plugin resolves.
+    const { Suspender, release } = makeSuspender('decorated')
+    const plugins: AcPlugin[] = [
+      {
+        name: 'slow-wrapper',
+        wrappers: {
+          resourceDetailProvider: ({ children }) => (
+            <Suspender>{children}</Suspender>
+          ),
+        },
+      },
+    ]
+
+    mount(
+      plugins,
+      <ResourceDetailProvider resource={resource}>
+        <span>core subtree</span>
+      </ResourceDetailProvider>,
+    )
+
+    expect(screen.getByText('core subtree')).toBeInTheDocument()
+
+    release()
+    expect(await screen.findByText('decorated')).toBeInTheDocument()
+    // Still there once the wrapper arrives — now actually wrapped by it.
+    expect(screen.getByText('core subtree')).toBeInTheDocument()
+  })
+})
