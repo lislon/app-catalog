@@ -31,11 +31,13 @@ function appWithRoles(roles: unknown): Resource {
   } as Resource
 }
 
-// `Role.adminNotes` is provisioning-only (directory group names, SSO app, manual
-// steps) and is documented as never shown to the requester — but the roles table
-// printed it inline to anyone who could reach the page, signed out included.
+// `Role.adminNotes` carries the provisioning detail — the directory group, the
+// SSO app, the manual step. The people who grant a role read the same page as
+// the people who ask for it, so the note belongs under the description rather
+// than nowhere: for many entries it is the only written record of HOW the role
+// is actually granted.
 describe('AccessRequestSection — roles table', () => {
-  it('renders the role description and not its adminNotes', () => {
+  it('renders the role description and its adminNotes', () => {
     render(
       <AccessRequestSection
         app={appWithRoles([
@@ -50,8 +52,7 @@ describe('AccessRequestSection — roles table', () => {
     )
 
     expect(screen.getByText('Full administrative access.')).toBeInTheDocument()
-    expect(screen.queryByText(/AD Group: SomeApp_Admin/)).toBeNull()
-    expect(screen.queryByText(/^Note:/)).toBeNull()
+    expect(screen.getByText(/AD Group: SomeApp_Admin/)).toBeInTheDocument()
   })
 
   // A long role list (one real entry has 54) pushed the approval steps below
@@ -143,7 +144,9 @@ describe('AccessRequestSection — roles table', () => {
     expect(toggle).toHaveFocus()
   })
 
-  it('falls back to an em-dash when a role has no description', () => {
+  // A role whose only text is its adminNotes still gets the em-dash, so the
+  // Description column never reads as if the note were the description.
+  it('falls back to an em-dash when a role has no description, and still shows the note', () => {
     render(
       <AccessRequestSection
         app={appWithRoles([
@@ -157,7 +160,77 @@ describe('AccessRequestSection — roles table', () => {
     )
 
     expect(screen.getByText('—')).toBeInTheDocument()
-    expect(screen.queryByText(/LV 1.0 job type/)).toBeNull()
+    expect(screen.getByText(/LV 1.0 job type/)).toBeInTheDocument()
+  })
+})
+
+// The entry's own `adminNotes` arrives as `Resource.notes` and was stored,
+// synced and served while being rendered nowhere — so the one place that says
+// how access is granted (the pipeline to run, the group to grant) was invisible
+// on the very tab that is about getting access.
+describe('AccessRequestSection — the entry’s admin notes', () => {
+  const PIPELINE_NOTE =
+    'To grant access, run the account-provisioning pipeline.'
+
+  it('renders them under their own heading on a documented entry', () => {
+    render(
+      <AccessRequestSection
+        app={{
+          id: 'cloud',
+          slug: 'cloud',
+          displayName: 'Cloud Console',
+          notes: PIPELINE_NOTE,
+          accessRequest: {
+            approvalMethodSlug: 'service',
+            comments: 'Request it from the help desk.',
+          },
+        }}
+        approvalMethods={[]}
+      />,
+    )
+
+    expect(
+      screen.getByRole('heading', { name: 'Admin notes' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(PIPELINE_NOTE)).toBeInTheDocument()
+  })
+
+  // An entry can have no request route written down and still have the note.
+  // Hanging the block off `accessRequest` would drop it exactly there.
+  it('renders them on an entry with no access request at all', () => {
+    render(
+      <AccessRequestSection
+        app={{
+          id: 'ghost',
+          slug: 'ghost',
+          displayName: 'Ghost',
+          notes: PIPELINE_NOTE,
+        }}
+        approvalMethods={[]}
+      />,
+    )
+
+    expect(screen.getByText(/not documented yet/)).toBeInTheDocument()
+    expect(screen.getByText(PIPELINE_NOTE)).toBeInTheDocument()
+  })
+
+  it('renders no heading when the entry has no notes', () => {
+    render(
+      <AccessRequestSection
+        app={{
+          id: 'plain',
+          slug: 'plain',
+          displayName: 'Plain',
+          accessRequest: {
+            approvalMethodSlug: 'service',
+            comments: 'Request it from the help desk.',
+          },
+        }}
+        approvalMethods={[]}
+      />,
+    )
+
+    expect(screen.queryByRole('heading', { name: 'Admin notes' })).toBeNull()
   })
 })
 

@@ -169,6 +169,12 @@ export interface Resource {
   description?: string
   teams?: string[]
   accessRequest?: AppAccessRequest
+  /**
+   * The entry's own admin notes (a company config writes them as `adminNotes`):
+   * how the access is granted — the pipeline to run, the group to grant.
+   * Rendered as an "Admin notes" block on the Access tab, to anyone who can
+   * open the entry, including entries that have no `accessRequest` at all.
+   */
   notes?: string
   /**
    * Historical context: when and why the app was built, and who it was built

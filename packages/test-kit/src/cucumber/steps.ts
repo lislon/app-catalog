@@ -194,6 +194,12 @@ Then('it explains how to get access', async () => {
   })
 })
 
+Then('the access instructions say {string}', async (_world, text: string) => {
+  await waitFor(() => {
+    expect(ui().app.getAccessText() ?? '').toContain(text)
+  })
+})
+
 Then('{string} is listed as an approver', (_world, slug: string) => {
   const text = ui().app.getAccessText() ?? ''
   expect(text).toContain('Approvers')

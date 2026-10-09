@@ -276,9 +276,26 @@ function subResourcesMagazine(postConfigure?: Magazine): Magazine {
       displayName: 'Cloud Console',
       description: 'Cloud accounts and the projects inside them',
       appUrl: 'https://console.example.com',
+      // `notes` is the entry's own `adminNotes` as the API serves it: the
+      // provisioning route, not something the requester does.
+      notes:
+        'Run the account-provisioning pipeline once the request is approved',
       accessRequest: {
         approvalMethodSlug: supportPortal.slug,
         comments: 'Request the base role first',
+        // One role with a description and one without, both carrying the
+        // directory group that actually grants them.
+        roles: [
+          {
+            displayName: 'Viewer',
+            description: 'Read-only access to every project',
+            adminNotes: 'AD Group: CloudConsole_Viewer',
+          },
+          {
+            displayName: 'Operator',
+            adminNotes: 'AD Group: CloudConsole_Operator',
+          },
+        ],
       },
     })
 
