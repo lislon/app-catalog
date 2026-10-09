@@ -27,6 +27,13 @@
         "default": "./dist/esm/internal.js"
       }
     },
+    "./router": {
+      "my-custom-condition": "./src/router.ts",
+      "import": {
+        "types": "./dist/esm/router.d.ts",
+        "default": "./dist/esm/router.js"
+      }
+    },
     "./public": {
       "my-custom-condition": "./public",
       "default": "./dist/public"

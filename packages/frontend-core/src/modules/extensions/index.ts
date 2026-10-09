@@ -1,6 +1,9 @@
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
-import { useOptionalUser } from '~/modules/auth/AuthContext'
+// Relative, not `~`: this file is on the published entry's graph and therefore
+// in every consumer's program, and `~` is the CORE's alias — a consumer only
+// resolves it if it has mapped it, which the example app has not.
+import { useOptionalUser } from '../auth/AuthContext'
 import type {
   ResourceDetailSlots,
   ResourceDetailWrappers,

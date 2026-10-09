@@ -1,4 +1,8 @@
 export { appPropsFactory } from './appPropsFactory.js'
+export type { AppPropsFactoryOptions } from './appPropsFactory.js'
+// What a deployment's own router factory is handed. Safe on this entry: it
+// names no route tree, so it carries no `declare module` with it.
+export type { AcRouterContext, AcRouterInitParams } from './types/types'
 export { App } from './App'
 export type { AppProps } from './App'
 export type { AreaIcon, AreasSettings, UiSettings } from './types/uiSettings'

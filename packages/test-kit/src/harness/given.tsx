@@ -11,10 +11,12 @@ import {
   App,
   SEARCH_STORAGE_KEY,
   clearSessionState,
-  createAcRouter,
   seedSessionState,
 } from '@igstack/app-catalog-frontend-core/internal'
 import type { AcPlugin } from '@igstack/app-catalog-frontend-core'
+import type { RegisteredRouter } from '@tanstack/react-router'
+import { requireRouterFactory } from './routerFactory'
+import type { CreateRouterFn } from './routerFactory'
 
 import { MockDb } from '../mock-backend/MockDb'
 import { MockUserContext } from '../mock-backend/MockUserContext'
@@ -38,7 +40,7 @@ import { GalleryTools } from '../tools/GalleryTools'
 export interface GivenResult {
   ui: UiTools
   backend: MockBackendVerifier
-  router: ReturnType<typeof createAcRouter>
+  router: RegisteredRouter
 }
 
 export interface UiTools {
@@ -88,6 +90,13 @@ export async function given(
      * plugin at all — which is where a plugin most needs covering.
      */
     extensions?: readonly AcPlugin[]
+    /**
+     * Overrides the factory registered with `setRouterFactory`.
+     *
+     * For a test that needs a router built differently from the rest of its
+     * suite. Normally the setup-file registration is what you want.
+     */
+    createRouter?: CreateRouterFn
   } = {},
 ): Promise<GivenResult> {
   // Clean up any previous resources
@@ -163,7 +172,7 @@ export async function given(
     },
   })
 
-  const router = createAcRouter({
+  const router = (opts.createRouter ?? requireRouterFactory())({
     history: createMemoryHistory({
       initialEntries: [opts.initialRoute ?? '/catalog/apps'],
     }),
