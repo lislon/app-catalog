@@ -115,7 +115,11 @@ export interface AppRole {
    */
   description?: string
   /**
-   * Notes for admins/approvers (Not for requestores)
+   * Provisioning detail for whoever grants this role — the directory group, the
+   * SSO app, the manual step. Written for an admin rather than for the person
+   * asking, but it RENDERS: a `Note:` line under the role's description, to
+   * anyone who can open the entry. Keep it a readable sentence and never put
+   * anything in it that must not be seen.
    */
   adminNotes?: string
 }

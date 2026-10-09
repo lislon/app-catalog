@@ -89,10 +89,17 @@ function RolesTable({
                 <TableCell className="font-medium whitespace-nowrap">
                   {role.displayName}
                 </TableCell>
-                {/* `adminNotes` is provisioning-only and never shown to
-                    the requester — only `description` belongs here. */}
+                {/* `adminNotes` is the provisioning detail — the directory
+                    group, the SSO app, the manual step. It reads as a note
+                    under the description because the person granting the role
+                    and the person asking for it read the same page. */}
                 <TableCell className="text-sm text-muted-foreground">
                   {role.description || '—'}
+                  {role.adminNotes && (
+                    <div className="mt-1 text-xs italic text-muted-foreground/80">
+                      Note: {role.adminNotes}
+                    </div>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -229,6 +236,22 @@ const UNDOCUMENTED_WITHOUT_CONTACT =
   'Access process not documented yet, and no owner is listed for this app.'
 
 /**
+ * The entry's own `adminNotes`, served as `Resource.notes`: the provisioning
+ * route an approver follows — the pipeline to run, the group to grant. It is
+ * about the whole request rather than one role, so it gets its own block.
+ */
+function AdminNotes({ notes }: { notes: string }) {
+  return (
+    <div>
+      <h4 className="mb-2 text-sm font-medium">Admin notes</h4>
+      <div className="text-sm text-muted-foreground prose prose-sm max-w-none">
+        <MarkdownText>{notes}</MarkdownText>
+      </div>
+    </div>
+  )
+}
+
+/**
  * The frame every access state renders into, including the empty one — an
  * entry with no access data still gets the heading, because a missing box
  * reads as "nothing to do here" rather than "we have not documented this".
@@ -307,6 +330,10 @@ export function AccessRequestSection({
         <p className="text-sm text-muted-foreground">
           {UNDOCUMENTED_WITHOUT_CONTACT}
         </p>
+        {/* No request route written down, but a provisioning note still is:
+            that note is then the only thing on the page that says how the
+            access gets granted, so it cannot hang off `accessRequest`. */}
+        {app.notes && <AdminNotes notes={app.notes} />}
       </AccessBox>
     )
   }
@@ -420,6 +447,10 @@ export function AccessRequestSection({
       {accessRequest.roles && accessRequest.roles.length > 0 && (
         <RolesTable roles={accessRequest.roles} />
       )}
+
+      {/* After the roles, because the groups and pipelines it names are what
+          the roles above are granted through. */}
+      {app.notes && <AdminNotes notes={app.notes} />}
 
       {/* Approvers */}
       {accessRequest.approverSlugs &&
