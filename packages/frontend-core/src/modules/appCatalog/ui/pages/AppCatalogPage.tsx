@@ -68,6 +68,22 @@ export function AppCatalogPage({
     [resources],
   )
 
+  /**
+   * What the grid actually shows, memoized because its IDENTITY matters.
+   *
+   * Filtering inline in the JSX produced a new array on every render, and the
+   * grid keys four `useMemo`s off this prop (the slug index, "new this week",
+   * the browse list and its area grouping). A fresh identity invalidated all
+   * four on every keystroke — recomputed even while searching, when the
+   * discovery spine they feed is not on screen. The search box lives in a
+   * context above this component, so every keystroke re-renders here.
+   */
+  const visibleRootResources = useMemo(
+    () =>
+      rootResources.filter((a) => filterState.showDeprecated || !a.deprecated),
+    [rootResources, filterState.showDeprecated],
+  )
+
   // Dev-only skew warning: data arrived (resources > 0) but nothing is top-level
   // (rootResources === 0). That fingerprints a frontend/backend-core version skew
   // or a stale service worker — NOT a normal empty search/filter (those still have
@@ -187,9 +203,7 @@ export function AppCatalogPage({
     // against the bottom edge or under the floating support bubble.
     <div className="flex-1 min-h-0 overflow-y-auto [scrollbar-gutter:stable] pb-24">
       <AppCatalogGrid
-        apps={rootResources.filter(
-          (a) => filterState.showDeprecated || !a.deprecated,
-        )}
+        apps={visibleRootResources}
         // All resources incl. children — so search matches sub-resources
         // (e.g. a cloud account) and surfaces their parent.
         allResources={resources}

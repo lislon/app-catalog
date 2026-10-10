@@ -11,9 +11,12 @@ import {
   App,
   SEARCH_STORAGE_KEY,
   clearSessionState,
-  createAcRouter,
   seedSessionState,
 } from '@igstack/app-catalog-frontend-core/internal'
+import type { AcPlugin } from '@igstack/app-catalog-frontend-core'
+import type { RegisteredRouter } from '@tanstack/react-router'
+import { requireRouterFactory } from './routerFactory'
+import type { CreateRouterFn } from './routerFactory'
 
 import { MockDb } from '../mock-backend/MockDb'
 import { MockUserContext } from '../mock-backend/MockUserContext'
@@ -37,7 +40,7 @@ import { GalleryTools } from '../tools/GalleryTools'
 export interface GivenResult {
   ui: UiTools
   backend: MockBackendVerifier
-  router: ReturnType<typeof createAcRouter>
+  router: RegisteredRouter
 }
 
 export interface UiTools {
@@ -78,7 +81,23 @@ export async function cleanupTestResources(): Promise<void> {
 
 export async function given(
   magazine: Magazine,
-  opts: { initialRoute?: string; seedSearch?: string } = {},
+  opts: {
+    initialRoute?: string
+    seedSearch?: string
+    /**
+     * Plugins to mount, exactly as the app ships them. Without this the harness
+     * hard-codes App's props, so a deployment's own suites cannot exercise a
+     * plugin at all — which is where a plugin most needs covering.
+     */
+    extensions?: readonly AcPlugin[]
+    /**
+     * Overrides the factory registered with `setRouterFactory`.
+     *
+     * For a test that needs a router built differently from the rest of its
+     * suite. Normally the setup-file registration is what you want.
+     */
+    createRouter?: CreateRouterFn
+  } = {},
 ): Promise<GivenResult> {
   // Clean up any previous resources
   await cleanupTestResources()
@@ -153,7 +172,7 @@ export async function given(
     },
   })
 
-  const router = createAcRouter({
+  const router = (opts.createRouter ?? requireRouterFactory())({
     history: createMemoryHistory({
       initialEntries: [opts.initialRoute ?? '/catalog/apps'],
     }),
@@ -184,6 +203,7 @@ export async function given(
       queryClient={queryClient}
       trpcClient={trpcClient}
       db={acDb}
+      extensions={opts.extensions}
     />,
   )
 

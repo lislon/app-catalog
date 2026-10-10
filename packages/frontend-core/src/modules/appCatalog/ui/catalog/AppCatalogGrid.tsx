@@ -1,6 +1,14 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
 import { ArrowUpRight, Search, X } from 'lucide-react'
-import { use, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  use,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { cn } from '~/lib/utils'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
 import { markdownToPlainText } from '../../utils/markdownToPlainText'
@@ -697,7 +705,29 @@ export function AppCatalogGrid({
   // on the areas most people need. Within an area, alpha (from browse).
   const browseGroups = useMemo(() => groupByArea(browse), [browse])
 
-  const isSearching = searchValue.trim() !== ''
+  /**
+   * The query the RESULTS are computed from; the input stays on `searchValue`.
+   *
+   * Searching rebuilds the ranked result set from scratch on every keystroke —
+   * `searchResources` rebuilds its parent index, scores every resource across
+   * 15 tiers and sorts — and the first keystroke additionally unmounts the
+   * whole discovery spine while the last one remounts it. Doing that between
+   * the keypress and the caret moving is what made typing stutter. Deferring
+   * hands React permission to render the typed character first and the list
+   * after, abandoning a superseded pass instead of finishing one per
+   * character.
+   *
+   * `isSearching` is derived from the DEFERRED value on purpose. Driving the
+   * results/spine swap from the live value instead tears the frame: the spine
+   * unmounts immediately while the results are still a render behind, so the
+   * page blanks for a frame on the first keystroke. Everything the user sees
+   * for a given query — the swap, the rows and the highlight marks — comes off
+   * one value, so they can never disagree.
+   */
+  const deferredSearch = useDeferredValue(searchValue)
+  const isSearching = deferredSearch.trim() !== ''
+  // True while the list is a render behind the box, used only to dim it.
+  const isSearchPending = searchValue !== deferredSearch
   const searchRef = useRef<HTMLInputElement>(null)
 
   // ⌘K / Ctrl+K focuses the hero search box from anywhere on the page.
@@ -764,16 +794,26 @@ export function AppCatalogGrid({
           search box. The discovery spine below is what gets replaced — the
           shell, hero and search box stay put, so typing never shifts layout. */}
       {isSearching && (
-        <SearchResultsList
-          apps={allResources ?? apps}
-          searchValue={searchValue}
-          onAppClick={onAppClick}
-          onSubClick={onSubClick}
-          onLaunch={onLaunch}
-          onClear={() => onSearchChange('')}
-          keyboardEnabled={!detailOpen}
-          selectedSubSlug={selectedSubSlug}
-        />
+        <div
+          className={`transition-opacity ${
+            isSearchPending ? 'opacity-60' : ''
+          }`}
+          aria-busy={isSearchPending || undefined}
+        >
+          <SearchResultsList
+            apps={allResources ?? apps}
+            // Deferred, not live: `Highlight` inside marks the matched text, and
+            // feeding it a newer query than the rows were built from highlights
+            // substrings the rows do not contain.
+            searchValue={deferredSearch}
+            onAppClick={onAppClick}
+            onSubClick={onSubClick}
+            onLaunch={onLaunch}
+            onClear={() => onSearchChange('')}
+            keyboardEnabled={!detailOpen}
+            selectedSubSlug={selectedSubSlug}
+          />
+        </div>
       )}
 
       {/* Discovery spine: only shown when not searching */}

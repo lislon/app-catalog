@@ -83,3 +83,24 @@ export function useAppCatalogContext(): AppCatalogContextIface {
   }
   return context
 }
+
+/**
+ * The catalog, for a deployment that owns its own routes.
+ *
+ * A deployment composing its own route tree has to resolve its own path params
+ * against the catalog — `/app/$slug/…/$account` means nothing until `$account`
+ * is matched to a resource. It needs the resources to do that, and the loading
+ * flag to tell "still fetching" from "no such resource", which is the
+ * difference between a spinner and a redirect.
+ *
+ * Deliberately narrower than `useAppCatalogContext`: persons, groups, tags and
+ * approval methods are the core's own rendering concerns, and publishing them
+ * would make every one of them part of the supported surface.
+ */
+export function useCatalogResources(): {
+  resources: Resource[]
+  isLoading: boolean
+} {
+  const { resources, isLoadingApps } = useAppCatalogContext()
+  return { resources, isLoading: isLoadingApps }
+}

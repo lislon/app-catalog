@@ -131,3 +131,18 @@ export function useUser() {
   const { user } = useAuth()
   return user
 }
+
+/**
+ * The current user, or null when there is no `AuthProvider` above.
+ *
+ * `useUser()` throws without a provider, which is correct for UI that only ever
+ * renders inside the app but wrong for anything a test may mount bare. Several
+ * components are rendered bare on purpose (`AppDetailPanel`, `AppCatalogGrid`),
+ * so assembling a plugin slot payload with `useUser()` there turns every one of
+ * those tests red — "useAuth must be used within AuthProvider".
+ *
+ * Signed-out and no-provider are the same answer for a slot payload: null.
+ */
+export function useOptionalUser() {
+  return use(AuthContext)?.user ?? null
+}

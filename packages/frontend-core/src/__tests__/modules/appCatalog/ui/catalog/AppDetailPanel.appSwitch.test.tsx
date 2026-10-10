@@ -32,7 +32,10 @@ vi.mock('~/modules/appCatalog/ui/context/AppCatalogFiltersContext', () => ({
     actions: {},
   })),
 }))
-vi.mock('~/modules/auth', () => ({ useUser: vi.fn(() => null) }))
+vi.mock('~/modules/auth', () => ({
+  useUser: vi.fn(() => null),
+  useOptionalUser: vi.fn(() => null),
+}))
 vi.mock('~/modules/appCatalog/ui/detail/FeedbackSection', () => ({
   FeedbackSection: () => <div />,
 }))

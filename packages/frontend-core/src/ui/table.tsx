@@ -2,15 +2,46 @@ import * as React from 'react'
 
 import { cn } from '~/lib/utils'
 
-function Table({ className, ...props }: React.ComponentProps<'table'>) {
+interface TableProps extends React.ComponentProps<'table'> {
+  /**
+   * Keep the header visible while the body scrolls.
+   *
+   * The scroll has to be on the container BELOW, not on an ancestor, and that is
+   * the whole difficulty: this container sets `overflow-x: auto`, which per spec
+   * makes `overflow-y: visible` compute to `auto` as well. So it is already a
+   * scrollport on both axes, and `position: sticky` on the header resolves
+   * against it rather than against whatever ancestor has the height limit.
+   * Putting the height limit anywhere above leaves the header pinned to an
+   * element that never scrolls vertically — it scrolls away exactly as if
+   * nothing had been set.
+   *
+   * Pass the max height as `className` (e.g. `max-h-[400px]`); it lands on this
+   * container, which then both clips and scrolls.
+   */
+  stickyHeader?: boolean
+}
+
+function Table({ className, stickyHeader, ...props }: TableProps) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      className={cn(
+        'relative w-full overflow-x-auto',
+        stickyHeader && 'overflow-y-auto',
+        stickyHeader && className,
+      )}
     >
       <table
         data-slot="table"
-        className={cn('w-full caption-bottom text-sm', className)}
+        className={cn(
+          'w-full caption-bottom text-sm',
+          // The header's own bottom border does not render reliably once the
+          // row is sticky, so the separating line comes from an inset shadow on
+          // the cells instead. Opaque background, or rows show through it.
+          stickyHeader &&
+            '[&>thead]:sticky [&>thead]:top-0 [&>thead]:z-10 [&>thead>tr]:border-b-0 [&>thead_th]:bg-background [&>thead_th]:shadow-[inset_0_-1px_0_var(--border)]',
+          !stickyHeader && className,
+        )}
         {...props}
       />
     </div>

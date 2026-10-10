@@ -60,7 +60,11 @@ const config = defineConfig(({ mode }) => {
     return mergeConfig(
       tanstackViteConfig({
         tsconfigPath,
-        entry: ['./src/index.tsx', './src/internal.ts'],
+        // Every subpath in `exports` needs an entry here. `dts` emits a .d.ts
+        // for any file it type-checks, so a missing entry still produces types
+        // and only the .js is absent — the subpath then resolves for tsc and
+        // 404s at runtime.
+        entry: ['./src/index.tsx', './src/internal.ts', './src/router.ts'],
         srcDir: './src',
         cjs: false,
       }),
