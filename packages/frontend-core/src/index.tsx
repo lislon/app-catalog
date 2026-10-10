@@ -26,3 +26,6 @@ export type {
   WrapperSpec,
 } from './modules/extensions/index'
 export type { Resource } from '@igstack/app-catalog-backend-core'
+// For a deployment that owns its own routes: resolving its own path params
+// against the catalog. Narrow on purpose — see the hook's own comment.
+export { useCatalogResources } from './modules/appCatalog/context/AppCatalogContext'
