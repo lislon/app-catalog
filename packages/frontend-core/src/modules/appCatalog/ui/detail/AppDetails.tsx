@@ -6,6 +6,7 @@ import { useSearch } from '@tanstack/react-router'
 import { CalendarPlus, Clock, ExternalLink, Plus, Trash2 } from 'lucide-react'
 import React from 'react'
 import { useHotkeys } from 'react-hotkeys-hook'
+import { useDismissable } from '~/modules/dismiss/DismissStack'
 import { Badge } from '~/ui/badge'
 import { Button } from '~/ui/button'
 import {
@@ -224,20 +225,20 @@ export function AppDetails({
     [app, isGalleryOpen],
   )
 
-  // Esc: close the details panel (only when gallery is NOT open)
+  // Esc: close the card.
   //
-  // From inside a text field too: the Quick Jump field holds the caret from the
-  // moment the card opens, so the default "ignore form tags" left the card with
-  // no keyboard way out. A field that wants Esc for itself stops the event —
-  // InlineEditableField does, so Esc there cancels the edit and nothing more.
-  useHotkeys(
-    'escape',
-    () => {
-      onClosePanel()
-    },
-    { enabled: !isGalleryOpen, enableOnFormTags: ['input'] },
-    [isGalleryOpen, onClosePanel],
-  )
+  // Registered in the dismiss stack rather than bound as a hotkey, and with no
+  // mention of the gallery: anything opened OVER the card — the gallery, a
+  // consumer's dialog on a nested route — registers after this and therefore
+  // wins Escape until it closes. The card used to carry
+  // `enabled: !isGalleryOpen`, which only worked because it knew about the one
+  // overlay that existed at the time, and silently failed for the next one.
+  //
+  // Escape still works from inside a text field, which the plain hotkey needed
+  // `enableOnFormTags` for: the stack listens on the document, and a field that
+  // wants Escape for itself calls preventDefault — InlineEditableField does —
+  // which the stack honours.
+  useDismissable(onClosePanel)
 
   const handleScreenshotClick = (index: number) => {
     setGalleryInitialIndex(index)

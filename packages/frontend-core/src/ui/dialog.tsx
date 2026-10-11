@@ -1,5 +1,6 @@
 import * as React from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
+import { useDismissStack } from '~/modules/dismiss/DismissStack'
 import { XIcon } from 'lucide-react'
 
 import { cn } from '~/lib/utils'
@@ -48,15 +49,40 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  onEscapeKeyDown,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
 }) {
+  const stack = useDismissStack()
+
+  /**
+   * Bridges Radix's Escape handling into the dismiss stack.
+   *
+   * Radix listens for Escape with `capture: true`, so it runs before the
+   * stack's own document listener and before every component handler. Left
+   * alone, a Radix dialog therefore closes itself even when something else is
+   * on top of it — which is the bug this whole module exists to fix, just
+   * from the other direction.
+   *
+   * So: ask the stack first. If it had a layer to dismiss, that layer was the
+   * topmost one and Radix must stand down, which `preventDefault` tells it.
+   * If the stack was empty, nothing registered an opinion and Radix closing
+   * this dialog is exactly right — which keeps every existing dialog working
+   * whether or not anyone has wired it into the stack.
+   */
+  const handleEscapeKeyDown = (event: KeyboardEvent) => {
+    onEscapeKeyDown?.(event)
+    if (event.defaultPrevented) return
+    if (stack.dismissTop()) event.preventDefault()
+  }
+
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"
+        onEscapeKeyDown={handleEscapeKeyDown}
         className={cn(
           'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg',
           className,

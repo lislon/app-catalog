@@ -29,3 +29,12 @@ export type { Resource } from '@igstack/app-catalog-backend-core'
 // For a deployment that owns its own routes: resolving its own path params
 // against the catalog. Narrow on purpose — see the hook's own comment.
 export { useCatalogResources } from './modules/appCatalog/context/AppCatalogContext'
+
+/**
+ * Escape handling, for a deployment's own overlays.
+ *
+ * Call `useDismissable(close)` in any overlay and Escape dismisses whatever
+ * opened last, across core and deployment layers alike. Nothing needs to know
+ * what else is on screen.
+ */
+export { useDismissable, useDismissStack } from './modules/dismiss/DismissStack'

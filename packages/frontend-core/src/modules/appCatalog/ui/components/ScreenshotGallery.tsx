@@ -1,4 +1,5 @@
-import { useMemo, useRef } from 'react'
+import { useMemo } from 'react'
+import { useDismissable } from '~/modules/dismiss/DismissStack'
 
 import type { Resource } from '@igstack/app-catalog-backend-core'
 
@@ -24,8 +25,14 @@ export function ScreenshotGallery({
   onOpenChange,
   title,
 }: ScreenshotGalleryProps) {
-  // Track whether Gallery is in fullscreen — if so, block Radix from closing on Escape
-  const isFullscreenRef = useRef(false)
+  /**
+   * The dialog is dismissable through the stack, not through Radix.
+   *
+   * It no longer needs to know whether the gallery inside it is fullscreen:
+   * fullscreen registers above this layer while it is on, so Escape reaches it
+   * first and this dialog only hears Escape once fullscreen is off.
+   */
+  useDismissable(() => onOpenChange(false), { enabled: open })
 
   // Transform screenshot IDs to URLs. Capped at 2000px — plenty for on-screen
   // viewing (incl. fullscreen zoom) while avoiding multi-MB original downloads
@@ -50,30 +57,13 @@ export function ScreenshotGallery({
         aria-describedby={undefined}
         className="h-[85vh] w-full max-w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-3rem)] md:max-w-[calc(100vw-4rem)] p-0 overflow-hidden"
         showCloseButton={true}
-        onEscapeKeyDown={(e) => {
-          // Stop propagation so the Esc event doesn't reach outer document listeners
-          // (e.g. SearchResultsList's raw keydown handler, which would clear search).
-          e.stopPropagation()
-          // If Gallery is in fullscreen, its capture listener already handled Escape.
-          // Prevent Radix from also closing the dialog on the same event.
-          if (isFullscreenRef.current) {
-            e.preventDefault()
-          }
-        }}
       >
         <VisuallyHidden>
           <DialogTitle>
             {title || `${app.abbreviation || app.displayName} screenshots`}
           </DialogTitle>
         </VisuallyHidden>
-        <Gallery
-          images={images}
-          initialIndex={initialIndex}
-          title={title}
-          onFullscreenChange={(fs) => {
-            isFullscreenRef.current = fs
-          }}
-        />
+        <Gallery images={images} initialIndex={initialIndex} title={title} />
       </DialogContent>
     </Dialog>
   )
