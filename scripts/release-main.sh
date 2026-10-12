@@ -22,6 +22,10 @@ if [ -z "$(ls -A .changeset/*.md 2>/dev/null | grep -v README || true)" ]; then
   exit 0
 fi
 
+# Before versioning: a refused major then leaves the changesets in place for the
+# approved retry, instead of a half-versioned tree. Approval is ALLOW_MAJOR=true.
+${MAJOR_GUARD:-node scripts/assert-no-major.mjs}
+
 # Bumps every publishable version, writes the CHANGELOGs, deletes the consumed
 # changesets and relocks.
 pnpm run changeset:version

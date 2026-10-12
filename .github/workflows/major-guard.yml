@@ -1,0 +1,28 @@
+name: major-guard
+
+# Own workflow, not a job in pr.yml: approval is a label, and re-running on
+# `labeled` here re-checks only the release plan, not the whole test suite.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  major-guard:
+    name: No unapproved major
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+      - name: Setup Tools
+        uses: tanstack/config/.github/setup@main
+      - name: Refuse a release plan that raises a major
+        env:
+          ALLOW_MAJOR: ${{ contains(github.event.pull_request.labels.*.name, 'allow-major') }}
+        run: node scripts/assert-no-major.mjs

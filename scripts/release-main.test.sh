@@ -43,6 +43,12 @@ node -p 'JSON.parse(require("fs").readFileSync("packages/backend-core/package.js
   > "$GUARD_SAW_VERSION"
 EOF
 chmod +x "$tmp/bin/guard"
+cat >"$tmp/bin/major-guard" <<'EOF'
+#!/usr/bin/env bash
+echo "major-guard" >> "$PNPM_LOG"
+[ -z "${REFUSE_MAJOR:-}" ] || exit 1
+EOF
+chmod +x "$tmp/bin/major-guard"
 cat >"$tmp/bin/gh" <<'EOF'
 #!/usr/bin/env bash
 echo "gh $*" >> "$GH_LOG"
@@ -51,7 +57,7 @@ chmod +x "$tmp/bin/gh"
 export PATH="$tmp/bin:$PATH" PNPM_LOG="$tmp/pnpm.log"
 export PUBLISH_SAW_MAIN="$tmp/publish-saw-main" GH_LOG="$tmp/gh.log"
 export GUARD_LOG="$tmp/guard.log" GUARD_SAW_VERSION="$tmp/guard-saw-version"
-export GUARD=guard
+export GUARD=guard MAJOR_GUARD=major-guard
 
 git init --quiet --bare "$tmp/remote.git"
 git clone --quiet "$tmp/remote.git" "$tmp/work" 2>/dev/null
@@ -83,6 +89,14 @@ bash "$script" | grep -q 'nothing to release' || fail 'no-changeset run did not 
 # With a changeset: version, build, publish, then record.
 printf -- "---\n'core': patch\n---\n\nchange\n" >.changeset/a-change.md
 git add -A && git commit --quiet -m 'feat: a change' && git push --quiet origin HEAD:main
+
+# A refused major stops the release before anything is versioned, so the
+# changesets survive for the approved retry.
+if REFUSE_MAJOR=1 bash "$script" >/dev/null 2>&1; then fail 'a refused major still released'; fi
+[ "$(cat "$PNPM_LOG")" = 'major-guard' ] || fail 'a refused major still ran pnpm'
+[ -f .changeset/a-change.md ] || fail 'a refused major consumed the changeset'
+: >"$PNPM_LOG"
+
 unreleased="$(remote_main)"
 bash "$script" | grep -q 'released 9.9.9' || fail 'release did not report a version'
 grep -q 'run changeset:publish' "$PNPM_LOG" || fail 'nothing was published'

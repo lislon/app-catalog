@@ -70,6 +70,7 @@
     "@arethetypeswrong/cli": "^0.17.4",
     "@changesets/changelog-github": "^0.5.2",
     "@changesets/cli": "^2.29.8",
+    "@changesets/get-release-plan": "^4.0.14",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
     "@cspell/eslint-plugin": "^10.3.4",
