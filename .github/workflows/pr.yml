@@ -14,10 +14,10 @@ permissions:
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - name: Setup Tools
@@ -36,10 +36,10 @@ jobs:
         run: bash scripts/release-main.test.sh
   versions:
     name: Registry Versions
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v7.0.1
       - name: Setup Tools
         uses: tanstack/config/.github/setup@main
       - name: Check declared versions against the registry
@@ -50,10 +50,10 @@ jobs:
     # which makes the stall undiagnosable. An explicit timeout turns it into a
     # failure instead, and a failure keeps its log.
     timeout-minutes: 20
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - name: Setup Tools
@@ -70,10 +70,10 @@ jobs:
     # which makes the stall undiagnosable. An explicit timeout turns it into a
     # failure instead, and a failure keeps its log.
     timeout-minutes: 20
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - name: Setup Tools
