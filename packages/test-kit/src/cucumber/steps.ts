@@ -14,8 +14,15 @@
  * registers its own fixture:
  *
  *   registerCatalog('production', myMagazine)
+ *
+ * …or, when that deployment ships plugins, with the plugins it ships, so every
+ * scenario exercises the app as it is actually built:
+ *
+ *   registerCatalog('production', myMagazine, { extensions: plugins })
  */
-import { waitFor } from '@testing-library/react'
+import type { AcPlugin } from '@igstack/app-catalog-frontend-core'
+import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { Given, Then, When } from 'quickpickle'
 import { expect } from 'vitest'
 import { given } from '../harness/given'
@@ -23,13 +30,48 @@ import type { GivenResult } from '../harness/given'
 import { magazine } from '../mock-backend/magazines'
 import type { Magazine } from '../mock-backend/magazines'
 
-const catalogs = new Map<string, Magazine>([
-  ['sub-resources', magazine.subResources()],
+interface RegisteredCatalog {
+  fixture: Magazine
+  /**
+   * Plugins to mount for every scenario using this catalog. It belongs to the
+   * registration rather than to a step, because the plugins a deployment ships
+   * are a property of that deployment, not something a scenario chooses — and a
+   * .feature file must not have to name them to exercise them.
+   */
+  extensions?: readonly AcPlugin[]
+}
+
+const catalogs = new Map<string, RegisteredCatalog>([
+  ['sub-resources', { fixture: magazine.subResources() }],
+  /**
+   * An entry with screenshots, so a scenario can open the viewer over the card
+   * and press Escape. The card and the viewer are two overlays in one subtree,
+   * which is the arrangement that broke: a child registers its Escape handling
+   * before its parent, so ordering by registration made the CARD look like the
+   * newer layer and one Escape left the catalog index entirely.
+   */
+  [
+    'screenshots',
+    {
+      fixture: ({ backendCfg }) => {
+        backendCfg.withApp({
+          slug: 'design-tool',
+          displayName: 'Design Tool',
+          description: 'Mockups and prototypes',
+          screenshotIds: ['shot-1', 'shot-2'],
+        })
+      },
+    },
+  ],
 ])
 
 /** Make a fixture available to `Given the "<name>" catalog`. */
-export function registerCatalog(name: string, fixture: Magazine): void {
-  catalogs.set(name, fixture)
+export function registerCatalog(
+  name: string,
+  fixture: Magazine,
+  opts: { extensions?: readonly AcPlugin[] } = {},
+): void {
+  catalogs.set(name, { fixture, ...opts })
 }
 
 // One scenario at a time: vitest isolates per file and quickpickle runs a
@@ -43,13 +85,13 @@ function ui() {
 }
 
 Given('the {string} catalog', async (_world, name: string) => {
-  const fixture = catalogs.get(name)
-  if (!fixture) {
+  const entry = catalogs.get(name)
+  if (!entry) {
     throw new Error(
       `Unknown catalog "${name}". Registered: [${[...catalogs.keys()].join(', ')}]`,
     )
   }
-  current = await given(fixture)
+  current = await given(entry.fixture, { extensions: entry.extensions })
 })
 
 When('I search for {string}', async (_world, query: string) => {
@@ -269,5 +311,71 @@ Then(
 Then('{int} requests are awaiting review', async (_world, count: number) => {
   await waitFor(() => {
     expect(ui().app.feedback.openCount()).toBe(count)
+  })
+})
+
+/* ---------------------------------------------------------------- Escape ---
+ * Escape is routed by the dismiss stack: the layer that most recently appeared
+ * owns it, and the one beneath takes over when it closes. These steps drive it
+ * through the real card, because the ordering bug it guards against is only
+ * visible when two overlays are on screen at once.
+ */
+
+When('I open the first screenshot', async () => {
+  const user = userEvent.setup()
+  await user.click(screen.getByRole('button', { name: /View screenshots of/ }))
+  await waitFor(() => {
+    expect(screen.getByRole('dialog', { name: /screenshots/i })).toBeTruthy()
+  })
+})
+
+When('I press Escape', async () => {
+  const user = userEvent.setup()
+  await user.keyboard('{Escape}')
+})
+
+Then('the screenshot viewer is open', async () => {
+  await waitFor(() => {
+    expect(screen.getByRole('dialog', { name: /screenshots/i })).toBeTruthy()
+  })
+})
+
+Then('the screenshot viewer is closed', async () => {
+  await waitFor(() => {
+    expect(screen.queryByRole('dialog', { name: /screenshots/i })).toBeNull()
+  })
+})
+
+Then('the resource card is still open', async () => {
+  // The layer underneath. Still being here is the whole point: closing the
+  // viewer must not take the reader off the entry they were looking at.
+  await waitFor(() => {
+    expect(screen.getByRole('dialog', { name: /details/i })).toBeTruthy()
+  })
+})
+
+Then('the resource card is closed', async () => {
+  await waitFor(() => {
+    expect(screen.queryByRole('dialog', { name: /details/i })).toBeNull()
+  })
+})
+
+When('I clear the selected sub-resource', async () => {
+  const user = userEvent.setup()
+  await user.click(
+    screen.getByRole('button', { name: 'Clear sub-resource filter' }),
+  )
+})
+
+Then('the open tab is {string}', async (_world, name: string) => {
+  // By its label, which carries the count ("Resources47"), so match the start
+  // rather than the whole string.
+  await waitFor(() => {
+    const selected = screen
+      .getAllByRole('tab')
+      .find((t) => t.getAttribute('aria-selected') === 'true')
+    expect(selected?.textContent.trim() ?? '(none selected)').toMatch(
+      new RegExp(`^${name}`),
+    )
   })
 })

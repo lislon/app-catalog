@@ -15,12 +15,12 @@ catalog:
   '@tanstack/query-sync-storage-persister': ^5.80.6
   '@tanstack/react-query': ^5.90.12
   '@tanstack/react-query-devtools': ^5.91.1
-  '@tanstack/react-router': ^1.151.6
-  '@tanstack/react-router-devtools': ^1.151.6
+  '@tanstack/react-router': 1.170.41
+  '@tanstack/react-router-devtools': 1.167.2
   '@tanstack/react-virtual': 3.13.13
-  '@tanstack/router-core': ^1.151.6
-  '@tanstack/router-devtools': ^1.151.6
-  '@tanstack/router-plugin': ^1.151.6
+  '@tanstack/router-core': 1.171.34
+  '@tanstack/router-devtools': 1.167.2
+  '@tanstack/router-plugin': 1.168.42
   '@tanstack/vite-config': ^0.4.3
   '@testing-library/jest-dom': 6.6.3
   '@testing-library/react': ^16.2.0
@@ -32,8 +32,8 @@ catalog:
   '@types/multer': ^2.2.0
   '@types/node': ^24.3.0
   '@types/pg': ^8.18.0
-  '@types/react': ^19.0.8
-  '@types/react-dom': ^19.1.6
+  '@types/react': 19.2.9
+  '@types/react-dom': 19.2.7
   '@typescript-eslint/eslint-plugin': ^8.70.1
   '@typescript-eslint/parser': ^8.70.1
   '@vitejs/plugin-react': ^4.3.4

@@ -116,6 +116,26 @@ export function DetailTabs({
     setUserChose(true)
     setUrlTab(requestTab)
   }, [requestTab, requestNonce, setUrlTab])
+  /**
+   * Releasing the force must not move the view.
+   *
+   * Arriving with `?sub=` forces the sub-resources tab, but only through
+   * `forcedTab` — the tab's own state is still the default. Clearing the
+   * selection drops `?sub=`, the force goes with it, and the strip fell back to
+   * that stale default: the reader was moved to Overview while looking at the
+   * table they had just cleared a filter on. So when the force is released
+   * before the user picked anything, the forced tab becomes the real choice.
+   *
+   * Adjusted during render rather than in an effect, the pattern React
+   * documents for responding to a prop change: an effect would paint one frame
+   * of Overview first, mounting that panel only to tear it down again.
+   */
+  const [lastForced, setLastForced] = React.useState(forcedTab)
+  if (forcedTab !== lastForced) {
+    setLastForced(forcedTab)
+    if (lastForced && !forcedTab && !userChose) setUrlTab(lastForced)
+  }
+
   const asked = userChose || !forcedTab ? urlTab : forcedTab
   const requested = RETIRED[asked] ?? asked
   const activeId = ids.includes(requested) ? requested : (ids[0] ?? '')

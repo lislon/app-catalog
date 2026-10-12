@@ -17,6 +17,10 @@ export {
   takeUnhandledRequests,
 } from './harness/given'
 export type { GivenResult, UiTools } from './harness/given'
+// Register the deployment's router factory from a vitest setup file. The
+// harness cannot import a route tree itself — see routerFactory.ts.
+export { setRouterFactory } from './harness/routerFactory'
+export type { CreateRouterFn } from './harness/routerFactory'
 export { MockBackendVerifier } from './harness/MockBackendVerifier'
 
 export { magazine } from './mock-backend/magazines'

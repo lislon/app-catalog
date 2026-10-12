@@ -1,5 +1,6 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
 import { fireEvent, render, screen } from '@testing-library/react'
+import { useRef } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 
@@ -33,6 +34,24 @@ vi.mock('~/modules/appCatalog/ui/detail/FeedbackSection', () => ({
 }))
 
 const { AppDetails } = await import('~/modules/appCatalog/ui/detail/AppDetails')
+const { useDismissable } = await import('~/modules/dismiss/DismissStack')
+
+/** Stands in for the card: the layer AppDetails is rendered inside. */
+function CardLayer({
+  onClose,
+  children,
+}: {
+  onClose: () => void
+  children: React.ReactNode
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  useDismissable(ref, onClose)
+  return (
+    <div ref={ref} role="dialog" aria-label="card">
+      {children}
+    </div>
+  )
+}
 
 const app = {
   id: 'tracker',
@@ -51,17 +70,24 @@ const app = {
 // The card takes focus on open so Esc closes it. The Quick Jump field takes that
 // focus instead — so Esc has to keep working from inside the field, or the
 // feature costs the keyboard its way out.
+//
+// Escape itself belongs to the card's layer, not to AppDetails. What this pins
+// is that the field does not CLAIM it: a field that called preventDefault on
+// Escape would keep it from the layer, and the card would stop closing.
 describe('AppDetails — Esc from the quick jump field', () => {
-  it('closes the panel', () => {
-    const onClosePanel = vi.fn()
-    render(<AppDetails app={app} onClosePanel={onClosePanel} />)
+  it('reaches the layer the details are rendered in', () => {
+    const onClose = vi.fn()
+    render(
+      <CardLayer onClose={onClose}>
+        <AppDetails app={app} />
+      </CardLayer>,
+    )
 
-    // `code` as well as `key`: the hotkey library matches on the physical code.
     fireEvent.keyDown(screen.getByLabelText('case id'), {
       key: 'Escape',
       code: 'Escape',
     })
 
-    expect(onClosePanel).toHaveBeenCalled()
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 })

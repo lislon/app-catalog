@@ -11,10 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
-import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
-import { Route as LayoutServiceDesksRouteImport } from './routes/_layout/service-desks'
-import { Route as LayoutMcpRouteImport } from './routes/_layout/mcp'
 import { Route as LayoutLoginRouteImport } from './routes/_layout/login'
+import { Route as LayoutMcpRouteImport } from './routes/_layout/mcp'
+import { Route as LayoutServiceDesksRouteImport } from './routes/_layout/service-desks'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as LayoutAppSlugRouteImport } from './routes/_layout/app.$slug'
 import { Route as LayoutCatalogAppsIndexRouteImport } from './routes/_layout/catalog.apps.index'
 import { Route as LayoutAppSlugSubSubSlugRouteImport } from './routes/_layout/app.$slug_.sub.$subSlug'
@@ -28,14 +28,9 @@ const LayoutIndexRoute = LayoutIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LayoutRoute,
 } as any)
-const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/auth/callback',
-  path: '/auth/callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LayoutServiceDesksRoute = LayoutServiceDesksRouteImport.update({
-  id: '/service-desks',
-  path: '/service-desks',
+const LayoutLoginRoute = LayoutLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutMcpRoute = LayoutMcpRouteImport.update({
@@ -43,10 +38,15 @@ const LayoutMcpRoute = LayoutMcpRouteImport.update({
   path: '/mcp',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutLoginRoute = LayoutLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const LayoutServiceDesksRoute = LayoutServiceDesksRouteImport.update({
+  id: '/service-desks',
+  path: '/service-desks',
   getParentRoute: () => LayoutRoute,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const LayoutAppSlugRoute = LayoutAppSlugRouteImport.update({
   id: '/app/$slug',
@@ -151,18 +151,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/auth/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_layout/service-desks': {
-      id: '/_layout/service-desks'
-      path: '/service-desks'
-      fullPath: '/service-desks'
-      preLoaderRoute: typeof LayoutServiceDesksRouteImport
+    '/_layout/login': {
+      id: '/_layout/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LayoutLoginRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/mcp': {
@@ -172,12 +165,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutMcpRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/login': {
-      id: '/_layout/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LayoutLoginRouteImport
+    '/_layout/service-desks': {
+      id: '/_layout/service-desks'
+      path: '/service-desks'
+      fullPath: '/service-desks'
+      preLoaderRoute: typeof LayoutServiceDesksRouteImport
       parentRoute: typeof LayoutRoute
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_layout/app/$slug': {
       id: '/_layout/app/$slug'

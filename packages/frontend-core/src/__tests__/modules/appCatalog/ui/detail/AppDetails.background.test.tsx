@@ -49,14 +49,14 @@ const app = {
 // visit. That is what these assert now.
 describe('AppDetails — Background', () => {
   it('opens on the description, not on the history', () => {
-    render(<AppDetails app={app} onClosePanel={vi.fn()} />)
+    render(<AppDetails app={app} />)
 
     expect(screen.getByRole('heading', { name: 'Description' })).toBeVisible()
     expect(screen.queryByRole('heading', { name: 'Background' })).toBeNull()
   })
 
   it('renders the history under Documentation', async () => {
-    render(<AppDetails app={app} onClosePanel={vi.fn()} />)
+    render(<AppDetails app={app} />)
 
     fireEvent.click(screen.getByRole('tab', { name: /documentation/i }))
 
@@ -71,9 +71,7 @@ describe('AppDetails — Background', () => {
   // panel either way — a test that cannot fail is worse than no test.
   it('leaves no empty section when the entry has no history recorded', () => {
     const { background: _omitted, ...withoutBackground } = app
-    render(
-      <AppDetails app={withoutBackground as Resource} onClosePanel={vi.fn()} />,
-    )
+    render(<AppDetails app={withoutBackground as Resource} />)
 
     fireEvent.click(screen.getByRole('tab', { name: /documentation/i }))
 

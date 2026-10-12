@@ -17,7 +17,7 @@ vi.mock('~/modules/appCatalog/ui/components/SubResourceDetailPanel', () => ({
   SubResourceDetailPanel: () => null,
 }))
 vi.mock('~/modules/appCatalog/context/AppCatalogContext', () => ({
-  useAppCatalogContext: vi.fn(() => ({ approvalMethods: [] })),
+  useAppCatalogContext: vi.fn(() => ({ approvalMethods: [], resources: [] })),
 }))
 
 const { AppDetailPanel } =

@@ -3,6 +3,7 @@ import useEmblaCarousel from 'embla-carousel-react'
 import { ChevronLeft, ChevronRight, ImageOff, X } from 'lucide-react'
 import { clamp } from 'radashi'
 import { useHotkeys } from 'react-hotkeys-hook'
+import { useDismissable } from '~/modules/dismiss/DismissStack'
 
 import { Button } from '~/ui/button'
 import { Spinner } from '~/ui/spinner'
@@ -129,23 +130,17 @@ export function Gallery({
     },
     [scrollNext, images.length],
   )
-  // Intercept Escape in fullscreen — must stopPropagation before Radix Dialog sees it
-  useEffect(() => {
-    if (!isFullscreen) return
-
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation()
-        e.preventDefault()
-        setFullscreen(false)
-      }
-    }
-
-    document.addEventListener('keydown', handleEscape, true)
-    return () => {
-      document.removeEventListener('keydown', handleEscape, true)
-    }
-  }, [isFullscreen, setFullscreen])
+  // Escape leaves fullscreen rather than closing the gallery.
+  //
+  // This used to be a capture-phase document listener whose whole purpose was
+  // to beat Radix to the event, with the dialog above separately cancelling
+  // Radix's close by reading this component's fullscreen state through a ref.
+  // The stack makes that unnecessary: the fullscreen view is rendered after
+  // the dialog that contains it, so it is simply the top layer while it is on.
+  const fullscreenRef = useRef<HTMLDivElement>(null)
+  useDismissable(fullscreenRef, () => setFullscreen(false), {
+    enabled: isFullscreen,
+  })
 
   // Mouse wheel navigation with debouncing
   useEffect(() => {
@@ -209,6 +204,7 @@ export function Gallery({
     const imageState = imageStates[currentIndex]
     return (
       <div
+        ref={fullscreenRef}
         className="fixed inset-0 z-50 bg-background"
         role="dialog"
         aria-label="Fullscreen view"

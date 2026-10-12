@@ -31,6 +31,7 @@ import { formatRelativeTime } from '../../utils/formatRelativeTime'
 import { TierVariantsSection } from '../components/TierVariantsSection'
 import { SubResourcesSection } from '../components/SubResourcesSection'
 import { getChildResources } from '../../utils/resolveHelpers'
+import { ResourceDetailAccessActions } from '~/modules/extensions'
 import { FeedbackSection } from './FeedbackSection'
 import { displayUrl } from '~/modules/appCatalog/utils/displayUrl'
 import { accessTabLabel } from '~/modules/appCatalog/utils/accessTabLabel'
@@ -116,11 +117,9 @@ function AppScreenshot({ app }: { app: Resource }) {
 export function AppDetails({
   app,
   onAppClick,
-  onClosePanel,
 }: {
   app: Resource
   onAppClick?: (app: Resource) => void
-  onClosePanel: () => void
 }) {
   const [isGalleryOpen, setIsGalleryOpen] = React.useState(false)
   const [galleryInitialIndex, setGalleryInitialIndex] = React.useState(0)
@@ -175,6 +174,31 @@ export function AppDetails({
     [allResources, app.slug],
   )
 
+  // `app` is whatever resource the card shows, a nested one included, so the
+  // parent has to be looked up rather than assumed absent. A plugin uses its
+  // presence to tell a sub-resource view from a top-level one.
+  const parent = React.useMemo(
+    () =>
+      app.parentSlug
+        ? allResources.find((r) => r.slug === app.parentSlug)
+        : undefined,
+    [allResources, app.parentSlug],
+  )
+
+  // What a plugin slot in the band receives. Memoised so a plugin that
+  // memoises on its props is not defeated by a new object every render.
+  const accessActionsCtx = React.useMemo(
+    () => ({
+      resource: app,
+      parent,
+      subResources: parent
+        ? getChildResources(allResources, parent.slug)
+        : children,
+      user: user ? { email: user.email, isAdmin } : null,
+    }),
+    [app, parent, allResources, children, user, isAdmin],
+  )
+
   // Enter: open screenshot gallery
   useHotkeys(
     'enter',
@@ -196,21 +220,6 @@ export function AppDetails({
     },
     { enabled: !isGalleryOpen },
     [app, isGalleryOpen],
-  )
-
-  // Esc: close the details panel (only when gallery is NOT open)
-  //
-  // From inside a text field too: the Quick Jump field holds the caret from the
-  // moment the card opens, so the default "ignore form tags" left the card with
-  // no keyboard way out. A field that wants Esc for itself stops the event —
-  // InlineEditableField does, so Esc there cancels the edit and nothing more.
-  useHotkeys(
-    'escape',
-    () => {
-      onClosePanel()
-    },
-    { enabled: !isGalleryOpen, enableOnFormTags: ['input'] },
-    [isGalleryOpen, onClosePanel],
   )
 
   const handleScreenshotClick = (index: number) => {
@@ -346,7 +355,9 @@ export function AppDetails({
                     <SubResourcesSection
                       subResources={children}
                       parentSlug={app.slug}
+                      parent={app}
                       initialSearch={filterState.searchValue}
+                      childrenLabel={app.childrenLabel}
                     />
                   </div>
                 )}
@@ -650,15 +661,24 @@ export function AppDetails({
             card to find. Up here it is present on every tab, which is the whole
             reason the band does not scroll away.
             `mr-10` keeps it clear of the dialog's own close button at top-right. */}
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="ml-auto mr-10"
-          onClick={() => setComposeRequests((n) => n + 1)}
-        >
-          ✎ Suggest a change
-        </Button>
+        {/* Plugin actions sit beside "Suggest a change", sharing its reasoning:
+            the band is mounted on every tab and never scrolls away. A slot in a
+            tab panel would be invisible until a second click, and one inside
+            SubResourceDetailPanel's `hasAnyAccess` gate would vanish for exactly
+            the resources that need help most.
+            Renders nothing when no plugin contributes, so the band keeps its
+            current shape in the open-source build. */}
+        <div className="ml-auto mr-10 flex items-center gap-2">
+          <ResourceDetailAccessActions {...accessActionsCtx} />
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setComposeRequests((n) => n + 1)}
+          >
+            ✎ Suggest a change
+          </Button>
+        </div>
       </div>
 
       {app.nicknames && app.nicknames.length > 0 && (

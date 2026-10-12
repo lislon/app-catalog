@@ -1,7 +1,14 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
 import { X } from 'lucide-react'
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
+import {
+  ResourceDetailAccessActions,
+  ResourceDetailProvider,
+} from '~/modules/extensions'
+import { useOptionalUser } from '~/modules/auth'
+import { useDismissStack, useDismissable } from '~/modules/dismiss/DismissStack'
+import { getChildResources } from '../../utils/resolveHelpers'
 import { SubResourceDetailPanel } from '../components/SubResourceDetailPanel'
 import { AppDetails } from '../detail/AppDetails'
 
@@ -35,7 +42,20 @@ export function AppDetailPanel({
   /** Clears `?sub=` and returns to the parent's detail. */
   onBackToParent?: () => void
 }) {
-  const { approvalMethods } = useAppCatalogContext()
+  const { approvalMethods, resources: allResources } = useAppCatalogContext()
+  const user = useOptionalUser()
+
+  // The sub-resource branch has no band of its own, so its slot payload is
+  // assembled here, where the catalog context already is, and handed down.
+  const subResourceActionsCtx = useMemo(
+    () => ({
+      resource: subResource ?? app,
+      parent: subResource ? app : undefined,
+      subResources: getChildResources(allResources, app.slug),
+      user: user ? { email: user.email, isAdmin: user.isAdmin ?? false } : null,
+    }),
+    [subResource, app, allResources, user],
+  )
   const dialogRef = useRef<HTMLDivElement>(null)
 
   /**
@@ -92,10 +112,24 @@ export function AppDetailPanel({
   // caret would land on <body> — where the next Tab walks the catalog grid
   // behind the scrim, since the card has no focus trap.
   const shownSlug = subResource?.slug ?? app.slug
+  const stack = useDismissStack()
   useEffect(() => {
     const dialog = dialogRef.current
-    if (dialog && !dialog.contains(document.activeElement)) dialog.focus()
-  }, [shownSlug])
+    if (!dialog || dialog.contains(document.activeElement)) return
+    // Only while the card is on top. A layer opened OVER it — a deployment's
+    // dialog on a nested route — owns the caret, and on a cold deep link that
+    // layer mounts before the card does, so without this check the card took
+    // focus back off the dialog's first field the moment the catalog arrived.
+    const top = stack.topElement()
+    if (top && top !== dialog) return
+    dialog.focus()
+  }, [shownSlug, stack])
+
+  // Escape closes the card. Registered here rather than in AppDetails because
+  // this is the layer's element, and because the sub-resource view renders a
+  // different body in place of AppDetails — which left that view with no
+  // Escape at all while the registration lived in the body.
+  useDismissable(dialogRef, onClose)
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-6 md:p-10">
@@ -147,20 +181,27 @@ export function AppDetailPanel({
           key={shownSlug}
           className="max-h-[85vh] overflow-y-auto px-6 py-5 sm:px-8 sm:py-7"
         >
-          {subResource ? (
-            <SubResourceDetailPanel
-              subResource={subResource}
-              parent={app}
-              approvalMethods={approvalMethods}
-              onBack={onBackToParent ?? onClose}
-            />
-          ) : (
-            <AppDetails
-              app={app}
-              onAppClick={onAppClick}
-              onClosePanel={onClose}
-            />
-          )}
+          {/* Inside the key, so anything a plugin provides here is scoped to
+              the resource on screen and is discarded when the card navigates.
+              Renders its children untouched when no plugin contributes. */}
+          <ResourceDetailProvider
+            resource={subResource ?? app}
+            parent={subResource ? app : undefined}
+          >
+            {subResource ? (
+              <SubResourceDetailPanel
+                subResource={subResource}
+                parent={app}
+                approvalMethods={approvalMethods}
+                onBack={onBackToParent ?? onClose}
+                actions={
+                  <ResourceDetailAccessActions {...subResourceActionsCtx} />
+                }
+              />
+            ) : (
+              <AppDetails app={app} onAppClick={onAppClick} />
+            )}
+          </ResourceDetailProvider>
         </div>
       </div>
     </div>

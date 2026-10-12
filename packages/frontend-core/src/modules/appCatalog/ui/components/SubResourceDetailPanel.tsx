@@ -2,6 +2,7 @@ import type {
   AppApprovalMethod,
   Resource,
 } from '@igstack/app-catalog-backend-core'
+import type { ReactNode } from 'react'
 import { ArrowLeft, ExternalLink } from 'lucide-react'
 import { Button } from '~/ui/button'
 import { Badge } from '~/ui/badge'
@@ -13,6 +14,16 @@ interface SubResourceDetailPanelProps {
   parent: Resource
   approvalMethods: AppApprovalMethod[]
   onBack: () => void
+  /**
+   * Plugin actions for this sub-resource, rendered under the title.
+   *
+   * Passed in rather than rendered here on purpose. The slot's payload needs the
+   * catalog context and the signed-in user, and calling those hooks in this
+   * component would break the tests that render it bare — the same failure mode
+   * a `useTRPC()` call has in `AppCatalogGrid`. Optional, so those tests keep
+   * passing untouched.
+   */
+  actions?: ReactNode
 }
 
 function StepBadge({ step }: { step: number }) {
@@ -28,6 +39,7 @@ export function SubResourceDetailPanel({
   parent,
   approvalMethods,
   onBack,
+  actions,
 }: SubResourceDetailPanelProps) {
   // Mirrors AccessRequestSection's fallback: a sub-resource usually documents
   // access through top-level `approverSlugs`/`accessComments`, not through an
@@ -101,6 +113,13 @@ export function SubResourceDetailPanel({
           </a>
         )}
       </div>
+
+      {/* ABOVE the gate below on purpose: an account with no approver, owner
+          or access comments renders no access region at all, and that is
+          exactly the case where an approver most needs the action. */}
+      {actions ? (
+        <div className="mt-4 flex items-center gap-2">{actions}</div>
+      ) : null}
 
       {/* Two-step access section */}
       {hasAnyAccess && (

@@ -97,7 +97,27 @@ export function Treatment({ error, reset }: ErrorComponentProps) {
   )
 }
 
+/**
+ * What a thrown value can be relied on to have.
+ *
+ * `ErrorComponentProps.error` is `unknown`, and rightly so — `throw` accepts
+ * any value, so a route can be handed a string or a plain object. Narrowing
+ * here rather than asserting `Error` means a non-Error throw renders a useful
+ * message instead of "Cannot read properties of undefined".
+ */
+function describeThrown(error: unknown): {
+  message: string
+  stack: string | undefined
+} {
+  if (error instanceof Error) {
+    return { message: error.message, stack: error.stack }
+  }
+  return { message: String(error), stack: undefined }
+}
+
 export function DefaultErrorComponent({ error, reset }: ErrorComponentProps) {
+  const { message, stack } = describeThrown(error)
+
   return (
     <BaseErrorPage>
       <Empty role="alert">
@@ -107,7 +127,7 @@ export function DefaultErrorComponent({ error, reset }: ErrorComponentProps) {
           </EmptyMedia>
           <EmptyTitle>Ooops!</EmptyTitle>
           <EmptyDescription>
-            Error inside app-catalog occured: {<i>{error.message}</i>}
+            Error inside app-catalog occured: {<i>{message}</i>}
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
@@ -118,9 +138,7 @@ export function DefaultErrorComponent({ error, reset }: ErrorComponentProps) {
               'mt-8 text-center max-w-[90vw] max-h-[80vh] overflow-auto'
             }
           >
-            <pre className={'text-left mt-8 text-sm'}>
-              {<i>{error.stack}</i>}
-            </pre>
+            <pre className={'text-left mt-8 text-sm'}>{<i>{stack}</i>}</pre>
           </div>
         </EmptyContent>
       </Empty>

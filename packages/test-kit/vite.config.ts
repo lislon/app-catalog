@@ -40,7 +40,13 @@ const config = defineConfig({
         url: 'http://localhost:3000',
       },
     },
-    setupFiles: ['./src/setup/testSetup.ts', './src/cucumber/steps.ts'],
+    setupFiles: [
+      './src/setup/testSetup.ts',
+      // Before steps.ts: a .feature scenario calls given() on its first step,
+      // which needs the factory already registered.
+      './src/setup/registerCoreRouter.ts',
+      './src/cucumber/steps.ts',
+    ],
     // Process quickpickle through vite so the alias above catches its
     // extensionless `pngjs/browser` import; left external, node's ESM resolver
     // rejects it and the stray rejection fails the whole run.
