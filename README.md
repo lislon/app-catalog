@@ -56,4 +56,23 @@ Two channels, one merge each:
   `scripts/release-main.sh` versions the packages, publishes them and commits
   the bump back in the same run. A PR with no changeset publishes nothing.
 
+### Versioning
+
+Changesets are `minor` or `patch`. A major makes every consumer migrate before it
+can take any later fix, so a breaking change is the last resort, not the default:
+
+1. **Add the new thing and keep the old one working.** New field, prop or
+   parameter beside the old one; the old path behaves as before.
+2. **Deprecate in place.** Mark the old one `@deprecated` and name its
+   replacement in the JSDoc. It still compiles and still runs.
+3. **Remove it later, in a PR of its own**, once no consumer references it.
+
+`scripts/assert-no-major.mjs` enforces this. It computes the release plan from
+the pending changesets — the plan, not the declared bump types, because a peer
+dependent turns a `minor` into a major on its own and the `fixed` group spreads it
+to every package — and fails if any package would go major. It runs on every PR
+and again before the release. A major nothing can avoid needs the `allow-major`
+label on the PR, and then a manual run of the CI workflow with `allow_major=true`
+to release it.
+
 # Test alpha snapshot

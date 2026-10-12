@@ -6,6 +6,10 @@ on:
       tag:
         description: override release tag
         required: false
+      allow_major:
+        description: 'permit a major version bump (see scripts/assert-no-major.mjs)'
+        required: false
+        default: 'false'
   push:
     branches:
       - main
@@ -132,6 +136,7 @@ jobs:
         run: bash scripts/release-main.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ALLOW_MAJOR: ${{ inputs.allow_major }}
       - name: Assert the @latest tag moved (main)
         if: github.ref == 'refs/heads/main' && steps.release.outputs.published == 'true'
         # Reads the capture the release step took after versioning: for every
