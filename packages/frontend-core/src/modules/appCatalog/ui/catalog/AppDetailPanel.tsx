@@ -7,6 +7,7 @@ import {
   ResourceDetailProvider,
 } from '~/modules/extensions'
 import { useOptionalUser } from '~/modules/auth'
+import { useDismissStack, useDismissable } from '~/modules/dismiss/DismissStack'
 import { getChildResources } from '../../utils/resolveHelpers'
 import { SubResourceDetailPanel } from '../components/SubResourceDetailPanel'
 import { AppDetails } from '../detail/AppDetails'
@@ -111,10 +112,24 @@ export function AppDetailPanel({
   // caret would land on <body> — where the next Tab walks the catalog grid
   // behind the scrim, since the card has no focus trap.
   const shownSlug = subResource?.slug ?? app.slug
+  const stack = useDismissStack()
   useEffect(() => {
     const dialog = dialogRef.current
-    if (dialog && !dialog.contains(document.activeElement)) dialog.focus()
-  }, [shownSlug])
+    if (!dialog || dialog.contains(document.activeElement)) return
+    // Only while the card is on top. A layer opened OVER it — a deployment's
+    // dialog on a nested route — owns the caret, and on a cold deep link that
+    // layer mounts before the card does, so without this check the card took
+    // focus back off the dialog's first field the moment the catalog arrived.
+    const top = stack.topElement()
+    if (top && top !== dialog) return
+    dialog.focus()
+  }, [shownSlug, stack])
+
+  // Escape closes the card. Registered here rather than in AppDetails because
+  // this is the layer's element, and because the sub-resource view renders a
+  // different body in place of AppDetails — which left that view with no
+  // Escape at all while the registration lived in the body.
+  useDismissable(dialogRef, onClose)
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-6 md:p-10">
@@ -184,11 +199,7 @@ export function AppDetailPanel({
                 }
               />
             ) : (
-              <AppDetails
-                app={app}
-                onAppClick={onAppClick}
-                onClosePanel={onClose}
-              />
+              <AppDetails app={app} onAppClick={onAppClick} />
             )}
           </ResourceDetailProvider>
         </div>

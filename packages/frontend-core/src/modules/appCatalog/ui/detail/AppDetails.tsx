@@ -6,7 +6,6 @@ import { useSearch } from '@tanstack/react-router'
 import { CalendarPlus, Clock, ExternalLink, Plus, Trash2 } from 'lucide-react'
 import React from 'react'
 import { useHotkeys } from 'react-hotkeys-hook'
-import { useDismissable } from '~/modules/dismiss/DismissStack'
 import { Badge } from '~/ui/badge'
 import { Button } from '~/ui/button'
 import {
@@ -118,11 +117,9 @@ function AppScreenshot({ app }: { app: Resource }) {
 export function AppDetails({
   app,
   onAppClick,
-  onClosePanel,
 }: {
   app: Resource
   onAppClick?: (app: Resource) => void
-  onClosePanel: () => void
 }) {
   const [isGalleryOpen, setIsGalleryOpen] = React.useState(false)
   const [galleryInitialIndex, setGalleryInitialIndex] = React.useState(0)
@@ -224,21 +221,6 @@ export function AppDetails({
     { enabled: !isGalleryOpen },
     [app, isGalleryOpen],
   )
-
-  // Esc: close the card.
-  //
-  // Registered in the dismiss stack rather than bound as a hotkey, and with no
-  // mention of the gallery: anything opened OVER the card — the gallery, a
-  // consumer's dialog on a nested route — registers after this and therefore
-  // wins Escape until it closes. The card used to carry
-  // `enabled: !isGalleryOpen`, which only worked because it knew about the one
-  // overlay that existed at the time, and silently failed for the next one.
-  //
-  // Escape still works from inside a text field, which the plain hotkey needed
-  // `enableOnFormTags` for: the stack listens on the document, and a field that
-  // wants Escape for itself calls preventDefault — InlineEditableField does —
-  // which the stack honours.
-  useDismissable(onClosePanel)
 
   const handleScreenshotClick = (index: number) => {
     setGalleryInitialIndex(index)

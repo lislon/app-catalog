@@ -55,7 +55,6 @@ describe('AppDetails — tags', () => {
           'jira',
           'placement:day-to-day',
         ])}
-        onClosePanel={vi.fn()}
       />,
     )
 
@@ -65,12 +64,7 @@ describe('AppDetails — tags', () => {
   })
 
   it('drops the whole section when every tag is namespaced', () => {
-    render(
-      <AppDetails
-        app={app(['category:internal', 'team:platform'])}
-        onClosePanel={vi.fn()}
-      />,
-    )
+    render(<AppDetails app={app(['category:internal', 'team:platform'])} />)
 
     // An empty "Tags" heading is worse than no heading: it reads as missing data.
     expect(screen.queryByRole('heading', { name: 'Tags' })).toBeNull()

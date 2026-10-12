@@ -55,7 +55,7 @@ const app = {
 // that would have silently regressed if this test had simply been deleted.
 describe('AppDetails — section order', () => {
   it('opens on the description, with the access instructions not yet mounted', () => {
-    render(<AppDetails app={app} onClosePanel={vi.fn()} />)
+    render(<AppDetails app={app} />)
 
     expect(screen.getByRole('heading', { name: 'Description' })).toBeVisible()
     expect(
@@ -64,7 +64,7 @@ describe('AppDetails — section order', () => {
   })
 
   it('reaches the access instructions from its own tab', () => {
-    render(<AppDetails app={app} onClosePanel={vi.fn()} />)
+    render(<AppDetails app={app} />)
 
     fireEvent.click(screen.getByRole('tab', { name: /^access/i }))
 
@@ -76,7 +76,7 @@ describe('AppDetails — section order', () => {
   // approval method registered there is nothing to name, and claiming a route
   // we cannot describe is the failure the label exists to prevent.
   it('names the access route in the tab', () => {
-    render(<AppDetails app={app} onClosePanel={vi.fn()} />)
+    render(<AppDetails app={app} />)
 
     expect(
       screen.getByRole('tab', { name: /access — not documented/i }),

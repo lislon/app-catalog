@@ -56,3 +56,14 @@ Feature: Finding a sub-resource by searching for it
     Then the open sub-resource page is "project-03"
     And it explains how to get access
     And "owner@example.com" is listed as an approver
+
+  Scenario: Clearing a singled-out sub-resource stays on the sub-resource table
+    # Arriving from a matched sub-resource forces the sub-resource tab without
+    # ever selecting it. Clearing the selection released the force and dropped
+    # the reader on Overview, away from the table they had just widened.
+    When I search for "000000000042"
+    And I open the "project-42" sub-resource from the results
+    Then its sub-resource table shows 1 of 47
+    When I clear the selected sub-resource
+    Then the open tab is "Resources"
+

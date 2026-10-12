@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { useDismissable } from '~/modules/dismiss/DismissStack'
 
 import type { Resource } from '@igstack/app-catalog-backend-core'
@@ -32,7 +32,8 @@ export function ScreenshotGallery({
    * fullscreen registers above this layer while it is on, so Escape reaches it
    * first and this dialog only hears Escape once fullscreen is off.
    */
-  useDismissable(() => onOpenChange(false), { enabled: open })
+  const contentRef = useRef<HTMLDivElement>(null)
+  useDismissable(contentRef, () => onOpenChange(false), { enabled: open })
 
   // Transform screenshot IDs to URLs. Capped at 2000px — plenty for on-screen
   // viewing (incl. fullscreen zoom) while avoiding multi-MB original downloads
@@ -54,6 +55,7 @@ export function ScreenshotGallery({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        ref={contentRef}
         aria-describedby={undefined}
         className="h-[85vh] w-full max-w-[calc(100vw-2rem)] sm:max-w-[calc(100vw-3rem)] md:max-w-[calc(100vw-4rem)] p-0 overflow-hidden"
         showCloseButton={true}

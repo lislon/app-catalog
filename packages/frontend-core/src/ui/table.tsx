@@ -19,11 +19,23 @@ interface TableProps extends React.ComponentProps<'table'> {
    * container, which then both clips and scrolls.
    */
   stickyHeader?: boolean
+  /**
+   * The scrolling container, for a caller that virtualizes the body: the
+   * scrollport is this element, not the `<table>`, so a ref on the table
+   * would measure the wrong thing.
+   */
+  containerRef?: React.Ref<HTMLDivElement>
 }
 
-function Table({ className, stickyHeader, ...props }: TableProps) {
+function Table({
+  className,
+  stickyHeader,
+  containerRef,
+  ...props
+}: TableProps) {
   return (
     <div
+      ref={containerRef}
       data-slot="table-container"
       className={cn(
         'relative w-full overflow-x-auto',

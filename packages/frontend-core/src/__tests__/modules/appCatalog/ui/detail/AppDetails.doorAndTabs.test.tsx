@@ -67,7 +67,7 @@ beforeEach(() => {
 // address" — and a surface that looks pressable but is not would be worse.
 describe('the door', () => {
   it('is a link to the app when there is an address', () => {
-    render(<AppDetails app={withUrl} onClosePanel={vi.fn()} />)
+    render(<AppDetails app={withUrl} />)
 
     const door = screen.getByRole('link', { name: /^Open Thing in a new tab/ })
     expect(door).toHaveAttribute('href', 'https://thing.example.com/portal')
@@ -79,7 +79,7 @@ describe('the door', () => {
   })
 
   it('says so plainly when the entry has no address, and offers nothing to press', () => {
-    render(<AppDetails app={withoutUrl} onClosePanel={vi.fn()} />)
+    render(<AppDetails app={withoutUrl} />)
 
     expect(screen.getByText('No URL for this app.')).toBeVisible()
     expect(screen.queryByRole('link', { name: /in a new tab/ })).toBeNull()
@@ -90,7 +90,7 @@ describe('the tab strip', () => {
   // The reason the active tab lives in the url at all: a card is linkable
   // mid-conversation, and a maintainer's reply on the notes tab is addressable.
   it('writes the selected tab to the url', () => {
-    render(<AppDetails app={withUrl} onClosePanel={vi.fn()} />)
+    render(<AppDetails app={withUrl} />)
 
     fireEvent.click(screen.getByRole('tab', { name: /^access/i }))
 
@@ -108,7 +108,7 @@ describe('the tab strip', () => {
    * NOT the default belongs in the url.
    */
   it('keeps the default tab out of the url', () => {
-    render(<AppDetails app={withUrl} onClosePanel={vi.fn()} />)
+    render(<AppDetails app={withUrl} />)
 
     // Go somewhere else, then come back to the first tab.
     fireEvent.click(screen.getByRole('tab', { name: /^access/i }))
@@ -128,7 +128,7 @@ describe('the tab strip', () => {
 
   it('opens on the tab named in the url', () => {
     search.tab = 'documentation'
-    render(<AppDetails app={withUrl} onClosePanel={vi.fn()} />)
+    render(<AppDetails app={withUrl} />)
 
     expect(screen.getByRole('tab', { name: 'Documentation' })).toHaveAttribute(
       'aria-selected',
@@ -140,7 +140,7 @@ describe('the tab strip', () => {
   // keep resolving rather than dropping the reader on the first tab.
   it('still honours a retired tab id from an older link', () => {
     search.tab = 'metadata'
-    render(<AppDetails app={withUrl} onClosePanel={vi.fn()} />)
+    render(<AppDetails app={withUrl} />)
 
     expect(screen.getByRole('tab', { name: 'Documentation' })).toHaveAttribute(
       'aria-selected',
@@ -152,7 +152,7 @@ describe('the tab strip', () => {
   // rendering a card with no panel at all.
   it('falls back to the first tab when the url names one this entry lacks', () => {
     search.tab = 'resources'
-    render(<AppDetails app={withUrl} onClosePanel={vi.fn()} />)
+    render(<AppDetails app={withUrl} />)
 
     expect(screen.queryByRole('tab', { name: /resources/i })).toBeNull()
     expect(screen.getByRole('tab', { name: 'Overview' })).toHaveAttribute(
@@ -164,7 +164,7 @@ describe('the tab strip', () => {
 
   // Per the tablist pattern: one stop in the tab order, arrows move within.
   it('moves between tabs with the arrow keys', () => {
-    render(<AppDetails app={withUrl} onClosePanel={vi.fn()} />)
+    render(<AppDetails app={withUrl} />)
 
     const overview = screen.getByRole('tab', { name: 'Overview' })
     expect(overview).toHaveAttribute('tabindex', '0')
@@ -180,7 +180,7 @@ describe('the tab strip', () => {
   })
 
   it('wraps from the first tab to the last', () => {
-    render(<AppDetails app={withUrl} onClosePanel={vi.fn()} />)
+    render(<AppDetails app={withUrl} />)
 
     fireEvent.keyDown(screen.getByRole('tab', { name: 'Overview' }), {
       key: 'ArrowLeft',

@@ -2,7 +2,7 @@ import '@testing-library/jest-dom/vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   DismissStackProvider,
   useDismissable,
@@ -25,9 +25,14 @@ function Layer({
   enabled?: boolean
   children?: React.ReactNode
 }) {
-  useDismissable(onDismiss, enabled === undefined ? undefined : { enabled })
+  const ref = useRef<HTMLDivElement>(null)
+  useDismissable(
+    ref,
+    onDismiss,
+    enabled === undefined ? undefined : { enabled },
+  )
   return (
-    <div data-testid={`layer-${name}`}>
+    <div ref={ref} data-testid={`layer-${name}`}>
       {name}
       {children}
     </div>
@@ -219,5 +224,107 @@ describe('the dismiss stack', () => {
 
     add.mockRestore()
     remove.mockRestore()
+  })
+
+  it('gives Escape to a nested layer that opens later, not its container', async () => {
+    // The regression this ordering exists for. React runs a CHILD's effects
+    // before its parent's, so an overlay nested inside another registers
+    // FIRST — and with registration-order LIFO the container looked like the
+    // newer layer. Pressing Escape in the screenshot viewer therefore closed
+    // the card underneath it and left the catalog index.
+    const closeCard = vi.fn()
+    function Host() {
+      const [viewerOpen, setViewerOpen] = useState(false)
+      return (
+        <Layer name="card" onDismiss={closeCard}>
+          {/* Mounted from the start and merely disabled, exactly as the
+              screenshot dialog is, so it registers before its container. */}
+          <Layer
+            name="viewer"
+            onDismiss={() => setViewerOpen(false)}
+            enabled={viewerOpen}
+          />
+          <button type="button" onClick={() => setViewerOpen(true)}>
+            open viewer
+          </button>
+        </Layer>
+      )
+    }
+    render(<Host />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'open viewer' }))
+    await esc()
+
+    // The viewer closed; the card is still there.
+    expect(closeCard).not.toHaveBeenCalled()
+
+    // And now the card gets it.
+    await esc()
+    expect(closeCard).toHaveBeenCalledTimes(1)
+  })
+
+  it('ranks by position on screen, not by when a layer mounted', async () => {
+    // The cold-deep-link shape. The dialog's route resolves first; the card
+    // it sits over waits for the catalog and mounts LATER, while still being
+    // rendered EARLIER in the document. Ranking by mount or activation time
+    // made the card "newer", so Escape closed it first.
+    const closeCard = vi.fn()
+    const closeDialog = vi.fn()
+    function Host() {
+      const [catalogLoaded, setCatalogLoaded] = useState(false)
+      return (
+        <>
+          {catalogLoaded && <Layer name="card" onDismiss={closeCard} />}
+          <Layer name="dialog" onDismiss={closeDialog} />
+          <button type="button" onClick={() => setCatalogLoaded(true)}>
+            catalog arrives
+          </button>
+        </>
+      )
+    }
+    render(<Host />)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'catalog arrives' }),
+    )
+
+    await esc()
+
+    expect(closeDialog).toHaveBeenCalledTimes(1)
+    expect(closeCard).not.toHaveBeenCalled()
+  })
+
+  it('hands focus to the layer beneath when the top one closes', async () => {
+    // Otherwise the caret falls to <body> and the next Tab walks whatever is
+    // behind every overlay.
+    function FocusableLayer({
+      name,
+      onDismiss,
+    }: {
+      name: string
+      onDismiss: () => void
+    }) {
+      const ref = useRef<HTMLDivElement>(null)
+      useDismissable(ref, onDismiss)
+      return <div ref={ref} tabIndex={-1} data-testid={`layer-${name}`} />
+    }
+    function Host() {
+      const [open, setOpen] = useState(true)
+      return (
+        <>
+          <FocusableLayer name="card" onDismiss={() => {}} />
+          {open && (
+            <FocusableLayer name="dialog" onDismiss={() => setOpen(false)} />
+          )}
+        </>
+      )
+    }
+    render(<Host />)
+    screen.getByTestId('layer-dialog').focus()
+
+    await esc()
+    // The handback is queued after the unmount, so let it run.
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(document.activeElement).toBe(screen.getByTestId('layer-card'))
   })
 })

@@ -78,7 +78,7 @@ const { AppDetails } = await import('~/modules/appCatalog/ui/detail/AppDetails')
 // piece of information their click carried.
 describe('AppDetails — arriving with ?sub=', () => {
   it('opens on the children tab, not on Overview', () => {
-    render(<AppDetails app={parent} onClosePanel={vi.fn()} />)
+    render(<AppDetails app={parent} />)
 
     expect(screen.getByRole('tab', { name: /accounts/i })).toHaveAttribute(
       'aria-selected',
@@ -91,7 +91,7 @@ describe('AppDetails — arriving with ?sub=', () => {
   })
 
   it('singles out the matched child rather than listing its siblings', () => {
-    render(<AppDetails app={parent} onClosePanel={vi.fn()} />)
+    render(<AppDetails app={parent} />)
 
     expect(screen.getByText(/Showing: second-child/)).toBeInTheDocument()
     expect(screen.queryByText('first-child')).toBeNull()
@@ -102,7 +102,7 @@ describe('AppDetails — arriving with ?sub=', () => {
   it('wins over a ?tab= that disagrees', () => {
     search.tab = 'metadata'
     try {
-      render(<AppDetails app={parent} onClosePanel={vi.fn()} />)
+      render(<AppDetails app={parent} />)
       expect(screen.getByRole('tab', { name: /accounts/i })).toHaveAttribute(
         'aria-selected',
         'true',
@@ -113,7 +113,7 @@ describe('AppDetails — arriving with ?sub=', () => {
   })
 
   it('names the tab from childrenLabel and counts the children', () => {
-    render(<AppDetails app={parent} onClosePanel={vi.fn()} />)
+    render(<AppDetails app={parent} />)
 
     const tab = screen.getByRole('tab', { name: /accounts/i })
     expect(tab).toHaveTextContent('Accounts')
@@ -122,7 +122,7 @@ describe('AppDetails — arriving with ?sub=', () => {
 
   it('falls back to a generic label when the parent does not name its children', () => {
     const { childrenLabel: _omitted, ...unnamed } = parent
-    render(<AppDetails app={unnamed as Resource} onClosePanel={vi.fn()} />)
+    render(<AppDetails app={unnamed as Resource} />)
 
     expect(screen.getByRole('tab', { name: /resources/i })).toBeVisible()
   })
@@ -132,7 +132,7 @@ describe('AppDetails — arriving with ?sub=', () => {
   // naming the children renamed the tab and left the heading under it
   // contradicting the tab the user just clicked.
   it('uses childrenLabel for the panel heading and the filter, not just the tab', async () => {
-    render(<AppDetails app={parent} onClosePanel={vi.fn()} />)
+    render(<AppDetails app={parent} />)
     await userEvent.click(screen.getByRole('tab', { name: /accounts/i }))
 
     expect(await screen.findByText(/^Accounts \(\d+ of \d+\)$/)).toBeVisible()
@@ -144,7 +144,7 @@ describe('AppDetails — arriving with ?sub=', () => {
     // "Showing: …" badge — so the placeholder only exists with no row singled out.
     search.sub = undefined
     try {
-      render(<AppDetails app={parent} onClosePanel={vi.fn()} />)
+      render(<AppDetails app={parent} />)
       await userEvent.click(screen.getByRole('tab', { name: /accounts/i }))
 
       expect(
@@ -157,7 +157,7 @@ describe('AppDetails — arriving with ?sub=', () => {
 
   it('keeps the generic heading when the parent does not name its children', async () => {
     const { childrenLabel: _omitted, ...unnamed } = parent
-    render(<AppDetails app={unnamed as Resource} onClosePanel={vi.fn()} />)
+    render(<AppDetails app={unnamed as Resource} />)
     await userEvent.click(screen.getByRole('tab', { name: /resources/i }))
 
     expect(

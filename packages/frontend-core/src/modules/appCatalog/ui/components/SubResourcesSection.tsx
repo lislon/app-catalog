@@ -1,10 +1,13 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
 import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import { Search, X } from 'lucide-react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   memo,
+  useCallback,
   useDeferredValue,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -104,6 +107,9 @@ interface SubResourceRowProps {
   adminParent?: Resource
   user: ReturnType<typeof usePluginUser>
   isHighlighted: boolean
+  /** Set only when the body is virtualized: lets the virtualizer measure the row. */
+  measureRef?: (el: HTMLTableRowElement | null) => void
+  index?: number
 }
 
 /**
@@ -129,6 +135,8 @@ function SubResourceRowBase({
   adminParent,
   user,
   isHighlighted,
+  measureRef,
+  index,
 }: SubResourceRowProps) {
   // Approvers are Person OR Group slugs; the badge resolves both.
   const approvers = [...new Set(sr.approverSlugs ?? [])]
@@ -137,6 +145,8 @@ function SubResourceRowBase({
 
   return (
     <TableRow
+      ref={measureRef}
+      data-index={index}
       // The row the user asked for, so it reads as "this one" even once the
       // filter is cleared and its siblings come back.
       aria-current={isHighlighted ? 'true' : undefined}
@@ -230,6 +240,78 @@ function SubResourceRowBase({
 }
 
 const SubResourceRow = memo(SubResourceRowBase)
+
+/** Stands in for the rows scrolled out of view, so the scrollbar is honest. */
+function SpacerRow({ height, columns }: { height: number; columns: number }) {
+  return (
+    <tr aria-hidden="true">
+      <td colSpan={columns} style={{ height, padding: 0, border: 0 }} />
+    </tr>
+  )
+}
+
+/**
+ * Past this many rows the body is virtualized: only what is on screen, plus
+ * a margin, is mounted.
+ *
+ * Tab panels mount only while active, so every switch to this tab built the
+ * whole table from scratch — measured at ~950 ms for 667 rows and 33,861
+ * nodes, every time. `memo` cannot help with that: it saves RE-rendering,
+ * and this is mounting. Below the threshold nothing changes, which keeps the
+ * common short child list rendering exactly as it always has.
+ *
+ * Spacer rows rather than absolutely positioned ones, so this stays a real
+ * `<table>`: column widths still come from table layout, and the sticky
+ * header still resolves against the container that scrolls.
+ */
+const VIRTUALIZE_ABOVE = 60
+
+function useRowWindow(
+  rows: readonly Resource[],
+  scrollRef: React.RefObject<HTMLDivElement | null>,
+) {
+  const virtualize = rows.length > VIRTUALIZE_ABOVE
+  // Stable on purpose. The virtualizer caches row measurements keyed on this
+  // function's IDENTITY, so an inline arrow — a new function every render —
+  // invalidated the cache on every render, which recomputed the visible range,
+  // which re-rendered, which made a new arrow: "Too many re-renders", and the
+  // card blanked the moment this tab opened.
+  const getItemKey = useCallback((i: number) => rows[i]?.slug ?? i, [rows])
+  // TanStack Virtual hands back functions the React Compiler cannot memoize
+  // safely, so it skips this hook. Nothing to fix short of dropping the
+  // library; registered in eslint.config.js alongside TanStack Table.
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual
+  const rowVirtualizer = useVirtualizer({
+    count: virtualize ? rows.length : 0,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 88,
+    overscan: 8,
+    getItemKey,
+    // The container's height limit, so the first render already mounts the
+    // rows that will be visible instead of painting an empty body for a frame.
+    initialRect: { width: 0, height: 400 },
+  })
+  // No layout, no window. Without layout (jsdom, a print preview) the
+  // container measures 0 tall, a virtualizer mounts nothing, and every row
+  // becomes unreachable — so render them all instead.
+  const [hasLayout, setHasLayout] = useState(true)
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (el) setHasLayout(el.clientHeight > 0)
+  }, [scrollRef])
+  const windowed = virtualize && hasLayout
+  const virtualRows = windowed ? rowVirtualizer.getVirtualItems() : []
+  const padTop = virtualRows[0]?.start ?? 0
+  const lastRow = virtualRows.at(-1)
+  const padBottom = lastRow ? rowVirtualizer.getTotalSize() - lastRow.end : 0
+  return {
+    windowed,
+    virtualRows,
+    padTop,
+    padBottom,
+    measureElement: rowVirtualizer.measureElement,
+  }
+}
 
 export function SubResourcesSection({
   subResources,
@@ -367,6 +449,17 @@ export function SubResourcesSection({
     return result
   }, [subResources, deferredSearch, tierFilter, selectedSub])
 
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const { windowed, virtualRows, padTop, padBottom, measureElement } =
+    useRowWindow(filtered, scrollRef)
+  // Fixed layout for any table big enough to be windowed. With auto layout a
+  // column is as wide as its widest MOUNTED cell, so while scrolling a
+  // windowed body the columns resized under the cursor — measured at 264px.
+  // Keyed on the unfiltered size so a big table keeps one layout while it is
+  // filtered below the threshold, rather than jumping as the user types.
+  const fixedLayout = subResources.length > VIRTUALIZE_ABOVE
+  const columnCount = showAdminColumn ? 6 : 5
+
   if (subResources.length === 0) return null
 
   return (
@@ -455,16 +548,21 @@ export function SubResourcesSection({
       >
         <Table
           stickyHeader
+          containerRef={scrollRef}
           className={`max-h-[400px] transition-opacity ${
-            isFilterPending ? 'opacity-60' : ''
-          }`}
+            fixedLayout ? '[&>table]:table-fixed' : ''
+          } ${isFilterPending ? 'opacity-60' : ''}`}
         >
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead className="w-[80px]">Tier</TableHead>
-              <TableHead>Owner</TableHead>
-              <TableHead>Approvers</TableHead>
+              <TableHead className={fixedLayout ? 'w-[190px]' : undefined}>
+                Owner
+              </TableHead>
+              <TableHead className={fixedLayout ? 'w-[230px]' : undefined}>
+                Approvers
+              </TableHead>
               <TableHead className="w-[140px]">AWS Account</TableHead>
               {/* Only when something fills it: an empty column with a header and
                   no cells is worse than no column, and the open-source build
@@ -484,6 +582,31 @@ export function SubResourcesSection({
                   No resources match your filters
                 </TableCell>
               </TableRow>
+            ) : windowed ? (
+              <>
+                {padTop > 0 && (
+                  <SpacerRow height={padTop} columns={columnCount} />
+                )}
+                {virtualRows.map((v) => {
+                  const sr = filtered[v.index]
+                  if (!sr) return null
+                  return (
+                    <SubResourceRow
+                      key={sr.slug}
+                      resource={sr}
+                      parentSlug={parentSlug}
+                      adminParent={showAdminColumn ? parent : undefined}
+                      user={user}
+                      isHighlighted={sr.slug === highlightSlug}
+                      measureRef={measureElement}
+                      index={v.index}
+                    />
+                  )
+                })}
+                {padBottom > 0 && (
+                  <SpacerRow height={padBottom} columns={columnCount} />
+                )}
+              </>
             ) : (
               filtered.map((sr) => (
                 <SubResourceRow
