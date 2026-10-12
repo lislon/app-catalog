@@ -1,5 +1,117 @@
 # @igstack/app-catalog-test-kit
 
+## 6.7.0
+
+### Minor Changes
+
+- [#319](https://github.com/lislon/app-catalog/pull/319) [`1efa546`](https://github.com/lislon/app-catalog/commit/1efa5464f72e2f7f46e8a14f7739f1efb76576b4) Thanks [@lislon](https://github.com/lislon)! - Use `childrenLabel` for the sub-resources panel, not only for the tab.
+
+  A parent resource can already name its children with `childrenLabel`, and the
+  detail tab has always honoured it. The panel the tab opens did not: its heading
+  and its filter placeholder were hard-coded, so naming the children renamed the
+  tab and left the heading underneath contradicting the tab the user had just
+  clicked. Both now follow the same field.
+
+  A catalog that sets no `childrenLabel` renders exactly as before. The two
+  fallbacks stay as they were and are deliberately different — the heading reads
+  "Sub-Resources" and the placeholder "resources" — because making them agree
+  would change wording in every existing deployment. The label is also used
+  verbatim rather than lower-cased, so an acronym survives.
+
+  The heading now carries `data-testid="sub-resources-heading"`, and the test
+  kit's `getSubResources()` locates it by that instead of by matching the literal
+  text "Sub-Resources (n of m)". The old selector returned `null` for any catalog
+  that named its children, which read as "this resource has no children" rather
+  than as a broken selector.
+
+- [#319](https://github.com/lislon/app-catalog/pull/319) [`aafaca8`](https://github.com/lislon/app-catalog/commit/aafaca8091687fe26b228ac167d52a0c2a17a052) Thanks [@lislon](https://github.com/lislon)! - Let a consuming app own the route tree, so it can compose the core's routes with
+  its own and serve any URL it likes — including top-level paths the core has never
+  heard of — with full type safety over the merged tree.
+
+  The obstacle was a single TypeScript fact: TanStack's type safety comes from a
+  global `declare module … Register` augmentation, exactly one of which may exist
+  per program, and a type-only reference still drags it in. (Verified for
+  `import type`, inline `{ type T }`, `ReturnType<typeof fn>`, a barrel re-export
+  and `await import()`; augmentations are collected when the program is built and
+  elision is emit-only.) The core's `Register` therefore reached every consumer,
+  and no consumer could declare its own.
+
+  Three changes follow from that:
+  - **`createAcRouter` now lives on its own subpath, `/router`.** It is the only
+    published door to the core's `Register` and route tree. Import it if you use
+    the core's tree unchanged — the example app and the core's own suites do. An
+    app that composes its own tree must not, and nothing on the main entry
+    references it.
+  - **`AppProps.router` is `RegisteredRouter`** rather than a concrete router
+    type. It resolves per program against whatever `Register` that program
+    declared, and widens nothing: a router built from a different tree is still
+    rejected.
+  - **`appPropsFactory` takes `createRouter`.** The route tree belongs to the
+    consumer, so the factory can no longer build the router itself. Using the
+    core's tree unchanged? Pass `createAcRouter` from
+    `@igstack/app-catalog-frontend-core/router`.
+
+  A route the consumer places inside the core's pathless `_layout` can opt into
+  the catalog layout, and therefore its providers, by declaring
+  `staticData: { acCatalogLayout: true }`. Without it such a route renders bare
+  and the first hook that needs the catalog throws, since the core cannot know a
+  route it has never seen wants its providers. The opt-in also tells the layout
+  which entry the route belongs to, so a consumer's route under `/app/$slug/...`
+  opens the card for that entry instead of dropping the user on the index.
+
+  Adds `useCatalogResources()` — `{ resources, isLoading }` — for resolving path
+  params against the catalog, deliberately narrower than the full context. Use the
+  loading flag to tell "still fetching" from "no such resource": a deep link
+  renders before the catalog arrives, and treating that as a bad link redirects
+  away from every valid one.
+
+  In the test kit, the harness cannot import a route tree for the same reason, so
+  it takes a router factory by registration: call `setRouterFactory()` from a
+  vitest setup file. Registration rather than a required `given()` option, so no
+  existing call site changes; `given()` also accepts `createRouter` directly.
+
+  Two fixes found along the way: the `/router` subpath was emitting types with no
+  JavaScript, and the default error component crashed on a non-`Error` throw.
+
+- [#319](https://github.com/lislon/app-catalog/pull/319) [`4694c77`](https://github.com/lislon/app-catalog/commit/4694c77d543281e61c03f695dbef3a4d180a4822) Thanks [@lislon](https://github.com/lislon)! - Add plugin slots, so a consuming app can render its own UI at points the core
+  declares without the core knowing anything about it.
+
+  Pass an array of plugins to `<App extensions={[...]} />`. Each contributes
+  `slots` (rendered at a point, several plugins may share one) and/or `wrappers`
+  (rendered around a subtree, so a plugin can supply context). The prop is
+  optional: with no plugins registered every slot renders nothing and every
+  wrapper passes its children through, so existing behaviour is unchanged.
+
+  Handlers are typed from a single per-feature spec, so registering an unknown
+  slot or reading a field a slot does not pass is a compile error.
+
+  Each contribution is isolated behind its own error boundary and `Suspense`: a
+  plugin that throws or suspends cannot take down the host or its peers. The two
+  fallbacks differ by design — a leaf slot falls back to nothing, so its region is
+  simply absent, while a wrapper falls back to the children it was wrapping, since
+  a wrapper only decorates and must never blank the subtree underneath it.
+
+  `useSlotFilled(slot)` reports whether any plugin fills a slot, for the cases
+  where the core has to change its own layout around one rather than just render
+  it — a table column, whose header would otherwise sit above no cells in a build
+  that registers nothing. `usePluginUser()` projects the signed-in user into the
+  shape slots receive, in one place, and returns `null` with no auth provider
+  above it.
+
+  `given()` in the test kit now accepts `extensions`, so a plugin can be mounted
+  in tests exactly as it ships. `registerCatalog()` takes them too, as an optional
+  third argument, so Gherkin scenarios exercise the app as it is actually built
+  without a `.feature` file having to name any plugin.
+
+  Also adds `useOptionalUser`, which returns `null` rather than throwing when
+  there is no `AuthProvider` above it.
+
+### Patch Changes
+
+- Updated dependencies [[`1efa546`](https://github.com/lislon/app-catalog/commit/1efa5464f72e2f7f46e8a14f7739f1efb76576b4), [`4072068`](https://github.com/lislon/app-catalog/commit/40720683e859c83bdd28b019501a5873a83c38be), [`aafaca8`](https://github.com/lislon/app-catalog/commit/aafaca8091687fe26b228ac167d52a0c2a17a052), [`0fd465b`](https://github.com/lislon/app-catalog/commit/0fd465b184b81e52d093e58a7a11bc676ee68304), [`6baa128`](https://github.com/lislon/app-catalog/commit/6baa1283d8672664ca20752ba42864433961958d), [`4694c77`](https://github.com/lislon/app-catalog/commit/4694c77d543281e61c03f695dbef3a4d180a4822), [`1efa546`](https://github.com/lislon/app-catalog/commit/1efa5464f72e2f7f46e8a14f7739f1efb76576b4), [`fd357cc`](https://github.com/lislon/app-catalog/commit/fd357cc029e49272bdde3d8f562b02b77cb76ee5)]:
+  - @igstack/app-catalog-frontend-core@6.7.0
+  - @igstack/app-catalog-backend-core@6.7.0
+
 ## 6.6.0
 
 ### Minor Changes

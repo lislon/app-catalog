@@ -1,5 +1,330 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.7.0
+
+### Minor Changes
+
+- [#319](https://github.com/lislon/app-catalog/pull/319) [`1efa546`](https://github.com/lislon/app-catalog/commit/1efa5464f72e2f7f46e8a14f7739f1efb76576b4) Thanks [@lislon](https://github.com/lislon)! - Use `childrenLabel` for the sub-resources panel, not only for the tab.
+
+  A parent resource can already name its children with `childrenLabel`, and the
+  detail tab has always honoured it. The panel the tab opens did not: its heading
+  and its filter placeholder were hard-coded, so naming the children renamed the
+  tab and left the heading underneath contradicting the tab the user had just
+  clicked. Both now follow the same field.
+
+  A catalog that sets no `childrenLabel` renders exactly as before. The two
+  fallbacks stay as they were and are deliberately different — the heading reads
+  "Sub-Resources" and the placeholder "resources" — because making them agree
+  would change wording in every existing deployment. The label is also used
+  verbatim rather than lower-cased, so an acronym survives.
+
+  The heading now carries `data-testid="sub-resources-heading"`, and the test
+  kit's `getSubResources()` locates it by that instead of by matching the literal
+  text "Sub-Resources (n of m)". The old selector returned `null` for any catalog
+  that named its children, which read as "this resource has no children" rather
+  than as a broken selector.
+
+- [#319](https://github.com/lislon/app-catalog/pull/319) [`aafaca8`](https://github.com/lislon/app-catalog/commit/aafaca8091687fe26b228ac167d52a0c2a17a052) Thanks [@lislon](https://github.com/lislon)! - Let a consuming app own the route tree, so it can compose the core's routes with
+  its own and serve any URL it likes — including top-level paths the core has never
+  heard of — with full type safety over the merged tree.
+
+  The obstacle was a single TypeScript fact: TanStack's type safety comes from a
+  global `declare module … Register` augmentation, exactly one of which may exist
+  per program, and a type-only reference still drags it in. (Verified for
+  `import type`, inline `{ type T }`, `ReturnType<typeof fn>`, a barrel re-export
+  and `await import()`; augmentations are collected when the program is built and
+  elision is emit-only.) The core's `Register` therefore reached every consumer,
+  and no consumer could declare its own.
+
+  Three changes follow from that:
+  - **`createAcRouter` now lives on its own subpath, `/router`.** It is the only
+    published door to the core's `Register` and route tree. Import it if you use
+    the core's tree unchanged — the example app and the core's own suites do. An
+    app that composes its own tree must not, and nothing on the main entry
+    references it.
+  - **`AppProps.router` is `RegisteredRouter`** rather than a concrete router
+    type. It resolves per program against whatever `Register` that program
+    declared, and widens nothing: a router built from a different tree is still
+    rejected.
+  - **`appPropsFactory` takes `createRouter`.** The route tree belongs to the
+    consumer, so the factory can no longer build the router itself. Using the
+    core's tree unchanged? Pass `createAcRouter` from
+    `@igstack/app-catalog-frontend-core/router`.
+
+  A route the consumer places inside the core's pathless `_layout` can opt into
+  the catalog layout, and therefore its providers, by declaring
+  `staticData: { acCatalogLayout: true }`. Without it such a route renders bare
+  and the first hook that needs the catalog throws, since the core cannot know a
+  route it has never seen wants its providers. The opt-in also tells the layout
+  which entry the route belongs to, so a consumer's route under `/app/$slug/...`
+  opens the card for that entry instead of dropping the user on the index.
+
+  Adds `useCatalogResources()` — `{ resources, isLoading }` — for resolving path
+  params against the catalog, deliberately narrower than the full context. Use the
+  loading flag to tell "still fetching" from "no such resource": a deep link
+  renders before the catalog arrives, and treating that as a bad link redirects
+  away from every valid one.
+
+  In the test kit, the harness cannot import a route tree for the same reason, so
+  it takes a router factory by registration: call `setRouterFactory()` from a
+  vitest setup file. Registration rather than a required `given()` option, so no
+  existing call site changes; `given()` also accepts `createRouter` directly.
+
+  Two fixes found along the way: the `/router` subpath was emitting types with no
+  JavaScript, and the default error component crashed on a non-`Error` throw.
+
+- [#319](https://github.com/lislon/app-catalog/pull/319) [`0fd465b`](https://github.com/lislon/app-catalog/commit/0fd465b184b81e52d093e58a7a11bc676ee68304) Thanks [@lislon](https://github.com/lislon)! - Give Escape one owner: a dismiss stack, so Escape closes the layer on top and
+  only that layer.
+
+  Escape was handled in six independent places, and each had to know about the
+  others to avoid double-firing. The detail card bound Escape only
+  `enabled: !isGalleryOpen`. The gallery installed a capture-phase document
+  listener whose stated purpose was to beat Radix to the event. The screenshot
+  dialog cancelled Radix's own Escape by reading the gallery's fullscreen state
+  through a ref. Every new overlay had to learn that choreography, and getting it
+  wrong stayed invisible until someone pressed Escape in the wrong order — as it
+  was: a dialog opened over the detail card had no say, so one Escape closed the
+  card out from under it and navigated away from both.
+
+  Any overlay now says only that it is dismissable, and which element it is:
+
+  ```tsx
+  const ref = useRef<HTMLDivElement>(null)
+  useDismissable(ref, onClose) // always
+  useDismissable(ref, close, { enabled: isOpen }) // only while open
+  ```
+
+  The layer on top owns Escape, and the one beneath takes over when it closes.
+  "On top" is document order — the last enabled layer in the document. A portal
+  appends to the end of `<body>`, a child route renders after its parent's page,
+  and a nested layer is a descendant, which follows its ancestor; so this is what
+  "on top" means on screen, regardless of when anything mounted. That is why the
+  element is required. Two time-based keys were tried first and both broke:
+  - **Registration order.** A child's effects run before its parent's, so a
+    viewer nested in the card registered first and the card looked newer: Escape
+    in the screenshot viewer closed the card and left the catalog index.
+  - **Activation time.** On a cold deep link a dialog's route resolves before the
+    catalog arrives, so the card it sits over mounts later and looked newer:
+    Escape closed the card first, and the card took focus back off the dialog.
+
+  No layer refers to any other, and adding one above an existing layer needs no
+  change to it. `useDismissable` and `useDismissStack` are exported, so a
+  deployment's own overlays join the same ordering as the core's.
+
+  Further details, each fixing a way the hand-rolled version broke:
+  - **Focus follows the stack.** When the top layer closes and its focus falls
+    to `<body>`, the layer now on top receives it, unless something more specific
+    already placed it (Radix returns focus to a trigger). `topElement()` lets a
+    layer that focuses itself on mount yield to one opened over it.
+  - **It works with no provider.** The default stack is app-wide;
+    `DismissStackProvider` only scopes a subtree. A hook that silently did nothing
+    outside a provider would be the same class of bug this replaces.
+  - **The listener is on the bubble phase**, so component handlers run first and a
+    field that wants Escape for itself keeps it by calling `preventDefault` —
+    cancelling an inline edit does not also close the card. A capture listener
+    cannot honour that, because it runs before every handler that might object.
+  - **Radix is bridged in `DialogContent`.** Radix listens with `capture: true`,
+    ahead of everything above, so it would close its own dialog even with another
+    layer on top. It now asks the stack first and stands down if the stack had a
+    layer; with an empty stack it closes as before.
+  - **The detail card registers from the panel**, which owns its element, rather
+    than from the app body — the sub-resource view renders a different body, which
+    left that view with no Escape at all.
+
+  The listener is installed only while something is registered, so an app with
+  nothing open has no global key handler.
+
+- [#319](https://github.com/lislon/app-catalog/pull/319) [`4694c77`](https://github.com/lislon/app-catalog/commit/4694c77d543281e61c03f695dbef3a4d180a4822) Thanks [@lislon](https://github.com/lislon)! - Add plugin slots, so a consuming app can render its own UI at points the core
+  declares without the core knowing anything about it.
+
+  Pass an array of plugins to `<App extensions={[...]} />`. Each contributes
+  `slots` (rendered at a point, several plugins may share one) and/or `wrappers`
+  (rendered around a subtree, so a plugin can supply context). The prop is
+  optional: with no plugins registered every slot renders nothing and every
+  wrapper passes its children through, so existing behaviour is unchanged.
+
+  Handlers are typed from a single per-feature spec, so registering an unknown
+  slot or reading a field a slot does not pass is a compile error.
+
+  Each contribution is isolated behind its own error boundary and `Suspense`: a
+  plugin that throws or suspends cannot take down the host or its peers. The two
+  fallbacks differ by design — a leaf slot falls back to nothing, so its region is
+  simply absent, while a wrapper falls back to the children it was wrapping, since
+  a wrapper only decorates and must never blank the subtree underneath it.
+
+  `useSlotFilled(slot)` reports whether any plugin fills a slot, for the cases
+  where the core has to change its own layout around one rather than just render
+  it — a table column, whose header would otherwise sit above no cells in a build
+  that registers nothing. `usePluginUser()` projects the signed-in user into the
+  shape slots receive, in one place, and returns `null` with no auth provider
+  above it.
+
+  `given()` in the test kit now accepts `extensions`, so a plugin can be mounted
+  in tests exactly as it ships. `registerCatalog()` takes them too, as an optional
+  third argument, so Gherkin scenarios exercise the app as it is actually built
+  without a `.feature` file having to name any plugin.
+
+  Also adds `useOptionalUser`, which returns `null` rather than throwing when
+  there is no `AuthProvider` above it.
+
+- [#319](https://github.com/lislon/app-catalog/pull/319) [`1efa546`](https://github.com/lislon/app-catalog/commit/1efa5464f72e2f7f46e8a14f7739f1efb76576b4) Thanks [@lislon](https://github.com/lislon)! - Add a per-row slot to the sub-resources table, and keep its header visible.
+
+  `resourceSubResourceRowActions` is called once per rendered row and handed that
+  row plus its parent — the opposite shape to the existing header slot, which is
+  called once with the whole list. It renders in a column of its own, which
+  appears only when a plugin fills it, so a build with no plugins renders the
+  table exactly as before: same five columns, same empty-state width.
+
+  Note that the table renders every row with no virtualisation, so a contribution
+  here is mounted once per child — keep the cell cheap and defer work until it is
+  interacted with.
+
+  `<Table stickyHeader className="max-h-[...]">` pins the header while the body
+  scrolls. The height limit has to go on the table's own container, not on an
+  ancestor: that container sets `overflow-x: auto`, which per spec makes
+  `overflow-y: visible` compute to `auto`, so it is already the scrollport a
+  sticky header resolves against. A height limit anywhere above leaves the header
+  pinned to an element that never scrolls vertically, and it scrolls away as if
+  nothing had been set.
+
+  Also fixes a crash in the sub-resource filter: `extra` is nullable on a served
+  resource, and the filter dereferenced it through a cast, so typing in the search
+  box threw a `TypeError` as soon as it met a child without it.
+
+### Patch Changes
+
+- [#319](https://github.com/lislon/app-catalog/pull/319) [`4072068`](https://github.com/lislon/app-catalog/commit/40720683e859c83bdd28b019501a5873a83c38be) Thanks [@lislon](https://github.com/lislon)! - Defer the catalog search results, so typing in the launcher stops waiting on
+  the result list.
+
+  Searching rebuilds the ranked result set from scratch on every keystroke —
+  `searchResources` rebuilds its parent index, scores every resource across 15
+  tiers and sorts — and the first keystroke additionally unmounts the entire
+  discovery spine while the last one remounts it. All of that sat between the
+  keypress and the caret moving. The results now render from a deferred copy of
+  the query while the input stays on the live value, so React commits the typed
+  character first and the list after, abandoning a superseded pass instead of
+  finishing one per character.
+
+  Measured in real Chromium on a 167-card catalog, three runs each:
+
+  |                                    | before             | after              |
+  | ---------------------------------- | ------------------ | ------------------ |
+  | average keystroke                  | 48 / 49 / 52 ms    | 36 / 32 / 35 ms    |
+  | first keystroke (spine to results) | 132 / 139 / 131 ms | 98 / 86 / 100 ms   |
+  | keystroke that widens the query    | 41 / 38 / 46 ms    | 19 / 13 / 14 ms    |
+  | five-character burst, to settled   | 231 / 231 / 237 ms | 234 / 234 / 201 ms |
+
+  Time-to-settled is unchanged by design: deferring moves work off the typing
+  path rather than removing it. The gain is in latency, and it is largest on the
+  keystroke that widens a query, which is the one that has to bring rows back.
+
+  Two details are load-bearing, and both were wrong in the obvious
+  implementation:
+  - **`isSearching` is derived from the deferred query**, so the results/spine
+    swap happens in the same low-priority pass as the rows. Driving it from the
+    live value tears the frame — the spine unmounts while the results are still a
+    render behind, and the page blanks. Verified by sampling the DOM every frame
+    across a keystroke: the content area never empties.
+  - **The results list receives the deferred query**, so the `Highlight` marks
+    come off the same value as the rows. Feeding it the live query highlights
+    substrings the rows do not contain.
+
+  Separately, the grid's app list is now memoized in `AppCatalogPage`. It was
+  filtered inline in JSX, producing a new array identity on every render, and the
+  grid keys four `useMemo`s off that prop — the slug index, "new this week", the
+  browse list and its area grouping. All four recomputed on every keystroke,
+  including while searching, when the spine they feed is not on screen.
+
+  Also adds the first test coverage for `?deprecated=1`, which had none: the
+  existing deprecated tests all go through search, which reads the full resource
+  set and never consults the flag.
+
+- [#319](https://github.com/lislon/app-catalog/pull/319) [`6baa128`](https://github.com/lislon/app-catalog/commit/6baa1283d8672664ca20752ba42864433961958d) Thanks [@lislon](https://github.com/lislon)! - Memoize the sub-resources table row, which makes filtering a large table
+  roughly 12x cheaper.
+
+  Measured on a catalog entry with 667 sub-resources: a filter keystroke that
+  left every row on screen cost **~400 ms** and wrote **9 attributes to the DOM**.
+  The browser can build all 33,861 of that table's nodes from scratch in ~195 ms,
+  so React was spending twice the cost of a full rebuild to change almost
+  nothing. The work was render and reconciliation — every row's element tree
+  rebuilt and diffed — not the DOM, and not the number of rows as such.
+
+  The row is now its own memoized component, and the same keystroke costs
+  **~33 ms**. Two details carry that:
+  - Props must stay referentially stable. The resource objects already come from
+    a `useMemo` filter, so their identities survive a keystroke.
+  - The highlight arrives as a **boolean**, not as the highlighted slug. Passing
+    the slug and comparing inside the row would change one prop on every row
+    whenever the highlight moved, re-rendering the whole table to restyle two
+    rows.
+
+  Rendering is unchanged, and the Admin column still derives from one flag shared
+  by the header, the cells and the empty row's `colSpan` — now carried as a single
+  `adminParent` prop, so cells cannot disagree with their header.
+
+  The filter box additionally renders through `useDeferredValue`, which fixes the
+  cost `memo` cannot: rows that come BACK as a filter is widened have to mount,
+  and that mount was blocking the caret. Measured on the same 667-row table,
+  worst-case input latency across a five-keystroke sequence, three runs each:
+
+  |                                  | without            | with               |
+  | -------------------------------- | ------------------ | ------------------ |
+  | worst keystroke                  | 870 / 871 / 893 ms | 30 / 29 / 20 ms    |
+  | average keystroke                | 196 / 199 / 208 ms | 30 / 32 / 37 ms    |
+  | five-character burst, to settled | 183 / 183 / 166 ms | 116 / 114 / 114 ms |
+
+  React now commits the typed character immediately and re-renders the table at
+  low priority, abandoning a superseded pass instead of finishing one per
+  character. Deliberately not a debounce: no delay to tune, nothing discarded for
+  a fast typist, and the final result is never late. While the rows are a render
+  behind, the table carries `aria-busy` and dims, so stale rows read as stale.
+
+  The two changes are complementary rather than alternatives — `memo` removes the
+  re-render cost, deferral removes the mount cost from the input's critical path —
+  and deferral only helps because the row is memoized, since skipping work is what
+  React is being given permission to do.
+
+  Investigated and rejected along the way, recorded so the time is not re-spent:
+  the linear `getPersonBySlug` / `getGroupBySlug` scans run 782,082 comparisons
+  per render of that table and cost 5.2 ms, which is 0.14% of the budget; and the
+  Radix popover on each person chip costs only 1.6x a plain chip. Neither is worth
+  changing for performance. Virtualization would also solve this, but it is not
+  needed at this size once the row is memoized.
+
+- [#319](https://github.com/lislon/app-catalog/pull/319) [`fd357cc`](https://github.com/lislon/app-catalog/commit/fd357cc029e49272bdde3d8f562b02b77cb76ee5) Thanks [@lislon](https://github.com/lislon)! - Virtualize large sub-resource tables, and keep the sub-resource tab when a
+  singled-out sub-resource is cleared.
+
+  **Opening the sub-resources tab of a large entry took about a second.** Tab
+  panels mount only while active, so every switch to the tab built the whole table
+  from scratch — measured at ~950 ms for 667 rows and 33,861 DOM nodes, every time.
+  Memoizing the rows cannot help: that saves re-rendering, and this is mounting.
+  Past 60 rows the body is now virtualized, so only the rows on screen plus a
+  margin are mounted. The same switch measures 69–156 ms, with 13 rows and 531
+  nodes mounted. Tables at or under 60 rows render exactly as before.
+
+  It stays a real `<table>`: rows outside the window are stood in for by spacer
+  rows rather than absolutely positioned, so the sticky header still resolves
+  against the container that scrolls. A table big enough to be windowed uses fixed
+  table layout with explicit column widths; with auto layout a column is as wide
+  as its widest mounted cell, and the columns moved by up to 264 px while
+  scrolling. The choice is made on the table's total size, so a large table keeps
+  one layout while it is filtered below the threshold rather than jumping as the
+  user types. Measured after: 0 px column drift, 0 px header drift, CLS 0.
+
+  Without layout — jsdom, print — the scroll container measures 0 tall and a
+  virtualizer would mount nothing, leaving every row unreachable, so the table
+  renders all rows instead. `Table` gains a `containerRef` prop, since the scroll
+  container is the element it creates, not the `<table>`.
+
+  **Clearing a singled-out sub-resource dropped the reader on Overview.** Arriving
+  with `?sub=` forces the sub-resource tab without selecting it; clearing the
+  selection released the force, and the strip fell back to its default. Now a
+  released force becomes the actual selection when the user has not picked a tab
+  themselves, so the view does not move and `?tab=` records it for a reload.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.7.0
+
 ## 6.6.0
 
 ### Minor Changes
