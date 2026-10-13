@@ -1,5 +1,19 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.8.0
+
+### Minor Changes
+
+- [#322](https://github.com/lislon/app-catalog/pull/322) [`23f71ea`](https://github.com/lislon/app-catalog/commit/23f71eafc97012101c37c2939800b95f7a515851) Thanks [@lislon](https://github.com/lislon)! - Add a widen button to the app detail card, directly left of the close button.
+  It drops the card's 1120px cap so long content (roles tables, access steps,
+  screenshots) can use the full width; clicking it again restores the normal
+  width. The state is not persisted: every card opens at the normal width.
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.8.0
+
 ## 6.7.0
 
 ### Minor Changes
