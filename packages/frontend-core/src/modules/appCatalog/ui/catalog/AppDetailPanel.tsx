@@ -1,6 +1,6 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
-import { X } from 'lucide-react'
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { Maximize2, Minimize2, X } from 'lucide-react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import {
   ResourceDetailAccessActions,
@@ -57,6 +57,9 @@ export function AppDetailPanel({
     [subResource, app, allResources, user],
   )
   const dialogRef = useRef<HTMLDivElement>(null)
+  // Not persisted: every open starts at the normal width. The toggle is for the
+  // one card being read, and the default stays readable for the next one.
+  const [isWide, setIsWide] = useState(false)
 
   /**
    * Centre the card ONCE when it opens, then hold that position.
@@ -156,16 +159,33 @@ export function AppDetailPanel({
         // `overflow-hidden` belongs on the rounded box: the scrolling child
         // below carries the band's tint to its own square corners and paints
         // them over this radius, so the card's top corners read as cut off.
-        className="relative w-full max-w-[min(1120px,94vw)] overflow-hidden rounded-[var(--radius)] border border-border bg-background shadow-2xl animate-in fade-in zoom-in-95 duration-200 outline-none"
+        // Widening drops the cap only. The pinned top margin is left alone, so
+        // the card's top edge stays put and restoring gives back the same layout.
+        className={`relative w-full ${isWide ? 'max-w-none' : 'max-w-[min(1120px,94vw)]'} overflow-hidden rounded-[var(--radius)] border border-border bg-background shadow-2xl animate-in fade-in zoom-in-95 duration-200 outline-none`}
       >
-        <button
-          type="button"
-          aria-label="Close"
-          onClick={onClose}
-          className="absolute top-3 right-3 z-10 rounded-full p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-        >
-          <X className="size-4" />
-        </button>
+        <div className="absolute top-3 right-3 z-10 flex gap-1">
+          <button
+            type="button"
+            aria-label={isWide ? 'Restore width' : 'Widen card'}
+            title={isWide ? 'Restore width' : 'Widen card'}
+            onClick={() => setIsWide((wide) => !wide)}
+            className="rounded-full p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          >
+            {isWide ? (
+              <Minimize2 className="size-4" />
+            ) : (
+              <Maximize2 className="size-4" />
+            )}
+          </button>
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={onClose}
+            className="rounded-full p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
         {/* Keyed by the resource on screen, so the body remounts when the card
             navigates from one app to another ("View replacement", an access
             prerequisite's parent) instead of updating in place. Everything
