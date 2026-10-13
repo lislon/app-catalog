@@ -16,10 +16,10 @@ permissions:
 jobs:
   major-guard:
     name: No unapproved major
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v7.0.1
       - name: Setup Tools
         uses: tanstack/config/.github/setup@main
       - name: Refuse a release plan that raises a major
