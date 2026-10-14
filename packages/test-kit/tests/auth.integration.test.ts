@@ -11,7 +11,7 @@ import {
 } from '@igstack/app-catalog-test-kit'
 
 describe('Auth Integration', () => {
-  it('unauthenticated user sees no Login button', async () => {
+  it('unauthenticated user sees a Login button that opens sign-in', async () => {
     suppressConsole(/Failed to fetch session/)
 
     await given(
@@ -20,13 +20,12 @@ describe('Auth Integration', () => {
       }),
     )
 
-    // The catalog is browsable anonymously, so the header advertises no login
-    // entry point. Wait for the anonymous header to settle before asserting
-    // absence, or this passes while the session is still loading.
-    await waitFor(() => {
-      expect(screen.queryByTestId('user-avatar-button')).not.toBeInTheDocument()
-    })
-    expect(screen.queryByText('Login')).not.toBeInTheDocument()
+    const login = await screen.findByRole('button', { name: 'Login' })
+    await userEvent.click(login)
+
+    expect(
+      await screen.findByRole('heading', { name: 'Sign In' }),
+    ).toBeInTheDocument()
   })
 
   it('authenticated user sees user avatar initial', async () => {
@@ -68,7 +67,7 @@ describe('Auth Integration', () => {
     await waitFor(() => {
       expect(screen.getByText('DEV Login')).toBeInTheDocument()
     })
-    expect(screen.queryByText('Login')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Login' })).toBeInTheDocument()
   })
 
   it('DEV Login button does not appear when devLoginEnabled is false', async () => {
