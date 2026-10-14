@@ -102,8 +102,12 @@ export function AppDetailPanel({
     // re-centre for its own height.
   }, [app.slug, subResource?.slug])
 
-  // Focus the dialog on mount so Esc hotkeys fire immediately, even when
+  // Focus the card on mount so Esc hotkeys fire immediately, even when
   // the card was opened by a mouse click (which leaves focus on the grid row).
+  //
+  // The door link rather than the dialog itself when the app has one: Enter on
+  // a search result opens the card, so a second Enter is the browser's own link
+  // activation and takes the reader into the app. No door: the dialog.
   //
   // Unless something inside already took the caret — the Quick Jump field does,
   // and it has the better claim: a child's effect runs before its parent's, so
@@ -125,7 +129,8 @@ export function AppDetailPanel({
     // focus back off the dialog's first field the moment the catalog arrived.
     const top = stack.topElement()
     if (top && top !== dialog) return
-    dialog.focus()
+    const target = dialog.querySelector<HTMLElement>('.app-door') ?? dialog
+    target.focus()
   }, [shownSlug, stack])
 
   // Escape closes the card. Registered here rather than in AppDetails because

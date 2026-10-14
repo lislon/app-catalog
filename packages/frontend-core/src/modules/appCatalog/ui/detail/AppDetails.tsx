@@ -199,8 +199,8 @@ export function AppDetails({
     [app, parent, allResources, children, user, isAdmin],
   )
 
-  // Enter: open the app, as the door does — the card opens from search on one
-  // Enter, so a second one finishes the trip. No address: the screenshot gallery.
+  // Enter: open screenshot gallery. Only reached on a card with no door — where
+  // there is one it holds focus, and Enter there is the link's own.
   useHotkeys(
     'enter',
     () => {
@@ -214,16 +214,13 @@ export function AppDetails({
       )
         return
 
-      if (app.appUrl) {
-        recordClick(app.slug)
-        window.open(app.appUrl, '_blank', 'noopener,noreferrer')
-      } else if (app.screenshotIds && app.screenshotIds.length > 0) {
+      if (app.screenshotIds && app.screenshotIds.length > 0) {
         setGalleryInitialIndex(0)
         setIsGalleryOpen(true)
       }
     },
     { enabled: !isGalleryOpen },
-    [app, isGalleryOpen, recordClick],
+    [app, isGalleryOpen],
   )
 
   const handleScreenshotClick = (index: number) => {
