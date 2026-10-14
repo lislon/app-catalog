@@ -1,5 +1,19 @@
 # @igstack/app-catalog-test-kit
 
+## 6.8.2
+
+### Patch Changes
+
+- [#324](https://github.com/lislon/app-catalog/pull/324) [`edbfe7d`](https://github.com/lislon/app-catalog/commit/edbfe7d588e171e02430bec31ad091031979a1d8) Thanks [@lislon](https://github.com/lislon)! - Header shows the Login button to anonymous visitors again
+
+  Signing in is now useful for more than an admin, so the header offers it again. The button
+  opens the sign-in modal and returns the visitor to the page they were on. The `/login` route
+  fix from the earlier change stays. DEV Login still appears only when the backend enables it.
+
+- Updated dependencies [[`edbfe7d`](https://github.com/lislon/app-catalog/commit/edbfe7d588e171e02430bec31ad091031979a1d8)]:
+  - @igstack/app-catalog-frontend-core@6.8.2
+  - @igstack/app-catalog-backend-core@6.8.2
+
 ## 6.8.1
 
 ### Patch Changes
