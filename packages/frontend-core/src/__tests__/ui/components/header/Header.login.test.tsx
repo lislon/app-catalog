@@ -1,10 +1,11 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 
 // The header pulls in the router, the theme switcher, an svgr asset and the
 // whole auth/tRPC stack. None of that is under test here, so it is stubbed down
-// to the two things these cases drive: session state and `devLoginEnabled`.
+// to what these cases drive: session state, `devLoginEnabled` and the modal.
 const state = vi.hoisted(() => ({
   isLoading: false,
   isAuthenticated: false,
@@ -37,6 +38,10 @@ vi.mock('~/modules/auth', () => ({
   useUser: vi.fn(() => state.user),
   useAuthActions: vi.fn(() => ({ logout: vi.fn(), devLogin: vi.fn() })),
 }))
+const openLoginModal = vi.hoisted(() => vi.fn())
+vi.mock('~/modules/auth/AuthModalContext', () => ({
+  useAuthModal: vi.fn(() => ({ open: openLoginModal })),
+}))
 
 const { Header } = await import('~/ui/components/header/Header')
 
@@ -45,15 +50,20 @@ beforeEach(() => {
   state.isAuthenticated = false
   state.devLoginEnabled = false
   state.user = null
+  openLoginModal.mockClear()
 })
 
-describe('Header login affordance', () => {
-  it('offers an anonymous visitor no way into the login flow', () => {
+describe('Header login button', () => {
+  it('offers an anonymous visitor a Login button that opens the sign-in modal', async () => {
+    window.history.pushState({}, '', '/app/sample-review-app?tab=access')
     render(<Header />)
 
-    // Catches a plain "Login" and any other login-ish control alike.
-    expect(screen.queryByRole('button', { name: /login/i })).toBeNull()
-    expect(screen.queryByText('Login')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Login' }))
+
+    // Comes back to where the visitor was after signing in.
+    expect(openLoginModal).toHaveBeenCalledWith(
+      '/app/sample-review-app?tab=access',
+    )
   })
 
   // Deliberately kept: already gated behind `devLoginEnabled`, so it never
@@ -65,10 +75,10 @@ describe('Header login affordance', () => {
     expect(
       screen.getByRole('button', { name: 'DEV Login' }),
     ).toBeInTheDocument()
-    expect(screen.queryByText('Login')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Login' })).toBeInTheDocument()
   })
 
-  it('leaves no empty wrapper where the button used to be', () => {
+  it('leaves no empty flex child in the header row', () => {
     const { container } = render(<Header />)
 
     // An empty flex child still eats the parent's `gap-3`, which is the
@@ -85,5 +95,6 @@ describe('Header login affordance', () => {
     render(<Header />)
 
     expect(screen.getByTestId('user-avatar-button')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Login' })).toBeNull()
   })
 })
