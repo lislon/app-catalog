@@ -1,5 +1,16 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.8.1
+
+### Patch Changes
+
+- [#323](https://github.com/lislon/app-catalog/pull/323) [`e850b17`](https://github.com/lislon/app-catalog/commit/e850b173b27ae74c0935d72db50359d1ad036fa2) Thanks [@lislon](https://github.com/lislon)! - Enter on an open app detail card now opens the app's address in a new tab,
+  the same as clicking its name. Search, Enter, Enter takes the keyboard from a
+  query straight into the app. An app with no address keeps the old behaviour:
+  Enter opens its screenshot gallery.
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.8.1
+
 ## 6.8.0
 
 ### Minor Changes
