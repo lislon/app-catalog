@@ -48,13 +48,10 @@ npx prisma migrate dev
 
 ## Releasing
 
-Two channels, one merge each:
-
-- **`alpha`** — every push publishes a timestamped `@alpha` snapshot. Nothing is
-  committed back to the branch.
-- **`main`** — merging a PR that carries a changeset publishes `@latest`:
-  `scripts/release-main.sh` versions the packages, publishes them and commits
-  the bump back in the same run. A PR with no changeset publishes nothing.
+`main` is the only long-lived branch. Merging a PR that carries a changeset
+publishes `@latest`: `scripts/release-main.sh` versions the packages, publishes
+them and commits the bump back in the same run. A PR with no changeset publishes
+nothing. Every PR also gets a preview build on pkg.pr.new.
 
 ### Versioning
 
@@ -75,4 +72,3 @@ and again before the release. A major nothing can avoid needs the `allow-major`
 label on the PR, and then a manual run of the CI workflow with `allow_major=true`
 to release it.
 
-# Test alpha snapshot
