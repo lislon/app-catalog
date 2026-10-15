@@ -1,5 +1,17 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.8.3
+
+### Patch Changes
+
+- [#325](https://github.com/lislon/app-catalog/pull/325) [`c27eedb`](https://github.com/lislon/app-catalog/commit/c27eedb544020c0aa1584f39092a6e996b5ebebb) Thanks [@lislon](https://github.com/lislon)! - Opening an app detail card now puts focus on the app's link, so a second
+  Enter after Enter on a search result opens the app the way any link does —
+  with its focus ring showing where Enter goes. The card's own Enter shortcut
+  no longer opens the app; it opens the screenshot gallery for apps with no
+  address, as before.
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.8.3
+
 ## 6.8.2
 
 ### Patch Changes
