@@ -1,5 +1,34 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.9.0
+
+### Minor Changes
+
+- [#329](https://github.com/lislon/app-catalog/pull/329) [`644795b`](https://github.com/lislon/app-catalog/commit/644795b2d0fcb20ad6df2c4458834443fe5a1500) Thanks [@lislon](https://github.com/lislon)! - The sub-resources table now shows its optional columns only where they apply.
+  - The AWS Account column appears only when at least one child carries an
+    `extra.awsAccountId`. Families of other things (workflow namespaces, data
+    projects) no longer get a column of dashes.
+  - A plugin can declare which parents its `resourceSubResourceRowActions`
+    contribution serves, through the new `appliesTo` field on `AcPlugin`:
+
+    ```ts
+    const plugin: AcPlugin = {
+      name: 'cloud-access',
+      slots: { resourceSubResourceRowActions: (props) => <Cell {...props} /> },
+      appliesTo: {
+        resourceSubResourceRowActions: ({ parent }) => parent.slug === 'cloud',
+      },
+    }
+    ```
+
+    The Admin column then appears only on those parents' tables. A plugin without
+    `appliesTo` keeps today's behaviour and serves every parent.
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.9.0
+
 ## 6.8.4
 
 ### Patch Changes
