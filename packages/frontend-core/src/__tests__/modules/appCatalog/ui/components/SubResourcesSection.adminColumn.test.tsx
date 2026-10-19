@@ -60,8 +60,9 @@ describe('the sub-resources Admin column', () => {
     expect(
       screen.queryByRole('columnheader', { name: 'Admin' }),
     ).not.toBeInTheDocument()
-    // Five columns, the same as before the slot existed.
-    expect(screen.getAllByRole('columnheader')).toHaveLength(5)
+    // Name, Tier, Owner, Approvers — these children carry no account id, so
+    // the AWS Account column is absent too.
+    expect(screen.getAllByRole('columnheader')).toHaveLength(4)
   })
 
   it('appears, with one cell per row, once a plugin fills it', () => {
@@ -70,7 +71,7 @@ describe('the sub-resources Admin column', () => {
     expect(
       screen.getByRole('columnheader', { name: 'Admin' }),
     ).toBeInTheDocument()
-    expect(screen.getAllByRole('columnheader')).toHaveLength(6)
+    expect(screen.getAllByRole('columnheader')).toHaveLength(5)
 
     // Called once PER ROW and handed that row — the opposite shape to the
     // header slot, which is called once with the whole list.
@@ -96,7 +97,43 @@ describe('the sub-resources Admin column', () => {
     )
 
     const empty = within(container).getByText(/No resources match your filters/)
-    expect(empty).toHaveAttribute('colspan', '6')
+    expect(empty).toHaveAttribute('colspan', '5')
+  })
+
+  it('is absent on a parent the plugin says it does not serve', () => {
+    // A contribution that returns null for this parent would still leave a
+    // header over a column of empty cells; `appliesTo` is how the plugin keeps
+    // the column off tables it has nothing for.
+    mount([
+      {
+        ...rowActionsPlugin,
+        appliesTo: {
+          resourceSubResourceRowActions: ({ parent: p }) => p.slug === 'other',
+        },
+      },
+    ])
+
+    expect(
+      screen.queryByRole('columnheader', { name: 'Admin' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /Provision/ }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('appears on a parent the plugin says it serves', () => {
+    mount([
+      {
+        ...rowActionsPlugin,
+        appliesTo: {
+          resourceSubResourceRowActions: ({ parent: p }) => p.slug === 'cloud',
+        },
+      },
+    ])
+
+    expect(
+      screen.getByRole('columnheader', { name: 'Admin' }),
+    ).toBeInTheDocument()
   })
 
   it('skips the column when the parent is not known', () => {

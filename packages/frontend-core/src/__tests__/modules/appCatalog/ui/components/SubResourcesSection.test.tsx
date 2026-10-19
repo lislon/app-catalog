@@ -96,6 +96,40 @@ describe('SubResourcesSection — account id as deep link', () => {
   })
 })
 
+// The AWS Account column belongs to families of AWS accounts. Anything else —
+// workflow namespaces, data projects — has nothing to put in it, and a column
+// of dashes under that header reads as missing data.
+describe('SubResourcesSection — AWS Account column', () => {
+  it('is absent when no child carries an account id', () => {
+    render(
+      <SubResourcesSection
+        parentSlug="workflows"
+        subResources={[sub('ns-a', null), sub('ns-b', { region: 'x' })]}
+      />,
+    )
+    expect(
+      screen.queryByRole('columnheader', { name: 'AWS Account' }),
+    ).not.toBeInTheDocument()
+    expect(screen.getAllByRole('columnheader')).toHaveLength(4)
+  })
+
+  it('is present when at least one child carries an account id', () => {
+    render(
+      <SubResourcesSection
+        parentSlug="cloud-console"
+        subResources={[
+          sub('acct-a', { awsAccountId: '111122223333' }),
+          sub('other', null),
+        ]}
+      />,
+    )
+    expect(
+      screen.getByRole('columnheader', { name: 'AWS Account' }),
+    ).toBeInTheDocument()
+    expect(screen.getAllByRole('columnheader')).toHaveLength(5)
+  })
+})
+
 // A `?sub=` deep link singles out one row; the table must say so and offer a
 // way back to the full list without editing the URL.
 describe('SubResourcesSection — clearing the ?sub= selection', () => {

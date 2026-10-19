@@ -5,6 +5,7 @@ import type { ReactNode } from 'react'
 // resolves it if it has mapped it, which the example app has not.
 import { useOptionalUser } from '../auth/AuthContext'
 import type {
+  ResourceDetailSlotScopes,
   ResourceDetailSlots,
   ResourceDetailWrappers,
 } from './features/resourceDetail'
@@ -23,6 +24,7 @@ export {
   ResourceDetailProvider,
 } from './features/resourceDetail'
 export type {
+  ResourceDetailSlotScopes,
   ResourceDetailSlots,
   ResourceDetailWrappers,
 } from './features/resourceDetail'
@@ -37,6 +39,9 @@ export type SlotSpec = ResourceDetailSlots
 
 /** Every wrapper slot in the core. */
 export type WrapperSpec = ResourceDetailWrappers
+
+/** The layout scope of every slot whose layout depends on more than presence. */
+export type SlotScopeSpec = ResourceDetailSlotScopes
 
 // Guard: with a second feature this becomes
 // `AssertDisjoint<ResourceDetailSlots, ServiceDeskSlots>` and fails with the
@@ -64,6 +69,16 @@ export type PluginWrappers = {
 }
 
 /**
+ * Which layout scopes a plugin's slot contribution serves. Absent = all of them.
+ *
+ * Only slots listed in `SlotScopeSpec` take a predicate: those are the slots
+ * whose layout the core decides before rendering any contribution.
+ */
+export type PluginAppliesTo = {
+  [N in keyof SlotScopeSpec]?: (scope: SlotScopeSpec[N]) => boolean
+}
+
+/**
  * One deployment-specific feature's contribution to the core's UI.
  *
  * Passed to `<App extensions={[...]} />` as an array, not a keyed map: a map
@@ -79,6 +94,7 @@ export interface AcPlugin {
   name: string
   slots?: PluginSlots
   wrappers?: PluginWrappers
+  appliesTo?: PluginAppliesTo
 }
 
 /**
@@ -93,9 +109,28 @@ export interface AcPlugin {
  * Use it ONLY for layout. A slot must never be the only route to something the
  * core itself needs, so branching behaviour on a plugin's presence is a design
  * smell even where branching layout is not.
+ *
+ * A slot in `SlotScopeSpec` also takes the scope being laid out, and counts only
+ * plugins whose `appliesTo` accepts it. An `undefined` scope means there is
+ * nothing to decide against, so the slot reads as unfilled.
  */
-export function useSlotFilled(slot: keyof SlotSpec): boolean {
-  return useExtensions().some((plugin) => Boolean(plugin.slots?.[slot]))
+export function useSlotFilled<TSlot extends keyof SlotSpec>(
+  slot: TSlot,
+  ...scope: TSlot extends keyof SlotScopeSpec
+    ? [scope: SlotScopeSpec[TSlot] | undefined]
+    : []
+): boolean {
+  const plugins = useExtensions()
+  const scoped = scope.length > 0
+  const value = scope[0]
+  if (scoped && value === undefined) return false
+  return plugins.some((plugin) => {
+    if (!plugin.slots?.[slot]) return false
+    const applies = plugin.appliesTo?.[slot] as
+      | ((s: typeof value) => boolean)
+      | undefined
+    return !scoped || !applies || applies(value)
+  })
 }
 
 /**

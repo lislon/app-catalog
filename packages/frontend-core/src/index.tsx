@@ -19,9 +19,11 @@ export type { PwaAutoUpdateOptions, PwaUpdateHandle } from './modules/pwa/index'
 // have to depend on backend-core directly just to type a handler.
 export type {
   AcPlugin,
+  PluginAppliesTo,
   PluginSlots,
   PluginWrappers,
   PluginUser,
+  SlotScopeSpec,
   SlotSpec,
   WrapperSpec,
 } from './modules/extensions/index'

@@ -34,6 +34,7 @@ export interface PluginRegistration {
   name: string
   slots?: Record<string, OpaqueRenderer | undefined>
   wrappers?: Record<string, OpaqueRenderer | undefined>
+  appliesTo?: Record<string, ((scope: never) => boolean) | undefined>
 }
 
 /**
