@@ -1,5 +1,7 @@
 # @igstack/app-catalog-shared-core
 
+## 6.8.4
+
 ## 6.8.3
 
 ## 6.8.2

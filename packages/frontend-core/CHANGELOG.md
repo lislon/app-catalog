@@ -1,5 +1,14 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.8.4
+
+### Patch Changes
+
+- [#328](https://github.com/lislon/app-catalog/pull/328) [`925a949`](https://github.com/lislon/app-catalog/commit/925a9494ed21b3c60e1a4982079554c317177176) Thanks [@lislon](https://github.com/lislon)! - Escape from a card opened from the search box puts the caret back in the search box, at the same position, instead of on the page body.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.8.4
+
 ## 6.8.3
 
 ### Patch Changes
