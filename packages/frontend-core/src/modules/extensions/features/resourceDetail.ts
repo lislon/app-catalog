@@ -38,7 +38,9 @@ export interface ResourceDetailSlots {
    * family has children (hundreds, in a large catalog) — keep the cell cheap and
    * defer anything expensive until it is interacted with. And the column only
    * appears when a plugin actually fills it, so a build with no plugin renders
-   * the table exactly as before.
+   * the table exactly as before. A plugin that serves only some parents says so
+   * in `appliesTo` (see `ResourceDetailSlotScopes`), so every other parent's
+   * table gets no column rather than a column of empty cells.
    */
   resourceSubResourceRowActions: {
     /** The child this row is showing. */
@@ -46,6 +48,20 @@ export interface ResourceDetailSlots {
     /** The entry the row hangs off. Always present here, unlike the header slot. */
     parent: Resource
     user: PluginUser | null
+  }
+}
+
+/**
+ * What the core knows when it decides a slot's LAYOUT, before any row renders.
+ *
+ * The input to a plugin's `appliesTo` predicate for that slot. A contribution
+ * renders as a component, so the core cannot ask it whether it would render
+ * nothing; the plugin has to say up front which scopes it serves.
+ */
+export interface ResourceDetailSlotScopes {
+  resourceSubResourceRowActions: {
+    /** The entry whose sub-resources table is being laid out. */
+    parent: Resource
   }
 }
 

@@ -67,6 +67,16 @@ interface SubResourcesSectionProps {
   childrenLabel?: string
 }
 
+/**
+ * The AWS account a child stands for, if it is one. `extra` is nullable on a
+ * served resource, so the optional chain is load-bearing: dereferencing it threw
+ * the moment anything typed into the filter met a child without it.
+ */
+function awsAccountIdOf(sr: Resource): string | undefined {
+  return (sr.extra as Record<string, unknown> | null | undefined)
+    ?.awsAccountId as string | undefined
+}
+
 function getTierBadgeVariant(
   tierSlug: string,
 ): 'default' | 'secondary' | 'destructive' | 'outline' {
@@ -105,6 +115,8 @@ interface SubResourceRowProps {
    * derived from `showAdminColumn` in one place above.
    */
   adminParent?: Resource
+  /** Whether the AWS Account column is rendered — `showAccountColumn` above. */
+  showAccount: boolean
   user: ReturnType<typeof usePluginUser>
   isHighlighted: boolean
   /** Set only when the body is virtualized: lets the virtualizer measure the row. */
@@ -133,6 +145,7 @@ function SubResourceRowBase({
   resource: sr,
   parentSlug,
   adminParent,
+  showAccount,
   user,
   isHighlighted,
   measureRef,
@@ -140,8 +153,7 @@ function SubResourceRowBase({
 }: SubResourceRowProps) {
   // Approvers are Person OR Group slugs; the badge resolves both.
   const approvers = [...new Set(sr.approverSlugs ?? [])]
-  const accountId = (sr.extra as Record<string, unknown> | null | undefined)
-    ?.awsAccountId as string | undefined
+  const accountId = awsAccountIdOf(sr)
 
   return (
     <TableRow
@@ -202,27 +214,29 @@ function SubResourceRowBase({
           <span className="text-muted-foreground">-</span>
         )}
       </TableCell>
-      <TableCell>
-        {!accountId ? (
-          <span className="text-muted-foreground">—</span>
-        ) : // The account id is what people copy; when the resource also
-        // carries its own `appUrl` that is the console deep link for THAT
-        // account, so the id doubles as the launch affordance.
-        sr.appUrl ? (
-          <a
-            href={sr.appUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-mono text-xs text-muted-foreground hover:text-primary hover:underline select-text"
-          >
-            {accountId}
-          </a>
-        ) : (
-          <span className="font-mono text-xs text-muted-foreground select-text">
-            {accountId}
-          </span>
-        )}
-      </TableCell>
+      {showAccount && (
+        <TableCell>
+          {!accountId ? (
+            <span className="text-muted-foreground">—</span>
+          ) : // The account id is what people copy; when the resource also
+          // carries its own `appUrl` that is the console deep link for THAT
+          // account, so the id doubles as the launch affordance.
+          sr.appUrl ? (
+            <a
+              href={sr.appUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-xs text-muted-foreground hover:text-primary hover:underline select-text"
+            >
+              {accountId}
+            </a>
+          ) : (
+            <span className="font-mono text-xs text-muted-foreground select-text">
+              {accountId}
+            </span>
+          )}
+        </TableCell>
+      )}
       {adminParent !== undefined && (
         // `relative`, so a contribution can position something against the
         // cell — a resting-state glyph under a hover-revealed control, for
@@ -326,9 +340,19 @@ export function SubResourcesSection({
   // ONE flag for the header, the cells and the empty row's colSpan. Deriving it
   // separately per site is how a header appears over a column with no cells —
   // the parent check only guarded the cells at first, and the header rendered
-  // anyway.
-  const showAdminColumn =
-    useSlotFilled('resourceSubResourceRowActions') && parent !== undefined
+  // anyway. The scope lets a plugin that serves only some parents keep the
+  // column off every other parent's table; no parent means nothing to decide.
+  const showAdminColumn = useSlotFilled(
+    'resourceSubResourceRowActions',
+    parent ? { parent } : undefined,
+  )
+  // Same rule from the data side: only a family of AWS accounts has an account
+  // id to show. Decided on the UNFILTERED list, so typing a filter that happens
+  // to hide every account does not make the column jump.
+  const showAccountColumn = useMemo(
+    () => subResources.some((sr) => awsAccountIdOf(sr) !== undefined),
+    [subResources],
+  )
   const user = usePluginUser()
   // `?sub=<slug>` — the one sub-resource the user asked for, by clicking its row
   // in the search results. It wins over the query-seeded filter below: a query
@@ -436,13 +460,7 @@ export function SubResourcesSection({
           sr.displayName.toLowerCase().includes(q) ||
           (sr.aliases ?? []).some((a) => a.toLowerCase().includes(q)) ||
           (sr.description?.toLowerCase().includes(q) ?? false) ||
-          // `extra` is nullable on a served resource, and the cast hid that:
-          // dereferencing it threw a TypeError the moment anything typed into
-          // this box met a child without it, taking the whole table down.
-          (
-            (sr.extra as Record<string, unknown> | null | undefined)
-              ?.awsAccountId as string | undefined
-          )?.includes(q) === true,
+          awsAccountIdOf(sr)?.includes(q) === true,
       )
     }
 
@@ -458,7 +476,9 @@ export function SubResourcesSection({
   // Keyed on the unfiltered size so a big table keeps one layout while it is
   // filtered below the threshold, rather than jumping as the user types.
   const fixedLayout = subResources.length > VIRTUALIZE_ABOVE
-  const columnCount = showAdminColumn ? 6 : 5
+  // Name, Tier, Owner, Approvers, then the two optional columns.
+  const columnCount =
+    4 + (showAccountColumn ? 1 : 0) + (showAdminColumn ? 1 : 0)
 
   if (subResources.length === 0) return null
 
@@ -563,7 +583,9 @@ export function SubResourcesSection({
               <TableHead className={fixedLayout ? 'w-[230px]' : undefined}>
                 Approvers
               </TableHead>
-              <TableHead className="w-[140px]">AWS Account</TableHead>
+              {showAccountColumn && (
+                <TableHead className="w-[140px]">AWS Account</TableHead>
+              )}
               {/* Only when something fills it: an empty column with a header and
                   no cells is worse than no column, and the open-source build
                   registers no plugins at all. */}
@@ -576,7 +598,7 @@ export function SubResourcesSection({
             {filtered.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={showAdminColumn ? 6 : 5}
+                  colSpan={columnCount}
                   className="text-center text-muted-foreground py-8"
                 >
                   No resources match your filters
@@ -596,6 +618,7 @@ export function SubResourcesSection({
                       resource={sr}
                       parentSlug={parentSlug}
                       adminParent={showAdminColumn ? parent : undefined}
+                      showAccount={showAccountColumn}
                       user={user}
                       isHighlighted={sr.slug === highlightSlug}
                       measureRef={measureElement}
@@ -617,6 +640,7 @@ export function SubResourcesSection({
                   // `showAdminColumn` already implies `parent !== undefined`,
                   // so this cannot disagree with the header or the colSpan.
                   adminParent={showAdminColumn ? parent : undefined}
+                  showAccount={showAccountColumn}
                   user={user}
                   isHighlighted={sr.slug === highlightSlug}
                 />
