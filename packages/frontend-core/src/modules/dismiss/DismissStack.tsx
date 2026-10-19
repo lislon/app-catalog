@@ -174,7 +174,8 @@ function createStack(): DismissStackApi {
               opener instanceof HTMLTextAreaElement)
           )
             opener.setSelectionRange(...selection)
-          return
+          // A hidden, inert or disabled opener refuses focus; fall through.
+          if (document.activeElement === opener) return
         }
         onTop?.focus()
       })
