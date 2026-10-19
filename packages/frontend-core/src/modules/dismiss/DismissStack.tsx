@@ -1,4 +1,4 @@
-import { createContext, use, useEffect, useMemo, useRef } from 'react'
+import { createContext, use, useEffect, useMemo, useRef, useState } from 'react'
 
 /**
  * One Escape key, one answer: dismiss the layer on top.
@@ -51,6 +51,27 @@ interface DismissEntry {
    * popover. Skipped when choosing the top rather than unregistering.
    */
   enabled: boolean
+  /**
+   * What had the caret before this layer opened — read on its first render,
+   * ahead of the layer's own mount focus — and the caret's place in it when
+   * it is a text field.
+   */
+  opener?: { element: Element | null; selection: [number, number] | null }
+}
+
+function readOpener(): DismissEntry['opener'] {
+  const element = document.activeElement
+  const field =
+    element instanceof HTMLInputElement ||
+    element instanceof HTMLTextAreaElement
+      ? element
+      : null
+  const start = field?.selectionStart
+  const end = field?.selectionEnd
+  return {
+    element,
+    selection: start != null && end != null ? [start, end] : null,
+  }
 }
 
 export interface DismissStackApi {
@@ -125,20 +146,37 @@ function createStack(): DismissStackApi {
     return () => {
       const i = entries.indexOf(entry)
       if (i !== -1) entries.splice(i, 1)
-      if (entries.length === 0) {
+      if (entries.length === 0)
         document.removeEventListener('keydown', onKeyDown)
-        return
-      }
       // When a layer closes, the caret it held goes with it and lands on
       // <body>, where the next Tab walks whatever is behind every overlay and
       // Escape still works only because this listener is on the document.
-      // Hand it to the layer that is now on top. Only from <body>: if
-      // something already restored focus — Radix returns it to the trigger —
-      // that choice is more specific than this one and stands.
+      // Hand it back to whatever opened the layer — the search field, caret
+      // where it was — unless a layer still covers that; then to the layer now
+      // on top. Only from <body>: if something already restored focus — Radix
+      // returns it to the trigger — that choice is more specific and stands.
       queueMicrotask(() => {
         if (document.activeElement && document.activeElement !== document.body)
           return
-        topElement()?.focus()
+        const onTop = topElement()
+        const opener = entry.opener?.element
+        if (
+          opener instanceof HTMLElement &&
+          opener !== document.body &&
+          opener.isConnected &&
+          (!onTop || onTop.contains(opener))
+        ) {
+          opener.focus()
+          const selection = entry.opener?.selection
+          if (
+            selection &&
+            (opener instanceof HTMLInputElement ||
+              opener instanceof HTMLTextAreaElement)
+          )
+            opener.setSelectionRange(...selection)
+          return
+        }
+        onTop?.focus()
       })
     }
   }
@@ -205,11 +243,15 @@ export function useDismissable(
   // new object whenever the callback identity changed would churn the stack on
   // every render for no benefit.
   const entryRef = useRef<DismissEntry>({ layer, onDismiss, enabled })
+  // Read during the first render, not in an effect: by the time effects run,
+  // the layer has usually taken the caret for itself.
+  const [opener] = useState(readOpener)
   useEffect(() => {
     entryRef.current.layer = layer
     entryRef.current.onDismiss = onDismiss
     entryRef.current.enabled = enabled
-  }, [layer, onDismiss, enabled])
+    entryRef.current.opener = opener
+  }, [layer, onDismiss, enabled, opener])
 
   useEffect(() => stack.register(entryRef.current), [stack])
 }

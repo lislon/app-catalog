@@ -2,7 +2,7 @@ import '@testing-library/jest-dom/vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   DismissStackProvider,
   useDismissable,
@@ -326,5 +326,95 @@ describe('the dismiss stack', () => {
     await new Promise((r) => setTimeout(r, 0))
 
     expect(document.activeElement).toBe(screen.getByTestId('layer-card'))
+  })
+
+  /** A layer that takes the caret on mount, as the detail card does. */
+  function GrabbingLayer({
+    name,
+    onDismiss,
+    children,
+  }: {
+    name: string
+    onDismiss: () => void
+    children?: React.ReactNode
+  }) {
+    const ref = useRef<HTMLDivElement>(null)
+    useEffect(() => ref.current?.focus(), [])
+    useDismissable(ref, onDismiss)
+    return (
+      <div ref={ref} tabIndex={-1} data-testid={`layer-${name}`}>
+        {children}
+      </div>
+    )
+  }
+
+  it('gives the caret back to the field that opened the last layer, where it was', async () => {
+    // Enter on a search result opens the card; Escape has to land the reader
+    // back in the query, caret and all, so a wrong pick is one keystroke to fix.
+    function Host() {
+      const [open, setOpen] = useState(false)
+      return (
+        <>
+          <input
+            aria-label="search"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') setOpen(true)
+            }}
+          />
+          {open && (
+            <GrabbingLayer name="card" onDismiss={() => setOpen(false)} />
+          )}
+        </>
+      )
+    }
+    render(<Host />)
+    const input = screen.getByLabelText<HTMLInputElement>('search')
+
+    await userEvent.type(input, 'Master Control{ArrowLeft}{Enter}')
+    expect(screen.getByTestId('layer-card')).toHaveFocus()
+
+    await esc()
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(input).toHaveFocus()
+    expect([input.selectionStart, input.selectionEnd]).toEqual([13, 13])
+  })
+
+  it('does not hand the caret to an opener still covered by a layer', async () => {
+    // A dialog opened from inside the card returns to its button in the card;
+    // only the card closing reaches the field behind it.
+    function Host() {
+      const [card, setCard] = useState(false)
+      const [dialog, setDialog] = useState(false)
+      return (
+        <>
+          <button type="button" onClick={() => setCard(true)}>
+            open card
+          </button>
+          {card && (
+            <GrabbingLayer name="card" onDismiss={() => setCard(false)}>
+              <button type="button" onClick={() => setDialog(true)}>
+                open dialog
+              </button>
+            </GrabbingLayer>
+          )}
+          {dialog && (
+            <GrabbingLayer name="dialog" onDismiss={() => setDialog(false)} />
+          )}
+        </>
+      )
+    }
+    render(<Host />)
+    const tick = () => new Promise((r) => setTimeout(r, 0))
+
+    await userEvent.click(screen.getByRole('button', { name: 'open card' }))
+    await userEvent.click(screen.getByRole('button', { name: 'open dialog' }))
+    await esc()
+    await tick()
+    expect(screen.getByRole('button', { name: 'open dialog' })).toHaveFocus()
+
+    await esc()
+    await tick()
+    expect(screen.getByRole('button', { name: 'open card' })).toHaveFocus()
   })
 })
