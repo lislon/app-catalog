@@ -97,7 +97,7 @@ describe('App freshness line', () => {
     await ui.app.openTab('behind')
     const line = screen.getByText(/^Last checked/)
     expect(line).toHaveTextContent(
-      /^Last checked .*hour.* · added .*months ago$/,
+      /^Last checked .*hour.* · Added .*months ago$/,
     )
     expect(line.getAttribute('title')).toMatch(/^Content last changed /)
     expect(screen.queryByText(/Updated/)).toBeNull()

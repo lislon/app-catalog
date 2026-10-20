@@ -63,11 +63,11 @@ describe('composeComments — one entry per visitor note', () => {
     ])
   })
 
-  it('an acknowledged note has no badge', () => {
+  it('an acknowledged note with a review claim is Pending', () => {
     expect(
       shape([note({ status: 'acknowledged' })], [claim({ status: 'review' })]),
     ).toEqual([
-      { who: 'Merry Mole', text: 'Leads approve access.', badge: null },
+      { who: 'Merry Mole', text: 'Leads approve access.', badge: 'pending' },
     ])
   })
 

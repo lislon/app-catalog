@@ -19,8 +19,8 @@ export function usePendingCount(
   claims: Claim[] = NO_CLAIMS,
 ): number {
   const trpc = useTRPC()
-  const { data } = useQuery(
+  const { data, error } = useQuery(
     trpc.feedback.list.queryOptions({ resourceSlug: appSlug }),
   )
-  return data ? countPending(data.items, claims) : 0
+  return data || error ? countPending(data?.items ?? [], claims) : 0
 }

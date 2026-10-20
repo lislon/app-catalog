@@ -801,6 +801,11 @@
   border-color: var(--ring);
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 25%, transparent);
 }
+.know-more-field textarea:not(.know-more-mirror)::placeholder {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .know-more-clip {
   flex: none;
   display: grid;

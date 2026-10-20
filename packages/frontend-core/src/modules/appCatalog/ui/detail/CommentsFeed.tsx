@@ -118,7 +118,8 @@ export function CommentsFeed({
     if (body) edit.mutate({ id, body })
   }
 
-  const entries = composeComments(data?.items ?? [], claims)
+  const entries =
+    data || error ? composeComments(data?.items ?? [], claims) : []
   const failure = error ?? edit.error ?? dismiss.error
 
   const noteBody = (note: Note) => {

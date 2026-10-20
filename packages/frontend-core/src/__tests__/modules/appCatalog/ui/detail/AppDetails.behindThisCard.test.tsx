@@ -154,7 +154,7 @@ describe('Behind this card', () => {
     expect(within(panel).getByText('Maps to the legacy portal.')).toBeVisible()
     expect(within(panel).getByText(/wiki\.example\.com\/thing/)).toBeVisible()
     expect(
-      within(panel).getByText(/^Last checked .+ · added .+$/),
+      within(panel).getByText(/^Last checked .+ · Added .+$/),
     ).toBeVisible()
   })
 

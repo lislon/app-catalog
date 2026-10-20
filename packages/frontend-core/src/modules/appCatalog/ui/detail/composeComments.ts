@@ -24,8 +24,8 @@ const FEEDBACK_ORIGIN = 'feedback:'
 
 function noteBadge(note: Note, linked: Claim[]): CommentBadge {
   if (note.status === null) return 'pending'
-  if (note.status === 'acknowledged') return null
   if (linked.some((c) => c.status === 'review')) return 'pending'
+  if (note.status === 'acknowledged') return null
   if (linked.some((c) => c.status === 'active')) return 'used'
   return null
 }
