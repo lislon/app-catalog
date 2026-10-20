@@ -88,11 +88,16 @@ const sampleAppCatalog: Resource[] = [
 
 async function loadAppCatalog(): Promise<Resource[]> {
   try {
-    // Optional local catalog file - OK if it doesn't exist
-     
-    // @ts-expect-error - local/appCatalog.ts is optional and may not exist
-    const module = await import('../local/appCatalog.js')
-    const appCatalog = module.appCatalog || module.default
+    // Optional local catalog file - non-literal import prevents TS resolution
+    const LOCAL_CATALOG = '../local/appCatalog.js'
+    const mod = (await import(LOCAL_CATALOG)) as {
+      appCatalog?: Resource[]
+      default?: Resource[]
+    }
+    const appCatalog = mod.appCatalog || mod.default
+    if (!appCatalog) {
+      throw new Error('No appCatalog export found')
+    }
     console.log('Loaded app catalog from local/appCatalog.ts')
     return appCatalog
   } catch {
