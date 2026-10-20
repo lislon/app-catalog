@@ -456,193 +456,181 @@ export function AppDetails({
         : undefined,
       render: () => (
         <div className="behind-panel">
-          <div className="behind-layout">
-            <div className="behind-main">
-              <CommunitySection
-                ref={knowMoreRef}
-                appSlug={app.slug}
-                appName={app.displayName}
-                claims={app.claims}
-              />
-            </div>
+          <CommunitySection
+            ref={knowMoreRef}
+            appSlug={app.slug}
+            appName={app.displayName}
+            claims={app.claims}
+          />
 
-            <div className="behind-aside">
-              {(isAdmin ||
-                sourceUrls.length > 0 ||
-                app.createdAt ||
-                app.freshness?.lastCheckedAt) && (
-                <Group title="Kept up to date from">
-                  {isAdmin ? (
-                    <>
-                      <ul className="space-y-2">
-                        {displaySources.map((url, index) => {
-                          const isDraft =
-                            draftSource !== null && index === sourceUrls.length
-                          return (
-                            <li
-                              key={isDraft ? 'draft' : `${index}-${url}`}
-                              className="group flex items-center gap-2 text-xs"
-                            >
-                              <span className="text-muted-foreground shrink-0 tabular-nums">
-                                {index + 1}.
-                              </span>
-                              <InlineEditableField
-                                value={url}
-                                initialEditMode={isDraft}
-                                onCancel={
-                                  isDraft
-                                    ? () => setDraftSource(null)
-                                    : undefined
-                                }
-                                onSave={(newUrl) => {
-                                  if (isDraft) {
-                                    setDraftSource(null)
-                                    if (newUrl) {
-                                      updateApp.mutate({
-                                        id: app.id,
-                                        data: {
-                                          sources: [...sourceUrls, newUrl],
-                                        },
-                                      })
-                                    }
-                                  } else {
-                                    const next = [...sourceUrls]
-                                    next[index] = newUrl
-                                    updateApp.mutate({
-                                      id: app.id,
-                                      data: { sources: next.filter(Boolean) },
-                                    })
-                                  }
-                                }}
-                                placeholder="https://..."
-                                viewClassName="flex-1 min-w-0"
-                                renderView={(val) =>
-                                  val ? (
-                                    <a
-                                      href={val}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="hover:text-primary inline-flex items-center gap-1 truncate"
-                                    >
-                                      {displayUrl(val)}
-                                      <ExternalLink className="size-3 shrink-0" />
-                                    </a>
-                                  ) : (
-                                    <span className="text-muted-foreground">
-                                      —
-                                    </span>
-                                  )
-                                }
-                              />
-                              {!isDraft && pulseByUrl.has(url) && (
-                                <SourcePulse
-                                  pulse={pulseByUrl.get(url)!}
-                                  className="ml-auto"
-                                />
-                              )}
-                              {!isDraft && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  aria-label="Remove source"
-                                  className="shrink-0 text-muted-foreground hover:text-destructive"
-                                  onClick={() => {
-                                    const next = sourceUrls.filter(
-                                      (_, i) => i !== index,
-                                    )
-                                    updateApp.mutate({
-                                      id: app.id,
-                                      data: { sources: next },
-                                    })
-                                  }}
-                                >
-                                  <Trash2 className="size-3.5" />
-                                </Button>
-                              )}
-                            </li>
-                          )
-                        })}
-                      </ul>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="mt-2 gap-1 text-muted-foreground"
-                        onClick={() => setDraftSource('')}
-                      >
-                        <Plus className="size-3.5" />
-                        Add source
-                      </Button>
-                    </>
-                  ) : (
-                    <ul className="space-y-2">
-                      {sourceUrls.map((url, index) => (
-                        // `group` so hovering anywhere on the row fades that source's
-                        // track in — the mark sits in a right-hand column, and row
-                        // hover is what ties the two ends of a wide row together.
+          {(isAdmin ||
+            sourceUrls.length > 0 ||
+            app.createdAt ||
+            app.freshness?.lastCheckedAt) && (
+            <Group title="Kept up to date from">
+              {isAdmin ? (
+                <>
+                  <ul className="space-y-2">
+                    {displaySources.map((url, index) => {
+                      const isDraft =
+                        draftSource !== null && index === sourceUrls.length
+                      return (
                         <li
-                          key={index}
+                          key={isDraft ? 'draft' : `${index}-${url}`}
                           className="group flex items-center gap-2 text-xs"
                         >
                           <span className="text-muted-foreground shrink-0 tabular-nums">
                             {index + 1}.
                           </span>
-                          {url ? (
-                            <a
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="hover:text-primary inline-flex min-w-0 items-center gap-1 truncate"
-                            >
-                              {displayUrl(url)}
-                              <ExternalLink className="size-3 shrink-0" />
-                            </a>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                          {pulseByUrl.has(url) && (
+                          <InlineEditableField
+                            value={url}
+                            initialEditMode={isDraft}
+                            onCancel={
+                              isDraft ? () => setDraftSource(null) : undefined
+                            }
+                            onSave={(newUrl) => {
+                              if (isDraft) {
+                                setDraftSource(null)
+                                if (newUrl) {
+                                  updateApp.mutate({
+                                    id: app.id,
+                                    data: { sources: [...sourceUrls, newUrl] },
+                                  })
+                                }
+                              } else {
+                                const next = [...sourceUrls]
+                                next[index] = newUrl
+                                updateApp.mutate({
+                                  id: app.id,
+                                  data: { sources: next.filter(Boolean) },
+                                })
+                              }
+                            }}
+                            placeholder="https://..."
+                            viewClassName="flex-1 min-w-0"
+                            renderView={(val) =>
+                              val ? (
+                                <a
+                                  href={val}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="hover:text-primary inline-flex items-center gap-1 truncate"
+                                >
+                                  {displayUrl(val)}
+                                  <ExternalLink className="size-3 shrink-0" />
+                                </a>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )
+                            }
+                          />
+                          {!isDraft && pulseByUrl.has(url) && (
                             <SourcePulse
                               pulse={pulseByUrl.get(url)!}
                               className="ml-auto"
                             />
                           )}
+                          {!isDraft && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label="Remove source"
+                              className="shrink-0 text-muted-foreground hover:text-destructive"
+                              onClick={() => {
+                                const next = sourceUrls.filter(
+                                  (_, i) => i !== index,
+                                )
+                                updateApp.mutate({
+                                  id: app.id,
+                                  data: { sources: next },
+                                })
+                              }}
+                            >
+                              <Trash2 className="size-3.5" />
+                            </Button>
+                          )}
                         </li>
-                      ))}
-                    </ul>
-                  )}
-                  {datesLine && (
-                    <p className="behind-dates" title={datesTitle}>
-                      {datesLine}
-                    </p>
-                  )}
-                </Group>
+                      )
+                    })}
+                  </ul>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2 gap-1 text-muted-foreground"
+                    onClick={() => setDraftSource('')}
+                  >
+                    <Plus className="size-3.5" />
+                    Add source
+                  </Button>
+                </>
+              ) : (
+                <ul className="space-y-2">
+                  {sourceUrls.map((url, index) => (
+                    // `group` so hovering anywhere on the row fades that source's
+                    // track in — the mark sits in a right-hand column, and row
+                    // hover is what ties the two ends of a wide row together.
+                    <li
+                      key={index}
+                      className="group flex items-center gap-2 text-xs"
+                    >
+                      <span className="text-muted-foreground shrink-0 tabular-nums">
+                        {index + 1}.
+                      </span>
+                      {url ? (
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:text-primary inline-flex min-w-0 items-center gap-1 truncate"
+                        >
+                          {displayUrl(url)}
+                          <ExternalLink className="size-3 shrink-0" />
+                        </a>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                      {pulseByUrl.has(url) && (
+                        <SourcePulse
+                          pulse={pulseByUrl.get(url)!}
+                          className="ml-auto"
+                        />
+                      )}
+                    </li>
+                  ))}
+                </ul>
               )}
-
-              {(app.aiPrompt || app.aiMemory) && (
-                <Group title="How the AI maintains this card">
-                  {app.aiPrompt && (
-                    <>
-                      <p className="behind-ai__label">Prompt</p>
-                      <p className="behind-ai">{app.aiPrompt}</p>
-                    </>
-                  )}
-                  {app.aiMemory && (
-                    <>
-                      <p className="behind-ai__label">Memory</p>
-                      <p className="behind-ai">{app.aiMemory}</p>
-                    </>
-                  )}
-                </Group>
+              {datesLine && (
+                <p className="behind-dates" title={datesTitle}>
+                  {datesLine}
+                </p>
               )}
+            </Group>
+          )}
 
-              <div className="behind-card-source">
-                <ResourceDetailCardSource
-                  appSlug={app.slug}
-                  appName={app.displayName}
-                />
-              </div>
-            </div>
+          {(app.aiPrompt || app.aiMemory) && (
+            <Group title="How the AI maintains this card">
+              {app.aiPrompt && (
+                <>
+                  <p className="behind-ai__label">Prompt</p>
+                  <p className="behind-ai">{app.aiPrompt}</p>
+                </>
+              )}
+              {app.aiMemory && (
+                <>
+                  <p className="behind-ai__label">Memory</p>
+                  <p className="behind-ai">{app.aiMemory}</p>
+                </>
+              )}
+            </Group>
+          )}
+
+          <div className="behind-card-source">
+            <ResourceDetailCardSource
+              appSlug={app.slug}
+              appName={app.displayName}
+            />
           </div>
         </div>
       ),
