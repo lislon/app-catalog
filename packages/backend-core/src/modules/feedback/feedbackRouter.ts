@@ -69,8 +69,10 @@ export function createFeedbackRouter() {
           .object({
             resourceSlug: z.string().optional(),
             subject: z.string().max(MAX_SUBJECT_LENGTH).optional(),
-            // Both optional on purpose: a bare flag with no words and no image is the
-            // cheapest signal a passing visitor can send, and still worth having.
+            // Both optional: a note can be words, screenshots or both, and a
+            // catalog-level ask may carry only its subject. The entry's input asks
+            // for words or an image, but the API still stores an empty note as a
+            // bare flag, which is what older rows are.
             body: z.string().max(MAX_BODY_LENGTH).optional(),
             attachmentIds: z.array(z.string()).max(MAX_ATTACHMENTS).optional(),
           })

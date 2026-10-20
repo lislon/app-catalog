@@ -87,6 +87,15 @@ export function DetailTabs({
   }
 
   /**
+   * Where a link to a tab the entry does not have lands instead. A thin entry
+   * has no Documentation tab, and links to it were mostly about sources and
+   * dates, which Behind this card holds.
+   */
+  const ABSENT: Record<string, string> = {
+    documentation: 'behind',
+  }
+
+  /**
    * `forcedTab` picks the tab you ARRIVE on, not the tab you are stuck on.
    *
    * `?sub=` stays set for the card's whole life, so forcing it permanently would
@@ -113,15 +122,6 @@ export function DetailTabs({
   if (forcedTab !== lastForced) {
     setLastForced(forcedTab)
     if (lastForced && !forcedTab && !userChose) setUrlTab(lastForced)
-  }
-
-  /**
-   * Where a link to a tab the entry does not have lands instead. A thin entry
-   * has no Documentation tab, and links to it were mostly about sources and
-   * dates, which Behind this card holds.
-   */
-  const ABSENT: Record<string, string> = {
-    documentation: 'behind',
   }
 
   const asked = userChose || !forcedTab ? urlTab : forcedTab

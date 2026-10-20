@@ -114,7 +114,7 @@ function SubSection({
   return (
     <section className="community-sub" data-community-group={id}>
       <h3 className="community-sub__title">
-        {title}
+        {title}{' '}
         <span className="community-sub__n" data-count="">
           {count}
         </span>

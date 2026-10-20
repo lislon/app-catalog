@@ -6,7 +6,11 @@ import '@testing-library/jest-dom/vitest'
 const state = vi.hoisted(() => ({
   sent: [] as unknown[],
   fail: false,
+  failMessage: '',
   invalidated: 0,
+  /** When set, uploads wait until `release()` is called. */
+  hold: false,
+  release: () => {},
 }))
 
 vi.mock('@tanstack/react-query', async () => {
@@ -27,7 +31,7 @@ vi.mock('@tanstack/react-query', async () => {
         },
         isPending: false,
         isError,
-        error: null,
+        error: isError ? new Error(state.failMessage) : null,
       }
     }),
     useQueryClient: vi.fn(() => ({
@@ -59,16 +63,20 @@ let uploads = 0
 beforeEach(() => {
   state.sent = []
   state.fail = false
+  state.failMessage = ''
   state.invalidated = 0
+  state.hold = false
   uploads = 0
   sessionStorage.clear()
   vi.stubGlobal(
     'fetch',
     vi.fn((_url: string, init: { body: FormData }) => {
       const ids = init.body.getAll('image').map(() => `img-${++uploads}`)
-      return Promise.resolve(
-        new Response(JSON.stringify({ ids }), { status: 201 }),
-      )
+      const reply = () => new Response(JSON.stringify({ ids }), { status: 201 })
+      if (!state.hold) return Promise.resolve(reply())
+      return new Promise<Response>((resolve) => {
+        state.release = () => resolve(reply())
+      })
     }),
   )
 })
@@ -83,8 +91,16 @@ const field = () =>
 const send = () => screen.getByText('Send')
 const png = (name: string) =>
   new File([new Uint8Array([1])], name, { type: 'image/png' })
-const pasteImage = (name = 'shot.png') =>
-  fireEvent.paste(field(), { clipboardData: { files: [png(name)] } })
+const pasteImage = (...names: string[]) =>
+  fireEvent.paste(field(), {
+    clipboardData: { files: (names.length ? names : ['shot.png']).map(png) },
+  })
+const dropImage = (name: string) =>
+  fireEvent.drop(field().closest('form')!, {
+    dataTransfer: { files: [png(name)], types: ['Files'] },
+  })
+const thumbnails = () =>
+  screen.queryAllByRole('button', { name: /^Remove / }).length
 
 describe('CommunitySection — the input', () => {
   it('shows Send and the note line on first focus, and keeps them', async () => {
@@ -172,6 +188,26 @@ describe('CommunitySection — the input', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(/Could not send/)
   })
 
+  it('shows the server’s reason when a send fails with one', async () => {
+    state.fail = true
+    state.failMessage = 'Up to 3 images'
+    mount()
+    await userEvent.type(field(), 'Lead approves access.{Enter}')
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Could not send: Up to 3 images. Your note is still here.',
+    )
+  })
+
+  it('does not clear the draft on Esc during an IME composition', async () => {
+    mount()
+    await userEvent.type(field(), 'kanji')
+    // fireEvent wraps the dispatch in act, so a clear would have rendered.
+    fireEvent.keyDown(field(), { key: 'Escape', isComposing: true })
+    expect(field()).toHaveValue('kanji')
+    fireEvent.keyDown(field(), { key: 'Escape' })
+    expect(field()).toHaveValue('')
+  })
+
   it('leaves focus in the field after a successful send', async () => {
     mount()
     await userEvent.type(field(), 'Lead approves access.{Enter}')
@@ -198,9 +234,7 @@ describe('CommunitySection — screenshots', () => {
 
   it('adds a thumbnail for a dropped image', async () => {
     mount()
-    fireEvent.drop(field().closest('form')!, {
-      dataTransfer: { files: [png('dropped.png')] },
-    })
+    dropImage('dropped.png')
     expect(
       await screen.findByRole('img', { name: 'dropped.png' }),
     ).toBeVisible()
@@ -281,5 +315,61 @@ describe('CommunitySection — screenshots', () => {
     await waitFor(() =>
       expect(screen.queryByRole('img', { name: 'shot.png' })).toBeNull(),
     )
+  })
+
+  it('ignores a second paste while the first is uploading, and never exceeds the cap', async () => {
+    mount()
+    pasteImage('a.png', 'b.png')
+    pasteImage('c.png', 'd.png')
+    await screen.findByRole('img', { name: 'b.png' })
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(thumbnails()).toBe(2)
+
+    pasteImage('e.png', 'f.png')
+    await screen.findByRole('img', { name: 'e.png' })
+    expect(thumbnails()).toBe(3)
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Only the first 1 were attached',
+    )
+  })
+
+  it('ignores a drop during an upload and says it is attaching', async () => {
+    state.hold = true
+    mount()
+    pasteImage('first.png')
+    expect(screen.getByText('Attaching…')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Attach a screenshot' }),
+    ).toHaveAttribute('aria-busy', 'true')
+
+    dropImage('second.png')
+    expect(fetch).toHaveBeenCalledTimes(1)
+
+    state.release()
+    await screen.findByRole('img', { name: 'first.png' })
+    expect(screen.queryByText('Attaching…')).toBeNull()
+    expect(thumbnails()).toBe(1)
+  })
+
+  it('leaves a drag of plain text to the field', () => {
+    mount()
+    const form = field().closest('form')!
+    const text = { dataTransfer: { types: ['text/plain'] } }
+    fireEvent.dragEnter(form, text)
+    expect(fireEvent.dragOver(form, text)).toBe(true) // not default-prevented
+    expect(form).not.toHaveAttribute('data-drop')
+  })
+
+  it('keeps the drop highlight while a file drag crosses the form’s children', () => {
+    mount()
+    const form = field().closest('form')!
+    const files = { dataTransfer: { types: ['Files'] } }
+    fireEvent.dragEnter(form, files)
+    expect(fireEvent.dragOver(form, files)).toBe(false) // drop accepted
+    fireEvent.dragEnter(field(), files)
+    fireEvent.dragLeave(form, files)
+    expect(form).toHaveAttribute('data-drop')
+    fireEvent.dragLeave(field(), files)
+    expect(form).not.toHaveAttribute('data-drop')
   })
 })

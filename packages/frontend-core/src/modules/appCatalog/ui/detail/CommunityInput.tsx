@@ -97,6 +97,10 @@ export function CommunityInput({
   const [uploading, setUploading] = React.useState(false)
   const [uploadError, setUploadError] = React.useState<string | null>(null)
   const [dragging, setDragging] = React.useState(false)
+  // The guard events read, set synchronously: `uploading` only updates on the
+  // next render, so a second paste or drop in the same tick would slip past it.
+  const inFlightRef = React.useRef(false)
+  const dragDepthRef = React.useRef(0)
   const [height, setHeight] = React.useState(ONE_LINE)
   const fieldRef = React.useRef<HTMLTextAreaElement>(null)
   // A hidden twin measures the height the text needs, so the real field can
@@ -171,9 +175,14 @@ export function CommunityInput({
     return () => observer.disconnect()
   }, [fit])
 
+  /**
+   * One upload at a time: a paste or drop while one is in flight is ignored,
+   * and the "Attaching…" line says why. The updater clamps as well, so the
+   * draft can never hold more than the server accepts on send.
+   */
   const attach = async (picked: File[]) => {
     const files = picked.filter(isImage)
-    if (files.length === 0) return
+    if (files.length === 0 || inFlightRef.current) return
     setEngaged(true)
     const room = MAX_ATTACHMENTS - images.length
     if (room <= 0) {
@@ -181,20 +190,28 @@ export function CommunityInput({
       return
     }
     setUploadError(null)
+    inFlightRef.current = true
     setUploading(true)
     const result = await upload(files.slice(0, room))
+    inFlightRef.current = false
     setUploading(false)
     if (typeof result === 'string') {
       setUploadError(result)
       return
     }
-    setImages((current) => [
-      ...current,
-      ...result.map((id, i) => ({ id, name: files[i]?.name ?? 'image' })),
-    ])
+    setImages((current) =>
+      [
+        ...current,
+        ...result.map((id, i) => ({ id, name: files[i]?.name ?? 'image' })),
+      ].slice(0, MAX_ATTACHMENTS),
+    )
     if (files.length > room)
       setUploadError(`Only the first ${room} were attached`)
   }
+
+  /** Only a drag carrying files is ours; dragged text still drops into the field. */
+  const carriesFiles = (e: React.DragEvent) =>
+    [...e.dataTransfer.types].includes('Files')
 
   const submit = () => {
     if (!canSend || add.isPending || uploading) return
@@ -218,13 +235,26 @@ export function CommunityInput({
         e.preventDefault()
         submit()
       }}
-      onDragOver={(e) => {
-        e.preventDefault()
+      onDragEnter={(e) => {
+        if (!carriesFiles(e)) return
+        dragDepthRef.current += 1
         setDragging(true)
       }}
-      onDragLeave={() => setDragging(false)}
+      onDragOver={(e) => {
+        // Accepting the drop is what lets it fire.
+        if (carriesFiles(e)) e.preventDefault()
+      }}
+      onDragLeave={(e) => {
+        if (!carriesFiles(e)) return
+        // Every child the drag crosses fires its own enter and leave, so only
+        // the last leave means the drag left the form.
+        dragDepthRef.current = Math.max(0, dragDepthRef.current - 1)
+        if (dragDepthRef.current === 0) setDragging(false)
+      }}
       onDrop={(e) => {
+        if (!carriesFiles(e)) return
         e.preventDefault()
+        dragDepthRef.current = 0
         setDragging(false)
         void attach([...e.dataTransfer.files])
       }}
@@ -255,6 +285,7 @@ export function CommunityInput({
           className="know-more-clip"
           aria-label="Attach a screenshot"
           title="Attach a screenshot"
+          aria-busy={uploading || undefined}
           disabled={uploading || images.length >= MAX_ATTACHMENTS}
           onClick={() => fileRef.current?.click()}
         >
@@ -306,7 +337,11 @@ export function CommunityInput({
             }
             // Esc clears a draft, and only a draft: with nothing typed or
             // attached it must reach the card's layer so the card still closes.
-            if (e.key === 'Escape' && (text !== '' || images.length > 0)) {
+            if (
+              e.key === 'Escape' &&
+              !e.nativeEvent.isComposing &&
+              (text !== '' || images.length > 0)
+            ) {
               e.preventDefault()
               e.stopPropagation()
               setText('')
@@ -337,11 +372,12 @@ export function CommunityInput({
         Enter sends · Shift+Enter new line · Esc clears · paste or drop a
         screenshot
       </p>
+      <p className="know-more-attaching" aria-live="polite">
+        {uploading ? 'Attaching…' : ''}
+      </p>
       {(add.isError || uploadError) && (
         <p role="alert" className="know-more-error">
-          {add.isError
-            ? 'Could not send — your note is still here. Try again.'
-            : uploadError}
+          {add.isError ? sendFailure(add.error) : uploadError}
         </p>
       )}
       <p role="status" className={cn('know-more-sent', sent && 'is-on')}>
@@ -353,6 +389,19 @@ export function CommunityInput({
       </div>
     </form>
   )
+}
+
+/**
+ * The server's reason when it gave a readable one ("Up to 3 images"), else a
+ * generic line. Validation failures arrive as serialized issue lists, which
+ * are not for a reader.
+ */
+function sendFailure(error: unknown): string {
+  const reason =
+    error instanceof Error ? error.message.trim().replace(/\.$/, '') : ''
+  return reason && !/^[[{]/.test(reason)
+    ? `Could not send: ${reason}. Your note is still here.`
+    : 'Could not send — your note is still here. Try again.'
 }
 
 /** OSS default: what happens to the note the user sends. */

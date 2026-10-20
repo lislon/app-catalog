@@ -4,14 +4,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 
 // Only the list query matters here; mutations are inert.
-const state = vi.hoisted(() => ({ items: [] as unknown[] }))
+const state = vi.hoisted(() => ({
+  items: [] as unknown[],
+  calls: [] as [string, unknown][],
+}))
 
 vi.mock('@tanstack/react-query', () => ({
   useQuery: vi.fn(() => ({
     data: { items: state.items, openCount: 0 },
     isLoading: false,
   })),
-  useMutation: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+  useMutation: vi.fn((options?: { name?: string }) => ({
+    mutate: (vars: unknown) => state.calls.push([options?.name ?? '', vars]),
+    isPending: false,
+  })),
   useQueryClient: vi.fn(() => ({ invalidateQueries: vi.fn() })),
 }))
 vi.mock('~/api/infra/trpc', () => ({
@@ -21,9 +27,9 @@ vi.mock('~/api/infra/trpc', () => ({
         queryOptions: () => ({ queryKey: ['feedback'] }),
         queryKey: () => ['feedback'],
       },
-      add: { mutationOptions: (o: unknown) => o },
-      edit: { mutationOptions: (o: unknown) => o },
-      dismiss: { mutationOptions: (o: unknown) => o },
+      add: { mutationOptions: (o: object) => ({ ...o, name: 'add' }) },
+      edit: { mutationOptions: (o: object) => ({ ...o, name: 'edit' }) },
+      dismiss: { mutationOptions: (o: object) => ({ ...o, name: 'dismiss' }) },
     },
   })),
 }))
@@ -71,6 +77,7 @@ const rowTexts = (el: HTMLElement) =>
 
 beforeEach(() => {
   state.items = []
+  state.calls = []
 })
 
 describe('CommunitySection — grouped lists', () => {
@@ -93,8 +100,9 @@ describe('CommunitySection — grouped lists', () => {
       { text: 'A claim in review.', addedAt: '2026-10-05', status: 'review' },
     ])
     const review = group('Notes in review')
+    // The name and the count are separate words, not "Notes in review3".
     expect(within(review).getByRole('heading')).toHaveTextContent(
-      'Notes in review3',
+      /^Notes in review 3$/,
     )
     expect(rowTexts(review)).toEqual([
       'Newest note.',
@@ -241,9 +249,22 @@ describe('CommunitySection — grouped lists', () => {
     ]
     mount()
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
-    expect(
-      screen.getByDisplayValue('This portal only covers one business unit.'),
-    ).toHaveFocus()
+    const box = screen.getByDisplayValue(
+      'This portal only covers one business unit.',
+    )
+    expect(box).toHaveFocus()
+    fireEvent.change(box, { target: { value: '  Covers two units now. ' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(state.calls).toEqual([
+      ['edit', { id: 'c1', body: 'Covers two units now.' }],
+    ])
+  })
+
+  it('withdraws your own open note through feedback.dismiss', () => {
+    state.items = [{ ...note, isMine: true }]
+    mount()
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+    expect(state.calls).toEqual([['dismiss', { id: 'c1' }]])
   })
 
   it('renders claims with the same text without key warnings', () => {
