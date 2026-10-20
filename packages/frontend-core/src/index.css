@@ -479,31 +479,7 @@
    Comments come first; each later group sits under a hairline with generous
    room either side, and a plain title. */
 .behind-panel {
-  container-type: inline-size;
-  container-name: behind;
-}
-@container behind (min-width: 900px) {
-  .behind-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 68ch) minmax(240px, 1fr);
-    column-gap: 3.5rem;
-  }
-  .behind-main {
-    grid-column: 1;
-  }
-  .behind-aside {
-    grid-column: 2;
-  }
-  .behind-aside .behind-group {
-    margin-top: 0;
-    padding-top: 0;
-    border-top: none;
-  }
-  .behind-aside .behind-group + .behind-group {
-    margin-top: 2.5rem;
-    padding-top: 0;
-    border-top: none;
-  }
+  max-width: 62ch;
 }
 .behind-group + .behind-group {
   margin-top: 3.5rem;
