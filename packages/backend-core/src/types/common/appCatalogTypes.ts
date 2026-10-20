@@ -157,7 +157,8 @@ export interface Freshness {
 /**
  * One plain statement about an entry, kept so the card can say why it says what it
  * says. Active claims are an input the card text must honour, and they win over a
- * source that contradicts them. Archived claims are kept with the reason they
+ * source that contradicts them. Review claims are recorded but not yet verified;
+ * they never drive card text. Archived claims are kept with the reason they
  * stopped applying, and are ignored.
  */
 export interface Claim {
@@ -167,7 +168,11 @@ export interface Claim {
   addedAt: string
   /** Where it came from: `feedback:<id>`, a person or team, or a URL. */
   origin?: string
-  status: 'active' | 'archived'
+  /**
+   * `active` = verified, drives card text; `review` = recorded but not yet
+   * verified, never drives card text; `archived` = stopped applying.
+   */
+  status: 'active' | 'review' | 'archived'
   /** Required when status is 'archived'. */
   archiveReason?: string
   archivedAt?: string

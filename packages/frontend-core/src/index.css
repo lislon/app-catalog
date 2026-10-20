@@ -559,34 +559,43 @@
   padding: 0;
 }
 .claim {
-  display: flex;
-  gap: 0.625rem;
   padding: 0.375rem 0;
   font-size: 0.8125rem;
 }
 .claim + .claim {
   border-top: 1px solid var(--border);
 }
-.claim-dot {
-  flex: none;
-  width: 0.5rem;
-  height: 0.5rem;
-  margin-top: 0.4rem;
-  border-radius: 9999px;
-  background: oklch(0.63 0.17 149);
+.claim-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
 }
-.claim-archived .claim-dot {
-  background: var(--muted-foreground);
+.claim-text {
+  flex: 1;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+  min-width: 0;
+}
+.claim-review-tag {
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  border-radius: 0.25rem;
+  color: var(--muted-foreground);
+  background: var(--muted);
 }
 .claim-archived .claim-text {
-  color: var(--muted-foreground);
   text-decoration: line-through;
 }
 .claim-meta {
+  flex: none;
   font-size: 0.75rem;
   color: var(--muted-foreground);
+  white-space: nowrap;
 }
 .claim-reason {
+  margin-top: 0.25rem;
   font-size: 0.75rem;
   color: oklch(0.55 0.13 60);
 }
@@ -689,7 +698,7 @@
     opacity 0.2s ease,
     margin 0.2s ease;
 }
-.know-more-field.is-typing + .know-more-hint {
+.know-more-hint.is-on {
   max-height: 1.25rem;
   opacity: 1;
   margin-top: 0.375rem;
@@ -713,6 +722,11 @@
   max-height: 1.5rem;
   opacity: 1;
   margin-top: 0.5rem;
+}
+.know-more-what-next {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
 }
 @media (prefers-reduced-motion: reduce) {
   .know-more-field textarea:not(.know-more-mirror),

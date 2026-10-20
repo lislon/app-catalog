@@ -102,17 +102,17 @@ const app = {
 
 const input = () =>
   screen.getByRole('textbox', {
-    name: 'Know something more about Example App?',
+    name: 'Know more about Example App?',
   })
 
-describe('AppDetails — Know something more?', () => {
+describe('AppDetails — Know more?', () => {
   it('sits at the foot of every tab', () => {
     render(<AppDetails app={app} />)
     for (const tab of screen.getAllByRole('tab')) {
       fireEvent.click(tab)
       const panel = screen.getByRole('tabpanel')
       expect(
-        within(panel).getByRole('textbox', { name: /Know something more/ }),
+        within(panel).getByRole('textbox', { name: /Know more/ }),
       ).toBeInTheDocument()
     }
   })
@@ -161,7 +161,7 @@ describe('AppDetails — Know something more?', () => {
     const panel = screen.getByRole('tabpanel')
     // Type and send
     const field = within(panel).getByRole('textbox', {
-      name: /Know something more/,
+      name: /Know more/,
     })
     fireEvent.change(field, { target: { value: 'approval detail' } })
     fireEvent.keyDown(field, { key: 'Enter' })

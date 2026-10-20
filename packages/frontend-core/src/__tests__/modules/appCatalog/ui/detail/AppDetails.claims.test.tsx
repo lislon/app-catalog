@@ -75,9 +75,52 @@ describe('AppDetails — Claims', () => {
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()
     expect(screen.getByText('Lead approves access.')).toBeVisible()
-    expect(screen.getByText(/2026-10-12 · from visitor feedback/)).toBeVisible()
-    expect(screen.getByText(/2026-10-15 · Tools team/)).toBeVisible()
+    expect(screen.getByText(/from visitor feedback · 2026-10-12/)).toBeVisible()
+    expect(screen.getByText(/Tools team · 2026-10-15/)).toBeVisible()
     expect(screen.queryByText(/feedback:abc/)).toBeNull()
+  })
+
+  it('lists review claims after active, with In review tag', () => {
+    openDocs({
+      ...base,
+      claims: [
+        {
+          text: 'Lead approves access.',
+          addedAt: '2026-10-12',
+          status: 'active',
+        },
+        {
+          text: 'New feature in testing.',
+          addedAt: '2026-10-15',
+          origin: 'from visitor feedback',
+          status: 'review',
+        },
+      ],
+    })
+
+    const items = screen.getAllByRole('listitem')
+    expect(items[0]).toHaveTextContent('Lead approves access.')
+    expect(items[0]).not.toHaveTextContent('In review')
+    expect(items[1]).toHaveTextContent('New feature in testing.')
+    expect(items[1]).toHaveTextContent('In review')
+    expect(screen.getByText(/from visitor feedback · 2026-10-15/)).toBeVisible()
+  })
+
+  it('shows Claims section when only review claims exist', () => {
+    openDocs({
+      ...base,
+      claims: [
+        {
+          text: 'Unverified claim.',
+          addedAt: '2026-10-16',
+          status: 'review',
+        },
+      ],
+    })
+
+    expect(screen.getByRole('heading', { name: 'Claims' })).toBeVisible()
+    expect(screen.getByText('Unverified claim.')).toBeVisible()
+    expect(screen.getByText('In review')).toBeVisible()
   })
 
   it('folds archived claims away, with their reason', () => {

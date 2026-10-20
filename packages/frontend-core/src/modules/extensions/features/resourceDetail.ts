@@ -49,6 +49,19 @@ export interface ResourceDetailSlots {
     parent: Resource
     user: PluginUser | null
   }
+
+  /**
+   * "What happens next" note under the inline feedback input.
+   *
+   * Muted, small, always visible — not only while typing. Tells the reader what
+   * becomes of the text they send. The OSS default is `A maintainer reads every
+   * note and updates the card.`, which works for a human maintainer. A
+   * deployment with an agent loop substitutes its own text.
+   */
+  resourceDetailFeedbackNote: {
+    appSlug: string
+    appName: string
+  }
 }
 
 /**
@@ -87,4 +100,5 @@ export const ResourceDetailAccessActions = mkSlot('resourceDetailAccessActions')
 export const ResourceSubResourceRowActions = mkSlot(
   'resourceSubResourceRowActions',
 )
+export const ResourceDetailFeedbackNote = mkSlot('resourceDetailFeedbackNote')
 export const ResourceDetailProvider = mkWrapper('resourceDetailProvider')

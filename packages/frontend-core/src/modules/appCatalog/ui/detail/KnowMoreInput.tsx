@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import React from 'react'
 import { useTRPC } from '~/api/infra/trpc'
 import { cn } from '~/lib/utils'
+import { ResourceDetailFeedbackNote } from '~/modules/extensions'
 import { Button } from '~/ui/button'
 
 /** px: 20 line-height + 2×9 padding + 2×1 border. */
@@ -82,7 +83,7 @@ export function KnowMoreInput({
     add.mutate({ resourceSlug: appSlug, body: text.trim() })
   }
 
-  const label = `Know something more about ${appName}?`
+  const label = `Know more about ${appName}?`
 
   return (
     <form
@@ -104,7 +105,7 @@ export function KnowMoreInput({
           rows={1}
           value={text}
           aria-label={label}
-          placeholder={label}
+          placeholder="Know more? Type it, press Enter"
           style={{
             height,
             overflowY: height >= MAX_HEIGHT ? 'auto' : 'hidden',
@@ -150,8 +151,8 @@ export function KnowMoreInput({
           className="know-more-mirror"
         />
       </div>
-      <p className="know-more-hint">
-        Enter to send · Shift+Enter for a new line · Esc to cancel
+      <p className={cn('know-more-hint', typing && 'is-on')}>
+        Enter sends · Shift+Enter new line · Esc clears
       </p>
       {add.isError && (
         <p role="alert" className="know-more-error">
@@ -161,6 +162,15 @@ export function KnowMoreInput({
       <p role="status" className={cn('know-more-sent', sent && 'is-on')}>
         {sent ? 'Thanks — sent. It shows under Notes & requests.' : ''}
       </p>
+      <div className="know-more-what-next">
+        <ResourceDetailFeedbackNote appSlug={appSlug} appName={appName} />
+        <DefaultFeedbackNote />
+      </div>
     </form>
   )
+}
+
+/** OSS default: what happens to the note the user sends. */
+function DefaultFeedbackNote() {
+  return <>A maintainer reads every note and updates the card.</>
 }

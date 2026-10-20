@@ -51,7 +51,7 @@ beforeEach(() => {
 })
 
 const field = () =>
-  screen.getByRole('textbox', { name: 'Know something more about Team Board?' })
+  screen.getByRole('textbox', { name: 'Know more about Team Board?' })
 const send = () => screen.getByText('Send')
 
 describe('KnowMoreInput', () => {
@@ -69,6 +69,16 @@ describe('KnowMoreInput', () => {
     await userEvent.type(field(), '   {Enter}')
     expect(send().closest('.know-more-field')).not.toHaveClass('is-typing')
     expect(state.sent).toEqual([])
+  })
+
+  it('hint visible only while typing', async () => {
+    render(<KnowMoreInput appSlug="team-board" appName="Team Board" />)
+    const hint = screen.getByText(/Enter sends/)
+    expect(hint).not.toHaveClass('is-on')
+    await userEvent.type(field(), 'Text')
+    expect(hint).toHaveClass('is-on')
+    await userEvent.type(field(), '{Escape}')
+    expect(hint).not.toHaveClass('is-on')
   })
 
   it('Enter sends the trimmed text in place and clears the field', async () => {

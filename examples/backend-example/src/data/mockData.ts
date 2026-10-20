@@ -191,6 +191,12 @@ export const mockAppCatalog: Resource[] = [
         status: 'active',
       },
       {
+        text: 'Supports integration with over 2,000 third-party apps',
+        addedAt: '2026-10-15',
+        origin: 'from visitor feedback',
+        status: 'review',
+      },
+      {
         text: 'Previously hosted on-premise before cloud migration',
         addedAt: '2023-06-01',
         origin: 'Platform Team',
