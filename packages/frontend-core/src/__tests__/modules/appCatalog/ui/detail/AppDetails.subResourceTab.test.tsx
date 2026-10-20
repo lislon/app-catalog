@@ -66,14 +66,11 @@ vi.mock('~/modules/appCatalog/ui/context/AppCatalogFiltersContext', () => ({
   })),
 }))
 vi.mock('~/modules/auth', () => ({ useUser: vi.fn(() => null) }))
-vi.mock('~/modules/appCatalog/ui/detail/FeedbackSection', () => ({
-  FeedbackSection: () => <div />,
+vi.mock('~/modules/appCatalog/ui/detail/CommunitySection', () => ({
+  CommunitySection: () => <div />,
 }))
 vi.mock('~/modules/appCatalog/ui/detail/useOpenFeedbackCount', () => ({
   useOpenFeedbackCount: () => 0,
-}))
-vi.mock('~/modules/appCatalog/ui/detail/KnowMoreInput', () => ({
-  KnowMoreInput: () => null,
 }))
 
 const { AppDetails } = await import('~/modules/appCatalog/ui/detail/AppDetails')

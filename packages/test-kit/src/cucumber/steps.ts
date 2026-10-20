@@ -275,16 +275,20 @@ When('I send the correction', async () => {
   await ui().app.feedback.send()
 })
 
-Then('the composer is open', async () => {
+Then('the caret is in the input', async () => {
   await waitFor(() => {
-    expect(ui().app.feedback.isComposerOpen()).toBe(true)
+    expect(ui().app.feedback.hasInputFocus()).toBe(true)
   })
 })
 
-Then('the composer is closed', async () => {
+Then('the input is empty', async () => {
   await waitFor(() => {
-    expect(ui().app.feedback.isComposerOpen()).toBe(false)
+    expect(ui().app.feedback.inputValue()).toBe('')
   })
+})
+
+Then('there is nothing to send yet', () => {
+  expect(ui().app.feedback.canSend()).toBe(false)
 })
 
 Then('the notes thread shows {string}', async (_world, text: string) => {

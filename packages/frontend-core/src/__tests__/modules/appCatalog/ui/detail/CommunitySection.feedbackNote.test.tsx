@@ -3,10 +3,11 @@ import { describe, expect, it, vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 import type { AcPlugin } from '~/modules/extensions'
 import { ExtensionsContext } from '~/modules/extensions'
-import { KnowMoreInput } from '~/modules/appCatalog/ui/detail/KnowMoreInput'
+import { CommunitySection } from '~/modules/appCatalog/ui/detail/CommunitySection'
 
 // Stub the query layer so the component mounts.
 vi.mock('@tanstack/react-query', () => ({
+  useQuery: vi.fn(() => ({ data: { items: [], openCount: 0 } })),
   useMutation: vi.fn(() => ({
     mutate: vi.fn(),
     isPending: false,
@@ -20,7 +21,12 @@ vi.mock('~/api/infra/trpc', () => ({
   useTRPC: vi.fn(() => ({
     feedback: {
       add: { mutationOptions: (o: unknown) => o },
-      list: { queryKey: () => ['feedback', 'list'] },
+      edit: { mutationOptions: (o: unknown) => o },
+      dismiss: { mutationOptions: (o: unknown) => o },
+      list: {
+        queryOptions: () => ({ queryKey: ['feedback', 'list'] }),
+        queryKey: () => ['feedback', 'list'],
+      },
     },
   })),
 }))
@@ -28,12 +34,12 @@ vi.mock('~/api/infra/trpc', () => ({
 function mount(plugins: AcPlugin[] | undefined) {
   return render(
     <ExtensionsContext value={plugins}>
-      <KnowMoreInput appSlug="test-app" appName="Test App" />
+      <CommunitySection appSlug="test-app" appName="Test App" />
     </ExtensionsContext>,
   )
 }
 
-describe('KnowMoreInput — feedback note slot', () => {
+describe('CommunitySection — feedback note slot', () => {
   it('renders the default note when no plugin is registered', () => {
     mount(undefined)
     expect(

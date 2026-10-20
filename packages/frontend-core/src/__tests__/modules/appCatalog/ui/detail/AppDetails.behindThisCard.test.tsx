@@ -34,14 +34,12 @@ vi.mock('~/modules/appCatalog/ui/context/AppCatalogFiltersContext', () => ({
   })),
 }))
 vi.mock('~/modules/auth', () => ({ useUser: vi.fn(() => null) }))
-vi.mock('~/modules/appCatalog/ui/detail/FeedbackSection', () => ({
-  FeedbackSection: () => <div data-testid="feedback-section" />,
-}))
 vi.mock('~/modules/appCatalog/ui/detail/useOpenFeedbackCount', () => ({
   useOpenFeedbackCount: () => counts.open,
 }))
-// KnowMoreInput is real: the Share button's whole job is to focus it.
+// CommunitySection is real: the Share button's whole job is to focus it.
 vi.mock('@tanstack/react-query', () => ({
+  useQuery: vi.fn(() => ({ data: { items: [], openCount: 0 } })),
   useMutation: vi.fn(() => ({
     mutate: vi.fn(),
     isPending: false,
@@ -53,7 +51,12 @@ vi.mock('~/api/infra/trpc', () => ({
   useTRPC: vi.fn(() => ({
     feedback: {
       add: { mutationOptions: (o: unknown) => o },
-      list: { queryKey: () => ['feedback', 'list'] },
+      edit: { mutationOptions: (o: unknown) => o },
+      dismiss: { mutationOptions: (o: unknown) => o },
+      list: {
+        queryOptions: () => ({ queryKey: ['feedback', 'list'] }),
+        queryKey: () => ['feedback', 'list'],
+      },
     },
   })),
 }))
@@ -100,6 +103,12 @@ describe('the tab strip', () => {
     render(<AppDetails app={{ ...app, links: [], background: undefined }} />)
     expect(screen.queryByRole('tab', { name: 'Documentation' })).toBeNull()
     expect(behindTab()).toBeInTheDocument()
+  })
+
+  it('sends ?tab=documentation to Behind this card when the entry has no Documentation', () => {
+    search.tab = 'documentation'
+    render(<AppDetails app={{ ...app, links: [], background: undefined }} />)
+    expect(behindTab()).toHaveAttribute('aria-selected', 'true')
   })
 
   it('sends an old ?tab=notes link to Behind this card', () => {
@@ -152,18 +161,30 @@ describe('Behind this card', () => {
     ).toBeNull()
   })
 
-  it('puts the input above the notes, inside From the community', () => {
+  it('puts the input above the lists, inside From the community', () => {
     search.tab = 'behind'
-    render(<AppDetails app={app} />)
+    render(
+      <AppDetails
+        app={{
+          ...app,
+          claims: [
+            { text: 'Lead approves.', addedAt: '2026-10-01', status: 'active' },
+          ],
+        }}
+      />,
+    )
     const community = screen
       .getByRole('heading', { name: 'From the community' })
       .closest('section')!
     const field = within(community).getByRole('textbox', {
       name: 'Know more about Thing?',
     })
-    const notes = within(community).getByTestId('feedback-section')
+    const facts = within(community).getByRole('heading', {
+      name: /^Facts we rely on/,
+    })
+    expect(within(community).getByText('Lead approves.')).toBeVisible()
     expect(
-      field.compareDocumentPosition(notes) & Node.DOCUMENT_POSITION_FOLLOWING,
+      field.compareDocumentPosition(facts) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()
   })
 

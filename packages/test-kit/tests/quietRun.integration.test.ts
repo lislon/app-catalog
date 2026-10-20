@@ -27,11 +27,14 @@ describe('a green run is a quiet run', () => {
       initialRoute: '/app/taskflow',
     })
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
-    // The comments query only fires once its tab mounts the section, so the
-    // path this test exists to exercise has to be opened deliberately.
+    // The feedback query fires as the card opens, for the Behind this card
+    // count. Opening the tab and waiting for its input gives that request time
+    // to go out and be answered.
     await ui.app.openTab('behind')
     await waitFor(() =>
-      expect(screen.getByText(/Nothing here yet/)).toBeVisible(),
+      expect(
+        screen.getByRole('textbox', { name: /^Know more about / }),
+      ).toBeVisible(),
     )
 
     expect(takeUnhandledRequests()).toEqual([])

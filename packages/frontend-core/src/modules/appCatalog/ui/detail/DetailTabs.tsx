@@ -115,8 +115,20 @@ export function DetailTabs({
     if (lastForced && !forcedTab && !userChose) setUrlTab(lastForced)
   }
 
+  /**
+   * Where a link to a tab the entry does not have lands instead. A thin entry
+   * has no Documentation tab, and links to it were mostly about sources and
+   * dates, which Behind this card holds.
+   */
+  const ABSENT: Record<string, string> = {
+    documentation: 'behind',
+  }
+
   const asked = userChose || !forcedTab ? urlTab : forcedTab
-  const requested = RETIRED[asked] ?? asked
+  const retired = RETIRED[asked] ?? asked
+  const requested = ids.includes(retired)
+    ? retired
+    : (ABSENT[retired] ?? retired)
   const activeId = ids.includes(requested) ? requested : (ids[0] ?? '')
   const active = tabs.find((t) => t.id === activeId)
 

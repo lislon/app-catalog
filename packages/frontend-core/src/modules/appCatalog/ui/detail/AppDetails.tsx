@@ -10,7 +10,6 @@ import { Badge } from '~/ui/badge'
 import { Button } from '~/ui/button'
 import { AccessRequestSection } from '../components/AccessRequestSection'
 import { AccessPrerequisiteChain } from '../components/AccessPrerequisiteChain'
-import { ClaimsList } from '../components/ClaimsList'
 import { QuickJumpBar, hasQuickJumps } from '../components/QuickJumpBar'
 import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
 import { PersonBadge } from '../components/PersonBadge'
@@ -30,9 +29,8 @@ import {
   ResourceDetailAccessActions,
   ResourceDetailCardSource,
 } from '~/modules/extensions'
-import { FeedbackSection } from './FeedbackSection'
-import { KnowMoreInput } from './KnowMoreInput'
-import type { KnowMoreInputHandle } from './KnowMoreInput'
+import { CommunitySection } from './CommunitySection'
+import type { CommunitySectionHandle } from './CommunitySection'
 import { useOpenFeedbackCount } from './useOpenFeedbackCount'
 import { displayUrl } from '~/modules/appCatalog/utils/displayUrl'
 import { accessTabLabel } from '~/modules/appCatalog/utils/accessTabLabel'
@@ -161,7 +159,7 @@ export function AppDetails({
   // flag, so a second press while already on the tab still re-focuses. The
   // effect runs after the click's render has mounted the tab's panel, so the
   // ref is attached by then; opening the tab by hand bumps nothing.
-  const knowMoreRef = React.useRef<KnowMoreInputHandle>(null)
+  const knowMoreRef = React.useRef<CommunitySectionHandle>(null)
   const [shareAsk, setShareAsk] = React.useState(0)
   React.useEffect(() => {
     if (shareAsk) knowMoreRef.current?.focus()
@@ -438,17 +436,12 @@ export function AppDetails({
       render: () => (
         <>
           <Group title="From the community">
-            <KnowMoreInput
+            <CommunitySection
               ref={knowMoreRef}
               appSlug={app.slug}
               appName={app.displayName}
+              claims={app.claims}
             />
-            <FeedbackSection appSlug={app.slug} />
-            {app.claims && app.claims.length > 0 && (
-              <Section title="Claims">
-                <ClaimsList claims={app.claims} />
-              </Section>
-            )}
           </Group>
 
           {(isAdmin ||

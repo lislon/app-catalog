@@ -53,7 +53,7 @@ export interface ResourceDetailSlots {
   /**
    * "What happens next" note under the inline feedback input.
    *
-   * Muted, small, always visible — not only while typing. Tells the reader what
+   * Muted and small; appears on the input's first focus and stays. Tells the reader what
    * becomes of the text they send. The OSS default is `A maintainer reads every
    * note and updates the card.`, which works for a human maintainer. A
    * deployment with an agent loop substitutes its own text.

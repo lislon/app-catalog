@@ -6,8 +6,8 @@ Feature: Asking for a correction from the entry itself
   will report it only if that costs almost nothing. No login, no form to find, no
   idea which team owns the page.
 
-  So the affordance lives on the entry, words are optional, a screenshot is enough
-  on its own, and whoever reported it can see their own report afterwards — because
+  So the affordance lives on the entry, a sentence or a screenshot is enough on
+  its own, and whoever reported it can see their own report afterwards — because
   reporting into silence is how a person learns not to bother.
 
   Background:
@@ -16,10 +16,11 @@ Feature: Asking for a correction from the entry itself
 
   Scenario: Reporting something wrong in a sentence
     When I ask to suggest a change
-    Then the composer is open
+    Then the caret is in the input
     When I describe the correction as "The access steps point at a form that 404s."
     And I send the correction
-    Then the composer is closed
+    Then the input is empty
+    And the caret is in the input
     And the notes thread shows "The access steps point at a form that 404s."
     And 1 requests are awaiting review
 
@@ -29,6 +30,7 @@ Feature: Asking for a correction from the entry itself
     And I send the correction
     Then the notes thread shows "Screenshot only — no words added."
     And the notes thread shows 1 attached images
+    And 1 requests are awaiting review
 
   Scenario: Words and evidence together
     When I ask to suggest a change
@@ -44,14 +46,12 @@ Feature: Asking for a correction from the entry itself
     And I send the correction
     Then the notes thread shows 1 items
     When I ask to suggest a change
-    Then the composer is open
+    Then the caret is in the input
     When I describe the correction as "Second thing."
     And I send the correction
     Then the notes thread shows 2 items
     And 2 requests are awaiting review
 
-  Scenario: A bare flag is a valid report
+  Scenario: Nothing to send until there are words or a screenshot
     When I ask to suggest a change
-    And I send the correction
-    Then the notes thread shows "Flagged as out of date — no detail given."
-    And 1 requests are awaiting review
+    Then there is nothing to send yet

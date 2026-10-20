@@ -29,14 +29,11 @@ vi.mock('~/modules/appCatalog/ui/context/AppCatalogFiltersContext', () => ({
   useAppCatalogFilters: vi.fn(() => ({ selectedTags: [], toggleTag: vi.fn() })),
 }))
 vi.mock('~/modules/auth', () => ({ useUser: vi.fn(() => null) }))
-vi.mock('~/modules/appCatalog/ui/detail/FeedbackSection', () => ({
-  FeedbackSection: () => <div />,
-}))
 vi.mock('~/modules/appCatalog/ui/detail/useOpenFeedbackCount', () => ({
   useOpenFeedbackCount: () => 0,
 }))
 
-// KnowMoreInput is real — the Esc contract lives in it, so mocking it would
+// CommunitySection is real — the Esc contract lives in it, so mocking it would
 // test the mock. Only its data layer is stubbed.
 const state = vi.hoisted(() => ({
   sent: [] as unknown[],
@@ -47,6 +44,7 @@ const state = vi.hoisted(() => ({
 vi.mock('@tanstack/react-query', async () => {
   const React = await import('react')
   return {
+    useQuery: vi.fn(() => ({ data: { items: [], openCount: 0 } })),
     // A real error state, so the component's failure branch is reachable.
     useMutation: vi.fn((options?: { onSuccess?: () => void }) => {
       const [isError, setIsError] = React.useState(false)
@@ -71,7 +69,12 @@ vi.mock('~/api/infra/trpc', () => ({
   useTRPC: vi.fn(() => ({
     feedback: {
       add: { mutationOptions: (o: unknown) => o },
-      list: { queryKey: () => ['feedback', 'list'] },
+      edit: { mutationOptions: (o: unknown) => o },
+      dismiss: { mutationOptions: (o: unknown) => o },
+      list: {
+        queryOptions: () => ({ queryKey: ['feedback', 'list'] }),
+        queryKey: () => ['feedback', 'list'],
+      },
     },
   })),
 }))
