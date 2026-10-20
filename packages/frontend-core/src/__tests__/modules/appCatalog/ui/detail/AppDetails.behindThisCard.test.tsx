@@ -236,6 +236,26 @@ describe('Share what you know', () => {
     fireEvent.click(behindTab())
     expect(input()).not.toHaveFocus()
   })
+
+  it('keeps accessible name "Share what you know" in compact variant', () => {
+    render(<AppDetails app={app} />)
+    const share = screen.getByRole('button', { name: 'Share what you know' })
+    expect(share).toBeInTheDocument()
+  })
+
+  it('scrolls the active tab into view when selecting via Share', async () => {
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+    render(<AppDetails app={app} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Share what you know' }))
+    // scrollIntoView is called in a requestAnimationFrame callback.
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'center',
+    })
+  })
 })
 
 describe('the Behind this card count', () => {

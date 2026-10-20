@@ -442,6 +442,10 @@
   gap: 2px;
   overflow-x: auto;
   scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+.detail-tabs::-webkit-scrollbar {
+  display: none;
 }
 /* Outside the scrolling tablist, so the button never scrolls out of view. */
 .detail-tabs-trailing {
@@ -462,6 +466,17 @@
     color 0.14s ease-out,
     border-color 0.14s ease-out;
 }
+/* Below 640px, render the Share button compact: icon only, text visually hidden. */
+@media (max-width: 639px) {
+  .detail-share {
+    padding: 0.4375rem;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
 .detail-share:hover {
   color: color-mix(in oklab, var(--primary) 85%, black);
   border-color: color-mix(in oklab, var(--primary) 85%, black);
@@ -478,10 +493,17 @@
   border-top: 1px solid var(--border);
 }
 .behind-group__title {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--foreground);
   margin-bottom: 1rem;
+}
+/* Touch targets: inline links in Behind get ≥24px hit area on coarse pointers. */
+@media (pointer: coarse) {
+  .behind-group a {
+    padding-block: 0.375rem;
+    display: inline-block;
+  }
 }
 .behind-ai__label {
   font-size: 0.75rem;
@@ -503,9 +525,6 @@
   color: var(--muted-foreground);
 }
 .behind-card-source:empty {
-  display: none;
-}
-.detail-tabs::-webkit-scrollbar {
   display: none;
 }
 .detail-tab {
@@ -606,7 +625,7 @@
 .community-sub__title,
 .community-archived > summary {
   margin: 0 0 0.5rem;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -630,7 +649,22 @@
   gap: 1.5rem;
   align-items: baseline;
   padding: 0.5rem 0;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
+}
+/* Below ~560px viewport or container, stack meta under text. */
+@container (max-width: 559px) {
+  .community-row {
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: flex-start;
+  }
+}
+@media (max-width: 559px) {
+  .community-row {
+    flex-direction: column;
+    gap: 0.25rem;
+    align-items: flex-start;
+  }
 }
 .community-row__main {
   flex: 1;
@@ -725,8 +759,8 @@
   min-height: 0;
   resize: none;
   font: inherit;
-  font-size: 0.8125rem;
-  line-height: 18px;
+  font-size: 0.875rem;
+  line-height: 1.4;
   padding: 6px 14px;
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -738,6 +772,12 @@
     border-color 0.15s,
     background 0.15s,
     box-shadow 0.15s;
+}
+/* iOS zooms inputs under 16px on mobile; use 16px below 640px. */
+@media (max-width: 639px) {
+  .know-more-field textarea:not(.know-more-mirror) {
+    font-size: 1rem;
+  }
 }
 .know-more-field textarea:not(.know-more-mirror):focus {
   background: var(--background);
@@ -757,6 +797,13 @@
   color: var(--muted-foreground);
   opacity: 0.6;
   transition: opacity 0.15s;
+}
+/* Touch targets: ≥44×44px on coarse pointers. */
+@media (pointer: coarse) {
+  .know-more-clip {
+    width: 44px;
+    height: 44px;
+  }
 }
 .know-more-clip:hover:not(:disabled),
 .know-more-clip:focus-visible {
@@ -820,6 +867,11 @@
     padding 0.22s ease,
     margin 0.22s ease;
 }
+@media (pointer: coarse) {
+  .know-more-send {
+    height: 44px;
+  }
+}
 .know-more[data-engaged] .know-more-send {
   opacity: 1;
   transform: none;
@@ -845,10 +897,15 @@
   left: 0;
   padding: 6px 14px;
   font: inherit;
-  font-size: 0.8125rem;
-  line-height: 18px;
+  font-size: 0.875rem;
+  line-height: 1.4;
   border: 1px solid transparent;
   resize: none;
+}
+@media (max-width: 639px) {
+  .know-more-mirror {
+    font-size: 1rem;
+  }
 }
 .know-more-hint,
 .know-more-what-next {

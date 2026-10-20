@@ -15,8 +15,6 @@ import {
 import type { PendingImage } from './communityDraft'
 import { formatCommunityError } from './communityError'
 
-/** px: 18 line-height + 2×6 padding + 2×1 border. */
-const ONE_LINE = 32
 const MAX_HEIGHT = 200
 
 /** How long the Share highlight stays on the field, ms. */
@@ -105,7 +103,7 @@ export function CommunityInput({
   // Cleared draft stays cleared: Esc increments this; the upload checks it
   // on completion so an in-flight upload does not re-add its image.
   const draftGenRef = React.useRef(0)
-  const [height, setHeight] = React.useState(ONE_LINE)
+  const [height, setHeight] = React.useState(32)
   const fieldRef = React.useRef<HTMLTextAreaElement>(null)
   // A hidden twin measures the height the text needs, so the real field can
   // animate to it. Setting `height: auto` on the real one snaps instead.
@@ -114,6 +112,19 @@ export function CommunityInput({
   const formRef = React.useRef<HTMLFormElement>(null)
   const flashTimerRef = React.useRef<ReturnType<typeof setTimeout>>(undefined)
   const hasPluginNote = useSlotFilled('resourceDetailFeedbackNote')
+
+  // Detect coarse pointer (touch) to adjust placeholder and hide keyboard hints.
+  const [isCoarse, setIsCoarse] = React.useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.matchMedia('(pointer: coarse)').matches
+  })
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(pointer: coarse)')
+    const handler = () => setIsCoarse(mq.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
 
   React.useEffect(() => writeDraft(appSlug, text), [appSlug, text])
   React.useEffect(() => writeAttachments(appSlug, images), [appSlug, images])
@@ -167,8 +178,17 @@ export function CommunityInput({
     if (!field || !mirror) return
     mirror.style.width = `${field.offsetWidth}px`
     mirror.value = text || ' '
+    // Compute ONE_LINE from the actual field styles (varies by viewport width).
+    const styles = window.getComputedStyle(field)
+    const lineHeight = parseFloat(styles.lineHeight)
+    const paddingTop = parseFloat(styles.paddingTop)
+    const paddingBottom = parseFloat(styles.paddingBottom)
+    const borderTop = parseFloat(styles.borderTopWidth)
+    const borderBottom = parseFloat(styles.borderBottomWidth)
+    const oneLine =
+      lineHeight + paddingTop + paddingBottom + borderTop + borderBottom
     // +2: scrollHeight excludes the border, the box height includes it.
-    setHeight(Math.min(Math.max(mirror.scrollHeight + 2, ONE_LINE), MAX_HEIGHT))
+    setHeight(Math.min(Math.max(mirror.scrollHeight + 2, oneLine), MAX_HEIGHT))
   }, [text])
   React.useLayoutEffect(fit, [fit])
   React.useEffect(() => {
@@ -290,7 +310,7 @@ export function CommunityInput({
           ))}
         </ul>
       )}
-      <div className={cn('know-more-field', height > ONE_LINE && 'is-multi')}>
+      <div className={cn('know-more-field', height > 40 && 'is-multi')}>
         <button
           type="button"
           className="know-more-clip"
@@ -321,7 +341,9 @@ export function CommunityInput({
           rows={1}
           value={text}
           aria-label={`Know more about ${appName}?`}
-          placeholder="Know more? Type it, press Enter"
+          placeholder={
+            isCoarse ? 'Know more? Tell us' : 'Know more? Type it, press Enter'
+          }
           style={{
             height,
             overflowY: height >= MAX_HEIGHT ? 'auto' : 'hidden',
@@ -381,10 +403,12 @@ export function CommunityInput({
           className="know-more-mirror"
         />
       </div>
-      <p className={cn('know-more-hint', typing && 'is-on')}>
-        Enter sends · Shift+Enter new line · Esc clears · paste or drop a
-        screenshot
-      </p>
+      {!isCoarse && (
+        <p className={cn('know-more-hint', typing && 'is-on')}>
+          Enter sends · Shift+Enter new line · Esc clears · paste or drop a
+          screenshot
+        </p>
+      )}
       <p className="know-more-attaching" aria-live="polite">
         {uploading ? 'Attaching…' : ''}
       </p>

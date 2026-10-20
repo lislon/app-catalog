@@ -793,12 +793,14 @@ export function AppDetails({
             <button
               type="button"
               className="detail-share"
+              aria-label="Share what you know"
               onClick={() => {
                 select(TAB.behind)
                 setShareAsk((n) => n + 1)
               }}
             >
-              Share what you know
+              <span className="max-sm:sr-only">Share what you know</span>
+              <Plus className="size-4 sm:hidden" aria-hidden="true" />
             </button>
           )}
         />

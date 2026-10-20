@@ -136,7 +136,15 @@ describe('CommunitySection — the input', () => {
     expect(state.sent).toEqual([])
   })
 
-  it('shows the hint only while there is text', async () => {
+  it('shows the hint only while there is text (fine pointer)', async () => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn(() => ({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    })
     mount()
     const hint = screen.getByText(
       'Enter sends · Shift+Enter new line · Esc clears · paste or drop a screenshot',
@@ -147,6 +155,54 @@ describe('CommunitySection — the input', () => {
     expect(hint).toHaveClass('is-on')
     await userEvent.type(field(), '{Escape}')
     expect(hint).not.toHaveClass('is-on')
+  })
+
+  it('hides the hint line on coarse pointers (touch)', async () => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn(() => ({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    })
+    mount()
+    await userEvent.click(field())
+    await userEvent.type(field(), 'Text')
+    expect(
+      screen.queryByText(
+        'Enter sends · Shift+Enter new line · Esc clears · paste or drop a screenshot',
+      ),
+    ).toBeNull()
+  })
+
+  it('uses "Type it, press Enter" placeholder on fine pointers', async () => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn(() => ({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    })
+    mount()
+    expect(field()).toHaveAttribute(
+      'placeholder',
+      'Know more? Type it, press Enter',
+    )
+  })
+
+  it('uses "Tell us" placeholder on coarse pointers (touch)', async () => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn(() => ({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    })
+    mount()
+    expect(field()).toHaveAttribute('placeholder', 'Know more? Tell us')
   })
 
   it('Enter sends the trimmed text in place and clears the field', async () => {

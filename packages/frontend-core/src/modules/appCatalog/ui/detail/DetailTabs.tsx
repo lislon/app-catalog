@@ -135,6 +135,15 @@ export function DetailTabs({
   const select = (id: string) => {
     setUserChose(true)
     setUrlTab(id)
+    // Scroll the active tab into view on narrow screens where tabs overflow.
+    requestAnimationFrame(() => {
+      const tabElement = document.getElementById(`detail-tab-${id}`)
+      tabElement?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      })
+    })
   }
 
   // Arrow keys move between tabs, per the tablist pattern. Selection follows
