@@ -431,12 +431,79 @@
 
 /* The tab strip. Horizontally scrollable rather than wrapping: a wrapped strip
    changes the band's height from one entry to the next. */
+.detail-tabs-row {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
 .detail-tabs {
   display: flex;
+  flex: 1;
+  min-width: 0;
   gap: 2px;
-  border-bottom: 1px solid var(--border);
   overflow-x: auto;
   scrollbar-width: none;
+}
+/* Outside the scrolling tablist, so the button never scrolls out of view. */
+.detail-tabs-trailing {
+  flex: none;
+  align-self: center;
+  padding-left: 0.75rem;
+}
+.detail-share {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 0.8125rem;
+  padding: 0.25rem 0.75rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 0.14s ease-out,
+    border-color 0.14s ease-out;
+}
+.detail-share:hover {
+  color: color-mix(in oklab, var(--primary) 85%, black);
+  border-color: color-mix(in oklab, var(--primary) 85%, black);
+}
+.detail-share:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--primary) 85%, black);
+  outline-offset: 2px;
+}
+
+/* Behind this card: groups separated by a hairline, a plain title each. */
+.behind-group + .behind-group {
+  margin-top: 2.5rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--border);
+}
+.behind-group__title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 1rem;
+}
+.behind-ai__label {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  margin: 0.5rem 0 0.25rem;
+}
+.behind-ai {
+  font-size: 0.8125rem;
+  white-space: pre-wrap;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  border-radius: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.behind-card-source {
+  margin-top: 2rem;
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+}
+.behind-card-source:empty {
+  display: none;
 }
 .detail-tabs::-webkit-scrollbar {
   display: none;
@@ -606,11 +673,14 @@
   padding: 0.375rem 0;
 }
 
-/* "Know something more?" — inline feedback at the foot of every tab */
+/* "Know more?" — the inline input at the top of Behind this card */
 .know-more {
-  margin-top: 1.75rem;
-  padding-top: 1rem;
-  border-top: 1px dashed var(--border);
+  margin-bottom: 1.75rem;
+}
+/* "Share what you know" points here. */
+.know-more.is-flash .know-more-field textarea:not(.know-more-mirror) {
+  border-color: color-mix(in oklab, var(--primary) 85%, black);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--primary) 25%, transparent);
 }
 .know-more-field {
   position: relative;
@@ -732,7 +802,8 @@
   .know-more-field textarea:not(.know-more-mirror),
   .know-more-send,
   .know-more-hint,
-  .know-more-sent {
+  .know-more-sent,
+  .detail-share {
     transition: none;
   }
 }

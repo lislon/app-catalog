@@ -13,7 +13,7 @@ export type AppDetailTabId =
   | 'access'
   | 'resources'
   | 'documentation'
-  | 'notes'
+  | 'behind'
 
 export interface AppVisibleData {
   title: string
@@ -253,14 +253,14 @@ export class AppDetailTools {
   /**
    * Asking for a correction, as a passing visitor does it.
    *
-   * The full composer, the one that takes screenshots, lives on the notes tab behind
+   * The full composer, the one that takes screenshots, lives on Behind this card behind
    * its "Attach images or write a longer note" button. `open()` brings that tab
    * forward and presses it.
    */
   feedback = {
-    /** Open the notes tab and its full composer. */
+    /** Open Behind this card and its full composer. */
     open: async (): Promise<void> => {
-      await this.openTab('notes')
+      await this.openTab('behind')
       const button = screen.queryByRole('button', {
         name: 'Attach images or write a longer note',
       })
@@ -304,7 +304,7 @@ export class AppDetailTools {
 
     /** Bodies of the items in the thread, in the order shown. */
     threadBodies: (): string[] => {
-      this.ensureTab('notes')
+      this.ensureTab('behind')
       const panel = this.getPanel()
       return Array.from(
         panel.querySelectorAll<HTMLElement>('[data-feedback-body]'),
@@ -313,14 +313,14 @@ export class AppDetailTools {
 
     /** How many attached images the thread shows across all items. */
     threadImageCount: (): number => {
-      this.ensureTab('notes')
+      this.ensureTab('behind')
       return this.getPanel().querySelectorAll('img[alt="Attached screenshot"]')
         .length
     },
 
     /** The "N open" count beside the heading, or 0 when it is absent. */
     openCount: (): number => {
-      this.ensureTab('notes')
+      this.ensureTab('behind')
       const label = this.getPanel().querySelector(
         '[aria-label$="awaiting review"]',
       )

@@ -29,6 +29,9 @@ vi.mock('~/modules/auth', () => ({ useUser: vi.fn(() => null) }))
 vi.mock('~/modules/appCatalog/ui/detail/FeedbackSection', () => ({
   FeedbackSection: () => <div />,
 }))
+vi.mock('~/modules/appCatalog/ui/detail/useOpenFeedbackCount', () => ({
+  useOpenFeedbackCount: () => 0,
+}))
 vi.mock('~/modules/appCatalog/ui/detail/KnowMoreInput', () => ({
   KnowMoreInput: () => null,
 }))
@@ -42,14 +45,14 @@ const base = {
   description: 'Does things.',
 } as Resource
 
-function openDocs(app: Resource) {
+function openBehind(app: Resource) {
   render(<AppDetails app={app} />)
-  fireEvent.click(screen.getByRole('tab', { name: /documentation/i }))
+  fireEvent.click(screen.getByRole('tab', { name: /^Behind this card/ }))
 }
 
 describe('AppDetails — Claims', () => {
-  it('lists active claims under Sources with date and origin', () => {
-    openDocs({
+  it('lists active claims under From the community with date and origin', () => {
+    openBehind({
       ...base,
       claims: [
         {
@@ -68,12 +71,10 @@ describe('AppDetails — Claims', () => {
     })
 
     const heading = screen.getByRole('heading', { name: 'Claims' })
-    const sources = screen.getByRole('heading', { name: 'Sources' })
-    // Under Sources, not above it.
-    expect(
-      sources.compareDocumentPosition(heading) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy()
+    const community = screen.getByRole('heading', {
+      name: 'From the community',
+    })
+    expect(community.closest('section')).toContainElement(heading)
     expect(screen.getByText('Lead approves access.')).toBeVisible()
     expect(screen.getByText(/from visitor feedback · 2026-10-12/)).toBeVisible()
     expect(screen.getByText(/Tools team · 2026-10-15/)).toBeVisible()
@@ -81,7 +82,7 @@ describe('AppDetails — Claims', () => {
   })
 
   it('lists review claims after active, with In review tag', () => {
-    openDocs({
+    openBehind({
       ...base,
       claims: [
         {
@@ -107,7 +108,7 @@ describe('AppDetails — Claims', () => {
   })
 
   it('shows Claims section when only review claims exist', () => {
-    openDocs({
+    openBehind({
       ...base,
       claims: [
         {
@@ -124,7 +125,7 @@ describe('AppDetails — Claims', () => {
   })
 
   it('folds archived claims away, with their reason', () => {
-    openDocs({
+    openBehind({
       ...base,
       claims: [
         {
@@ -149,7 +150,7 @@ describe('AppDetails — Claims', () => {
   })
 
   it('renders an archived claim without a reason instead of crashing', () => {
-    openDocs({
+    openBehind({
       ...base,
       claims: [
         { text: 'Legacy claim.', addedAt: '2026-01-01', status: 'archived' },
@@ -160,16 +161,18 @@ describe('AppDetails — Claims', () => {
     expect(screen.queryByText(/undefined/)).toBeNull()
   })
 
-  // Asserted on the open Documentation tab, so the absence means something.
+  // Asserted on the open Behind this card tab, so the absence means something.
   it('has no Claims section when there are none', () => {
-    openDocs({ ...base, claims: [] })
-    expect(screen.getByRole('heading', { name: 'Sources' })).toBeVisible()
+    openBehind({ ...base, claims: [] })
+    expect(
+      screen.getByRole('heading', { name: 'From the community' }),
+    ).toBeVisible()
     expect(screen.queryByRole('heading', { name: 'Claims' })).toBeNull()
   })
 
   it('renders multiple claims with the same text without key warnings', () => {
     const consoleErrorSpy = vi.spyOn(console, 'error')
-    openDocs({
+    openBehind({
       ...base,
       claims: [
         { text: 'Single sign-on.', addedAt: '2026-10-01', status: 'active' },

@@ -32,6 +32,9 @@ vi.mock('~/modules/auth', () => ({ useUser: vi.fn(() => null) }))
 vi.mock('~/modules/appCatalog/ui/detail/FeedbackSection', () => ({
   FeedbackSection: () => <div />,
 }))
+vi.mock('~/modules/appCatalog/ui/detail/useOpenFeedbackCount', () => ({
+  useOpenFeedbackCount: () => 0,
+}))
 vi.mock('~/modules/appCatalog/ui/detail/KnowMoreInput', () => ({
   KnowMoreInput: () => null,
 }))

@@ -62,6 +62,18 @@ export interface ResourceDetailSlots {
     appSlug: string
     appName: string
   }
+
+  /**
+   * Where this card's own definition lives, at the foot of Behind this card.
+   *
+   * A quiet link such as "View this card's source". Only the deployment knows
+   * where its catalog entries are kept, so the core has no default and renders
+   * nothing here unless a plugin contributes.
+   */
+  resourceDetailCardSource: {
+    appSlug: string
+    appName: string
+  }
 }
 
 /**
@@ -101,4 +113,5 @@ export const ResourceSubResourceRowActions = mkSlot(
   'resourceSubResourceRowActions',
 )
 export const ResourceDetailFeedbackNote = mkSlot('resourceDetailFeedbackNote')
+export const ResourceDetailCardSource = mkSlot('resourceDetailCardSource')
 export const ResourceDetailProvider = mkWrapper('resourceDetailProvider')

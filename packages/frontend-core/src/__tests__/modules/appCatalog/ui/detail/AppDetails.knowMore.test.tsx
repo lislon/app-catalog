@@ -32,6 +32,9 @@ vi.mock('~/modules/auth', () => ({ useUser: vi.fn(() => null) }))
 vi.mock('~/modules/appCatalog/ui/detail/FeedbackSection', () => ({
   FeedbackSection: () => <div />,
 }))
+vi.mock('~/modules/appCatalog/ui/detail/useOpenFeedbackCount', () => ({
+  useOpenFeedbackCount: () => 0,
+}))
 
 // KnowMoreInput is real — the Esc contract lives in it, so mocking it would
 // test the mock. Only its data layer is stubbed.
@@ -105,16 +108,19 @@ const input = () =>
     name: 'Know more about Example App?',
   })
 
+const openBehind = () =>
+  fireEvent.click(screen.getByRole('tab', { name: /^Behind this card/ }))
+
 describe('AppDetails — Know more?', () => {
-  it('sits at the foot of every tab', () => {
+  it('sits on Behind this card and on no other tab', () => {
     render(<AppDetails app={app} />)
-    for (const tab of screen.getAllByRole('tab')) {
+    const withField = screen.getAllByRole('tab').filter((tab) => {
       fireEvent.click(tab)
-      const panel = screen.getByRole('tabpanel')
-      expect(
-        within(panel).getByRole('textbox', { name: /Know more/ }),
-      ).toBeInTheDocument()
-    }
+      return !!within(screen.getByRole('tabpanel')).queryByRole('textbox', {
+        name: /Know more/,
+      })
+    })
+    expect(withField.map((tab) => tab.id)).toEqual(['detail-tab-behind'])
   })
 
   it('is gone from the band', () => {
@@ -131,6 +137,7 @@ describe('AppDetails — Know more?', () => {
         <AppDetails app={app} />
       </CardLayer>,
     )
+    openBehind()
     fireEvent.change(input(), { target: { value: 'draft' } })
     fireEvent.keyDown(input(), { key: 'Escape', code: 'Escape' })
     expect(input()).toHaveValue('')
@@ -144,32 +151,22 @@ describe('AppDetails — Know more?', () => {
         <AppDetails app={app} />
       </CardLayer>,
     )
+    openBehind()
     fireEvent.keyDown(input(), { key: 'Escape', code: 'Escape' })
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
-  it('A send from the Access tab creates feedback without changing the tab', () => {
-    const appWithAccess = {
-      ...app,
-      approvalMethodSlug: 'ops-team',
-    } as Resource
-    render(<AppDetails app={appWithAccess} />)
-    // Click Access tab
-    const accessTab = screen.getByRole('tab', { name: /Access/i })
-    fireEvent.click(accessTab)
-    expect(accessTab).toHaveAttribute('aria-selected', 'true')
+  it('A send creates feedback without leaving Behind this card', () => {
+    render(<AppDetails app={app} />)
+    openBehind()
+    const behind = screen.getByRole('tab', { name: /^Behind this card/ })
     const panel = screen.getByRole('tabpanel')
-    // Type and send
-    const field = within(panel).getByRole('textbox', {
-      name: /Know more/,
-    })
-    fireEvent.change(field, { target: { value: 'approval detail' } })
-    fireEvent.keyDown(field, { key: 'Enter' })
+    fireEvent.change(input(), { target: { value: 'approval detail' } })
+    fireEvent.keyDown(input(), { key: 'Enter' })
     expect(state.sent).toEqual([
       { resourceSlug: 'example-app', body: 'approval detail' },
     ])
-    // Still on Access tab
-    expect(accessTab).toHaveAttribute('aria-selected', 'true')
+    expect(behind).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByRole('tabpanel')).toBe(panel)
   })
 })

@@ -38,7 +38,7 @@ export function DetailTabs({
   forcedTab,
   band,
   bandClassName,
-  footer,
+  trailing,
 }: {
   tabs: DetailTab[]
   /** Overrides `?tab=` while set. */
@@ -53,8 +53,13 @@ export function DetailTabs({
   band?: React.ReactNode
   /** Cancels the dialog's own padding so the tint reaches the card's edges. */
   bandClassName?: string
-  /** Rendered under every tab's content, inside the panel. */
-  footer?: React.ReactNode
+  /**
+   * Shown at the right end of the strip, outside the tablist so it is not
+   * announced as a tab. Handed `select` because the strip owns the active tab:
+   * a caller writing `?tab=` itself would fight `useUrlSyncedState`, which keeps
+   * its own state and only pushes it out to the url.
+   */
+  trailing?: (select: (id: string) => void) => React.ReactNode
 }) {
   /**
    * The first tab is what the card opens on, so naming it in the URL says nothing.
@@ -76,7 +81,10 @@ export function DetailTabs({
    * Renaming one would silently drop those onto the first tab, so a retired id
    * keeps resolving to its replacement instead.
    */
-  const RETIRED: Record<string, string> = { metadata: 'documentation' }
+  const RETIRED: Record<string, string> = {
+    metadata: 'documentation',
+    notes: 'behind',
+  }
 
   /**
    * `forcedTab` picks the tab you ARRIVE on, not the tab you are stuck on.
@@ -112,6 +120,11 @@ export function DetailTabs({
   const activeId = ids.includes(requested) ? requested : (ids[0] ?? '')
   const active = tabs.find((t) => t.id === activeId)
 
+  const select = (id: string) => {
+    setUserChose(true)
+    setUrlTab(id)
+  }
+
   // Arrow keys move between tabs, per the tablist pattern. Selection follows
   // focus, which is correct here because every panel is already loaded.
   const onKeyDown = (event: React.KeyboardEvent) => {
@@ -122,8 +135,7 @@ export function DetailTabs({
     const from = ids.indexOf(activeId)
     const next = ids[(from + delta + ids.length) % ids.length]
     if (!next) return
-    setUserChose(true)
-    setUrlTab(next)
+    select(next)
     // Focus follows selection, or the arrow keys would walk the visual
     // selection away from the keyboard's position. By id rather than by
     // position in a NodeList: each tab already carries one, and an id lookup
@@ -135,37 +147,39 @@ export function DetailTabs({
     <>
       <div className={cn('detail-band', bandClassName)}>
         {band}
-        <div role="tablist" className="detail-tabs mt-5" onKeyDown={onKeyDown}>
-          {tabs.map((tab) => {
-            const selected = tab.id === activeId
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                id={`detail-tab-${tab.id}`}
-                aria-selected={selected}
-                aria-controls={`detail-panel-${tab.id}`}
-                // Only the selected tab stays in the tab order; the rest are
-                // reached with the arrow keys, as the pattern requires.
-                tabIndex={selected ? 0 : -1}
-                aria-label={tab.ariaLabel}
-                className="detail-tab"
-                onClick={() => {
-                  setUserChose(true)
-                  setUrlTab(tab.id)
-                }}
-              >
-                {tab.label}
-                {tab.chip && (
-                  <span className="detail-tab__chip">{tab.chip}</span>
-                )}
-                {tab.dot && (
-                  <span className="detail-tab__dot" aria-hidden="true" />
-                )}
-              </button>
-            )
-          })}
+        <div className="detail-tabs-row mt-5">
+          <div role="tablist" className="detail-tabs" onKeyDown={onKeyDown}>
+            {tabs.map((tab) => {
+              const selected = tab.id === activeId
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  id={`detail-tab-${tab.id}`}
+                  aria-selected={selected}
+                  aria-controls={`detail-panel-${tab.id}`}
+                  // Only the selected tab stays in the tab order; the rest are
+                  // reached with the arrow keys, as the pattern requires.
+                  tabIndex={selected ? 0 : -1}
+                  aria-label={tab.ariaLabel}
+                  className="detail-tab"
+                  onClick={() => select(tab.id)}
+                >
+                  {tab.label}
+                  {tab.chip && (
+                    <span className="detail-tab__chip">{tab.chip}</span>
+                  )}
+                  {tab.dot && (
+                    <span className="detail-tab__dot" aria-hidden="true" />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+          {trailing && (
+            <div className="detail-tabs-trailing">{trailing(select)}</div>
+          )}
         </div>
       </div>
       {active && (
@@ -179,7 +193,6 @@ export function DetailTabs({
           className="pt-5 outline-none"
         >
           {active.render()}
-          {footer}
         </div>
       )}
     </>

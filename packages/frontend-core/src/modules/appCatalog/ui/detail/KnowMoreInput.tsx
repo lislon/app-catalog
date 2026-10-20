@@ -9,19 +9,29 @@ import { Button } from '~/ui/button'
 const ONE_LINE = 40
 const MAX_HEIGHT = 200
 
+/** How long the Share highlight stays on the field, ms. */
+const FLASH_MS = 900
+
+/** What the card holds on to, so "Share what you know" can point at the field. */
+export interface KnowMoreInputHandle {
+  /** Focuses the field and highlights it briefly. Re-triggers on every call. */
+  focus: () => void
+}
+
 /**
- * The card's one ask for more information, at the foot of every tab. A plain
- * one-line field at rest; Send appears once there is something to send, and the
- * field grows into a box as the text wraps. Sends in place — the reader stays on
- * the tab they were reading. Text only: images go through the full composer
- * under Notes & requests.
+ * The card's one ask for more information, at the top of Behind this card. A
+ * plain one-line field at rest; Send appears once there is something to send,
+ * and the field grows into a box as the text wraps. Text only: images go
+ * through the full composer below it.
  */
 export function KnowMoreInput({
   appSlug,
   appName,
+  ref,
 }: {
   appSlug: string
   appName: string
+  ref?: React.Ref<KnowMoreInputHandle>
 }) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
@@ -33,6 +43,28 @@ export function KnowMoreInput({
   // animate to it. Setting `height: auto` on the real one snaps instead.
   const mirrorRef = React.useRef<HTMLTextAreaElement>(null)
   const hasPluginNote = useSlotFilled('resourceDetailFeedbackNote')
+  const formRef = React.useRef<HTMLFormElement>(null)
+  const flashTimerRef = React.useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  // The class goes on the form, whose own className React never rewrites, and
+  // is removed and re-added with a reflow between so a second call restarts
+  // the highlight instead of merely extending it.
+  React.useImperativeHandle(ref, () => ({
+    focus: () => {
+      fieldRef.current?.focus()
+      const form = formRef.current
+      if (!form) return
+      form.classList.remove('is-flash')
+      void form.offsetWidth
+      form.classList.add('is-flash')
+      clearTimeout(flashTimerRef.current)
+      flashTimerRef.current = setTimeout(
+        () => form.classList.remove('is-flash'),
+        FLASH_MS,
+      )
+    },
+  }))
+  React.useEffect(() => () => clearTimeout(flashTimerRef.current), [])
 
   const add = useMutation(
     trpc.feedback.add.mutationOptions({
@@ -88,6 +120,7 @@ export function KnowMoreInput({
 
   return (
     <form
+      ref={formRef}
       className="know-more"
       onSubmit={(e) => {
         e.preventDefault()
@@ -161,7 +194,7 @@ export function KnowMoreInput({
         </p>
       )}
       <p role="status" className={cn('know-more-sent', sent && 'is-on')}>
-        {sent ? 'Thanks — sent. It shows under Notes & requests.' : ''}
+        {sent ? 'Thanks — sent. It shows below.' : ''}
       </p>
       <div className="know-more-what-next">
         <ResourceDetailFeedbackNote appSlug={appSlug} appName={appName} />

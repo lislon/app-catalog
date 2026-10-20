@@ -22,6 +22,7 @@ export {
   ResourceDetailAccessActions,
   ResourceSubResourceRowActions,
   ResourceDetailFeedbackNote,
+  ResourceDetailCardSource,
   ResourceDetailProvider,
 } from './features/resourceDetail'
 export type {

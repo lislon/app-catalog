@@ -31,7 +31,7 @@ describe('App freshness line', () => {
     )
 
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
-    await ui.app.openTab('documentation')
+    await ui.app.openTab('behind')
     expect(screen.getByText(/Updated/i)).toBeInTheDocument()
     // fresh → no stale note
     expect(screen.queryByText(/may be out of date/i)).toBeNull()
@@ -54,7 +54,7 @@ describe('App freshness line', () => {
     )
 
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
-    await ui.app.openTab('documentation')
+    await ui.app.openTab('behind')
     expect(screen.getByText(/may be out of date/i)).toBeInTheDocument()
   })
 
@@ -70,7 +70,7 @@ describe('App freshness line', () => {
       { initialRoute: '/app/dated-app' },
     )
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
-    await ui.app.openTab('documentation')
+    await ui.app.openTab('behind')
     expect(screen.getByText(/Added/i)).toBeInTheDocument()
   })
 
@@ -93,7 +93,7 @@ describe('App freshness line', () => {
     )
 
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
-    await ui.app.openTab('documentation')
+    await ui.app.openTab('behind')
     const line = screen.getByText(/Updated/i)
     expect(line).toHaveTextContent(/months ago/i)
     expect(line).not.toHaveTextContent(/hour/i)
@@ -118,7 +118,7 @@ describe('App freshness line', () => {
     )
 
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
-    await ui.app.openTab('documentation')
+    await ui.app.openTab('behind')
     expect(screen.getByText(/Updated/i)).toHaveTextContent(/3 days ago/i)
   })
 
@@ -135,7 +135,7 @@ describe('App freshness line', () => {
     )
 
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
-    await ui.app.openTab('documentation')
+    await ui.app.openTab('behind')
     expect(screen.queryByText(/Updated/i)).toBeNull()
   })
 })
