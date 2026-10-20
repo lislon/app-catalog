@@ -155,6 +155,25 @@ export interface Freshness {
 }
 
 /**
+ * One plain statement about an entry, kept so the card can say why it says what it
+ * says. Active claims are an input the card text must honour, and they win over a
+ * source that contradicts them. Archived claims are kept with the reason they
+ * stopped applying, and are ignored.
+ */
+export interface Claim {
+  /** One plain statement about the app, phrased as a fact. */
+  text: string
+  /** ISO date the claim was recorded. */
+  addedAt: string
+  /** Where it came from: `feedback:<id>`, a person or team, or a URL. */
+  origin?: string
+  status: 'active' | 'archived'
+  /** Required when status is 'archived'. */
+  archiveReason?: string
+  archivedAt?: string
+}
+
+/**
  * Resource entry in the catalog (application or sub-resource).
  * Unified model: applications have no parentSlug; sub-resources have parentSlug.
  */
@@ -209,6 +228,8 @@ export interface Resource {
   tiers?: TierVariant[]
   /** Deep links that take one typed identifier — see {@link QuickJump}. */
   quickJumps?: QuickJump[]
+  /** Why the card says what it says — see {@link Claim}. */
+  claims?: Claim[]
   /**
    * What this resource's children are called, as a plural noun ("Accounts",
    * "Namespaces", "Databases"). Set on the PARENT, not the children.
