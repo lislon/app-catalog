@@ -314,7 +314,7 @@ export class AppDetailTools {
     hasInputFocus: (): boolean =>
       document.activeElement === this.feedbackInput(),
 
-    /** Bodies of the notes under the input, in the order shown. */
+    /** Bodies of the visitor notes in the Comments feed, newest first. */
     threadBodies: (): string[] => {
       this.ensureTab('behind')
       const panel = this.getPanel()
@@ -331,15 +331,13 @@ export class AppDetailTools {
     },
 
     /**
-     * The count beside "Notes in review" — open notes plus claims in review —
-     * or 0 when that sub-section is hidden.
+     * How many comments in the feed say Pending — open notes, notes whose claim
+     * is still in review, and review claims of their own. The same number the
+     * Behind this card tab shows.
      */
     openCount: (): number => {
       this.ensureTab('behind')
-      const count = this.getPanel().querySelector(
-        '[data-community-group="review"] [data-count]',
-      )
-      return count ? Number(count.textContent) : 0
+      return this.getPanel().querySelectorAll('[data-badge="pending"]').length
     },
   }
 

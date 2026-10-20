@@ -6,7 +6,7 @@ import type { AcPlugin } from '~/modules/extensions'
 import { ExtensionsContext } from '~/modules/extensions'
 
 const search: Record<string, unknown> = {}
-const counts = vi.hoisted(() => ({ open: 0 }))
+const feedback = vi.hoisted(() => ({ items: [] as unknown[] }))
 
 vi.mock('@tanstack/react-router', () => ({
   useSearch: vi.fn(() => search),
@@ -34,12 +34,12 @@ vi.mock('~/modules/appCatalog/ui/context/AppCatalogFiltersContext', () => ({
   })),
 }))
 vi.mock('~/modules/auth', () => ({ useUser: vi.fn(() => null) }))
-vi.mock('~/modules/appCatalog/ui/detail/useOpenFeedbackCount', () => ({
-  useOpenFeedbackCount: () => counts.open,
-}))
-// CommunitySection is real: the Share button's whole job is to focus it.
+// CommunitySection and the count are real: the Share button's whole job is to
+// focus the input, and the count has to agree with the feed's Pending badges.
 vi.mock('@tanstack/react-query', () => ({
-  useQuery: vi.fn(() => ({ data: { items: [], openCount: 0 } })),
+  useQuery: vi.fn(() => ({
+    data: { items: feedback.items, openCount: 0 },
+  })),
   useMutation: vi.fn(() => ({
     mutate: vi.fn(),
     isPending: false,
@@ -74,6 +74,11 @@ const app = {
   createdAt: '2026-01-01T00:00:00.000Z',
   aiPrompt: 'Keep the scope explicit.',
   aiMemory: 'Maps to the legacy portal.',
+  freshness: {
+    lastCheckedAt: '2026-10-19T00:00:00.000Z',
+    lastContentChangeAt: null,
+    isStale: false,
+  },
 } as Resource
 
 const tabNames = () =>
@@ -84,7 +89,7 @@ const input = () =>
   screen.getByRole('textbox', { name: 'Know more about Thing?' })
 
 beforeEach(() => {
-  counts.open = 0
+  feedback.items = []
   for (const key of Object.keys(search)) delete search[key]
 })
 
@@ -141,14 +146,16 @@ describe('Behind this card', () => {
       .getAllByRole('heading', { level: 2 })
       .map((h) => h.textContent)
     expect(groups).toEqual([
-      'From the community',
-      'Autoscan from these sources',
+      'Comments',
+      'Kept up to date from',
       'How the AI maintains this card',
     ])
     expect(within(panel).getByText('Keep the scope explicit.')).toBeVisible()
     expect(within(panel).getByText('Maps to the legacy portal.')).toBeVisible()
     expect(within(panel).getByText(/wiki\.example\.com\/thing/)).toBeVisible()
-    expect(within(panel).getByText(/^Added/)).toBeVisible()
+    expect(
+      within(panel).getByText(/^Last checked .+ · added .+$/),
+    ).toBeVisible()
   })
 
   it('has no AI group when the entry has neither prompt nor memory', () => {
@@ -161,7 +168,7 @@ describe('Behind this card', () => {
     ).toBeNull()
   })
 
-  it('puts the input above the lists, inside From the community', () => {
+  it('puts the input above the Comments heading and the feed', () => {
     search.tab = 'behind'
     render(
       <AppDetails
@@ -173,18 +180,15 @@ describe('Behind this card', () => {
         }}
       />,
     )
-    const community = screen
-      .getByRole('heading', { name: 'From the community' })
-      .closest('section')!
-    const field = within(community).getByRole('textbox', {
-      name: 'Know more about Thing?',
-    })
-    const facts = within(community).getByRole('heading', {
-      name: /^Facts we rely on/,
-    })
-    expect(within(community).getByText('Lead approves.')).toBeVisible()
+    const field = input()
+    const heading = screen.getByRole('heading', { name: 'Comments' })
+    const fact = screen.getByText('Lead approves.')
+    expect(fact).toBeVisible()
     expect(
-      field.compareDocumentPosition(facts) & Node.DOCUMENT_POSITION_FOLLOWING,
+      field.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(
+      heading.compareDocumentPosition(fact) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()
   })
 
@@ -258,21 +262,50 @@ describe('Share what you know', () => {
   })
 })
 
+const pendingNote = {
+  id: 'n1',
+  authorName: 'Merry Mole',
+  body: 'Leads approve.',
+  subject: null,
+  resourceSlug: 'thing',
+  resourceName: 'Thing',
+  attachmentIds: [],
+  createdAt: '2026-10-10T10:00:00.000Z',
+  reviewedAt: null,
+  editedAt: null,
+  isMine: false,
+  canEditUntil: null,
+  status: null,
+  reviewerReply: null,
+}
+
 describe('the Behind this card count', () => {
-  it('is open notes plus claims in review', () => {
-    counts.open = 2
+  it('is the number of Pending badges in the feed', () => {
+    search.tab = 'behind'
+    feedback.items = [
+      pendingNote,
+      { ...pendingNote, id: 'n2', status: 'acknowledged' },
+    ]
     render(
       <AppDetails
         app={{
           ...app,
           claims: [
-            { text: 'A.', addedAt: '2026-10-01', status: 'review' },
-            { text: 'B.', addedAt: '2026-10-01', status: 'active' },
+            // The open note's own claim: one entry, one Pending.
+            {
+              text: 'A.',
+              addedAt: '2026-10-11',
+              origin: 'feedback:n1',
+              status: 'review',
+            },
+            { text: 'B.', addedAt: '2026-10-01', status: 'review' },
+            { text: 'C.', addedAt: '2026-10-01', status: 'active' },
           ],
         }}
       />,
     )
-    expect(behindTab()).toHaveTextContent(/^Behind this card3$/)
+    expect(screen.getAllByText('Pending')).toHaveLength(2)
+    expect(behindTab()).toHaveTextContent(/^Behind this card2$/)
   })
 
   it('is hidden at zero', () => {

@@ -29,8 +29,8 @@ vi.mock('~/modules/appCatalog/ui/context/AppCatalogFiltersContext', () => ({
   useAppCatalogFilters: vi.fn(() => ({ selectedTags: [], toggleTag: vi.fn() })),
 }))
 vi.mock('~/modules/auth', () => ({ useUser: vi.fn(() => null) }))
-vi.mock('~/modules/appCatalog/ui/detail/useOpenFeedbackCount', () => ({
-  useOpenFeedbackCount: () => 0,
+vi.mock('~/modules/appCatalog/ui/detail/usePendingCount', () => ({
+  usePendingCount: () => 0,
 }))
 
 // CommunitySection is real — the Esc contract lives in it, so mocking it would

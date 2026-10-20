@@ -14,7 +14,7 @@ const iso = (msAgo: number) => new Date(Date.now() - msAgo).toISOString()
 // including the "no line" case. Asserting the absence from another tab would
 // pass whether or not the line works, which is worse than having no test.
 describe('App freshness line', () => {
-  it('shows an "Updated" freshness line when the app has freshness', async () => {
+  it('shows a "Last checked" line when the app has freshness', async () => {
     const { ui } = await given(
       magazine.full(({ backendCfg }) => {
         backendCfg.withApp({
@@ -32,7 +32,7 @@ describe('App freshness line', () => {
 
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
     await ui.app.openTab('behind')
-    expect(screen.getByText(/Updated/i)).toBeInTheDocument()
+    expect(screen.getByText(/^Last checked/)).toBeInTheDocument()
     // fresh → no stale note
     expect(screen.queryByText(/may be out of date/i)).toBeNull()
   })
@@ -74,14 +74,15 @@ describe('App freshness line', () => {
     expect(screen.getByText(/Added/i)).toBeInTheDocument()
   })
 
-  it('shows the last CONTENT change, not the last check', async () => {
-    // The reported symptom: an app read 22h ago showed "Updated 22 hours ago"
-    // while its data had not changed in months. "Updated" must mean changed.
+  it('says when the sources were last checked, and keeps the last change in the title', async () => {
+    // The line is labelled for what it reports: a source read an hour ago and
+    // unchanged for months says "Last checked 1 hour ago", never "Updated".
     const { ui } = await given(
       magazine.full(({ backendCfg }) => {
         backendCfg.withApp({
           slug: 'checked-often-app',
           displayName: 'Checked Often App',
+          createdAt: iso(200 * DAY),
           freshness: {
             lastCheckedAt: iso(DAY / 24), // read an hour ago
             lastContentChangeAt: iso(120 * DAY), // unchanged for months
@@ -94,32 +95,12 @@ describe('App freshness line', () => {
 
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
     await ui.app.openTab('behind')
-    const line = screen.getByText(/Updated/i)
-    expect(line).toHaveTextContent(/months ago/i)
-    expect(line).not.toHaveTextContent(/hour/i)
-  })
-
-  it('falls back to the last check for entries with no recorded change', async () => {
-    // Rows scanned before lastContentChangeAt existed: better to show the check
-    // date than to drop the line entirely.
-    const { ui } = await given(
-      magazine.full(({ backendCfg }) => {
-        backendCfg.withApp({
-          slug: 'unchanged-app',
-          displayName: 'Unchanged App',
-          freshness: {
-            lastCheckedAt: iso(3 * DAY),
-            lastContentChangeAt: null,
-            isStale: false,
-          },
-        })
-      }),
-      { initialRoute: '/app/unchanged-app' },
+    const line = screen.getByText(/^Last checked/)
+    expect(line).toHaveTextContent(
+      /^Last checked .*hour.* · added .*months ago$/,
     )
-
-    await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
-    await ui.app.openTab('behind')
-    expect(screen.getByText(/Updated/i)).toHaveTextContent(/3 days ago/i)
+    expect(line.getAttribute('title')).toMatch(/^Content last changed /)
+    expect(screen.queryByText(/Updated/)).toBeNull()
   })
 
   it('shows no freshness line when the app was never scanned', async () => {
@@ -136,6 +117,6 @@ describe('App freshness line', () => {
 
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
     await ui.app.openTab('behind')
-    expect(screen.queryByText(/Updated/i)).toBeNull()
+    expect(screen.queryByText(/Last checked/)).toBeNull()
   })
 })

@@ -3,7 +3,6 @@ import { Paperclip, X } from 'lucide-react'
 import React from 'react'
 import { useTRPC } from '~/api/infra/trpc'
 import { cn } from '~/lib/utils'
-import { ResourceDetailFeedbackNote, useSlotFilled } from '~/modules/extensions'
 import { Button } from '~/ui/button'
 import {
   attachmentUrl,
@@ -66,9 +65,9 @@ async function upload(files: File[]): Promise<string[] | string> {
 }
 
 /**
- * The card's one ask for more information, at the top of Behind this card. A
- * one-line pill at rest; on first focus Send and the note line appear and stay.
- * The field grows into a box as the text wraps. Screenshots come in through the
+ * The card's one ask for more information, at the top of Behind this card:
+ * one line with Send beside it, grey until there is something to send. The
+ * field grows as the text wraps. Screenshots come in through the
  * paperclip, paste or drop, and a screenshot alone is a valid note.
  */
 export function CommunityInput({
@@ -87,9 +86,6 @@ export function CommunityInput({
   const [images, setImages] = React.useState<PendingImage[]>(() =>
     readAttachments(appSlug),
   )
-  const [engaged, setEngaged] = React.useState(
-    () => text !== '' || images.length > 0,
-  )
   const [sent, setSent] = React.useState(false)
   // Counts successful sends, so a click on Send hands focus back every time.
   const [sends, setSends] = React.useState(0)
@@ -103,7 +99,7 @@ export function CommunityInput({
   // Cleared draft stays cleared: Esc increments this; the upload checks it
   // on completion so an in-flight upload does not re-add its image.
   const draftGenRef = React.useRef(0)
-  const [height, setHeight] = React.useState(32)
+  const [height, setHeight] = React.useState(40)
   const fieldRef = React.useRef<HTMLTextAreaElement>(null)
   // A hidden twin measures the height the text needs, so the real field can
   // animate to it. Setting `height: auto` on the real one snaps instead.
@@ -111,7 +107,6 @@ export function CommunityInput({
   const fileRef = React.useRef<HTMLInputElement>(null)
   const formRef = React.useRef<HTMLFormElement>(null)
   const flashTimerRef = React.useRef<ReturnType<typeof setTimeout>>(undefined)
-  const hasPluginNote = useSlotFilled('resourceDetailFeedbackNote')
 
   // Detect coarse pointer (touch) to adjust placeholder and hide keyboard hints.
   const [isCoarse, setIsCoarse] = React.useState(() => {
@@ -207,7 +202,6 @@ export function CommunityInput({
   const attach = async (picked: File[]) => {
     const files = picked.filter(isImage)
     if (files.length === 0 || inFlightRef.current) return
-    setEngaged(true)
     const room = MAX_ATTACHMENTS - images.length
     if (room <= 0) {
       setUploadError(`Up to ${MAX_ATTACHMENTS} images`)
@@ -260,7 +254,6 @@ export function CommunityInput({
       // State rides on data attributes: the className stays static so the
       // imperative `is-flash` below survives a re-render.
       className="know-more"
-      data-engaged={engaged || undefined}
       data-drop={dragging || undefined}
       onSubmit={(e) => {
         e.preventDefault()
@@ -310,7 +303,7 @@ export function CommunityInput({
           ))}
         </ul>
       )}
-      <div className={cn('know-more-field', height > 40 && 'is-multi')}>
+      <div className="know-more-field">
         <button
           type="button"
           className="know-more-clip"
@@ -342,13 +335,14 @@ export function CommunityInput({
           value={text}
           aria-label={`Know more about ${appName}?`}
           placeholder={
-            isCoarse ? 'Know more? Tell us' : 'Know more? Type it, press Enter'
+            isCoarse
+              ? 'Add a fact, a fix or a question'
+              : 'Add a fact, a fix or a question — press Enter'
           }
           style={{
             height,
             overflowY: height >= MAX_HEIGHT ? 'auto' : 'hidden',
           }}
-          onFocus={() => setEngaged(true)}
           onChange={(e) => {
             setText(e.target.value)
             setSent(false)
@@ -388,8 +382,6 @@ export function CommunityInput({
           type="submit"
           size="sm"
           className="know-more-send"
-          tabIndex={engaged ? 0 : -1}
-          aria-hidden={engaged ? undefined : true}
           disabled={!canSend || add.isPending || uploading}
         >
           Send
@@ -422,15 +414,6 @@ export function CommunityInput({
       <p role="status" className={cn('know-more-sent', sent && 'is-on')}>
         {sent ? 'Thanks — sent. It shows below.' : ''}
       </p>
-      <div className="know-more-what-next">
-        <ResourceDetailFeedbackNote appSlug={appSlug} appName={appName} />
-        {!hasPluginNote && <DefaultFeedbackNote />}
-      </div>
     </form>
   )
-}
-
-/** OSS default: what happens to the note the user sends. */
-function DefaultFeedbackNote() {
-  return <>A maintainer reads every note and updates the card.</>
 }

@@ -3,7 +3,7 @@ import type {
   SourceReference,
 } from '@igstack/app-catalog-backend-core'
 import { useSearch } from '@tanstack/react-router'
-import { CalendarPlus, Clock, ExternalLink, Plus, Trash2 } from 'lucide-react'
+import { ExternalLink, Plus, Trash2 } from 'lucide-react'
 import React from 'react'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { Badge } from '~/ui/badge'
@@ -31,7 +31,7 @@ import {
 } from '~/modules/extensions'
 import { CommunitySection } from './CommunitySection'
 import type { CommunitySectionHandle } from './CommunitySection'
-import { useOpenFeedbackCount } from './useOpenFeedbackCount'
+import { usePendingCount } from './usePendingCount'
 import { displayUrl } from '~/modules/appCatalog/utils/displayUrl'
 import { accessTabLabel } from '~/modules/appCatalog/utils/accessTabLabel'
 import { AppDoor } from './AppDoor'
@@ -149,11 +149,27 @@ export function AppDetails({
   const user = useUser()
   const isAdmin = user?.isAdmin ?? false
   const { state: filterState } = useAppCatalogFilters()
-  const openFeedback = useOpenFeedbackCount(app.slug)
-  const reviewClaims = (app.claims ?? []).filter(
-    (claim) => claim.status === 'review',
-  ).length
-  const behindCount = openFeedback + reviewClaims
+  // Agrees with the Pending badges in the feed: composed by the same rules.
+  const behindCount = usePendingCount(app.slug, app.claims)
+
+  // "Last checked 10 hours ago · added 7 months ago" under the sources.
+  const lastChecked = app.freshness?.lastCheckedAt
+  const datesLine = [
+    lastChecked &&
+      `Last checked ${formatRelativeTime(lastChecked)}${app.freshness?.isStale ? ' (may be out of date)' : ''}`,
+    app.createdAt && `added ${formatRelativeTime(app.createdAt)}`,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+    .replace(/^a/, 'A')
+  const datesTitle = [
+    app.freshness?.lastContentChangeAt &&
+      `Content last changed ${app.freshness.lastContentChangeAt}`,
+    lastChecked && `Last checked ${lastChecked}`,
+    app.createdAt && `Added ${app.createdAt}`,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   // "Share what you know" asks for the input by bumping this. A counter, not a
   // flag, so a second press while already on the tab still re-focuses. The
@@ -437,21 +453,19 @@ export function AppDetails({
         ? `Behind this card, ${behindCount} waiting for review`
         : undefined,
       render: () => (
-        <>
-          <Group title="From the community">
-            <CommunitySection
-              ref={knowMoreRef}
-              appSlug={app.slug}
-              appName={app.displayName}
-              claims={app.claims}
-            />
-          </Group>
+        <div className="behind-panel">
+          <CommunitySection
+            ref={knowMoreRef}
+            appSlug={app.slug}
+            appName={app.displayName}
+            claims={app.claims}
+          />
 
           {(isAdmin ||
             sourceUrls.length > 0 ||
             app.createdAt ||
             app.freshness?.lastCheckedAt) && (
-            <Group title="Autoscan from these sources">
+            <Group title="Kept up to date from">
               {isAdmin ? (
                 <>
                   <ul className="space-y-2">
@@ -585,44 +599,10 @@ export function AppDetails({
                   ))}
                 </ul>
               )}
-              {(app.createdAt || app.freshness?.lastCheckedAt) && (
-                <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
-                  {app.createdAt && (
-                    <span
-                      className="inline-flex items-center gap-1 text-xs text-muted-foreground"
-                      title={app.createdAt}
-                    >
-                      <CalendarPlus className="size-3" />
-                      Added {formatRelativeTime(app.createdAt)}
-                    </span>
-                  )}
-                  {app.freshness?.lastCheckedAt && (
-                    <span
-                      className="inline-flex items-center gap-1 text-xs text-muted-foreground"
-                      title={
-                        app.freshness.lastContentChangeAt
-                          ? `Content last changed ${app.freshness.lastContentChangeAt} · last checked ${app.freshness.lastCheckedAt}`
-                          : `Last checked ${app.freshness.lastCheckedAt}`
-                      }
-                    >
-                      <Clock className="size-3" />
-                      {/* "Updated" means the content changed, not that a check
-                        ran — entries predating the field have none, so fall
-                        back. */}
-                      Updated{' '}
-                      {formatRelativeTime(
-                        app.freshness.lastContentChangeAt ??
-                          app.freshness.lastCheckedAt,
-                      )}
-                      {app.freshness.isStale && (
-                        <span className="italic opacity-75">
-                          {' '}
-                          · may be out of date
-                        </span>
-                      )}
-                    </span>
-                  )}
-                </div>
+              {datesLine && (
+                <p className="behind-dates" title={datesTitle}>
+                  {datesLine}
+                </p>
               )}
             </Group>
           )}
@@ -650,7 +630,7 @@ export function AppDetails({
               appName={app.displayName}
             />
           </div>
-        </>
+        </div>
       ),
     },
   ]

@@ -103,30 +103,20 @@ const thumbnails = () =>
   screen.queryAllByRole('button', { name: /^Remove / }).length
 
 describe('CommunitySection — the input', () => {
-  it('shows Send and the note line on first focus, and keeps them', async () => {
+  it('shows Send at rest, disabled until there is text or an image', async () => {
     mount()
-    const form = field().closest('form')!
-    expect(form).not.toHaveAttribute('data-engaged')
-    expect(send()).toHaveAttribute('aria-hidden', 'true')
-
-    await userEvent.click(field())
-    expect(form).toHaveAttribute('data-engaged')
+    expect(send()).toBeVisible()
     expect(send()).not.toHaveAttribute('aria-hidden')
-    expect(
-      screen.getByText('A maintainer reads every note and updates the card.'),
-    ).toBeInTheDocument()
-
-    field().blur()
-    expect(form).toHaveAttribute('data-engaged')
-  })
-
-  it('keeps Send disabled until there is text or an image', async () => {
-    mount()
-    await userEvent.click(field())
+    expect(send()).not.toHaveAttribute('tabindex', '-1')
     expect(send()).toBeDisabled()
     await userEvent.type(field(), '   ')
     expect(send()).toBeDisabled()
     await userEvent.type(field(), 'A fact')
+    expect(send()).toBeEnabled()
+    await userEvent.clear(field())
+    expect(send()).toBeDisabled()
+    pasteImage()
+    await screen.findByRole('img', { name: 'shot.png' })
     expect(send()).toBeEnabled()
   })
 
@@ -176,7 +166,7 @@ describe('CommunitySection — the input', () => {
     ).toBeNull()
   })
 
-  it('uses "Type it, press Enter" placeholder on fine pointers', async () => {
+  it('asks for a fact, a fix or a question, with Enter, on fine pointers', async () => {
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
       value: vi.fn(() => ({
@@ -188,11 +178,11 @@ describe('CommunitySection — the input', () => {
     mount()
     expect(field()).toHaveAttribute(
       'placeholder',
-      'Know more? Type it, press Enter',
+      'Add a fact, a fix or a question — press Enter',
     )
   })
 
-  it('uses "Tell us" placeholder on coarse pointers (touch)', async () => {
+  it('drops the Enter part on coarse pointers (touch)', async () => {
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
       value: vi.fn(() => ({
@@ -202,7 +192,10 @@ describe('CommunitySection — the input', () => {
       })),
     })
     mount()
-    expect(field()).toHaveAttribute('placeholder', 'Know more? Tell us')
+    expect(field()).toHaveAttribute(
+      'placeholder',
+      'Add a fact, a fix or a question',
+    )
   })
 
   it('Enter sends the trimmed text in place and clears the field', async () => {
@@ -338,7 +331,6 @@ describe('CommunitySection — screenshots', () => {
     mount()
     expect(field()).toHaveValue('half a thought')
     expect(screen.getByRole('img', { name: 'shot.png' })).toBeVisible()
-    expect(field().closest('form')).toHaveAttribute('data-engaged')
 
     await userEvent.type(field(), '{Enter}')
     expect(state.sent).toEqual([

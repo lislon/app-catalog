@@ -39,8 +39,8 @@ vi.mock('~/modules/auth', () => ({
 vi.mock('~/modules/appCatalog/ui/detail/CommunitySection', () => ({
   CommunitySection: () => <div />,
 }))
-vi.mock('~/modules/appCatalog/ui/detail/useOpenFeedbackCount', () => ({
-  useOpenFeedbackCount: () => 0,
+vi.mock('~/modules/appCatalog/ui/detail/usePendingCount', () => ({
+  usePendingCount: () => 0,
 }))
 
 const { AppDetailPanel } =

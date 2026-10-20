@@ -64,158 +64,119 @@ function mount(claims: Claim[] = []) {
   )
 }
 
-/** The sub-section under a heading, by the heading's leading text. */
-function group(title: string): HTMLElement {
-  return screen
-    .getByRole('heading', { name: new RegExp(`^${title}`) })
-    .closest('section')!
-}
-const rowTexts = (el: HTMLElement) =>
-  within(el)
-    .getAllByRole('listitem')
-    .map((li) => li.querySelector('.community-row__text')?.textContent)
+const items = () =>
+  screen.getByRole('list', { name: 'Comments' }).querySelectorAll(':scope > li')
+const texts = () =>
+  [...items()].map((li) => li.querySelector('.comment__text')?.textContent)
 
 beforeEach(() => {
   state.items = []
   state.calls = []
 })
 
-describe('CommunitySection — grouped lists', () => {
-  it('puts open notes and review claims under Notes in review, newest first', () => {
+describe('CommunitySection — the Comments feed', () => {
+  it('has a Comments heading and none of the old sub-sections', () => {
+    state.items = [{ ...note }, { ...note, id: 'c2', status: 'applied' }]
+    mount([
+      { text: 'Archived.', addedAt: '2026-08-03', status: 'archived' },
+      { text: 'Fact.', addedAt: '2026-08-03', status: 'active' },
+    ])
+    expect(screen.getByRole('heading', { name: 'Comments' })).toBeVisible()
+    for (const name of [
+      /Notes in review/,
+      /Facts we rely on/,
+      /Answered/,
+      /Archived/,
+    ]) {
+      expect(screen.queryByRole('heading', { name })).toBeNull()
+      expect(screen.queryByText(name)).toBeNull()
+    }
+  })
+
+  it('shows a note once, with its claim’s badge, newest first', () => {
     state.items = [
       {
         ...note,
-        id: 'a',
-        body: 'Older note.',
+        id: 'old',
+        body: 'Older open note.',
         createdAt: '2026-10-01T09:00:00Z',
       },
       {
         ...note,
-        id: 'b',
-        body: 'Newest note.',
+        id: 'used',
+        body: 'Leads approve.',
+        status: 'applied',
         createdAt: '2026-10-12T09:00:00Z',
       },
     ]
     mount([
-      { text: 'A claim in review.', addedAt: '2026-10-05', status: 'review' },
-    ])
-    const review = group('Notes in review')
-    // The name and the count are separate words, not "Notes in review3".
-    expect(within(review).getByRole('heading')).toHaveTextContent(
-      /^Notes in review 3$/,
-    )
-    expect(rowTexts(review)).toEqual([
-      'Newest note.',
-      'A claim in review.',
-      'Older note.',
-    ])
-  })
-
-  it('lists active claims under Facts we rely on, with origin and date', () => {
-    mount([
       {
-        text: 'Lead approves access.',
-        addedAt: '2026-10-12',
-        origin: 'feedback:abc',
+        text: 'Team leads approve access.',
+        addedAt: '2026-10-13',
+        origin: 'feedback:used',
         status: 'active',
       },
+      { text: 'No longer true.', addedAt: '2026-10-14', status: 'archived' },
+    ])
+    expect(texts()).toEqual(['Leads approve.', 'Older open note.'])
+    const [first, second] = [...items()] as HTMLElement[]
+    expect(within(first!).getByText('Used as source')).toBeVisible()
+    expect(within(second!).getByText('Pending')).toBeVisible()
+    expect(screen.queryByText('Team leads approve access.')).toBeNull()
+    expect(screen.queryByText('No longer true.')).toBeNull()
+  })
+
+  it('puts who and when above the text, with the raw date in a title', () => {
+    state.items = [{ ...note }]
+    mount()
+    const meta = items()[0]!.querySelector('.comment__meta')!
+    expect(meta).toHaveTextContent(/^Merry Mole · /)
+    expect(within(meta as HTMLElement).getByTitle(note.createdAt)).toBeVisible()
+    expect(
+      meta.compareDocumentPosition(
+        items()[0]!.querySelector('.comment__text')!,
+      ) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
+  it('shows a reviewed note’s reply under it, with no badge', () => {
+    state.items = [
+      {
+        ...note,
+        status: 'acknowledged',
+        reviewerReply: 'Not in the portal today.',
+      },
+    ]
+    mount()
+    expect(screen.getByText('↳ Not in the portal today.')).toBeVisible()
+    expect(screen.queryByText('Pending')).toBeNull()
+    expect(screen.queryByText('Used as source')).toBeNull()
+  })
+
+  it('shows a claim with no note in the list by its origin', () => {
+    mount([
       {
         text: 'Old boards are read-only.',
         addedAt: '2026-10-15',
         origin: 'Tools team',
-        status: 'active',
+        status: 'review',
       },
     ])
-    const facts = group('Facts we rely on')
-    expect(rowTexts(facts)).toEqual([
-      'Lead approves access.',
-      'Old boards are read-only.',
-    ])
-    expect(within(facts).getByText(/from visitor feedback/)).toBeVisible()
-    expect(within(facts).getByTitle('2026-10-12')).toBeVisible()
-    expect(within(facts).getByText(/Tools team/)).toBeVisible()
-    expect(within(facts).getByTitle('2026-10-15')).toBeVisible()
-    expect(screen.queryByText(/feedback:abc/)).toBeNull()
+    expect(texts()).toEqual(['Old boards are read-only.'])
+    expect(items()[0]).toHaveTextContent(/^Tools team · .*Pending/)
   })
 
-  it('puts reviewed notes under Answered, with the reply under the text', () => {
-    state.items = [
-      {
-        ...note,
-        status: 'applied',
-        reviewerReply: 'Folded into Background — thank you.',
-      },
-    ]
+  it('renders nothing in the list when there is nothing said yet', () => {
     mount()
-    const answered = group('Answered')
-    expect(rowTexts(answered)).toEqual([
-      'This portal only covers one business unit.',
-    ])
-    expect(
-      within(answered).getByText('Folded into Background — thank you.'),
-    ).toBeVisible()
-    expect(within(answered).getAllByText('Applied')).toHaveLength(1)
-  })
-
-  it('shows the quieter label for a note that changed nothing', () => {
-    state.items = [{ ...note, status: 'acknowledged' }]
-    mount()
-    expect(within(group('Answered')).getByText('Seen')).toBeVisible()
-  })
-
-  it('folds archived claims away, struck through, with their reason', () => {
-    mount([
-      {
-        text: 'No mobile app.',
-        addedAt: '2026-08-03',
-        status: 'archived',
-        archiveReason: 'superseded by https://example.com/guide',
-        archivedAt: '2026-10-02',
-      },
-      { text: 'Legacy claim.', addedAt: '2026-01-01', status: 'archived' },
-    ])
-    const summary = screen.getByText('Archived (2)')
-    expect(screen.getByText('No mobile app.')).not.toBeVisible()
-    fireEvent.click(summary)
-    expect(screen.getByText('No mobile app.')).toBeVisible()
-    expect(screen.getByText('No mobile app.').closest('li')).toHaveClass(
-      'is-archived',
-    )
-    expect(
-      screen.getByText(
-        /Archived.*— superseded by https:\/\/example.com\/guide/,
-      ),
-    ).toBeVisible()
-    expect(screen.queryByText(/undefined/)).toBeNull()
-  })
-
-  it('hides every sub-section that has nothing in it', () => {
-    mount()
-    for (const title of [
-      /^Notes in review/,
-      /^Facts we rely on/,
-      /^Answered/,
-    ]) {
-      expect(screen.queryByRole('heading', { name: title })).toBeNull()
-    }
-    expect(screen.queryByText(/^Archived/)).toBeNull()
-  })
-
-  it('shows who and when on each note', () => {
-    state.items = [{ ...note, createdAt: new Date().toISOString() }]
-    mount()
-    expect(
-      within(group('Notes in review')).getByText(/^Merry Mole · /),
-    ).toHaveClass('community-row__meta')
+    expect(screen.queryByRole('list', { name: 'Comments' })).toBeNull()
   })
 
   it('shows a note’s screenshots under its text', () => {
     state.items = [{ ...note, body: null, attachmentIds: ['img-1'] }]
     mount()
-    const review = group('Notes in review')
-    expect(within(review).getByText(/Screenshot only/)).toBeVisible()
+    expect(screen.getByText(/Screenshot only/)).toBeVisible()
     expect(
-      within(review).getByRole('img', { name: 'Attached screenshot' }),
+      screen.getByRole('img', { name: 'Attached screenshot' }),
     ).toBeVisible()
   })
 
@@ -271,7 +232,7 @@ describe('CommunitySection — grouped lists', () => {
     const spy = vi.spyOn(console, 'error')
     mount([
       { text: 'Single sign-on.', addedAt: '2026-10-01', status: 'active' },
-      { text: 'Single sign-on.', addedAt: '2026-10-05', status: 'active' },
+      { text: 'Single sign-on.', addedAt: '2026-10-01', status: 'active' },
     ])
     expect(screen.getAllByText('Single sign-on.')).toHaveLength(2)
     expect(spy).not.toHaveBeenCalledWith(expect.stringMatching(/same key/))
