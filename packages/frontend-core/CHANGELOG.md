@@ -1,5 +1,18 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.10.0
+
+### Minor Changes
+
+- [#330](https://github.com/lislon/app-catalog/pull/330) [`16d5181`](https://github.com/lislon/app-catalog/commit/16d51817a4d6cb37d4a968c21a734d9fba39c162) Thanks [@lislon](https://github.com/lislon)! - Entries carry claims: plain statements with a date, an origin, and a status (active, in review, or archived with a reason). They are stored, synced and shown on a new "Behind this card" tab (id `behind`; old `?tab=notes` links land there), which also holds visitor notes, the sources with their dates, and the AI prompt and memory. Documentation keeps only the documentation links and Background, and is hidden when an entry has neither. A "Share what you know" button at the right of the tab strip opens Behind this card and focuses its inline input ("Add a fact, a fix or a question — press Enter"), which also takes screenshots by paperclip, paste or drop; a screenshot alone is a valid note, and Send stays visible, disabled until there is something to send. Under the input, a "Comments" heading with a "How comments work" help popover, then one feed, newest first, with one entry per visitor note: a small who-and-when line above the words, a "Pending" or "Used as source" badge derived from the note and the claim made from it, the maintainer's reply under it, and claims that have no note of their own shown in their own words. Archived claims are not shown. The tab's count is the number of Pending entries. The help popover ends with a line on what happens next; a deployment can replace it via the `resourceDetailFeedbackNote` plugin slot, and can add a link to the card's own source via the new `resourceDetailCardSource` slot. The sources group is titled "Kept up to date from", with a "Last checked … · added …" line. Visitor feedback text is stripped of invisible characters before storage.
+
+  Test-kit API changes: `AppDetailTools.feedback.isComposerOpen()` removed; `AppDetailTabId` type drops `'notes'` and adds `'behind'`; `feedback.open()` now presses "Share what you know"; `feedback.openCount()` counts the feed's Pending badges; cucumber steps "the composer is open" and "the composer is closed" replaced by "the caret is in the input", "the input is empty", and "there is nothing to send yet".
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.10.0
+
 ## 6.9.0
 
 ### Minor Changes
