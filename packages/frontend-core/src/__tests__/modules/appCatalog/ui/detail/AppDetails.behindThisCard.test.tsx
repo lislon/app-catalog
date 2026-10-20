@@ -6,7 +6,11 @@ import type { AcPlugin } from '~/modules/extensions'
 import { ExtensionsContext } from '~/modules/extensions'
 
 const search: Record<string, unknown> = {}
-const feedback = vi.hoisted(() => ({ items: [] as unknown[] }))
+const feedback = vi.hoisted(() => ({
+  items: [] as unknown[],
+  error: null as Error | null,
+  hasData: true,
+}))
 
 vi.mock('@tanstack/react-router', () => ({
   useSearch: vi.fn(() => search),
@@ -38,7 +42,10 @@ vi.mock('~/modules/auth', () => ({ useUser: vi.fn(() => null) }))
 // focus the input, and the count has to agree with the feed's Pending badges.
 vi.mock('@tanstack/react-query', () => ({
   useQuery: vi.fn(() => ({
-    data: { items: feedback.items, openCount: 0 },
+    data: feedback.hasData
+      ? { items: feedback.items, openCount: 0 }
+      : undefined,
+    error: feedback.error,
   })),
   useMutation: vi.fn(() => ({
     mutate: vi.fn(),
@@ -90,6 +97,8 @@ const input = () =>
 
 beforeEach(() => {
   feedback.items = []
+  feedback.error = null
+  feedback.hasData = true
   for (const key of Object.keys(search)) delete search[key]
 })
 
@@ -154,7 +163,7 @@ describe('Behind this card', () => {
     expect(within(panel).getByText('Maps to the legacy portal.')).toBeVisible()
     expect(within(panel).getByText(/wiki\.example\.com\/thing/)).toBeVisible()
     expect(
-      within(panel).getByText(/^Last checked .+ · Added .+$/),
+      within(panel).getByText(/^Last checked .+ · added .+$/),
     ).toBeVisible()
   })
 
@@ -311,6 +320,51 @@ describe('the Behind this card count', () => {
   it('is hidden at zero', () => {
     render(<AppDetails app={app} />)
     expect(behindTab().textContent).toBe('Behind this card')
+  })
+
+  it('does not show standalone claims before the list arrives', () => {
+    search.tab = 'behind'
+    feedback.hasData = false
+    render(
+      <AppDetails
+        app={{
+          ...app,
+          claims: [
+            {
+              text: 'Early claim.',
+              addedAt: '2026-10-01',
+              origin: 'feedback:gone',
+              status: 'review',
+            },
+          ],
+        }}
+      />,
+    )
+    expect(screen.queryByText('Early claim.')).toBeNull()
+    expect(behindTab().textContent).toBe('Behind this card')
+  })
+
+  it('on list error, the badge count equals Pending entries from claims only', () => {
+    search.tab = 'behind'
+    feedback.hasData = false
+    feedback.error = new Error('Network')
+    render(
+      <AppDetails
+        app={{
+          ...app,
+          claims: [
+            { text: 'A.', addedAt: '2026-10-01', status: 'review' },
+            { text: 'B.', addedAt: '2026-10-02', status: 'active' },
+          ],
+        }}
+      />,
+    )
+    const panel = screen.getByRole('tabpanel')
+    expect(within(panel).getByText('A.')).toBeVisible()
+    expect(within(panel).getByText('B.')).toBeVisible()
+    expect(within(panel).getAllByText('Pending')).toHaveLength(1)
+    expect(within(panel).getAllByText('Used as source')).toHaveLength(1)
+    expect(behindTab()).toHaveTextContent(/^Behind this card1$/)
   })
 })
 

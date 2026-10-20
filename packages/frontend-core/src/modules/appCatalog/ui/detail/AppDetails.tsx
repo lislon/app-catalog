@@ -152,7 +152,7 @@ export function AppDetails({
   // Agrees with the Pending badges in the feed: composed by the same rules.
   const behindCount = usePendingCount(app.slug, app.claims)
 
-  // "Last checked 10 hours ago · Added 7 months ago" under the sources.
+  // "Last checked 10 hours ago · added 7 months ago" under the sources.
   const lastChecked = app.freshness?.lastCheckedAt
   const dateParts = []
   if (lastChecked) {
@@ -160,7 +160,8 @@ export function AppDetails({
     dateParts.push(`Last checked ${formatRelativeTime(lastChecked)}${suffix}`)
   }
   if (app.createdAt) {
-    dateParts.push(`Added ${formatRelativeTime(app.createdAt)}`)
+    const addedLabel = dateParts.length > 0 ? 'added' : 'Added'
+    dateParts.push(`${addedLabel} ${formatRelativeTime(app.createdAt)}`)
   }
   const datesLine = dateParts.join(' · ')
   const datesTitle = [
