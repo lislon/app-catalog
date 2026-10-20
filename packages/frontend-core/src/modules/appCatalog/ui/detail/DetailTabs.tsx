@@ -36,32 +36,13 @@ export interface DetailTab {
 export function DetailTabs({
   tabs,
   forcedTab,
-  requestTab,
-  requestNonce,
   band,
   bandClassName,
+  footer,
 }: {
   tabs: DetailTab[]
   /** Overrides `?tab=` while set. */
   forcedTab?: string
-  /**
-   * A one-shot "please show this tab" from outside the strip — the band's
-   * "Suggest a change" uses it.
-   *
-   * It has to come through here rather than the caller writing `?tab=` itself:
-   * `useUrlSyncedState` keeps its own `useState` seeded once from the URL and only
-   * ever pushes state OUT to the URL, so a second instance writing the same key
-   * does not update this one. The two then fight — the strip's next render sees the
-   * URL disagreeing with its own state and navigates back over it.
-   */
-  requestTab?: string
-  /**
-   * Bumped by the caller every time it asks again. Without it a repeat request is
-   * indistinguishable from the same standing value, so the effect below does not
-   * re-fire and the second ask does nothing — which is what made the band's
-   * button work exactly once per card.
-   */
-  requestNonce?: number
   /**
    * Identity and actions, shown ABOVE the strip and inside the same tinted
    * surface. Owned here rather than by the caller because the band and the
@@ -72,6 +53,8 @@ export function DetailTabs({
   band?: React.ReactNode
   /** Cancels the dialog's own padding so the tint reaches the card's edges. */
   bandClassName?: string
+  /** Rendered under every tab's content, inside the panel. */
+  footer?: React.ReactNode
 }) {
   /**
    * The first tab is what the card opens on, so naming it in the URL says nothing.
@@ -101,21 +84,13 @@ export function DetailTabs({
    * It used to win over `?tab=` for as long as it was set, and `?sub=` keeps it set
    * for the whole life of the card — so on any entry reached by a sub-resource
    * search (667 accounts on one of them) the strip was dead: every click wrote
-   * nothing and the tab never moved. The same override also silently killed the
-   * band's "Suggest a change", which navigates by writing `?tab=`.
+   * nothing and the tab never moved.
    *
    * So it applies until the user expresses a preference, and then gets out of the
    * way. `userChose` is what distinguishes "no opinion yet" from "chose the tab
    * that happens to be the forced one".
    */
   const [userChose, setUserChose] = React.useState(false)
-
-  // Applied when it changes, through the state that actually owns the tab.
-  React.useEffect(() => {
-    if (!requestTab) return
-    setUserChose(true)
-    setUrlTab(requestTab)
-  }, [requestTab, requestNonce, setUrlTab])
   /**
    * Releasing the force must not move the view.
    *
@@ -208,6 +183,7 @@ export function DetailTabs({
           className="pt-5 outline-none"
         >
           {active.render()}
+          {footer}
         </div>
       )}
     </>

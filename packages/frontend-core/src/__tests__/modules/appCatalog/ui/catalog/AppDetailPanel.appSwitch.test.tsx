@@ -39,6 +39,9 @@ vi.mock('~/modules/auth', () => ({
 vi.mock('~/modules/appCatalog/ui/detail/FeedbackSection', () => ({
   FeedbackSection: () => <div />,
 }))
+vi.mock('~/modules/appCatalog/ui/detail/KnowMoreInput', () => ({
+  KnowMoreInput: () => null,
+}))
 
 const { AppDetailPanel } =
   await import('~/modules/appCatalog/ui/catalog/AppDetailPanel')

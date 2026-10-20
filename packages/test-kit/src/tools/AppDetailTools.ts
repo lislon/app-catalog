@@ -253,15 +253,17 @@ export class AppDetailTools {
   /**
    * Asking for a correction, as a passing visitor does it.
    *
-   * The composer is NOT in the notes panel — the affordance is in the card's band,
-   * because at the foot of a tab it sat below the fold of a tab nobody opens unless
-   * they already know what is in it. So `open()` goes through the band, which is also
-   * what brings the notes tab forward.
+   * The full composer, the one that takes screenshots, lives on the notes tab behind
+   * its "Attach images or write a longer note" button. `open()` brings that tab
+   * forward and presses it.
    */
   feedback = {
-    /** Click the band's "Suggest a change". */
+    /** Open the notes tab and its full composer. */
     open: async (): Promise<void> => {
-      const button = screen.getByRole('button', { name: /Suggest a change/i })
+      await this.openTab('notes')
+      const button = screen.getByRole('button', {
+        name: 'Attach images or write a longer note',
+      })
       await this.user.click(button)
     },
 

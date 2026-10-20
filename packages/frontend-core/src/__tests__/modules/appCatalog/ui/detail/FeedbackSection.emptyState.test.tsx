@@ -42,6 +42,13 @@ vi.mock('~/api/infra/trpc', () => ({
 const { FeedbackSection } =
   await import('~/modules/appCatalog/ui/detail/FeedbackSection')
 
+const openFullComposer = () =>
+  userEvent.click(
+    screen.getByRole('button', {
+      name: 'Attach images or write a longer note',
+    }),
+  )
+
 describe('FeedbackSection — composer', () => {
   it('stays closed until something asks for it', () => {
     state.items = []
@@ -49,16 +56,17 @@ describe('FeedbackSection — composer', () => {
 
     expect(screen.getByText(/Nothing here yet/)).toBeInTheDocument()
     expect(screen.queryByPlaceholderText('What should change?')).toBeNull()
-    // The affordance lives in the card's band now, not in this panel — down here
-    // it was below the fold of a tab, which is why it moved.
     expect(
-      screen.queryByRole('button', { name: /Suggest a change/ }),
-    ).toBeNull()
+      screen.getByRole('button', {
+        name: 'Attach images or write a longer note',
+      }),
+    ).toBeInTheDocument()
   })
 
-  it('opens and takes the caret when the band asks', () => {
+  it('opens and takes the caret when asked', async () => {
     state.items = []
-    render(<FeedbackSection appSlug="example-app" openComposer={1} />)
+    render(<FeedbackSection appSlug="example-app" />)
+    await openFullComposer()
 
     const field = screen.getByPlaceholderText('What should change?')
     expect(field).toBeInTheDocument()
@@ -92,7 +100,8 @@ describe('FeedbackSection — composer', () => {
   it('sends with nothing typed — a bare flag is a valid signal', async () => {
     state.items = []
     state.sent = []
-    render(<FeedbackSection appSlug="example-app" openComposer={1} />)
+    render(<FeedbackSection appSlug="example-app" />)
+    await openFullComposer()
 
     const send = screen.getByRole('button', { name: 'Send' })
     // The whole point: no words, no image, still submittable.
@@ -110,9 +119,8 @@ describe('FeedbackSection — composer', () => {
   it('keeps a half-typed draft across an unmount, and reopens the composer for it', async () => {
     sessionStorage.clear()
     state.items = []
-    const first = render(
-      <FeedbackSection appSlug="example-app" openComposer={1} />,
-    )
+    const first = render(<FeedbackSection appSlug="example-app" />)
+    await openFullComposer()
 
     await userEvent.type(
       screen.getByPlaceholderText('What should change?'),
@@ -127,26 +135,18 @@ describe('FeedbackSection — composer', () => {
     expect(recovered).toHaveValue('half a thought')
   })
 
-  /**
-   * The composer closes itself on send, so the band has to be able to say "again".
-   * It used to pass a boolean, which cannot: the second click left the prop at
-   * `true`, the effect did not re-run, and the button was dead for the rest of the
-   * card's life — you could file one correction per entry and no more. Caught by
-   * sending twice in a real browser, which is the only place it showed.
-   */
+  /** The composer closes itself on send; filing a second note must still work. */
   it('reopens for a second request after the first one was sent', async () => {
     sessionStorage.clear()
     state.items = []
     state.sent = []
-    const view = render(
-      <FeedbackSection appSlug="example-app" openComposer={1} />,
-    )
+    render(<FeedbackSection appSlug="example-app" />)
+    await openFullComposer()
 
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     expect(screen.queryByPlaceholderText('What should change?')).toBeNull()
 
-    // The band asking a second time — a new count, same requested tab.
-    view.rerender(<FeedbackSection appSlug="example-app" openComposer={2} />)
+    await openFullComposer()
     expect(
       screen.getByPlaceholderText('What should change?'),
     ).toBeInTheDocument()
@@ -156,9 +156,8 @@ describe('FeedbackSection — composer', () => {
     sessionStorage.clear()
     state.items = []
     state.sent = []
-    const first = render(
-      <FeedbackSection appSlug="example-app" openComposer={1} />,
-    )
+    const first = render(<FeedbackSection appSlug="example-app" />)
+    await openFullComposer()
     await userEvent.type(
       screen.getByPlaceholderText('What should change?'),
       'about this one',

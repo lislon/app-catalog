@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useTRPC } from '~/api/infra/trpc'
 import { Button } from '~/ui/button'
 import { cn } from '~/lib/utils'
@@ -202,21 +202,7 @@ function AttachmentStrip({ ids }: { ids: string[] }) {
   )
 }
 
-export function FeedbackSection({
-  appSlug,
-  /**
-   * Asked to open by the card's band, which is where the affordance now lives —
-   * at the foot of this panel it was below the fold of a tab nobody opens unless
-   * they already know what is in it.
-   *
-   * A count of how many times it has asked, so a second ask re-opens the composer
-   * the first one closed on send. A boolean could not say "again".
-   */
-  openComposer = 0,
-}: {
-  appSlug: string
-  openComposer?: number
-}) {
+export function FeedbackSection({ appSlug }: { appSlug: string }) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const listOptions = trpc.feedback.list.queryOptions({ resourceSlug: appSlug })
@@ -237,19 +223,8 @@ export function FeedbackSection({
    * reopens it, otherwise the text would be held but invisible.
    */
   const [composerOpen, setComposerOpen] = useState(
-    () =>
-      openComposer > 0 ||
-      !!readDraft(appSlug) ||
-      readAttachments(appSlug).length > 0,
+    () => !!readDraft(appSlug) || readAttachments(appSlug).length > 0,
   )
-
-  // The band asked for the composer while this panel was unmounted, so honour it on
-  // arrival. The request is NOT cleared from here: doing so removed the tab from the
-  // strip (it only exists when there is something in it), which bounced the active
-  // tab back to the first one — the composer was deleting the tab it had opened.
-  useEffect(() => {
-    if (openComposer > 0) setComposerOpen(true)
-  }, [openComposer])
 
   const updateDraft = (value: string) => {
     setDraft(value)
@@ -594,7 +569,19 @@ export function FeedbackSection({
             <p className="text-destructive text-xs">{uploadError}</p>
           )}
         </div>
-      ) : null}
+      ) : (
+        // The quick input under every tab takes words only; this opens the full
+        // composer, for screenshots and anything longer.
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="mt-3"
+          onClick={() => setComposerOpen(true)}
+        >
+          Attach images or write a longer note
+        </Button>
+      )}
 
       {/* Outside the composer: a failed list query leaves nothing to collapse into. */}
       {failure && (

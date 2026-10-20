@@ -34,6 +34,7 @@ import { SubResourcesSection } from '../components/SubResourcesSection'
 import { getChildResources } from '../../utils/resolveHelpers'
 import { ResourceDetailAccessActions } from '~/modules/extensions'
 import { FeedbackSection } from './FeedbackSection'
+import { KnowMoreInput } from './KnowMoreInput'
 import { displayUrl } from '~/modules/appCatalog/utils/displayUrl'
 import { accessTabLabel } from '~/modules/appCatalog/utils/accessTabLabel'
 import { AppDoor } from './AppDoor'
@@ -124,19 +125,6 @@ export function AppDetails({
 }) {
   const [isGalleryOpen, setIsGalleryOpen] = React.useState(false)
   const [galleryInitialIndex, setGalleryInitialIndex] = React.useState(0)
-  /**
-   * Set by the band's "Suggest a change", which has to do two things the button
-   * cannot do alone: bring the notes tab forward, and open the composer inside it.
-   * Held here because the band and the panel are siblings — neither can reach the
-   * other, and routing it through the URL would put a transient intent in a
-   * shareable link.
-   *
-   * A count, not a flag: the composer closes itself on send, so asking a second
-   * time has to be distinguishable from the first ask still being set. As a
-   * boolean the second click changed nothing and the button was dead for the rest
-   * of the card's life.
-   */
-  const [composeRequests, setComposeRequests] = React.useState(0)
 
   const { approvalMethods, resources: allResources } = useAppCatalogContext()
   const { recordClick } = useAppClickHistory()
@@ -631,9 +619,7 @@ export function AppDetails({
     {
       id: TAB.notes,
       label: 'Notes & requests',
-      render: () => (
-        <FeedbackSection appSlug={app.slug} openComposer={composeRequests} />
-      ),
+      render: () => <FeedbackSection appSlug={app.slug} />,
     },
   ]
 
@@ -664,30 +650,12 @@ export function AppDetails({
               : 'Deprecated'}
           </Badge>
         )}
-        {/* In the band, not at the foot of the notes panel.
-            Down there it was invisible twice over: below the fold of a panel, and
-            behind a tab nobody opens unless they already know what is in it — so
-            the one affordance the feature exists for was the hardest thing on the
-            card to find. Up here it is present on every tab, which is the whole
-            reason the band does not scroll away.
-            `mr-10` keeps it clear of the dialog's own close button at top-right. */}
-        {/* Plugin actions sit beside "Suggest a change", sharing its reasoning:
-            the band is mounted on every tab and never scrolls away. A slot in a
-            tab panel would be invisible until a second click, and one inside
-            SubResourceDetailPanel's `hasAnyAccess` gate would vanish for exactly
-            the resources that need help most.
-            Renders nothing when no plugin contributes, so the band keeps its
-            current shape in the open-source build. */}
+        {/* Plugin actions live in the band because it is mounted on every tab and
+            never scrolls away; a slot in a tab panel would be invisible until a
+            second click. Renders nothing when no plugin contributes.
+            `mr-10` keeps them clear of the dialog's close button at top-right. */}
         <div className="ml-auto mr-10 flex items-center gap-2">
           <ResourceDetailAccessActions {...accessActionsCtx} />
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => setComposeRequests((n) => n + 1)}
-          >
-            ✎ Suggest a change
-          </Button>
         </div>
       </div>
 
@@ -789,8 +757,9 @@ export function AppDetails({
           // `?sub=` means a child was picked out of a search, so the card opens
           // on the tab that holds it rather than making them hunt for it.
           forcedTab={subSlug && hasResourcesTab ? TAB.resources : undefined}
-          requestTab={composeRequests > 0 ? TAB.notes : undefined}
-          requestNonce={composeRequests}
+          footer={
+            <KnowMoreInput appSlug={app.slug} appName={app.displayName} />
+          }
         />
       </div>
 
