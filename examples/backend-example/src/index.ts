@@ -114,7 +114,7 @@ app.use(eh.router)
 await eh.connect()
 
 const port = process.env.PORT || 4001
-const server = app.listen(port, async () => {
+app.listen(port, async () => {
   console.log(`Example app-catalog listening on port ${port}`)
 
   // Sync mock data after server is fully running
