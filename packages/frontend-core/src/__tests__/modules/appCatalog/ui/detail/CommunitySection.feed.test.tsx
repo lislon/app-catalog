@@ -13,6 +13,7 @@ vi.mock('@tanstack/react-query', () => ({
   useQuery: vi.fn(() => ({
     data: { items: state.items, openCount: 0 },
     isLoading: false,
+    isPending: false,
   })),
   useMutation: vi.fn((options?: { name?: string }) => ({
     mutate: (vars: unknown) => state.calls.push([options?.name ?? '', vars]),
@@ -237,5 +238,44 @@ describe('CommunitySection — the Comments feed', () => {
     expect(screen.getAllByText('Single sign-on.')).toHaveLength(2)
     expect(spy).not.toHaveBeenCalledWith(expect.stringMatching(/same key/))
     spy.mockRestore()
+  })
+
+  it('shows a skeleton with aria-busy while loading', async () => {
+    const { useQuery } = await import('@tanstack/react-query')
+    vi.mocked(useQuery).mockReturnValueOnce({
+      data: undefined,
+      error: null,
+      isPending: true,
+    } as never)
+    mount()
+    const status = screen.getByText('Loading comments…')
+    expect(status).toBeInTheDocument()
+    const skeleton = status.closest('.comments-skeleton')
+    expect(skeleton).toHaveAttribute('aria-busy', 'true')
+  })
+
+  it('replaces the skeleton with the feed once data arrives', async () => {
+    const { useQuery } = await import('@tanstack/react-query')
+    vi.mocked(useQuery).mockReturnValueOnce({
+      data: undefined,
+      error: null,
+      isPending: true,
+    } as never)
+    const { unmount } = render(
+      <CommunitySection appSlug="example-app" appName="Example App" />,
+    )
+    expect(screen.getByText('Loading comments…')).toBeInTheDocument()
+    unmount()
+
+    state.items = [{ ...note }]
+    mount()
+    expect(screen.queryByText('Loading comments…')).toBeNull()
+    expect(screen.getByRole('list', { name: 'Comments' })).toBeVisible()
+  })
+
+  it('shows an empty-state message when there are no entries', () => {
+    mount()
+    expect(screen.getByText(/No comments yet/)).toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: 'Comments' })).toBeNull()
   })
 })

@@ -96,7 +96,7 @@ export function CommentsFeed({
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const listOptions = trpc.feedback.list.queryOptions({ resourceSlug: appSlug })
-  const { data, error } = useQuery(listOptions)
+  const { data, error, isPending } = useQuery(listOptions)
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [editDraft, setEditDraft] = React.useState('')
 
@@ -215,7 +215,20 @@ export function CommentsFeed({
 
   return (
     <>
-      {entries.length > 0 && (
+      {isPending ? (
+        <div
+          className="comments-skeleton"
+          aria-busy="true"
+          aria-labelledby={labelledBy}
+        >
+          <span className="sr-only" role="status">
+            Loading comments…
+          </span>
+          <div className="comments-skeleton__item" />
+          <div className="comments-skeleton__item" />
+          <div className="comments-skeleton__item" />
+        </div>
+      ) : entries.length > 0 ? (
         <ul className="comments" aria-labelledby={labelledBy}>
           {entries.map((entry) => (
             <li key={entry.key} className="comment">
@@ -228,6 +241,10 @@ export function CommentsFeed({
             </li>
           ))}
         </ul>
+      ) : (
+        <p className="comments-empty">
+          No comments yet. Be the first to share what you know.
+        </p>
       )}
       {failure && (
         <p className="know-more-error">{formatCommunityError(failure)}</p>
