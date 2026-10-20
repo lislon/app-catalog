@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import React from 'react'
 import { useTRPC } from '~/api/infra/trpc'
 import { cn } from '~/lib/utils'
-import { ResourceDetailFeedbackNote } from '~/modules/extensions'
+import { ResourceDetailFeedbackNote, useSlotFilled } from '~/modules/extensions'
 import { Button } from '~/ui/button'
 
 /** px: 20 line-height + 2×9 padding + 2×1 border. */
@@ -32,6 +32,7 @@ export function KnowMoreInput({
   // A hidden twin measures the height the text needs, so the real field can
   // animate to it. Setting `height: auto` on the real one snaps instead.
   const mirrorRef = React.useRef<HTMLTextAreaElement>(null)
+  const hasPluginNote = useSlotFilled('resourceDetailFeedbackNote')
 
   const add = useMutation(
     trpc.feedback.add.mutationOptions({
@@ -164,7 +165,7 @@ export function KnowMoreInput({
       </p>
       <div className="know-more-what-next">
         <ResourceDetailFeedbackNote appSlug={appSlug} appName={appName} />
-        <DefaultFeedbackNote />
+        {!hasPluginNote && <DefaultFeedbackNote />}
       </div>
     </form>
   )
