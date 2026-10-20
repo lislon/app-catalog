@@ -35,6 +35,9 @@ declare global {
     // DbResource.quickJumps - Deep links that take one typed identifier
     type QuickJump = import('./types/index').QuickJump
 
+    // DbResource.claims - Validated descriptions shown on Documentation tab
+    type Claim = import('./types/index').Claim
+
     // DbResource.extra - Arbitrary extra data
     type SubResourceExtra = Record<string, unknown>
   }

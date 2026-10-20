@@ -715,7 +715,7 @@
   margin-top: 0.5rem;
 }
 @media (prefers-reduced-motion: reduce) {
-  .know-more-field textarea,
+  .know-more-field textarea:not(.know-more-mirror),
   .know-more-send,
   .know-more-hint,
   .know-more-sent {

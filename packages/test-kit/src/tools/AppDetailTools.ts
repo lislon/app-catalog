@@ -261,9 +261,10 @@ export class AppDetailTools {
     /** Open the notes tab and its full composer. */
     open: async (): Promise<void> => {
       await this.openTab('notes')
-      const button = screen.getByRole('button', {
+      const button = screen.queryByRole('button', {
         name: 'Attach images or write a longer note',
       })
+      if (!button) return // Already open
       await this.user.click(button)
     },
 

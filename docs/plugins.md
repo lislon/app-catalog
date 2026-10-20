@@ -92,11 +92,11 @@ createRoot(#root).render(
                  //   layouts, so a leaf slot needs an anchor in both files
 
 ╞═ A ─ ui/detail/AppDetails.tsx ════════════════════════════════════════╡
-                  <DetailTabs band={band}>
+                  <DetailTabs band={band} footer={knowMoreInput}>
                    // band: always mounted, never scrolls away, NOT a tab
+                   // footer: inline input at foot of every tab panel
                    <AppDoor app />
                    <ResourceDetailAccessActions ... />   // NEW
-                   <Button>Suggest a change</Button>
                    <ResourceDetailHeaderNotice ... />    // NEW
                    {active.render()}
                     // ⚠ ONLY the active tab mounts, and Overview is first, so a

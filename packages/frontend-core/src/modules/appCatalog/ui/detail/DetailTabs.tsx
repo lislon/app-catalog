@@ -81,14 +81,10 @@ export function DetailTabs({
   /**
    * `forcedTab` picks the tab you ARRIVE on, not the tab you are stuck on.
    *
-   * It used to win over `?tab=` for as long as it was set, and `?sub=` keeps it set
-   * for the whole life of the card — so on any entry reached by a sub-resource
-   * search (667 accounts on one of them) the strip was dead: every click wrote
-   * nothing and the tab never moved.
-   *
-   * So it applies until the user expresses a preference, and then gets out of the
-   * way. `userChose` is what distinguishes "no opinion yet" from "chose the tab
-   * that happens to be the forced one".
+   * `?sub=` stays set for the card's whole life, so forcing it permanently would
+   * make the strip unclickable. It applies until the user expresses a preference,
+   * and then gets out of the way. `userChose` is what distinguishes "no opinion
+   * yet" from "chose the tab that happens to be the forced one".
    */
   const [userChose, setUserChose] = React.useState(false)
   /**

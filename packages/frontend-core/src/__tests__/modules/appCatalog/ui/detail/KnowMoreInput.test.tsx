@@ -109,4 +109,10 @@ describe('KnowMoreInput', () => {
     expect(field()).toHaveValue('Lead approves access.')
     expect(screen.getByRole('alert')).toHaveTextContent(/Could not send/)
   })
+
+  it('leaves focus in the field after a successful send', async () => {
+    render(<KnowMoreInput appSlug="team-board" appName="Team Board" />)
+    await userEvent.type(field(), 'Lead approves access.{Enter}')
+    expect(field()).toHaveFocus()
+  })
 })

@@ -48,7 +48,7 @@ export function KnowMoreInput({
 
   React.useEffect(() => {
     if (sent) {
-      fieldRef.current?.blur()
+      // Focus stays in the field so the next Tab doesn't walk the grid behind the scrim.
     }
   }, [sent])
 
@@ -60,6 +60,21 @@ export function KnowMoreInput({
     mirror.value = text || ' '
     // +2: scrollHeight excludes the border, the box height includes it.
     setHeight(Math.min(Math.max(mirror.scrollHeight + 2, ONE_LINE), MAX_HEIGHT))
+  }, [text])
+
+  React.useEffect(() => {
+    const field = fieldRef.current
+    const mirror = mirrorRef.current
+    if (!field || !mirror || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(() => {
+      mirror.style.width = `${field.offsetWidth}px`
+      mirror.value = text || ' '
+      setHeight(
+        Math.min(Math.max(mirror.scrollHeight + 2, ONE_LINE), MAX_HEIGHT),
+      )
+    })
+    observer.observe(field)
+    return () => observer.disconnect()
   }, [text])
 
   const submit = () => {

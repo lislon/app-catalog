@@ -757,6 +757,7 @@ export function AppDetails({
           // `?sub=` means a child was picked out of a search, so the card opens
           // on the tab that holds it rather than making them hunt for it.
           forcedTab={subSlug && hasResourcesTab ? TAB.resources : undefined}
+          // The input sits at the foot of every tab, scrolling with content.
           footer={
             <KnowMoreInput appSlug={app.slug} appName={app.displayName} />
           }

@@ -147,4 +147,29 @@ describe('AppDetails — Know something more?', () => {
     fireEvent.keyDown(input(), { key: 'Escape', code: 'Escape' })
     expect(onClose).toHaveBeenCalledTimes(1)
   })
+
+  it('A send from the Access tab creates feedback without changing the tab', () => {
+    const appWithAccess = {
+      ...app,
+      approvalMethodSlug: 'ops-team',
+    } as Resource
+    render(<AppDetails app={appWithAccess} />)
+    // Click Access tab
+    const accessTab = screen.getByRole('tab', { name: /Access/i })
+    fireEvent.click(accessTab)
+    expect(accessTab).toHaveAttribute('aria-selected', 'true')
+    const panel = screen.getByRole('tabpanel')
+    // Type and send
+    const field = within(panel).getByRole('textbox', {
+      name: /Know something more/,
+    })
+    fireEvent.change(field, { target: { value: 'approval detail' } })
+    fireEvent.keyDown(field, { key: 'Enter' })
+    expect(state.sent).toEqual([
+      { resourceSlug: 'example-app', body: 'approval detail' },
+    ])
+    // Still on Access tab
+    expect(accessTab).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tabpanel')).toBe(panel)
+  })
 })
