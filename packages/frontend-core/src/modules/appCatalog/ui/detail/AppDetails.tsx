@@ -3,17 +3,11 @@ import type {
   SourceReference,
 } from '@igstack/app-catalog-backend-core'
 import { useSearch } from '@tanstack/react-router'
-import { CalendarPlus, Clock, ExternalLink, Plus, Trash2 } from 'lucide-react'
+import { ExternalLink, Plus, Trash2 } from 'lucide-react'
 import React from 'react'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { Badge } from '~/ui/badge'
 import { Button } from '~/ui/button'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '~/ui/accordion'
 import { AccessRequestSection } from '../components/AccessRequestSection'
 import { AccessPrerequisiteChain } from '../components/AccessPrerequisiteChain'
 import { QuickJumpBar, hasQuickJumps } from '../components/QuickJumpBar'
@@ -31,8 +25,13 @@ import { formatRelativeTime } from '../../utils/formatRelativeTime'
 import { TierVariantsSection } from '../components/TierVariantsSection'
 import { SubResourcesSection } from '../components/SubResourcesSection'
 import { getChildResources } from '../../utils/resolveHelpers'
-import { ResourceDetailAccessActions } from '~/modules/extensions'
-import { FeedbackSection } from './FeedbackSection'
+import {
+  ResourceDetailAccessActions,
+  ResourceDetailCardSource,
+} from '~/modules/extensions'
+import { CommunitySection } from './CommunitySection'
+import type { CommunitySectionHandle } from './CommunitySection'
+import { usePendingCount } from './usePendingCount'
 import { displayUrl } from '~/modules/appCatalog/utils/displayUrl'
 import { accessTabLabel } from '~/modules/appCatalog/utils/accessTabLabel'
 import { AppDoor } from './AppDoor'
@@ -45,8 +44,27 @@ const TAB = {
   access: 'access',
   resources: 'resources',
   documentation: 'documentation',
-  notes: 'notes',
+  behind: 'behind',
 } as const
+
+/**
+ * One of Behind this card's top-level groups. A level above `Section`: its
+ * title is a plain heading, and a hairline separates it from the group before.
+ */
+function Group({
+  title,
+  children,
+}: {
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <section className="behind-group">
+      <h2 className="behind-group__title">{title}</h2>
+      {children}
+    </section>
+  )
+}
 
 /** A labelled block inside a tab. One register for all of them. */
 function Section({
@@ -123,19 +141,6 @@ export function AppDetails({
 }) {
   const [isGalleryOpen, setIsGalleryOpen] = React.useState(false)
   const [galleryInitialIndex, setGalleryInitialIndex] = React.useState(0)
-  /**
-   * Set by the band's "Suggest a change", which has to do two things the button
-   * cannot do alone: bring the notes tab forward, and open the composer inside it.
-   * Held here because the band and the panel are siblings — neither can reach the
-   * other, and routing it through the URL would put a transient intent in a
-   * shareable link.
-   *
-   * A count, not a flag: the composer closes itself on send, so asking a second
-   * time has to be distinguishable from the first ask still being set. As a
-   * boolean the second click changed nothing and the button was dead for the rest
-   * of the card's life.
-   */
-  const [composeRequests, setComposeRequests] = React.useState(0)
 
   const { approvalMethods, resources: allResources } = useAppCatalogContext()
   const { recordClick } = useAppClickHistory()
@@ -144,6 +149,39 @@ export function AppDetails({
   const user = useUser()
   const isAdmin = user?.isAdmin ?? false
   const { state: filterState } = useAppCatalogFilters()
+  // Agrees with the Pending badges in the feed: composed by the same rules.
+  const behindCount = usePendingCount(app.slug, app.claims)
+
+  // "Last checked 10 hours ago · added 7 months ago" under the sources.
+  const lastChecked = app.freshness?.lastCheckedAt
+  const dateParts = []
+  if (lastChecked) {
+    const suffix = app.freshness?.isStale ? ' (may be out of date)' : ''
+    dateParts.push(`Last checked ${formatRelativeTime(lastChecked)}${suffix}`)
+  }
+  if (app.createdAt) {
+    const addedLabel = dateParts.length > 0 ? 'added' : 'Added'
+    dateParts.push(`${addedLabel} ${formatRelativeTime(app.createdAt)}`)
+  }
+  const datesLine = dateParts.join(' · ')
+  const datesTitle = [
+    app.freshness?.lastContentChangeAt &&
+      `Content last changed ${app.freshness.lastContentChangeAt}`,
+    lastChecked && `Last checked ${lastChecked}`,
+    app.createdAt && `Added ${app.createdAt}`,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
+  // "Share what you know" asks for the input by bumping this. A counter, not a
+  // flag, so a second press while already on the tab still re-focuses. The
+  // effect runs after the click's render has mounted the tab's panel, so the
+  // ref is attached by then; opening the tab by hand bumps nothing.
+  const knowMoreRef = React.useRef<CommunitySectionHandle>(null)
+  const [shareAsk, setShareAsk] = React.useState(0)
+  React.useEffect(() => {
+    if (shareAsk) knowMoreRef.current?.focus()
+  }, [shareAsk])
 
   // Arriving with `?sub=` means the visitor picked one child out of a search —
   // so the card has to open ON that child's tab. Landing on Overview and
@@ -239,6 +277,8 @@ export function AppDetails({
   const resourcesLabel = children.length
     ? (app.childrenLabel ?? 'Resources')
     : 'Environments'
+
+  const hasDocumentationTab = (app.links?.length ?? 0) > 0 || !!app.background
 
   const tabs: DetailTab[] = [
     {
@@ -367,263 +407,244 @@ export function AppDetails({
           } satisfies DetailTab,
         ]
       : []),
-    {
-      id: TAB.documentation,
-      label: 'Documentation',
-      render: () => (
-        <>
-          {app.links && app.links.length > 0 && (
-            <Section title="Documentation" first>
-              <div className="space-y-0.5">
-                {app.links.map((link) => (
-                  <a
-                    key={link.url}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary truncate"
-                  >
-                    <ExternalLink className="size-3 shrink-0" />
-                    {link.title || displayUrl(link.url)}
-                  </a>
-                ))}
-              </div>
-            </Section>
-          )}
-          {/* Background: why the app exists at all. Deliberately quiet — a
-              reader who came to get access has already passed everything they
-              need, and history should not compete with the description. */}
-          {app.background && (
-            <Section title="Background">
-              <MarkdownText className="prose prose-sm text-muted-foreground max-w-none text-sm [&_p]:mt-0 [&_p]:mb-2 [&_p:last-child]:mb-0">
-                {app.background}
-              </MarkdownText>
-            </Section>
-          )}
-
-          <Section title="Sources" first={!app.background}>
-            {isAdmin ? (
+    ...(hasDocumentationTab
+      ? [
+          {
+            id: TAB.documentation,
+            label: 'Documentation',
+            render: () => (
               <>
-                <ul className="space-y-2">
-                  {displaySources.map((url, index) => {
-                    const isDraft =
-                      draftSource !== null && index === sourceUrls.length
-                    return (
-                      <li
-                        key={isDraft ? 'draft' : `${index}-${url}`}
-                        className="group flex items-center gap-2 text-xs"
-                      >
-                        <span className="text-muted-foreground shrink-0 tabular-nums">
-                          {index + 1}.
-                        </span>
-                        <InlineEditableField
-                          value={url}
-                          initialEditMode={isDraft}
-                          onCancel={
-                            isDraft ? () => setDraftSource(null) : undefined
-                          }
-                          onSave={(newUrl) => {
-                            if (isDraft) {
-                              setDraftSource(null)
-                              if (newUrl) {
-                                updateApp.mutate({
-                                  id: app.id,
-                                  data: { sources: [...sourceUrls, newUrl] },
-                                })
-                              }
-                            } else {
-                              const next = [...sourceUrls]
-                              next[index] = newUrl
-                              updateApp.mutate({
-                                id: app.id,
-                                data: { sources: next.filter(Boolean) },
-                              })
-                            }
-                          }}
-                          placeholder="https://..."
-                          viewClassName="flex-1 min-w-0"
-                          renderView={(val) =>
-                            val ? (
-                              <a
-                                href={val}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="hover:text-primary inline-flex items-center gap-1 truncate"
-                              >
-                                {displayUrl(val)}
-                                <ExternalLink className="size-3 shrink-0" />
-                              </a>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )
-                          }
-                        />
-                        {!isDraft && pulseByUrl.has(url) && (
-                          <SourcePulse
-                            pulse={pulseByUrl.get(url)!}
-                            className="ml-auto"
-                          />
-                        )}
-                        {!isDraft && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            aria-label="Remove source"
-                            className="shrink-0 text-muted-foreground hover:text-destructive"
-                            onClick={() => {
-                              const next = sourceUrls.filter(
-                                (_, i) => i !== index,
-                              )
-                              updateApp.mutate({
-                                id: app.id,
-                                data: { sources: next },
-                              })
-                            }}
-                          >
-                            <Trash2 className="size-3.5" />
-                          </Button>
-                        )}
-                      </li>
-                    )
-                  })}
-                </ul>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="mt-2 gap-1 text-muted-foreground"
-                  onClick={() => setDraftSource('')}
-                >
-                  <Plus className="size-3.5" />
-                  Add source
-                </Button>
-              </>
-            ) : (
-              <ul className="space-y-2">
-                {sourceUrls.map((url, index) => (
-                  // `group` so hovering anywhere on the row fades that source's
-                  // track in — the mark sits in a right-hand column, and row
-                  // hover is what ties the two ends of a wide row together.
-                  <li
-                    key={index}
-                    className="group flex items-center gap-2 text-xs"
-                  >
-                    <span className="text-muted-foreground shrink-0 tabular-nums">
-                      {index + 1}.
-                    </span>
-                    {url ? (
-                      <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:text-primary inline-flex min-w-0 items-center gap-1 truncate"
-                      >
-                        {displayUrl(url)}
-                        <ExternalLink className="size-3 shrink-0" />
-                      </a>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                    {pulseByUrl.has(url) && (
-                      <SourcePulse
-                        pulse={pulseByUrl.get(url)!}
-                        className="ml-auto"
-                      />
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Section>
-
-          {/* These used to sit unlabelled in a 64px gap between two sections,
-              which is what made that gap look like a mistake. Labelled, in
-              their own block. "Dates" rather than "Added / updated" on purpose:
-              a label that repeats the first word of every line below it adds
-              nothing, and it made "Added"/"Updated" ambiguous to anything
-              matching on text — including this card's own tests. */}
-          {(app.createdAt || app.freshness?.lastCheckedAt) && (
-            <Section title="Dates">
-              <div className="flex flex-wrap gap-x-5 gap-y-1">
-                {app.createdAt && (
-                  <span
-                    className="inline-flex items-center gap-1 text-xs text-muted-foreground"
-                    title={app.createdAt}
-                  >
-                    <CalendarPlus className="size-3" />
-                    Added {formatRelativeTime(app.createdAt)}
-                  </span>
-                )}
-                {app.freshness?.lastCheckedAt && (
-                  <span
-                    className="inline-flex items-center gap-1 text-xs text-muted-foreground"
-                    title={
-                      app.freshness.lastContentChangeAt
-                        ? `Content last changed ${app.freshness.lastContentChangeAt} · last checked ${app.freshness.lastCheckedAt}`
-                        : `Last checked ${app.freshness.lastCheckedAt}`
-                    }
-                  >
-                    <Clock className="size-3" />
-                    {/* "Updated" means the content changed, not that a check
-                        ran — entries predating the field have none, so fall
-                        back. */}
-                    Updated{' '}
-                    {formatRelativeTime(
-                      app.freshness.lastContentChangeAt ??
-                        app.freshness.lastCheckedAt,
-                    )}
-                    {app.freshness.isStale && (
-                      <span className="italic opacity-75">
-                        {' '}
-                        · may be out of date
-                      </span>
-                    )}
-                  </span>
-                )}
-              </div>
-            </Section>
-          )}
-
-          {/* Technical information: AI-facing fields, de-emphasized/collapsed */}
-          {(app.aiPrompt || app.aiMemory) && (
-            <Accordion type="single" collapsible className="mt-7">
-              <AccordionItem
-                value="technical-info"
-                className="border rounded-lg px-4"
-              >
-                <AccordionTrigger className="text-sm hover:no-underline py-3">
-                  Technical information
-                </AccordionTrigger>
-                <AccordionContent className="pb-3 space-y-3">
-                  {app.aiPrompt && (
-                    <div>
-                      <h4 className="section-label mb-1">AI Prompt</h4>
-                      <p className="text-xs whitespace-pre-wrap">
-                        {app.aiPrompt}
-                      </p>
+                {app.links && app.links.length > 0 && (
+                  <Section title="Documentation" first>
+                    <div className="space-y-0.5">
+                      {app.links.map((link) => (
+                        <a
+                          key={link.url}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary truncate"
+                        >
+                          <ExternalLink className="size-3 shrink-0" />
+                          {link.title || displayUrl(link.url)}
+                        </a>
+                      ))}
                     </div>
+                  </Section>
+                )}
+                {/* Background: why the app exists at all. Deliberately quiet — a
+                  reader who came to get access has already passed everything they
+                  need, and history should not compete with the description. */}
+                {app.background && (
+                  <Section title="Background" first={!app.links?.length}>
+                    <MarkdownText className="prose prose-sm text-muted-foreground max-w-none text-sm [&_p]:mt-0 [&_p]:mb-2 [&_p:last-child]:mb-0">
+                      {app.background}
+                    </MarkdownText>
+                  </Section>
+                )}
+              </>
+            ),
+          } satisfies DetailTab,
+        ]
+      : []),
+    {
+      id: TAB.behind,
+      label: 'Behind this card',
+      chip: behindCount ? String(behindCount) : undefined,
+      ariaLabel: behindCount
+        ? `Behind this card, ${behindCount} waiting for review`
+        : undefined,
+      render: () => (
+        <div className="behind-panel">
+          <div className="behind-layout">
+            <div className="behind-main">
+              <CommunitySection
+                ref={knowMoreRef}
+                appSlug={app.slug}
+                appName={app.displayName}
+                claims={app.claims}
+              />
+            </div>
+
+            <div className="behind-aside">
+              {(isAdmin ||
+                sourceUrls.length > 0 ||
+                app.createdAt ||
+                app.freshness?.lastCheckedAt) && (
+                <Group title="Kept up to date from">
+                  {isAdmin ? (
+                    <>
+                      <ul className="space-y-2">
+                        {displaySources.map((url, index) => {
+                          const isDraft =
+                            draftSource !== null && index === sourceUrls.length
+                          return (
+                            <li
+                              key={isDraft ? 'draft' : `${index}-${url}`}
+                              className="group flex items-center gap-2 text-xs"
+                            >
+                              <span className="text-muted-foreground shrink-0 tabular-nums">
+                                {index + 1}.
+                              </span>
+                              <InlineEditableField
+                                value={url}
+                                initialEditMode={isDraft}
+                                onCancel={
+                                  isDraft
+                                    ? () => setDraftSource(null)
+                                    : undefined
+                                }
+                                onSave={(newUrl) => {
+                                  if (isDraft) {
+                                    setDraftSource(null)
+                                    if (newUrl) {
+                                      updateApp.mutate({
+                                        id: app.id,
+                                        data: {
+                                          sources: [...sourceUrls, newUrl],
+                                        },
+                                      })
+                                    }
+                                  } else {
+                                    const next = [...sourceUrls]
+                                    next[index] = newUrl
+                                    updateApp.mutate({
+                                      id: app.id,
+                                      data: { sources: next.filter(Boolean) },
+                                    })
+                                  }
+                                }}
+                                placeholder="https://..."
+                                viewClassName="flex-1 min-w-0"
+                                renderView={(val) =>
+                                  val ? (
+                                    <a
+                                      href={val}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="hover:text-primary inline-flex items-center gap-1 truncate"
+                                    >
+                                      {displayUrl(val)}
+                                      <ExternalLink className="size-3 shrink-0" />
+                                    </a>
+                                  ) : (
+                                    <span className="text-muted-foreground">
+                                      —
+                                    </span>
+                                  )
+                                }
+                              />
+                              {!isDraft && pulseByUrl.has(url) && (
+                                <SourcePulse
+                                  pulse={pulseByUrl.get(url)!}
+                                  className="ml-auto"
+                                />
+                              )}
+                              {!isDraft && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  aria-label="Remove source"
+                                  className="shrink-0 text-muted-foreground hover:text-destructive"
+                                  onClick={() => {
+                                    const next = sourceUrls.filter(
+                                      (_, i) => i !== index,
+                                    )
+                                    updateApp.mutate({
+                                      id: app.id,
+                                      data: { sources: next },
+                                    })
+                                  }}
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </Button>
+                              )}
+                            </li>
+                          )
+                        })}
+                      </ul>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2 gap-1 text-muted-foreground"
+                        onClick={() => setDraftSource('')}
+                      >
+                        <Plus className="size-3.5" />
+                        Add source
+                      </Button>
+                    </>
+                  ) : (
+                    <ul className="space-y-2">
+                      {sourceUrls.map((url, index) => (
+                        // `group` so hovering anywhere on the row fades that source's
+                        // track in — the mark sits in a right-hand column, and row
+                        // hover is what ties the two ends of a wide row together.
+                        <li
+                          key={index}
+                          className="group flex items-center gap-2 text-xs"
+                        >
+                          <span className="text-muted-foreground shrink-0 tabular-nums">
+                            {index + 1}.
+                          </span>
+                          {url ? (
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:text-primary inline-flex min-w-0 items-center gap-1 truncate"
+                            >
+                              {displayUrl(url)}
+                              <ExternalLink className="size-3 shrink-0" />
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                          {pulseByUrl.has(url) && (
+                            <SourcePulse
+                              pulse={pulseByUrl.get(url)!}
+                              className="ml-auto"
+                            />
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {datesLine && (
+                    <p className="behind-dates" title={datesTitle}>
+                      {datesLine}
+                    </p>
+                  )}
+                </Group>
+              )}
+
+              {(app.aiPrompt || app.aiMemory) && (
+                <Group title="How the AI maintains this card">
+                  {app.aiPrompt && (
+                    <>
+                      <p className="behind-ai__label">Prompt</p>
+                      <p className="behind-ai">{app.aiPrompt}</p>
+                    </>
                   )}
                   {app.aiMemory && (
-                    <div>
-                      <h4 className="section-label mb-1">AI Memory</h4>
-                      <p className="text-xs whitespace-pre-wrap">
-                        {app.aiMemory}
-                      </p>
-                    </div>
+                    <>
+                      <p className="behind-ai__label">Memory</p>
+                      <p className="behind-ai">{app.aiMemory}</p>
+                    </>
                   )}
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          )}
-        </>
-      ),
-    },
-    {
-      id: TAB.notes,
-      label: 'Notes & requests',
-      render: () => (
-        <FeedbackSection appSlug={app.slug} openComposer={composeRequests} />
+                </Group>
+              )}
+
+              <div className="behind-card-source">
+                <ResourceDetailCardSource
+                  appSlug={app.slug}
+                  appName={app.displayName}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       ),
     },
   ]
@@ -655,30 +676,12 @@ export function AppDetails({
               : 'Deprecated'}
           </Badge>
         )}
-        {/* In the band, not at the foot of the notes panel.
-            Down there it was invisible twice over: below the fold of a panel, and
-            behind a tab nobody opens unless they already know what is in it — so
-            the one affordance the feature exists for was the hardest thing on the
-            card to find. Up here it is present on every tab, which is the whole
-            reason the band does not scroll away.
-            `mr-10` keeps it clear of the dialog's own close button at top-right. */}
-        {/* Plugin actions sit beside "Suggest a change", sharing its reasoning:
-            the band is mounted on every tab and never scrolls away. A slot in a
-            tab panel would be invisible until a second click, and one inside
-            SubResourceDetailPanel's `hasAnyAccess` gate would vanish for exactly
-            the resources that need help most.
-            Renders nothing when no plugin contributes, so the band keeps its
-            current shape in the open-source build. */}
+        {/* Plugin actions live in the band because it is mounted on every tab and
+            never scrolls away; a slot in a tab panel would be invisible until a
+            second click. Renders nothing when no plugin contributes.
+            `mr-10` keeps them clear of the dialog's close button at top-right. */}
         <div className="ml-auto mr-10 flex items-center gap-2">
           <ResourceDetailAccessActions {...accessActionsCtx} />
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => setComposeRequests((n) => n + 1)}
-          >
-            ✎ Suggest a change
-          </Button>
         </div>
       </div>
 
@@ -780,8 +783,20 @@ export function AppDetails({
           // `?sub=` means a child was picked out of a search, so the card opens
           // on the tab that holds it rather than making them hunt for it.
           forcedTab={subSlug && hasResourcesTab ? TAB.resources : undefined}
-          requestTab={composeRequests > 0 ? TAB.notes : undefined}
-          requestNonce={composeRequests}
+          trailing={(select) => (
+            <button
+              type="button"
+              className="detail-share"
+              aria-label="Share what you know"
+              onClick={() => {
+                select(TAB.behind)
+                setShareAsk((n) => n + 1)
+              }}
+            >
+              <span className="max-sm:sr-only">Share what you know</span>
+              <Plus className="size-4 sm:hidden" aria-hidden="true" />
+            </button>
+          )}
         />
       </div>
 

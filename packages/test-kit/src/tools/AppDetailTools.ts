@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 /**
@@ -13,7 +13,7 @@ export type AppDetailTabId =
   | 'access'
   | 'resources'
   | 'documentation'
-  | 'notes'
+  | 'behind'
 
 export interface AppVisibleData {
   title: string
@@ -253,38 +253,35 @@ export class AppDetailTools {
   /**
    * Asking for a correction, as a passing visitor does it.
    *
-   * The composer is NOT in the notes panel — the affordance is in the card's band,
-   * because at the foot of a tab it sat below the fold of a tab nobody opens unless
-   * they already know what is in it. So `open()` goes through the band, which is also
-   * what brings the notes tab forward.
+   * One input at the top of Behind this card takes words and screenshots.
+   * `open()` presses "Share what you know", which brings that tab forward and
+   * puts the caret in the input.
    */
   feedback = {
-    /** Click the band's "Suggest a change". */
+    /** Press "Share what you know": Behind this card, caret in the input. */
     open: async (): Promise<void> => {
-      const button = screen.getByRole('button', { name: /Suggest a change/i })
-      await this.user.click(button)
+      await this.user.click(
+        screen.getByRole('button', { name: 'Share what you know' }),
+      )
     },
 
     describe: async (text: string): Promise<void> => {
-      const field = screen.getByPlaceholderText('What should change?')
+      const field = this.feedbackInput()
       await this.user.clear(field)
       await this.user.type(field, text)
     },
 
     /**
-     * Attach `count` images through the real file input.
+     * Attach `count` images through the real file input behind the paperclip.
      *
      * A `File` with no bytes on purpose: the upload is mocked, and what this has to
-     * prove is that the composer carries the returned ids through to submit.
+     * prove is that the input carries the returned ids through to submit.
      */
     attachImages: async (count = 1): Promise<void> => {
-      const input =
-        document.querySelector<HTMLInputElement>('input[type="file"]')
-      if (!input) {
-        throw new Error(
-          'No file input in the composer — is it open? Call feedback.open() first.',
-        )
-      }
+      const input = this.feedbackInput()
+        .closest('form')
+        ?.querySelector<HTMLInputElement>('input[type="file"]')
+      if (!input) throw new Error('No file input beside the feedback input')
       const files = Array.from(
         { length: count },
         (_, i) =>
@@ -295,39 +292,60 @@ export class AppDetailTools {
       await this.user.upload(input, files)
     },
 
+    /** Waits out an upload in flight, which holds Send disabled. */
     send: async (): Promise<void> => {
-      await this.user.click(screen.getByRole('button', { name: 'Send' }))
+      const button = screen.getByRole('button', { name: 'Send' })
+      await waitFor(() => {
+        if (button.hasAttribute('disabled')) {
+          throw new Error('Send is disabled: nothing to send yet')
+        }
+      })
+      await this.user.click(button)
     },
 
-    /** Bodies of the items in the thread, in the order shown. */
+    /** Whether Send accepts a click: there are words or a screenshot. */
+    canSend: (): boolean =>
+      !screen.getByRole('button', { name: 'Send' }).hasAttribute('disabled'),
+
+    /** What is typed in the input right now. */
+    inputValue: (): string => this.feedbackInput().value,
+
+    /** Whether the caret is in the input. */
+    hasInputFocus: (): boolean =>
+      document.activeElement === this.feedbackInput(),
+
+    /** Bodies of the visitor notes in the Comments feed, newest first. */
     threadBodies: (): string[] => {
-      this.ensureTab('notes')
+      this.ensureTab('behind')
       const panel = this.getPanel()
       return Array.from(
         panel.querySelectorAll<HTMLElement>('[data-feedback-body]'),
       ).map((el) => el.textContent.trim())
     },
 
-    /** How many attached images the thread shows across all items. */
+    /** How many attached images the notes show across all items. */
     threadImageCount: (): number => {
-      this.ensureTab('notes')
+      this.ensureTab('behind')
       return this.getPanel().querySelectorAll('img[alt="Attached screenshot"]')
         .length
     },
 
-    /** The "N open" count beside the heading, or 0 when it is absent. */
+    /**
+     * How many comments in the feed say Pending — open notes, notes whose claim
+     * is still in review, and review claims of their own. The same number the
+     * Behind this card tab shows.
+     */
     openCount: (): number => {
-      this.ensureTab('notes')
-      const label = this.getPanel().querySelector(
-        '[aria-label$="awaiting review"]',
-      )
-      const match = /^(\d+)/.exec(label?.textContent ?? '')
-      return match ? Number(match[1]) : 0
+      this.ensureTab('behind')
+      return this.getPanel().querySelectorAll('[data-badge="pending"]').length
     },
+  }
 
-    /** Whether the composer is currently on screen. */
-    isComposerOpen: (): boolean =>
-      !!document.querySelector('textarea[placeholder="What should change?"]'),
+  private feedbackInput(): HTMLTextAreaElement {
+    this.ensureTab('behind')
+    return screen.getByRole<HTMLTextAreaElement>('textbox', {
+      name: /^Know more about /,
+    })
   }
 
   /** Click the "View replacement: <App>" link in a deprecated app's panel. */

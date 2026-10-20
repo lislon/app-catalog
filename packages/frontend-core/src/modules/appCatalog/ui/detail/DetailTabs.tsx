@@ -36,32 +36,13 @@ export interface DetailTab {
 export function DetailTabs({
   tabs,
   forcedTab,
-  requestTab,
-  requestNonce,
   band,
   bandClassName,
+  trailing,
 }: {
   tabs: DetailTab[]
   /** Overrides `?tab=` while set. */
   forcedTab?: string
-  /**
-   * A one-shot "please show this tab" from outside the strip — the band's
-   * "Suggest a change" uses it.
-   *
-   * It has to come through here rather than the caller writing `?tab=` itself:
-   * `useUrlSyncedState` keeps its own `useState` seeded once from the URL and only
-   * ever pushes state OUT to the URL, so a second instance writing the same key
-   * does not update this one. The two then fight — the strip's next render sees the
-   * URL disagreeing with its own state and navigates back over it.
-   */
-  requestTab?: string
-  /**
-   * Bumped by the caller every time it asks again. Without it a repeat request is
-   * indistinguishable from the same standing value, so the effect below does not
-   * re-fire and the second ask does nothing — which is what made the band's
-   * button work exactly once per card.
-   */
-  requestNonce?: number
   /**
    * Identity and actions, shown ABOVE the strip and inside the same tinted
    * surface. Owned here rather than by the caller because the band and the
@@ -72,6 +53,13 @@ export function DetailTabs({
   band?: React.ReactNode
   /** Cancels the dialog's own padding so the tint reaches the card's edges. */
   bandClassName?: string
+  /**
+   * Shown at the right end of the strip, outside the tablist so it is not
+   * announced as a tab. Handed `select` because the strip owns the active tab:
+   * a caller writing `?tab=` itself would fight `useUrlSyncedState`, which keeps
+   * its own state and only pushes it out to the url.
+   */
+  trailing?: (select: (id: string) => void) => React.ReactNode
 }) {
   /**
    * The first tab is what the card opens on, so naming it in the URL says nothing.
@@ -93,29 +81,29 @@ export function DetailTabs({
    * Renaming one would silently drop those onto the first tab, so a retired id
    * keeps resolving to its replacement instead.
    */
-  const RETIRED: Record<string, string> = { metadata: 'documentation' }
+  const RETIRED: Record<string, string> = {
+    metadata: 'documentation',
+    notes: 'behind',
+  }
+
+  /**
+   * Where a link to a tab the entry does not have lands instead. A thin entry
+   * has no Documentation tab, and links to it were mostly about sources and
+   * dates, which Behind this card holds.
+   */
+  const ABSENT: Record<string, string> = {
+    documentation: 'behind',
+  }
 
   /**
    * `forcedTab` picks the tab you ARRIVE on, not the tab you are stuck on.
    *
-   * It used to win over `?tab=` for as long as it was set, and `?sub=` keeps it set
-   * for the whole life of the card — so on any entry reached by a sub-resource
-   * search (667 accounts on one of them) the strip was dead: every click wrote
-   * nothing and the tab never moved. The same override also silently killed the
-   * band's "Suggest a change", which navigates by writing `?tab=`.
-   *
-   * So it applies until the user expresses a preference, and then gets out of the
-   * way. `userChose` is what distinguishes "no opinion yet" from "chose the tab
-   * that happens to be the forced one".
+   * `?sub=` stays set for the card's whole life, so forcing it permanently would
+   * make the strip unclickable. It applies until the user expresses a preference,
+   * and then gets out of the way. `userChose` is what distinguishes "no opinion
+   * yet" from "chose the tab that happens to be the forced one".
    */
   const [userChose, setUserChose] = React.useState(false)
-
-  // Applied when it changes, through the state that actually owns the tab.
-  React.useEffect(() => {
-    if (!requestTab) return
-    setUserChose(true)
-    setUrlTab(requestTab)
-  }, [requestTab, requestNonce, setUrlTab])
   /**
    * Releasing the force must not move the view.
    *
@@ -137,9 +125,26 @@ export function DetailTabs({
   }
 
   const asked = userChose || !forcedTab ? urlTab : forcedTab
-  const requested = RETIRED[asked] ?? asked
+  const retired = RETIRED[asked] ?? asked
+  const requested = ids.includes(retired)
+    ? retired
+    : (ABSENT[retired] ?? retired)
   const activeId = ids.includes(requested) ? requested : (ids[0] ?? '')
   const active = tabs.find((t) => t.id === activeId)
+
+  const select = (id: string) => {
+    setUserChose(true)
+    setUrlTab(id)
+    // Scroll the active tab into view on narrow screens where tabs overflow.
+    requestAnimationFrame(() => {
+      const tabElement = document.getElementById(`detail-tab-${id}`)
+      tabElement?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      })
+    })
+  }
 
   // Arrow keys move between tabs, per the tablist pattern. Selection follows
   // focus, which is correct here because every panel is already loaded.
@@ -151,8 +156,7 @@ export function DetailTabs({
     const from = ids.indexOf(activeId)
     const next = ids[(from + delta + ids.length) % ids.length]
     if (!next) return
-    setUserChose(true)
-    setUrlTab(next)
+    select(next)
     // Focus follows selection, or the arrow keys would walk the visual
     // selection away from the keyboard's position. By id rather than by
     // position in a NodeList: each tab already carries one, and an id lookup
@@ -164,37 +168,39 @@ export function DetailTabs({
     <>
       <div className={cn('detail-band', bandClassName)}>
         {band}
-        <div role="tablist" className="detail-tabs mt-5" onKeyDown={onKeyDown}>
-          {tabs.map((tab) => {
-            const selected = tab.id === activeId
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                id={`detail-tab-${tab.id}`}
-                aria-selected={selected}
-                aria-controls={`detail-panel-${tab.id}`}
-                // Only the selected tab stays in the tab order; the rest are
-                // reached with the arrow keys, as the pattern requires.
-                tabIndex={selected ? 0 : -1}
-                aria-label={tab.ariaLabel}
-                className="detail-tab"
-                onClick={() => {
-                  setUserChose(true)
-                  setUrlTab(tab.id)
-                }}
-              >
-                {tab.label}
-                {tab.chip && (
-                  <span className="detail-tab__chip">{tab.chip}</span>
-                )}
-                {tab.dot && (
-                  <span className="detail-tab__dot" aria-hidden="true" />
-                )}
-              </button>
-            )
-          })}
+        <div className="detail-tabs-row mt-5">
+          <div role="tablist" className="detail-tabs" onKeyDown={onKeyDown}>
+            {tabs.map((tab) => {
+              const selected = tab.id === activeId
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  id={`detail-tab-${tab.id}`}
+                  aria-selected={selected}
+                  aria-controls={`detail-panel-${tab.id}`}
+                  // Only the selected tab stays in the tab order; the rest are
+                  // reached with the arrow keys, as the pattern requires.
+                  tabIndex={selected ? 0 : -1}
+                  aria-label={tab.ariaLabel}
+                  className="detail-tab"
+                  onClick={() => select(tab.id)}
+                >
+                  {tab.label}
+                  {tab.chip && (
+                    <span className="detail-tab__chip">{tab.chip}</span>
+                  )}
+                  {tab.dot && (
+                    <span className="detail-tab__dot" aria-hidden="true" />
+                  )}
+                </button>
+              )
+            })}
+          </div>
+          {trailing && (
+            <div className="detail-tabs-trailing">{trailing(select)}</div>
+          )}
         </div>
       </div>
       {active && (

@@ -21,6 +21,8 @@ export type { AssertDisjoint } from './types'
 export {
   ResourceDetailAccessActions,
   ResourceSubResourceRowActions,
+  ResourceDetailFeedbackNote,
+  ResourceDetailCardSource,
   ResourceDetailProvider,
 } from './features/resourceDetail'
 export type {

@@ -128,7 +128,7 @@ export async function getApprovalMethodsFromPrisma(): Promise<
   })
 }
 
-function rowToResource(row: ResourceRowWithSourceRefs): Resource {
+export function rowToResource(row: ResourceRowWithSourceRefs): Resource {
   const accessRequest =
     row.accessRequest as unknown as Resource['accessRequest']
   const teams = (row.teams as unknown as string[] | null) ?? []
@@ -172,6 +172,10 @@ function rowToResource(row: ResourceRowWithSourceRefs): Resource {
     row.quickJumps == null
       ? undefined
       : (row.quickJumps as unknown as Resource['quickJumps'])
+  const claims =
+    row.claims == null
+      ? undefined
+      : (row.claims as unknown as Resource['claims'])
   const freshness = computeFreshness({
     lastCheckedAt: row.lastCheckedAt ? row.lastCheckedAt.toISOString() : null,
     nextCheckAfter: row.nextCheckAfter
@@ -205,6 +209,7 @@ function rowToResource(row: ResourceRowWithSourceRefs): Resource {
     urlIssues,
     tiers,
     quickJumps,
+    claims,
     childrenLabel: row.childrenLabel ?? undefined,
     // Fields from former SubResource
     parentSlug: row.parentSlug ?? undefined,

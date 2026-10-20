@@ -30,8 +30,11 @@ vi.mock('~/modules/appCatalog/ui/context/AppCatalogFiltersContext', () => ({
   useAppCatalogFilters: vi.fn(() => ({ selectedTags: [], toggleTag: vi.fn() })),
 }))
 vi.mock('~/modules/auth', () => ({ useUser: vi.fn(() => null) }))
-vi.mock('~/modules/appCatalog/ui/detail/FeedbackSection', () => ({
-  FeedbackSection: () => <div />,
+vi.mock('~/modules/appCatalog/ui/detail/CommunitySection', () => ({
+  CommunitySection: () => <div />,
+}))
+vi.mock('~/modules/appCatalog/ui/detail/usePendingCount', () => ({
+  usePendingCount: () => 0,
 }))
 
 const { AppDetails } = await import('~/modules/appCatalog/ui/detail/AppDetails')

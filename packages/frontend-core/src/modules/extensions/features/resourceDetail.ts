@@ -49,6 +49,32 @@ export interface ResourceDetailSlots {
     parent: Resource
     user: PluginUser | null
   }
+
+  /**
+   * "What happens next" line at the foot of the "How comments work" popover,
+   * beside the Comments heading on Behind this card.
+   *
+   * Tells the reader what becomes of the text they send. The OSS default is
+   * `Every note is reviewed. Facts that check out update the card and are
+   * marked Used as source.` A deployment with its own review loop substitutes
+   * its own text.
+   */
+  resourceDetailFeedbackNote: {
+    appSlug: string
+    appName: string
+  }
+
+  /**
+   * Where this card's own definition lives, at the foot of Behind this card.
+   *
+   * A quiet link such as "View this card's source". Only the deployment knows
+   * where its catalog entries are kept, so the core has no default and renders
+   * nothing here unless a plugin contributes.
+   */
+  resourceDetailCardSource: {
+    appSlug: string
+    appName: string
+  }
 }
 
 /**
@@ -87,4 +113,6 @@ export const ResourceDetailAccessActions = mkSlot('resourceDetailAccessActions')
 export const ResourceSubResourceRowActions = mkSlot(
   'resourceSubResourceRowActions',
 )
+export const ResourceDetailFeedbackNote = mkSlot('resourceDetailFeedbackNote')
+export const ResourceDetailCardSource = mkSlot('resourceDetailCardSource')
 export const ResourceDetailProvider = mkWrapper('resourceDetailProvider')

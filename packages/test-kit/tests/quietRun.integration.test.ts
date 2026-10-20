@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 
 import {
@@ -27,11 +27,15 @@ describe('a green run is a quiet run', () => {
       initialRoute: '/app/taskflow',
     })
     await waitFor(() => expect(ui.catalog.isDetailPanelOpen()).toBe(true))
-    // The comments query only fires once its tab mounts the section, so the
-    // path this test exists to exercise has to be opened deliberately.
-    await ui.app.openTab('notes')
+    // The feedback list is asked for as the card opens, for the Behind this
+    // card count, and an empty answer renders nothing. Sending a note and
+    // seeing it listed proves the list request was answered (the refetch
+    // after the send), not merely issued.
+    await ui.app.feedback.open()
+    await ui.app.feedback.describe('A quiet note.')
+    await ui.app.feedback.send()
     await waitFor(() =>
-      expect(screen.getByText(/Nothing here yet/)).toBeVisible(),
+      expect(ui.app.feedback.threadBodies()).toContain('A quiet note.'),
     )
 
     expect(takeUnhandledRequests()).toEqual([])

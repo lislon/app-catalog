@@ -30,8 +30,11 @@ vi.mock('~/modules/auth', () => ({
   useUser: vi.fn(() => null),
   useOptionalUser: vi.fn(() => null),
 }))
-vi.mock('~/modules/appCatalog/ui/detail/FeedbackSection', () => ({
-  FeedbackSection: () => <div />,
+vi.mock('~/modules/appCatalog/ui/detail/CommunitySection', () => ({
+  CommunitySection: () => <div />,
+}))
+vi.mock('~/modules/appCatalog/ui/detail/usePendingCount', () => ({
+  usePendingCount: () => 0,
 }))
 vi.mock('~/modules/appCatalog/ui/components/SubResourceDetailPanel', () => ({
   SubResourceDetailPanel: () => null,

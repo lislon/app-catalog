@@ -36,8 +36,11 @@ vi.mock('~/modules/appCatalog/ui/context/AppCatalogFiltersContext', () => ({
   })),
 }))
 vi.mock('~/modules/auth', () => ({ useUser: vi.fn(() => null) }))
-vi.mock('~/modules/appCatalog/ui/detail/FeedbackSection', () => ({
-  FeedbackSection: () => <div />,
+vi.mock('~/modules/appCatalog/ui/detail/CommunitySection', () => ({
+  CommunitySection: () => <div />,
+}))
+vi.mock('~/modules/appCatalog/ui/detail/usePendingCount', () => ({
+  usePendingCount: () => 0,
 }))
 
 const { AppDetails } = await import('~/modules/appCatalog/ui/detail/AppDetails')
@@ -48,6 +51,7 @@ const withUrl = {
   displayName: 'Thing',
   description: 'Does a thing.',
   appUrl: 'https://thing.example.com/portal',
+  links: [{ title: 'Guide', url: 'https://thing.example.com/guide' }],
 } as Resource
 
 const withoutUrl = {
@@ -88,7 +92,7 @@ describe('the door', () => {
 
 describe('the tab strip', () => {
   // The reason the active tab lives in the url at all: a card is linkable
-  // mid-conversation, and a maintainer's reply on the notes tab is addressable.
+  // mid-conversation, and a maintainer's reply on Behind this card is addressable.
   it('writes the selected tab to the url', () => {
     render(<AppDetails app={withUrl} />)
 
@@ -187,7 +191,7 @@ describe('the tab strip', () => {
     })
 
     expect(
-      screen.getByRole('tab', { name: 'Notes & requests' }),
+      screen.getByRole('tab', { name: 'Behind this card' }),
     ).toHaveAttribute('aria-selected', 'true')
   })
 })

@@ -35,6 +35,7 @@ export {
   MAX_ATTACHMENTS,
   MAX_BODY_LENGTH,
   MAX_SUBJECT_LENGTH,
+  stripHiddenText,
   type FeedbackList,
   type FeedbackView,
 } from './modules/feedback/service'

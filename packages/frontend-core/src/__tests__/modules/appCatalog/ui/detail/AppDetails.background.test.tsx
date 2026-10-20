@@ -28,8 +28,11 @@ vi.mock('~/modules/appCatalog/ui/context/AppCatalogFiltersContext', () => ({
   useAppCatalogFilters: vi.fn(() => ({ selectedTags: [], toggleTag: vi.fn() })),
 }))
 vi.mock('~/modules/auth', () => ({ useUser: vi.fn(() => null) }))
-vi.mock('~/modules/appCatalog/ui/detail/FeedbackSection', () => ({
-  FeedbackSection: () => <div />,
+vi.mock('~/modules/appCatalog/ui/detail/CommunitySection', () => ({
+  CommunitySection: () => <div />,
+}))
+vi.mock('~/modules/appCatalog/ui/detail/usePendingCount', () => ({
+  usePendingCount: () => 0,
 }))
 
 const { AppDetails } = await import('~/modules/appCatalog/ui/detail/AppDetails')
@@ -66,17 +69,13 @@ describe('AppDetails — Background', () => {
     ).toBeInTheDocument()
   })
 
-  // Asserted ON the Documentation tab on purpose. Asserting it from Overview would
-  // pass whether or not the section works, because Background is in another
-  // panel either way — a test that cannot fail is worse than no test.
-  it('leaves no empty section when the entry has no history recorded', () => {
+  // With neither links nor history the tab has nothing to say, so it is not
+  // offered at all — an empty tab is the same dead end as an empty section.
+  it('offers no Documentation tab when the entry has no history recorded', () => {
     const { background: _omitted, ...withoutBackground } = app
     render(<AppDetails app={withoutBackground as Resource} />)
 
-    fireEvent.click(screen.getByRole('tab', { name: /documentation/i }))
-
+    expect(screen.queryByRole('tab', { name: /documentation/i })).toBeNull()
     expect(screen.queryByRole('heading', { name: 'Background' })).toBeNull()
-    // Proves the panel really is open, so the absence above means something.
-    expect(screen.getByRole('heading', { name: 'Sources' })).toBeVisible()
   })
 })

@@ -157,6 +157,8 @@ model DbResource {
   tiers                      Json?
   /// [QuickJump[]]
   quickJumps                 Json?
+  /// [Claim[]] Statements the card text is built from; see Claim in appCatalogTypes.
+  claims                     Json?
   childrenLabel              String? // Plural noun for this resource's children ("Accounts"); set on the parent, names its tab
   sourceRefs                 SourceReference[]
   feedback                   DbFeedback[]

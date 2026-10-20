@@ -183,6 +183,28 @@ export const mockAppCatalog: Resource[] = [
         'Contact IT if you need additional permissions or private channels.',
     },
     sources: ['https://slack.com/help'],
+    claims: [
+      {
+        text: 'Used by all employees for daily team coordination',
+        addedAt: '2024-01-15',
+        origin: 'IT Team',
+        status: 'active',
+      },
+      {
+        text: 'Supports integration with over 2,000 third-party apps',
+        addedAt: '2026-10-15',
+        origin: 'from visitor feedback',
+        status: 'review',
+      },
+      {
+        text: 'Previously hosted on-premise before cloud migration',
+        addedAt: '2023-06-01',
+        origin: 'Platform Team',
+        status: 'archived',
+        archiveReason: 'No longer relevant after cloud migration completed',
+        archivedAt: '2024-03-20',
+      },
+    ],
   },
   {
     id: 'zoom',

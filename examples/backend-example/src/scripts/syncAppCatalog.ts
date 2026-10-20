@@ -27,10 +27,9 @@ const sampleAppCatalog: Resource[] = [
     displayName: 'Car Shop Sales',
     abbreviation: 'Sales',
     description: 'Sales management system for the car dealership',
-    access: {
-      type: 'ticketing',
-      providerId: 'jira',
-      queue: 'IT-SUPPORT',
+    accessRequest: {
+      approvalMethodSlug: 'it-support',
+      comments: 'Request access through IT Support ticketing system',
     },
     teams: ['sales', 'engineering'],
     tags: ['sales', 'crm'],
@@ -42,10 +41,10 @@ const sampleAppCatalog: Resource[] = [
     displayName: 'Billing App',
     abbreviation: 'Billing',
     description: 'Invoice and billing management application',
-    access: {
-      type: 'self-service',
-      instructions: 'Request access through the admin portal',
-      url: 'https://admin.example.com/access',
+    accessRequest: {
+      approvalMethodSlug: 'self-service-portal',
+      comments: 'Request access through the admin portal',
+      urls: [{ url: 'https://admin.example.com/access' }],
     },
     teams: ['finance', 'engineering'],
     tags: ['billing', 'finance'],
@@ -57,16 +56,9 @@ const sampleAppCatalog: Resource[] = [
     displayName: 'Pet Shop App',
     abbreviation: 'Pet Shop',
     description: 'Pet shop management and inventory system',
-    access: {
-      type: 'email',
-      contacts: [
-        {
-          name: 'IT Support',
-          email: 'it-support@example.com',
-          role: 'Support',
-        },
-      ],
-      subject: 'Access Request: Pet Shop App',
+    accessRequest: {
+      approvalMethodSlug: 'it-support',
+      comments: 'Contact IT Support for access',
     },
     teams: ['retail', 'operations'],
     tags: ['retail', 'inventory'],
@@ -78,10 +70,14 @@ const sampleAppCatalog: Resource[] = [
     displayName: 'Monitoring Dashboard',
     abbreviation: 'Monitoring',
     description: 'System monitoring and alerting dashboard',
-    access: {
-      type: 'documentation',
-      url: 'https://docs.example.com/monitoring-access',
-      title: 'Monitoring Access Guide',
+    accessRequest: {
+      approvalMethodSlug: 'self-service-portal',
+      urls: [
+        {
+          label: 'Monitoring Access Guide',
+          url: 'https://docs.example.com/monitoring-access',
+        },
+      ],
     },
     teams: ['engineering', 'sre'],
     tags: ['monitoring', 'observability'],
@@ -92,10 +88,19 @@ const sampleAppCatalog: Resource[] = [
 
 async function loadAppCatalog(): Promise<Resource[]> {
   try {
-    const { appCatalog } = await import('../local/appCatalog.js')
+    // Optional local catalog file - non-literal import prevents TS resolution
+    const LOCAL_CATALOG = '../local/appCatalog.js'
+    const mod = (await import(LOCAL_CATALOG)) as {
+      appCatalog?: Resource[]
+      default?: Resource[]
+    }
+    const appCatalog = mod.appCatalog || mod.default
+    if (!appCatalog) {
+      throw new Error('No appCatalog export found')
+    }
     console.log('Loaded app catalog from local/appCatalog.ts')
     return appCatalog
-  } catch (error) {
+  } catch {
     console.log('Using sample app catalog (local/appCatalog.ts not found)')
     return sampleAppCatalog
   }
