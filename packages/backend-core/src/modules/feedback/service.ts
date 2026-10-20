@@ -134,6 +134,23 @@ export async function listMyFeedback(
   return rows.map((row) => toView(row, actor))
 }
 
+/**
+ * Strips invisible characters from text that AI agents will read.
+ *
+ * Removes zero-width characters (except ZWJ, needed for emoji), directional marks/overrides,
+ * and Unicode tag characters that could hide instructions or disguise links.
+ */
+export function stripHiddenText(text: string): string {
+  // Zero-width: U+200B, U+200C, U+2060, U+FEFF
+  // Directional: U+200E-U+200F, U+202A-U+202E, U+2066-U+2069
+  // Tag chars: U+E0000-U+E007F
+  // Preserves U+200D (ZWJ) for emoji
+  return text.replace(
+    /[\u{200B}\u{200C}\u{200E}-\u{200F}\u{202A}-\u{202E}\u{2060}\u{2066}-\u{2069}\u{E0000}-\u{E007F}\u{FEFF}]/gu,
+    '',
+  )
+}
+
 export class FeedbackError extends Error {
   constructor(
     readonly reason:
@@ -151,7 +168,8 @@ export class FeedbackError extends Error {
 
 function normaliseBody(body: string | undefined | null): string | null {
   if (body === undefined || body === null) return null
-  const trimmed = body.trim()
+  const stripped = stripHiddenText(body)
+  const trimmed = stripped.trim()
   // A bare flag is a valid signal, so empty is stored as absent rather than refused.
   return trimmed ? trimmed.slice(0, MAX_BODY_LENGTH) : null
 }
@@ -198,7 +216,7 @@ export async function addFeedback(
         resourceId,
         subject: resourceId
           ? null
-          : subject!.trim().slice(0, MAX_SUBJECT_LENGTH),
+          : stripHiddenText(subject!).trim().slice(0, MAX_SUBJECT_LENGTH),
         authorHash: actor.hash,
         authorAlias: actor.alias,
         body: normaliseBody(body),
