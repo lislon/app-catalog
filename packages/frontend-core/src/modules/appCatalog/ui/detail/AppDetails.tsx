@@ -16,6 +16,7 @@ import {
 } from '~/ui/accordion'
 import { AccessRequestSection } from '../components/AccessRequestSection'
 import { AccessPrerequisiteChain } from '../components/AccessPrerequisiteChain'
+import { ClaimsList } from '../components/ClaimsList'
 import { QuickJumpBar, hasQuickJumps } from '../components/QuickJumpBar'
 import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
 import { PersonBadge } from '../components/PersonBadge'
@@ -536,6 +537,14 @@ export function AppDetails({
               </ul>
             )}
           </Section>
+
+          {/* Why the card says what it says. Technical provenance, so it sits
+              with Sources rather than competing with the description. */}
+          {app.claims && app.claims.length > 0 && (
+            <Section title="Claims">
+              <ClaimsList claims={app.claims} />
+            </Section>
+          )}
 
           {/* These used to sit unlabelled in a 64px gap between two sections,
               which is what made that gap look like a mistake. Labelled, in
