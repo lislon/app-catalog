@@ -1,5 +1,14 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.10.1
+
+### Patch Changes
+
+- [#331](https://github.com/lislon/app-catalog/pull/331) [`0036b55`](https://github.com/lislon/app-catalog/commit/0036b551831020698873a8d441ddbbc1dcce15e8) Thanks [@lislon](https://github.com/lislon)! - Behind this card is one reading column again on every card width; the wide-card two-column layout truncated source links.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.10.1
+
 ## 6.10.0
 
 ### Minor Changes
