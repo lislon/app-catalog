@@ -185,15 +185,16 @@ export const mockAppCatalog: Resource[] = [
     sources: ['https://slack.com/help'],
     claims: [
       {
-        statement: 'Used by all employees for daily team coordination',
-        date: '2024-01-15',
+        text: 'Used by all employees for daily team coordination',
+        addedAt: '2024-01-15',
         origin: 'IT Team',
+        status: 'active',
       },
       {
-        statement: 'Previously hosted on-premise before cloud migration',
-        date: '2023-06-01',
+        text: 'Previously hosted on-premise before cloud migration',
+        addedAt: '2023-06-01',
         origin: 'Platform Team',
-        archived: true,
+        status: 'archived',
         archiveReason: 'No longer relevant after cloud migration completed',
         archivedAt: '2024-03-20',
       },
