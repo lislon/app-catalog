@@ -483,29 +483,26 @@
   container-name: behind;
 }
 @container behind (min-width: 900px) {
-  .behind-panel {
+  .behind-layout {
     display: grid;
     grid-template-columns: minmax(0, 68ch) minmax(240px, 1fr);
     column-gap: 3.5rem;
   }
-  .behind-panel .behind-group:first-child {
+  .behind-main {
     grid-column: 1;
   }
-  .behind-panel .behind-group:nth-child(2) {
+  .behind-aside {
     grid-column: 2;
-    grid-row: 1 / span 10;
+  }
+  .behind-aside .behind-group {
     margin-top: 0;
     padding-top: 0;
     border-top: none;
   }
-  .behind-panel .behind-group:nth-child(3) {
-    grid-column: 2;
+  .behind-aside .behind-group + .behind-group {
     margin-top: 2.5rem;
     padding-top: 0;
     border-top: none;
-  }
-  .behind-panel .behind-card-source {
-    grid-column: 2;
   }
 }
 .behind-group + .behind-group {
