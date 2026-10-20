@@ -38,8 +38,8 @@ export function ClaimsList({ claims }: { claims: Claim[] }) {
     <>
       {active.length > 0 && (
         <ul className="claims">
-          {active.map((c) => (
-            <ClaimRow key={c.text} claim={c} />
+          {active.map((c, i) => (
+            <ClaimRow key={`${i}-${c.text}`} claim={c} />
           ))}
         </ul>
       )}
@@ -47,8 +47,8 @@ export function ClaimsList({ claims }: { claims: Claim[] }) {
         <details className="claims-archived">
           <summary>Archived ({archived.length})</summary>
           <ul className="claims">
-            {archived.map((c) => (
-              <ClaimRow key={c.text} claim={c} />
+            {archived.map((c, i) => (
+              <ClaimRow key={`${i}-${c.text}`} claim={c} />
             ))}
           </ul>
         </details>

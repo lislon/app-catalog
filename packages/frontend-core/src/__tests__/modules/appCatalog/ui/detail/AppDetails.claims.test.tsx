@@ -120,4 +120,22 @@ describe('AppDetails — Claims', () => {
     expect(screen.getByRole('heading', { name: 'Sources' })).toBeVisible()
     expect(screen.queryByRole('heading', { name: 'Claims' })).toBeNull()
   })
+
+  it('renders multiple claims with the same text without key warnings', () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error')
+    openDocs({
+      ...base,
+      claims: [
+        { text: 'Single sign-on.', addedAt: '2026-10-01', status: 'active' },
+        { text: 'Single sign-on.', addedAt: '2026-10-05', status: 'active' },
+      ],
+    })
+
+    const items = screen.getAllByText('Single sign-on.')
+    expect(items).toHaveLength(2)
+    expect(consoleErrorSpy).not.toHaveBeenCalledWith(
+      expect.stringMatching(/same key/),
+    )
+    consoleErrorSpy.mockRestore()
+  })
 })
