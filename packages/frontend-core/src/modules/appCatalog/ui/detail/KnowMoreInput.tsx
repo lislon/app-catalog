@@ -121,6 +121,7 @@ export function KnowMoreInput({
           size="sm"
           className="know-more-send"
           tabIndex={typing ? 0 : -1}
+          aria-hidden={!typing}
           disabled={add.isPending}
         >
           Send

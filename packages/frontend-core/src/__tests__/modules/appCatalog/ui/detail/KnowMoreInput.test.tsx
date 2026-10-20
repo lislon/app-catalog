@@ -52,14 +52,16 @@ beforeEach(() => {
 
 const field = () =>
   screen.getByRole('textbox', { name: 'Know something more about Team Board?' })
-const send = () => screen.getByRole('button', { name: 'Send', hidden: true })
+const send = () => screen.getByText('Send')
 
 describe('KnowMoreInput', () => {
   it('shows Send only once there is text', async () => {
     render(<KnowMoreInput appSlug="team-board" appName="Team Board" />)
     expect(send().closest('.know-more-field')).not.toHaveClass('is-typing')
+    expect(send()).toHaveAttribute('aria-hidden', 'true')
     await userEvent.type(field(), 'A fact')
     expect(send().closest('.know-more-field')).toHaveClass('is-typing')
+    expect(send()).not.toHaveAttribute('aria-hidden', 'true')
   })
 
   it('treats whitespace as empty: no Send, Enter sends nothing', async () => {
