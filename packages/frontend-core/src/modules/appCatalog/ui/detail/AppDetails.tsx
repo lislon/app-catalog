@@ -433,6 +433,9 @@ export function AppDetails({
       id: TAB.behind,
       label: 'Behind this card',
       chip: behindCount ? String(behindCount) : undefined,
+      ariaLabel: behindCount
+        ? `Behind this card, ${behindCount} waiting for review`
+        : undefined,
       render: () => (
         <>
           <Group title="From the community">

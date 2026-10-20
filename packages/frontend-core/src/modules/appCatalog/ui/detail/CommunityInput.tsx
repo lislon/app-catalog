@@ -13,6 +13,7 @@ import {
   writeDraft,
 } from './communityDraft'
 import type { PendingImage } from './communityDraft'
+import { formatCommunityError } from './communityError'
 
 /** px: 18 line-height + 2×6 padding + 2×1 border. */
 const ONE_LINE = 32
@@ -101,6 +102,9 @@ export function CommunityInput({
   // next render, so a second paste or drop in the same tick would slip past it.
   const inFlightRef = React.useRef(false)
   const dragDepthRef = React.useRef(0)
+  // Cleared draft stays cleared: Esc increments this; the upload checks it
+  // on completion so an in-flight upload does not re-add its image.
+  const draftGenRef = React.useRef(0)
   const [height, setHeight] = React.useState(ONE_LINE)
   const fieldRef = React.useRef<HTMLTextAreaElement>(null)
   // A hidden twin measures the height the text needs, so the real field can
@@ -192,19 +196,26 @@ export function CommunityInput({
     setUploadError(null)
     inFlightRef.current = true
     setUploading(true)
+    const startGen = draftGenRef.current
     const result = await upload(files.slice(0, room))
     inFlightRef.current = false
     setUploading(false)
+    // Draft was cleared (Esc) while upload was in flight: stay cleared.
+    if (draftGenRef.current !== startGen) return
     if (typeof result === 'string') {
       setUploadError(result)
       return
     }
-    setImages((current) =>
-      [
-        ...current,
-        ...result.map((id, i) => ({ id, name: files[i]?.name ?? 'image' })),
-      ].slice(0, MAX_ATTACHMENTS),
-    )
+    const newImages = result.map((id, i) => ({
+      id,
+      name: files[i]?.name ?? 'image',
+    }))
+    // Merge into both state and persisted draft so unmount restores it.
+    setImages((current) => {
+      const updated = [...current, ...newImages].slice(0, MAX_ATTACHMENTS)
+      writeAttachments(appSlug, updated)
+      return updated
+    })
     if (files.length > room)
       setUploadError(`Only the first ${room} were attached`)
   }
@@ -319,6 +330,7 @@ export function CommunityInput({
           onChange={(e) => {
             setText(e.target.value)
             setSent(false)
+            if (add.isError) add.reset()
           }}
           onPaste={(e) => {
             const files = [...e.clipboardData.files].filter(isImage)
@@ -344,6 +356,7 @@ export function CommunityInput({
             ) {
               e.preventDefault()
               e.stopPropagation()
+              draftGenRef.current += 1
               setText('')
               setImages([])
             }
@@ -377,7 +390,9 @@ export function CommunityInput({
       </p>
       {(add.isError || uploadError) && (
         <p role="alert" className="know-more-error">
-          {add.isError ? sendFailure(add.error) : uploadError}
+          {add.isError
+            ? `Could not send: ${formatCommunityError(add.error)}. Your note is still here.`
+            : uploadError}
         </p>
       )}
       <p role="status" className={cn('know-more-sent', sent && 'is-on')}>
@@ -389,19 +404,6 @@ export function CommunityInput({
       </div>
     </form>
   )
-}
-
-/**
- * The server's reason when it gave a readable one ("Up to 3 images"), else a
- * generic line. Validation failures arrive as serialized issue lists, which
- * are not for a reader.
- */
-function sendFailure(error: unknown): string {
-  const reason =
-    error instanceof Error ? error.message.trim().replace(/\.$/, '') : ''
-  return reason && !/^[[{]/.test(reason)
-    ? `Could not send: ${reason}. Your note is still here.`
-    : 'Could not send — your note is still here. Try again.'
 }
 
 /** OSS default: what happens to the note the user sends. */

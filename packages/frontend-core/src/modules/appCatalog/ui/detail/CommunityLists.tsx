@@ -9,6 +9,7 @@ import { cn } from '~/lib/utils'
 import { Button } from '~/ui/button'
 import { formatRelativeTime } from '../../utils/formatRelativeTime'
 import { attachmentUrl } from './communityDraft'
+import { formatCommunityError } from './communityError'
 
 /** Same shape the input primitive uses, minus the fixed height. */
 const FIELD_CLASSES =
@@ -68,7 +69,7 @@ function Row({
   className,
   children,
 }: {
-  meta: string
+  meta: React.ReactNode
   className?: string
   children: React.ReactNode
 }) {
@@ -83,15 +84,28 @@ function Row({
 function ClaimRow({ claim }: { claim: Claim }) {
   const origin = originLabel(claim.origin)
   const archived = claim.status === 'archived'
+  const relativeAdded = formatRelativeTime(claim.addedAt)
+  const metaParts = [
+    origin,
+    <abbr key="date" title={claim.addedAt}>
+      {relativeAdded}
+    </abbr>,
+  ].filter(Boolean)
   return (
     <Row
-      meta={origin ? `${origin} · ${claim.addedAt}` : claim.addedAt}
+      meta={metaParts.map((part, i) => (
+        <React.Fragment key={i}>
+          {i > 0 && ' · '}
+          {part}
+        </React.Fragment>
+      ))}
       className={archived ? 'is-archived' : undefined}
     >
       <p className="community-row__text">{claim.text}</p>
       {archived && claim.archiveReason && (
         <p className="community-row__reason">
-          Archived{claim.archivedAt ? ` ${claim.archivedAt}` : ''} —{' '}
+          Archived
+          {claim.archivedAt ? ` ${formatRelativeTime(claim.archivedAt)}` : ''} —{' '}
           {claim.archiveReason}
         </p>
       )}
@@ -113,9 +127,9 @@ function SubSection({
   if (count === 0) return null
   return (
     <section className="community-sub" data-community-group={id}>
-      <h3 className="community-sub__title">
+      <h3 className="community-sub__title" aria-label={`${title}, ${count}`}>
         {title}{' '}
-        <span className="community-sub__n" data-count="">
+        <span className="community-sub__n" data-count="" aria-hidden="true">
           {count}
         </span>
       </h3>
@@ -199,8 +213,12 @@ export function CommunityLists({
               autoFocus
               rows={3}
               className={FIELD_CLASSES}
+              aria-label="Edit your note"
               value={editDraft}
-              onChange={(e) => setEditDraft(e.target.value)}
+              onChange={(e) => {
+                setEditDraft(e.target.value)
+                if (edit.isError) edit.reset()
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                   e.preventDefault()
@@ -313,9 +331,7 @@ export function CommunityLists({
         </details>
       )}
       {failure && (
-        <p className="know-more-error">
-          {failure instanceof Error ? failure.message : 'Something went wrong'}
-        </p>
+        <p className="know-more-error">{formatCommunityError(failure)}</p>
       )}
     </>
   )

@@ -131,10 +131,10 @@ describe('CommunitySection — grouped lists', () => {
       'Lead approves access.',
       'Old boards are read-only.',
     ])
-    expect(
-      within(facts).getByText('from visitor feedback · 2026-10-12'),
-    ).toBeVisible()
-    expect(within(facts).getByText('Tools team · 2026-10-15')).toBeVisible()
+    expect(within(facts).getByText(/from visitor feedback/)).toBeVisible()
+    expect(within(facts).getByTitle('2026-10-12')).toBeVisible()
+    expect(within(facts).getByText(/Tools team/)).toBeVisible()
+    expect(within(facts).getByTitle('2026-10-15')).toBeVisible()
     expect(screen.queryByText(/feedback:abc/)).toBeNull()
   })
 
@@ -183,7 +183,7 @@ describe('CommunitySection — grouped lists', () => {
     )
     expect(
       screen.getByText(
-        /Archived 2026-10-02 — superseded by https:\/\/example.com\/guide/,
+        /Archived.*— superseded by https:\/\/example.com\/guide/,
       ),
     ).toBeVisible()
     expect(screen.queryByText(/undefined/)).toBeNull()
