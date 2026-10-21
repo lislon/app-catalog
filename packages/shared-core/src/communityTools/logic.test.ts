@@ -113,6 +113,22 @@ describe('isCaptureAllowed', () => {
     expect(isCaptureAllowed('http://192.168.1.1/', ['example.com'])).toBe(false)
   })
 
+  it('rejects an explicit non-default port', () => {
+    const suffixes = ['pages.example.com']
+    expect(isCaptureAllowed('https://x.pages.example.com:22/', suffixes)).toBe(
+      false,
+    )
+    expect(isCaptureAllowed('http://x.pages.example.com:8080/', suffixes)).toBe(
+      false,
+    )
+    expect(isCaptureAllowed('https://x.pages.example.com:443/', suffixes)).toBe(
+      true,
+    )
+    expect(isCaptureAllowed('http://x.pages.example.com:80/', suffixes)).toBe(
+      true,
+    )
+  })
+
   it('allows exact suffix match', () => {
     expect(isCaptureAllowed('https://example.com/', ['example.com'])).toBe(true)
   })

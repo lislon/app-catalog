@@ -4,6 +4,8 @@ import type { CapturePage } from '../modules/communityTools/capture'
 import {
   allowRequest,
   capturePage,
+  chromiumFenceArgs,
+  fenceRoute,
   followWithinHosts,
   oneAtATime,
 } from '../modules/communityTools/capture'
@@ -116,6 +118,67 @@ describe('Community tools capture', () => {
     expect(response).toBe(final)
     expect(fetch).toHaveBeenLastCalledWith(
       'https://my-tool.pages.example.com/moved',
+      'get',
+    )
+  })
+
+  it('keeps the method on 307 and 308, switches to GET on 301-303', async () => {
+    const hop = (status: number) => ({
+      status: () => status,
+      headers: () => ({ location: `/after-${status}` }),
+    })
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(hop(307))
+      .mockResolvedValueOnce(hop(303))
+      .mockResolvedValue({ status: () => 200, headers: () => ({}) })
+
+    await followWithinHosts(fetch, URL_OK, HOSTS)
+
+    expect(fetch.mock.calls.map((c) => c[1])).toEqual(['same', 'same', 'get'])
+  })
+
+  it('aborts a request whose fetch fails instead of crashing', async () => {
+    const route = {
+      url: 'https://dead.pages.example.com/img.png',
+      abort: vi.fn().mockResolvedValue(undefined),
+      continue: vi.fn(),
+      fetch: vi.fn().mockRejectedValue(new Error('getaddrinfo ENOTFOUND')),
+      fulfill: vi.fn(),
+    }
+
+    await expect(fenceRoute(route, HOSTS)).resolves.toBeUndefined()
+
+    expect(route.abort).toHaveBeenCalledWith('failed')
+    expect(route.fulfill).not.toHaveBeenCalled()
+  })
+
+  it('aborts an off-list request without fetching it', async () => {
+    const route = {
+      url: 'https://intranet.example.org/',
+      abort: vi.fn().mockResolvedValue(undefined),
+      continue: vi.fn(),
+      fetch: vi.fn(),
+      fulfill: vi.fn(),
+    }
+
+    await fenceRoute(route, HOSTS)
+
+    expect(route.abort).toHaveBeenCalledWith('blockedbyclient')
+    expect(route.fetch).not.toHaveBeenCalled()
+  })
+
+  it('fences the browser network stack to the capture hosts', () => {
+    expect(chromiumFenceArgs(['pages.example.com', 'example.net'])).toEqual([
+      '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE *.pages.example.com, EXCLUDE pages.example.com, EXCLUDE *.example.net, EXCLUDE example.net',
+      '--force-webrtc-ip-handling-policy=disable_non_proxied_udp',
+      '--webrtc-ip-handling-policy=disable_non_proxied_udp',
+    ])
+  })
+
+  it('drops a host that could inject resolver rules', () => {
+    expect(chromiumFenceArgs(['example.com, EXCLUDE *'])[0]).toBe(
+      '--host-resolver-rules=MAP * ~NOTFOUND',
     )
   })
 

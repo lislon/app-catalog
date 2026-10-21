@@ -23,6 +23,9 @@ export function isCaptureAllowed(url: string, suffixes: string[]): boolean {
   // Reject localhost
   if (host === 'localhost') return false
 
+  // Only the default port: `URL` normalises :80/:443 away, so any port left is explicit
+  if (new URL(url).port !== '') return false
+
   // Check if host equals a suffix or ends with .suffix
   return suffixes.some(
     (suffix) => host === suffix || host.endsWith(`.${suffix}`),

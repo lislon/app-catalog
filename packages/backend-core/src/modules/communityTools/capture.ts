@@ -52,6 +52,12 @@ export function allowRequest(url: string, allowedHosts: string[]): boolean {
 }
 
 const MAX_REDIRECTS = 5
+const HOP_TIMEOUT_MS = 10_000
+/** Hops a browser repeats as a bodyless GET; 307 and 308 keep the method and body. */
+const REDIRECTS_TO_GET = [301, 302, 303]
+
+/** `same` repeats the original method and body; `get` is a bodyless GET. */
+export type HopMode = 'same' | 'get'
 
 /**
  * Fetches a URL, following redirects only while every hop stays on the allowed hosts.
@@ -66,21 +72,83 @@ export async function followWithinHosts<
     headers: () => Record<string, string>
   },
 >(
-  fetch: (url: string) => Promise<TResponse>,
+  fetch: (url: string, mode: HopMode) => Promise<TResponse>,
   url: string,
   allowedHosts: string[],
 ): Promise<TResponse | null> {
   let hop = url
+  let mode: HopMode = 'same'
   for (let hops = 0; ; hops++) {
-    const response = await fetch(hop)
+    const response = await fetch(hop, mode)
     const location = response.headers()['location']
     const status = response.status()
     if (status < 300 || status >= 400 || !location) return response
+    if (REDIRECTS_TO_GET.includes(status)) mode = 'get'
     hop = new URL(location, hop).href
     if (hops >= MAX_REDIRECTS || !isCaptureAllowed(hop, allowedHosts)) {
       return null
     }
   }
+}
+
+/** The parts of a playwright `Route` the fence uses, so it can be tested without a browser. */
+export interface FenceRoute<TResponse> {
+  url: string
+  abort: (code: 'blockedbyclient' | 'failed') => Promise<void>
+  continue: () => Promise<void>
+  fetch: (url: string, mode: HopMode) => Promise<TResponse>
+  fulfill: (response: TResponse) => Promise<void>
+}
+
+/**
+ * Answers one browser request: off-list is aborted, on-list is fetched hop by hop.
+ *
+ * Never rejects. A rejection in a route handler surfaces as an unhandledRejection and
+ * exits Node (measured), so one dead image on a tool's page would take the pod down.
+ */
+export async function fenceRoute<
+  TResponse extends {
+    status: () => number
+    headers: () => Record<string, string>
+  },
+>(route: FenceRoute<TResponse>, allowedHosts: string[]): Promise<void> {
+  try {
+    if (!allowRequest(route.url, allowedHosts)) {
+      await route.abort('blockedbyclient')
+    } else if (route.url.startsWith('data:') || route.url.startsWith('blob:')) {
+      await route.continue()
+    } else {
+      const response = await followWithinHosts(
+        route.fetch,
+        route.url,
+        allowedHosts,
+      )
+      if (response) await route.fulfill(response)
+      else await route.abort('blockedbyclient')
+    }
+  } catch {
+    await route.abort('failed').catch(() => undefined)
+  }
+}
+
+/**
+ * Chromium flags that fence the network stack itself, below anything a page can reach:
+ * every name but the capture hosts fails to resolve (IP literals included), which also
+ * covers worker fetches and sockets that `route` never sees; WebRTC gets no direct UDP.
+ * A host that is not a plain name is dropped, so config cannot inject resolver rules.
+ */
+export function chromiumFenceArgs(allowedHosts: string[]): string[] {
+  const rules = [
+    'MAP * ~NOTFOUND',
+    ...allowedHosts
+      .filter((host) => /^[a-z0-9.-]+$/i.test(host))
+      .flatMap((host) => [`EXCLUDE *.${host}`, `EXCLUDE ${host}`]),
+  ]
+  return [
+    `--host-resolver-rules=${rules.join(', ')}`,
+    '--force-webrtc-ip-handling-policy=disable_non_proxied_udp',
+    '--webrtc-ip-handling-policy=disable_non_proxied_udp',
+  ]
 }
 
 /** Navigates an already-fenced page and collects the screenshot, title and favicon. */
@@ -159,9 +227,12 @@ export function createPlaywrightCapturer(): ScreenshotCapturer | null {
   return {
     capture: oneAtATime(async (url, allowedHosts) => {
       const { chromium } = await import('playwright-core')
+      // Launched per capture because the fence flags depend on the hosts; the queue
+      // keeps that to one browser at a time.
       const browser = await chromium.launch({
         executablePath:
           process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
+        args: chromiumFenceArgs(allowedHosts),
       })
       try {
         // A service worker could answer requests the route never sees.
@@ -169,22 +240,29 @@ export function createPlaywrightCapturer(): ScreenshotCapturer | null {
           viewport: VIEWPORT,
           serviceWorkers: 'block',
         })
-        await context.route('**/*', async (route) => {
-          const target = route.request().url()
-          if (!allowRequest(target, allowedHosts)) {
-            await route.abort('blockedbyclient')
-          } else if (target.startsWith('data:') || target.startsWith('blob:')) {
-            await route.continue()
-          } else {
-            const response = await followWithinHosts(
-              (hop) => route.fetch({ url: hop, maxRedirects: 0 }),
-              target,
-              allowedHosts,
-            )
-            if (response) await route.fulfill({ response })
-            else await route.abort('blockedbyclient')
-          }
-        })
+        // Second layer under the resolver fence: per-request and per-hop checks.
+        await context.route('**/*', (route) =>
+          fenceRoute(
+            {
+              url: route.request().url(),
+              abort: (code) => route.abort(code),
+              continue: () => route.continue(),
+              fetch: (hop, mode) =>
+                mode === 'get'
+                  ? context.request.get(hop, {
+                      maxRedirects: 0,
+                      timeout: HOP_TIMEOUT_MS,
+                    })
+                  : route.fetch({
+                      url: hop,
+                      maxRedirects: 0,
+                      timeout: HOP_TIMEOUT_MS,
+                    }),
+              fulfill: (response) => route.fulfill({ response }),
+            },
+            allowedHosts,
+          ),
+        )
         // A screenshot needs no live socket, and `route` does not see them.
         await context.routeWebSocket(/.*/, (ws) => ws.close())
         const page = await context.newPage()
