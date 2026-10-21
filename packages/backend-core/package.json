@@ -73,6 +73,7 @@
     "@types/node": "catalog:",
     "@types/pg": "catalog:",
     "esbuild": "catalog:",
+    "playwright-core": "^1.59.0",
     "prisma": "catalog:",
     "prisma-json-types-generator": "catalog:",
     "tsdown": "catalog:",
@@ -83,7 +84,13 @@
   "peerDependencies": {
     "@prisma/adapter-pg": "catalog:",
     "@prisma/client": "catalog:",
-    "pg": "catalog:"
+    "pg": "catalog:",
+    "playwright-core": ">=1.40.0"
+  },
+  "peerDependenciesMeta": {
+    "playwright-core": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=24"

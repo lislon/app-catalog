@@ -57,8 +57,13 @@ export function createFeedbackRouter() {
   return router({
     /** One entry's thread, plus its unreviewed count so the badge needs no second call. */
     list: publicProcedure
-      .input(z.object({ resourceSlug: z.string() }))
-      .query(({ input, ctx }) => listFeedback(input.resourceSlug, ctx.actor)),
+      .input(
+        z.union([
+          z.object({ resourceSlug: z.string() }),
+          z.object({ communityToolSlug: z.string() }),
+        ]),
+      )
+      .query(({ input, ctx }) => listFeedback(input, ctx.actor)),
 
     /** Everything this browser filed, for the tracker. Empty means render no button. */
     mine: publicProcedure.query(({ ctx }) => listMyFeedback(ctx.actor)),
@@ -68,6 +73,7 @@ export function createFeedbackRouter() {
         z
           .object({
             resourceSlug: z.string().optional(),
+            communityToolSlug: z.string().optional(),
             subject: z.string().max(MAX_SUBJECT_LENGTH).optional(),
             // Both optional: a note can be words, screenshots or both, and a
             // catalog-level ask may carry only its subject. The entry's input asks
@@ -76,12 +82,20 @@ export function createFeedbackRouter() {
             body: z.string().max(MAX_BODY_LENGTH).optional(),
             attachmentIds: z.array(z.string()).max(MAX_ATTACHMENTS).optional(),
           })
-          .refine((v) => !!v.resourceSlug || !!v.subject?.trim(), {
-            message: 'Needs either an entry or a subject',
-          }),
+          .refine(
+            (v) =>
+              !!v.resourceSlug || !!v.communityToolSlug || !!v.subject?.trim(),
+            { message: 'Needs either an entry or a subject' },
+          ),
       )
       .mutation(({ input, ctx }) =>
-        mapErrors(() => addFeedback(input, requireActor(ctx.actor))),
+        mapErrors(() =>
+          addFeedback(
+            input,
+            requireActor(ctx.actor),
+            ctx.user ? { id: ctx.user.id, name: ctx.user.name } : null,
+          ),
+        ),
       ),
 
     edit: publicProcedure

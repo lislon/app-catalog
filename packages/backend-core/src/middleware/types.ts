@@ -5,6 +5,7 @@ import type { Session, User } from 'better-auth/types'
 import type { AppCatalogCompanySpecificBackend } from '../types/backend/companySpecificBackend'
 import type { BetterAuth } from '../modules/auth/auth'
 import type { TRPCRouter } from '../server/controller'
+import type { ScreenshotCapturer } from '../modules/communityTools/capture'
 
 /**
  * Database connection configuration.
@@ -181,6 +182,16 @@ export interface AcMiddlewareOptions {
  */
 export interface CommunityToolsOptions {
   enabled: boolean
+  /**
+   * Host suffixes the headless browser may visit, e.g. `['example.com']` for
+   * `example.com` and its subdomains. Empty by default: no screenshots, no health check.
+   */
+  captureHosts?: string[]
+  /**
+   * Overrides the default `playwright-core` capturer. `null` disables capture; omitted
+   * means use playwright-core when it is installed.
+   */
+  capturer?: ScreenshotCapturer | null
 }
 
 /**

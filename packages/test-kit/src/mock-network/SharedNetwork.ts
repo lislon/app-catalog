@@ -38,8 +38,11 @@ export const SharedNetwork = {
   feedbackList(store: MockFeedbackStore): NetworkInterceptor {
     return {
       scopeKey: ['feedback-list'],
+      // ponytail: community tool threads answer empty; store them when a scenario needs one
       handler: trpcMsw.feedback.list.query(({ input }) =>
-        store.listFor(input.resourceSlug),
+        'resourceSlug' in input
+          ? store.listFor(input.resourceSlug)
+          : { items: [], openCount: 0 },
       ),
     }
   },

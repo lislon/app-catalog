@@ -597,6 +597,9 @@ importers:
       esbuild:
         specifier: 'catalog:'
         version: 0.25.12
+      playwright-core:
+        specifier: ^1.59.0
+        version: 1.59.0
       prisma:
         specifier: 'catalog:'
         version: 7.4.2(@types/react@19.2.9)(react-dom@19.1.2(react@19.1.2))(react@19.1.2)(typescript@5.9.3)

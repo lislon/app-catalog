@@ -11,6 +11,7 @@ export const MAX_ATTACHMENTS = 3
 /** One piece of feedback as a client sees it. Never carries an author hash. */
 export interface FeedbackView {
   id: string
+  /** The signed-in author's name, or the pseudonym of an anonymous one. */
   authorName: string
   /** Null when the visitor sent a bare flag with no words. */
   body: string | null
@@ -41,6 +42,7 @@ type Row = {
   id: string
   authorHash: string
   authorAlias: string
+  authorName: string | null
   body: string | null
   subject: string | null
   status: 'applied' | 'acknowledged' | null
@@ -56,7 +58,7 @@ function toView(row: Row, actor: Actor | null): FeedbackView {
   const isMine = !!actor && row.authorHash === actor.hash
   return {
     id: row.id,
-    authorName: row.authorAlias,
+    authorName: row.authorName ?? row.authorAlias,
     body: row.body,
     subject: row.subject,
     resourceSlug: row.resource?.slug ?? null,
@@ -87,6 +89,19 @@ async function resourceIdForSlug(slug: string): Promise<string | null> {
   return resource?.id ?? null
 }
 
+async function communityToolIdForSlug(slug: string): Promise<string | null> {
+  const tool = await getDbClient().dbCommunityTool.findUnique({
+    where: { slug },
+    select: { id: true },
+  })
+  return tool?.id ?? null
+}
+
+/** What a thread hangs on: an official entry or a community tool. */
+export type FeedbackTarget =
+  | { resourceSlug: string }
+  | { communityToolSlug: string }
+
 export interface FeedbackList {
   items: FeedbackView[]
   /** Unreviewed count — what the badge shows. `status IS NULL` is the whole definition. */
@@ -95,14 +110,24 @@ export interface FeedbackList {
 
 /** Oldest first: a thread reads top to bottom. */
 export async function listFeedback(
-  resourceSlug: string,
+  target: FeedbackTarget,
   actor: Actor | null,
 ): Promise<FeedbackList> {
-  const resourceId = await resourceIdForSlug(resourceSlug)
-  if (!resourceId) return { items: [], openCount: 0 }
+  let where: { resourceId: string } | { communityToolId: string }
+  if ('resourceSlug' in target) {
+    const resourceId = await resourceIdForSlug(target.resourceSlug)
+    if (!resourceId) return { items: [], openCount: 0 }
+    where = { resourceId }
+  } else {
+    const communityToolId = await communityToolIdForSlug(
+      target.communityToolSlug,
+    )
+    if (!communityToolId) return { items: [], openCount: 0 }
+    where = { communityToolId }
+  }
 
   const rows = await getDbClient().dbFeedback.findMany({
-    where: { resourceId },
+    where,
     orderBy: { createdAt: 'asc' },
     include: WITH_RELATIONS,
   })
@@ -177,6 +202,8 @@ function normaliseBody(body: string | undefined | null): string | null {
 export interface AddFeedbackInput {
   /** Omitted for a catalog-level ask. */
   resourceSlug?: string
+  /** The alternative to resourceSlug, for a comment on a community tool. */
+  communityToolSlug?: string
   /** Required when there is no resourceSlug — it is the substance of the ask. */
   subject?: string
   body?: string
@@ -186,10 +213,17 @@ export interface AddFeedbackInput {
 export async function addFeedback(
   input: AddFeedbackInput,
   actor: Actor,
+  user: { id: string; name: string } | null,
 ): Promise<FeedbackView> {
-  const { resourceSlug, subject, body, attachmentIds = [] } = input
+  const {
+    resourceSlug,
+    communityToolSlug,
+    subject,
+    body,
+    attachmentIds = [],
+  } = input
 
-  if (!resourceSlug && !subject?.trim()) {
+  if (!resourceSlug && !communityToolSlug && !subject?.trim()) {
     throw new FeedbackError(
       'empty',
       'Tell us which entry this is about, or what you were looking for',
@@ -209,16 +243,30 @@ export async function addFeedback(
       throw new FeedbackError('not-found', `Unknown resource: ${resourceSlug}`)
     }
   }
+  let communityToolId: string | null = null
+  if (!resourceId && communityToolSlug) {
+    communityToolId = await communityToolIdForSlug(communityToolSlug)
+    if (!communityToolId) {
+      throw new FeedbackError(
+        'not-found',
+        `Unknown community tool: ${communityToolSlug}`,
+      )
+    }
+  }
+  const onEntry = !!resourceId || !!communityToolId
 
   const row = await getDbClient().$transaction(async (tx) => {
     const created = await tx.dbFeedback.create({
       data: {
         resourceId,
-        subject: resourceId
+        communityToolId,
+        subject: onEntry
           ? null
           : stripHiddenText(subject!).trim().slice(0, MAX_SUBJECT_LENGTH),
         authorHash: actor.hash,
         authorAlias: actor.alias,
+        authorUserId: user?.id ?? null,
+        authorName: user?.name ?? null,
         body: normaliseBody(body),
       },
       select: { id: true },
