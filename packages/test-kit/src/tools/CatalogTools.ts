@@ -19,7 +19,6 @@ export class CatalogTools {
     const btn = screen.queryByTitle(`View ${name}`)
     if (btn) {
       await this.user.click(btn)
-      // The card is a lazy chunk (#120), so it mounts a beat after the click.
       await screen.findByLabelText('Close details panel')
       return
     }

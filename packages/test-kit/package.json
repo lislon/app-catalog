@@ -39,6 +39,13 @@
         "default": "./dist/esm/cucumber/steps.js"
       }
     },
+    "./timeouts": {
+      "my-custom-condition": "./src/timeouts.ts",
+      "import": {
+        "types": "./dist/esm/timeouts.d.ts",
+        "default": "./dist/esm/timeouts.js"
+      }
+    },
     "./package.json": "./package.json"
   },
   "module": "dist/esm/index.js",

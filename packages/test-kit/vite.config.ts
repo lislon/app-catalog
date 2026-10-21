@@ -6,6 +6,7 @@ import viteReact from '@vitejs/plugin-react'
 import { quickpickle } from 'quickpickle'
 import svgr from 'vite-plugin-svgr'
 import packageJson from './package.json'
+import { STEP_TIMEOUT } from './src/timeouts'
 
 const config = defineConfig({
   // quickpickle pulls its own vite copy, so its Plugin type is structurally
@@ -15,7 +16,11 @@ const config = defineConfig({
   // import resolves here for free. Mocking them one by one instead meant every
   // new svg silently threw inside the component that imported it, which reads
   // as the whole panel failing to render rather than as a missing mock.
-  plugins: [viteReact(), svgr(), quickpickle() as PluginOption],
+  plugins: [
+    viteReact(),
+    svgr(),
+    quickpickle({ stepTimeout: STEP_TIMEOUT }) as PluginOption,
+  ],
   resolve: {
     // Run the app from frontend-core's sources.
     conditions: ['my-custom-condition'],
@@ -52,7 +57,7 @@ const config = defineConfig({
     // rejects it and the stray rejection fails the whole run.
     server: { deps: { inline: ['quickpickle'] } },
     globals: true,
-    testTimeout: 30000,
+    testTimeout: STEP_TIMEOUT,
   },
 })
 
@@ -63,6 +68,7 @@ export default mergeConfig(
       './src/index.ts',
       './src/setup/testSetup.ts',
       './src/cucumber/steps.ts',
+      './src/timeouts.ts',
     ],
     srcDir: './src',
     cjs: false,

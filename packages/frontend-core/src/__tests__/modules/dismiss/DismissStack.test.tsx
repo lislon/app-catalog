@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { useEffect, useRef, useState } from 'react'
@@ -322,10 +322,8 @@ describe('the dismiss stack', () => {
     screen.getByTestId('layer-dialog').focus()
 
     await esc()
-    // The handback is queued after the unmount, so let it run.
-    await new Promise((r) => setTimeout(r, 0))
-
-    expect(document.activeElement).toBe(screen.getByTestId('layer-card'))
+    // The handback is queued after the unmount.
+    await waitFor(() => expect(screen.getByTestId('layer-card')).toHaveFocus())
   })
 
   /** A layer that takes the caret on mount, as the detail card does. */
@@ -374,9 +372,8 @@ describe('the dismiss stack', () => {
     expect(screen.getByTestId('layer-card')).toHaveFocus()
 
     await esc()
-    await new Promise((r) => setTimeout(r, 0))
 
-    expect(input).toHaveFocus()
+    await waitFor(() => expect(input).toHaveFocus())
     expect([input.selectionStart, input.selectionEnd]).toEqual([13, 13])
   })
 
@@ -405,16 +402,17 @@ describe('the dismiss stack', () => {
       )
     }
     render(<Host />)
-    const tick = () => new Promise((r) => setTimeout(r, 0))
 
     await userEvent.click(screen.getByRole('button', { name: 'open card' }))
     await userEvent.click(screen.getByRole('button', { name: 'open dialog' }))
     await esc()
-    await tick()
-    expect(screen.getByRole('button', { name: 'open dialog' })).toHaveFocus()
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'open dialog' })).toHaveFocus(),
+    )
 
     await esc()
-    await tick()
-    expect(screen.getByRole('button', { name: 'open card' })).toHaveFocus()
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'open card' })).toHaveFocus(),
+    )
   })
 })

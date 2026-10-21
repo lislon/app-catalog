@@ -3,10 +3,9 @@ import './polyfillLocalStorage'
 import { afterEach, vi } from 'vitest'
 import { cleanup, configure } from '@testing-library/react'
 import { cleanupTestResources, takeUnhandledRequests } from '../harness/given'
+import { CONDITION_TIMEOUT } from '../timeouts'
 
-// The detail card is a lazy chunk (#120): opening it the first time transforms
-// its module graph on demand, which outlasts the 1s default under a parallel run.
-configure({ asyncUtilTimeout: 5000 })
+configure({ asyncUtilTimeout: CONDITION_TIMEOUT })
 
 // Mock scrollIntoView — not implemented in jsdom
 Element.prototype.scrollIntoView = vi.fn()
