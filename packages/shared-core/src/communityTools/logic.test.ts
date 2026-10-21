@@ -1,0 +1,395 @@
+import { describe, expect, it } from 'vitest'
+import type { CommunityTool } from './types'
+import {
+  hostOf,
+  isCaptureAllowed,
+  lifecycleOf,
+  matchTool,
+  nextLifecycle,
+  rankTools,
+} from './logic'
+
+// Test fixtures
+function opsRunbook(): CommunityTool {
+  return {
+    slug: 'ops-runbook',
+    name: 'Ops Runbook',
+    url: 'https://ops-runbook-1a2b.pages.example.com/',
+    host: 'ops-runbook-1a2b.pages.example.com',
+    summary: 'Operational procedures and guides',
+    descriptionMd: 'Internal operations documentation',
+    owners: [{ slug: 'dana@example.com', name: 'Dana Lee' }],
+    addedBy: { userId: 'user1', name: 'Dana Lee' },
+    createdAt: '2026-01-01T00:00:00Z',
+    tags: [],
+    views30d: 10,
+    viewsAll: 100,
+    reviewed: true,
+    lifecycle: { state: 'active' },
+    screenshotId: null,
+    faviconId: null,
+    capturedAt: null,
+    canEdit: false,
+  }
+}
+
+function tagged(kind: 'app' | 'topic', value: string): CommunityTool {
+  return {
+    ...opsRunbook(),
+    slug: `tagged-${kind}-${value}`,
+    tags: [{ kind, value }],
+  }
+}
+
+function dead(views30d: number): CommunityTool {
+  return {
+    ...opsRunbook(),
+    slug: 'dead',
+    views30d,
+    lifecycle: { state: 'not-working', days: 5 },
+  }
+}
+
+function live(views30d: number): CommunityTool {
+  return {
+    ...opsRunbook(),
+    slug: 'live',
+    views30d,
+    lifecycle: { state: 'active' },
+  }
+}
+
+function archived(views30d: number): CommunityTool {
+  return {
+    ...opsRunbook(),
+    slug: 'archived',
+    views30d,
+    lifecycle: { state: 'archived', by: 'auto', reason: 'Failed checks' },
+  }
+}
+
+function addDays(date: Date, days: number): Date {
+  const result = new Date(date)
+  result.setDate(result.getDate() + days)
+  return result
+}
+
+describe('hostOf', () => {
+  it('ignores path and query', () => {
+    expect(
+      hostOf('https://Ops-Runbook-1a2b.pages.example.com/other-page?x=1'),
+    ).toBe('ops-runbook-1a2b.pages.example.com')
+    expect(hostOf('ops runbook')).toBeNull()
+  })
+
+  it('returns null for non-http(s) URLs', () => {
+    expect(hostOf('ftp://example.com')).toBeNull()
+    expect(hostOf('not a url')).toBeNull()
+  })
+
+  it('lowercases the hostname', () => {
+    expect(hostOf('https://Example.COM')).toBe('example.com')
+  })
+})
+
+describe('isCaptureAllowed', () => {
+  it('capture allowlist by suffix', () => {
+    expect(
+      isCaptureAllowed('https://a.pages.example.com/', ['example.com']),
+    ).toBe(true)
+    expect(isCaptureAllowed('https://evilexample.com/', ['example.com'])).toBe(
+      false,
+    )
+    expect(isCaptureAllowed('http://169.254.169.254/', ['example.com'])).toBe(
+      false,
+    )
+  })
+
+  it('rejects localhost and IP literals', () => {
+    expect(isCaptureAllowed('http://localhost:3000/', ['localhost'])).toBe(
+      false,
+    )
+    expect(isCaptureAllowed('http://127.0.0.1/', ['127.0.0.1'])).toBe(false)
+    expect(isCaptureAllowed('http://192.168.1.1/', ['example.com'])).toBe(false)
+  })
+
+  it('allows exact suffix match', () => {
+    expect(isCaptureAllowed('https://example.com/', ['example.com'])).toBe(true)
+  })
+})
+
+describe('matchTool', () => {
+  it('tokens match across fields in any order', () => {
+    expect(matchTool(opsRunbook(), 'runb dana', {})).toEqual({
+      matched: true,
+      fields: ['name', 'owner'],
+    })
+    expect(matchTool(opsRunbook(), 'dana zzz', {}).matched).toBe(false)
+  })
+
+  it('app tag matches by app display name', () => {
+    expect(
+      matchTool(tagged('app', 'order-service'), 'order serv', {
+        'order-service': 'Order Service',
+      }).fields,
+    ).toContain('tag')
+  })
+
+  it('matches are case-insensitive', () => {
+    expect(matchTool(opsRunbook(), 'OPS RUNBOOK', {}).matched).toBe(true)
+  })
+
+  it('matches summary and description fields', () => {
+    const tool = opsRunbook()
+    expect(matchTool(tool, 'operational', {}).fields).toContain('summary')
+    expect(matchTool(tool, 'internal', {}).fields).toContain('description')
+  })
+
+  it('matches URL address', () => {
+    expect(matchTool(opsRunbook(), 'pages.example', {}).fields).toContain(
+      'address',
+    )
+  })
+
+  it('matches topic tags', () => {
+    expect(
+      matchTool(tagged('topic', 'database'), 'database', {}).fields,
+    ).toContain('tag')
+  })
+
+  it('returns fields in canonical order', () => {
+    const tool = {
+      ...opsRunbook(),
+      name: 'Tool name',
+      summary: 'This is the summary',
+      descriptionMd: 'Full description here',
+      url: 'https://address.example.com',
+      owners: [{ slug: 'user@example.com', name: 'owner person' }],
+      tags: [{ kind: 'topic' as const, value: 'tag' }],
+    }
+    const result = matchTool(
+      tool,
+      'name summary description owner address tag',
+      {},
+    )
+    expect(result.fields).toEqual([
+      'name',
+      'summary',
+      'description',
+      'owner',
+      'address',
+      'tag',
+    ])
+  })
+})
+
+describe('rankTools', () => {
+  it('rank: archived dropped, not-working sinks', () => {
+    expect(
+      rankTools([dead(500), live(3), archived(900)], 'month').map(
+        (t) => t.slug,
+      ),
+    ).toEqual(['live', 'dead'])
+  })
+
+  it('sorts by views30d in month window', () => {
+    expect(
+      rankTools([live(10), live(50), live(30)], 'month').map((t) => t.views30d),
+    ).toEqual([50, 30, 10])
+  })
+
+  it('sorts by viewsAll in all window', () => {
+    const tools = [
+      { ...live(10), viewsAll: 100 },
+      { ...live(50), viewsAll: 200 },
+      { ...live(30), viewsAll: 150 },
+    ]
+    expect(rankTools(tools, 'all').map((t) => t.viewsAll)).toEqual([
+      200, 150, 100,
+    ])
+  })
+
+  it('sorts by createdAt desc in newest window', () => {
+    const tools = [
+      { ...live(10), createdAt: '2026-01-01T00:00:00Z' },
+      { ...live(50), createdAt: '2026-03-01T00:00:00Z' },
+      { ...live(30), createdAt: '2026-02-01T00:00:00Z' },
+    ]
+    expect(rankTools(tools, 'newest').map((t) => t.createdAt)).toEqual([
+      '2026-03-01T00:00:00Z',
+      '2026-02-01T00:00:00Z',
+      '2026-01-01T00:00:00Z',
+    ])
+  })
+
+  it('breaks ties by name', () => {
+    const tools = [
+      { ...live(10), name: 'Charlie' },
+      { ...live(10), name: 'Alice' },
+      { ...live(10), name: 'Bob' },
+    ]
+    expect(rankTools(tools, 'month').map((t) => t.name)).toEqual([
+      'Alice',
+      'Bob',
+      'Charlie',
+    ])
+  })
+})
+
+describe('lifecycle', () => {
+  it('lifecycle: fail streak, 30-day archive, recovery, person archive sticks', () => {
+    const d0 = new Date('2026-10-01T00:00:00Z')
+
+    // First failure starts the streak
+    expect(
+      nextLifecycle(
+        { failingSince: null, archivedAt: null, archivedBy: null },
+        false,
+        d0,
+      ),
+    ).toEqual({ failingSince: d0 })
+
+    // 30 days of failure triggers auto-archive
+    expect(
+      nextLifecycle(
+        { failingSince: d0, archivedAt: null, archivedBy: null },
+        false,
+        addDays(d0, 30),
+      ),
+    ).toMatchObject({ archivedBy: 'auto' })
+
+    // Recovery clears auto-archive
+    expect(
+      nextLifecycle(
+        { failingSince: d0, archivedAt: addDays(d0, 30), archivedBy: 'auto' },
+        true,
+        addDays(d0, 31),
+      ),
+    ).toEqual({
+      failingSince: null,
+      archivedAt: null,
+      archivedBy: null,
+    })
+
+    // Person archive sticks even on success
+    expect(
+      nextLifecycle(
+        { failingSince: null, archivedAt: d0, archivedBy: 'Dana Lee' },
+        true,
+        d0,
+      ),
+    ).toEqual({})
+
+    // lifecycleOf computes days correctly
+    expect(
+      lifecycleOf(
+        {
+          failingSince: d0,
+          archivedAt: null,
+          archivedBy: null,
+          archivedReason: null,
+        },
+        addDays(d0, 3),
+      ),
+    ).toEqual({ state: 'not-working', days: 3 })
+  })
+
+  it('lifecycleOf: active when not failing or archived', () => {
+    expect(
+      lifecycleOf(
+        {
+          failingSince: null,
+          archivedAt: null,
+          archivedBy: null,
+          archivedReason: null,
+        },
+        new Date(),
+      ),
+    ).toEqual({ state: 'active' })
+  })
+
+  it('lifecycleOf: archived state includes by and reason', () => {
+    const d0 = new Date('2026-10-01T00:00:00Z')
+    expect(
+      lifecycleOf(
+        {
+          failingSince: null,
+          archivedAt: d0,
+          archivedBy: 'auto',
+          archivedReason: 'Failed checks',
+        },
+        d0,
+      ),
+    ).toEqual({
+      state: 'archived',
+      by: 'auto',
+      reason: 'Failed checks',
+    })
+
+    expect(
+      lifecycleOf(
+        {
+          failingSince: null,
+          archivedAt: d0,
+          archivedBy: 'Dana Lee',
+          archivedReason: null,
+        },
+        d0,
+      ),
+    ).toEqual({
+      state: 'archived',
+      by: 'person',
+      reason: null,
+    })
+  })
+
+  it('nextLifecycle: success clears failing streak when not archived', () => {
+    const d0 = new Date('2026-10-01T00:00:00Z')
+    expect(
+      nextLifecycle(
+        { failingSince: d0, archivedAt: null, archivedBy: null },
+        true,
+        addDays(d0, 5),
+      ),
+    ).toEqual({ failingSince: null })
+  })
+
+  it('nextLifecycle: continued failure does nothing before 30 days', () => {
+    const d0 = new Date('2026-10-01T00:00:00Z')
+    expect(
+      nextLifecycle(
+        { failingSince: d0, archivedAt: null, archivedBy: null },
+        false,
+        addDays(d0, 15),
+      ),
+    ).toEqual({})
+  })
+
+  it('lifecycleOf: days is at least 1', () => {
+    const d0 = new Date('2026-10-01T00:00:00Z')
+    // Same day
+    const lifecycle1 = lifecycleOf(
+      {
+        failingSince: d0,
+        archivedAt: null,
+        archivedBy: null,
+        archivedReason: null,
+      },
+      d0,
+    )
+    expect(lifecycle1).toMatchObject({ state: 'not-working', days: 1 })
+
+    // Within first day
+    const d1 = new Date(d0.getTime() + 6 * 60 * 60 * 1000) // 6 hours later
+    const lifecycle2 = lifecycleOf(
+      {
+        failingSince: d0,
+        archivedAt: null,
+        archivedBy: null,
+        archivedReason: null,
+      },
+      d1,
+    )
+    expect(lifecycle2).toMatchObject({ state: 'not-working', days: 1 })
+  })
+})
