@@ -33,6 +33,7 @@ describe('Community tools service', () => {
       create: vi.fn(),
       delete: vi.fn(),
       deleteMany: vi.fn(),
+      update: vi.fn(),
       updateMany: vi.fn(),
     },
     dbCommunityToolOwner: {
@@ -206,6 +207,54 @@ describe('Community tools service', () => {
 
       // Should be sorted by position ascending
       expect(result.map((t) => t.slug)).toEqual(['tool-a', 'tool-c', 'tool-b'])
+    })
+
+    it('reorderPins with partial list keeps unlisted pins', async () => {
+      const userId = 'user-123'
+
+      mockDb.dbCommunityToolPin.findMany = vi.fn().mockResolvedValue([
+        {
+          userId,
+          toolId: 'tool-a',
+          position: 0,
+          tool: { id: 'tool-a', slug: 'tool-a' },
+        },
+        {
+          userId,
+          toolId: 'tool-b',
+          position: 1,
+          tool: { id: 'tool-b', slug: 'tool-b' },
+        },
+        {
+          userId,
+          toolId: 'tool-c',
+          position: 2,
+          tool: { id: 'tool-c', slug: 'tool-c' },
+        },
+      ])
+
+      mockDb.dbCommunityToolPin.update = vi.fn().mockResolvedValue({})
+
+      // Reorder only tool-c and tool-a (omit tool-b)
+      await service.reorderPins(['tool-c', 'tool-a'], userId)
+
+      // Should call update 3 times (all pins get new positions)
+      expect(mockDb.dbCommunityToolPin.update).toHaveBeenCalledTimes(3)
+
+      // tool-c at position 0, tool-a at position 1, tool-b at position 2
+      const calls = vi.mocked(mockDb.dbCommunityToolPin.update).mock.calls
+      expect(calls[0]?.[0]).toMatchObject({
+        where: { userId_toolId: { userId, toolId: 'tool-c' } },
+        data: { position: 0 },
+      })
+      expect(calls[1]?.[0]).toMatchObject({
+        where: { userId_toolId: { userId, toolId: 'tool-a' } },
+        data: { position: 1 },
+      })
+      expect(calls[2]?.[0]).toMatchObject({
+        where: { userId_toolId: { userId, toolId: 'tool-b' } },
+        data: { position: 2 },
+      })
     })
   })
 

@@ -349,12 +349,10 @@ export async function unpinTool(slug: string, userId: string): Promise<void> {
     throw new Error('Tool not found')
   }
 
-  await db.dbCommunityToolPin.delete({
+  await db.dbCommunityToolPin.deleteMany({
     where: {
-      userId_toolId: {
-        userId,
-        toolId: tool.id,
-      },
+      userId,
+      toolId: tool.id,
     },
   })
 }
@@ -369,26 +367,32 @@ export async function reorderPins(
   const pins = await db.dbCommunityToolPin.findMany({
     where: { userId },
     include: { tool: true },
+    orderBy: { position: 'asc' },
   })
 
-  // Create a map of slug to tool id
-  const slugToId = new Map(pins.map((p) => [p.tool.slug, p.toolId]))
+  // Create a map of slug to pin
+  const slugToPin = new Map(pins.map((p) => [p.tool.slug, p]))
 
-  // Delete all pins and recreate them in the new order
-  await db.dbCommunityToolPin.deleteMany({ where: { userId } })
+  // Build new order: named slugs first, then unlisted pins in current order
+  const namedPins = slugs
+    .map((slug) => slugToPin.get(slug))
+    .filter((p) => p !== undefined)
+  const unlistedPins = pins.filter((p) => !slugs.includes(p.tool.slug))
+  const newOrder = [...namedPins, ...unlistedPins]
 
+  // Update positions
   await Promise.all(
-    slugs.map((slug, index) => {
-      const toolId = slugToId.get(slug)
-      if (!toolId) return Promise.resolve()
-      return db.dbCommunityToolPin.create({
-        data: {
-          userId,
-          toolId,
-          position: index,
+    newOrder.map((pin, index) =>
+      db.dbCommunityToolPin.update({
+        where: {
+          userId_toolId: {
+            userId,
+            toolId: pin.toolId,
+          },
         },
-      })
-    }),
+        data: { position: index },
+      }),
+    ),
   )
 }
 
