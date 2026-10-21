@@ -154,7 +154,7 @@ export async function previewTool(
   let screenshotDataUrl: string | null = null
   if (captureAllowed && deps.capturer) {
     try {
-      const result = await deps.capturer.capture(url)
+      const result = await deps.capturer.capture(url, deps.captureHosts)
       if (result.ok) {
         title = result.title
         const jpeg = await resizeImage(

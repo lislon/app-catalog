@@ -3,7 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as dbClient from '../db/client'
 import type { PrismaClient } from '../generated/prisma/client'
 import type { ScreenshotCapturer } from '../modules/communityTools/capture'
-import { runHealthCheckOnce } from '../modules/communityTools/healthJob'
+import {
+  runHealthCheckOnce,
+  startHealthJob,
+} from '../modules/communityTools/healthJob'
 
 const NOW = new Date('2026-10-21T12:00:00.000Z')
 const DAY = 24 * 60 * 60 * 1000
@@ -70,6 +73,7 @@ describe('Community tools health job', () => {
     expect(failing.capture).toHaveBeenCalledTimes(1)
     expect(failing.capture).toHaveBeenCalledWith(
       'https://due.pages.example.com/',
+      ['pages.example.com'],
     )
     expect(db.dbCommunityTool.update).toHaveBeenCalledTimes(1)
     expect(db.dbCommunityTool.update).toHaveBeenCalledWith({
@@ -94,6 +98,46 @@ describe('Community tools health job', () => {
     expect(db.dbCommunityTool.update.mock.calls[0]?.[0].where).toEqual({
       id: 'b',
     })
+  })
+
+  it('health run stops once its time budget is spent', async () => {
+    db.dbCommunityTool.findMany.mockResolvedValue([
+      tool('a'),
+      tool('b'),
+      tool('c'),
+    ])
+    const MIN = 60 * 1000
+    // Start, then before each tool: a fits, b starts at 41 minutes and is not checked.
+    const clock = vi
+      .fn()
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(0)
+      .mockReturnValue(41 * MIN)
+
+    await runHealthCheckOnce(opts, NOW, clock)
+
+    expect(failing.capture).toHaveBeenCalledTimes(1)
+    expect(db.dbCommunityTool.update.mock.calls[0]?.[0].where).toEqual({
+      id: 'a',
+    })
+  })
+
+  it('first run happens a minute after start, then hourly', async () => {
+    vi.useFakeTimers()
+    try {
+      const stop = startHealthJob(opts, () => NOW)
+      await vi.advanceTimersByTimeAsync(59_000)
+      expect(db.$transaction).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(db.$transaction).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
+      expect(db.$transaction).toHaveBeenCalledTimes(2)
+      stop()
+      await vi.advanceTimersByTimeAsync(2 * 60 * 60 * 1000)
+      expect(db.$transaction).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('health run does nothing when the advisory lock is held', async () => {

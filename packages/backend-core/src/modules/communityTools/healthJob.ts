@@ -12,8 +12,14 @@ export interface CaptureDeps {
   capturer: ScreenshotCapturer | null
 }
 
-const HOUR_MS = 60 * 60 * 1000
+const MINUTE_MS = 60 * 1000
+const HOUR_MS = 60 * MINUTE_MS
 const DAY_MS = 24 * HOUR_MS
+/** Wall time one run may spend; what is left is due again on the next tick. */
+const RUN_BUDGET_MS = 40 * MINUTE_MS
+/** Past the budget plus one capture, and short of the next tick. */
+const RUN_TRANSACTION_TIMEOUT_MS = 55 * MINUTE_MS
+const FIRST_RUN_DELAY_MS = MINUTE_MS
 
 interface CheckableTool {
   id: string
@@ -74,7 +80,7 @@ export async function checkTool(
 ): Promise<void> {
   if (!deps.capturer || !isCaptureAllowed(tool.url, deps.captureHosts)) return
 
-  const result = await deps.capturer.capture(tool.url)
+  const result = await deps.capturer.capture(tool.url, deps.captureHosts)
   await getDbClient().dbCommunityTool.update({
     where: { id: tool.id },
     data: {
@@ -92,10 +98,15 @@ export async function checkTool(
  * held by whichever pooled connection ran the query, and the unlock may run on another,
  * leaving the lock stuck forever. The transaction pins one connection and releases the
  * lock when it ends, even if the pod dies mid-run.
+ *
+ * ponytail: one transaction holds the lock for the whole run, so a run is capped at
+ * RUN_BUDGET_MS (about 90 tools at 25 s each); per-tool short transactions or a job
+ * queue if the catalog outgrows that.
  */
 export async function runHealthCheckOnce(
   deps: CaptureDeps,
   now: Date,
+  clock: () => number = Date.now,
 ): Promise<void> {
   const db = getDbClient()
   await db.$transaction(
@@ -123,7 +134,9 @@ export async function runHealthCheckOnce(
           (!t.lastCheckAt || t.lastCheckAt.getTime() < cutoff),
       )
 
+      const startedAt = clock()
       for (const tool of due) {
+        if (clock() - startedAt >= RUN_BUDGET_MS) break
         try {
           await checkTool(tool, deps, now)
         } catch (error) {
@@ -131,21 +144,31 @@ export async function runHealthCheckOnce(
         }
       }
     },
-    { maxWait: 10_000, timeout: HOUR_MS },
+    { maxWait: 10_000, timeout: RUN_TRANSACTION_TIMEOUT_MS },
   )
 }
 
-/** Starts the hourly pass. Returns a stop function. */
+/**
+ * Starts the pass a minute after boot, then hourly: a pod restarted more often than
+ * hourly would otherwise never check. The lock keeps pods from overlapping.
+ * Returns a stop function.
+ */
 export function startHealthJob(
   deps: CaptureDeps,
   now: () => Date = () => new Date(),
 ): () => void {
-  const timer = setInterval(() => {
+  const run = () => {
     runHealthCheckOnce(deps, now()).catch((error: unknown) => {
       console.error('[communityTools] health run failed:', error)
     })
-  }, HOUR_MS)
-  // Never keeps the process, or a test runner, alive.
+  }
+  const first = setTimeout(run, FIRST_RUN_DELAY_MS)
+  const timer = setInterval(run, HOUR_MS)
+  // Neither keeps the process, or a test runner, alive.
+  first.unref()
   timer.unref()
-  return () => clearInterval(timer)
+  return () => {
+    clearTimeout(first)
+    clearInterval(timer)
+  }
 }

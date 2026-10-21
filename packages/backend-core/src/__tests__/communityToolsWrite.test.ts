@@ -301,6 +301,10 @@ describe('Community tools write service', () => {
       { captureHosts: ['pages.example.com'], capturer },
     )
 
+    expect(capturer.capture).toHaveBeenCalledWith(
+      'https://my-tool.pages.example.com/',
+      ['pages.example.com'],
+    )
     expect(preview.title).toBe('Page title')
     expect(preview.captureAllowed).toBe(true)
     const jpeg = Buffer.from(
