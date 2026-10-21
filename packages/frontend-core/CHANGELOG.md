@@ -1,5 +1,16 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.10.2
+
+### Patch Changes
+
+- [#332](https://github.com/lislon/app-catalog/pull/332) [`0ffac12`](https://github.com/lislon/app-catalog/commit/0ffac12a459c2c645f2d0a21e8236280638d5151) Thanks [@lislon](https://github.com/lislon)! - The detail card's chunk now loads after the catalog's first paint, so the first click on a row opens the card without waiting for it. The test kit loads the same chunk before it mounts the app, and it exports its wait budgets from `@igstack/app-catalog-test-kit/timeouts`. Every wait inside a step is shorter than the step, so a failure shows the wait's own error.
+
+  `PwaAutoUpdateProvider` keeps one controller while the service worker registration arrives and when the host passes a new options object with the same values. Rebuilding the controller cancelled a pending visibility check.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.10.2
+
 ## 6.10.1
 
 ### Patch Changes
