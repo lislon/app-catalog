@@ -171,6 +171,16 @@ export interface AcMiddlewareOptions {
    * customScripts: ['/assets-static/analytics/analytics.js']
    */
   customScripts?: string[]
+
+  /** Community tools configuration (optional) */
+  communityTools?: CommunityToolsOptions
+}
+
+/**
+ * Community tools feature configuration.
+ */
+export interface CommunityToolsOptions {
+  enabled: boolean
 }
 
 /**
