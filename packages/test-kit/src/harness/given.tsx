@@ -11,8 +11,10 @@ import {
   App,
   SEARCH_STORAGE_KEY,
   clearSessionState,
+  preloadAppDetailPanel,
   seedSessionState,
 } from '@igstack/app-catalog-frontend-core/internal'
+import { MOUNT_TIMEOUT } from '../timeouts'
 import type { AcPlugin } from '@igstack/app-catalog-frontend-core'
 import type { RegisteredRouter } from '@tanstack/react-router'
 import { requireRouterFactory } from './routerFactory'
@@ -196,7 +198,9 @@ export async function given(
     localStorage.setItem('ac_auth_user', JSON.stringify(sessionResponse.user))
   }
 
-  // 8. Render
+  // 8. Render, with the detail card's chunk already loaded: a step that opens
+  // a card then waits only for React, never for the module graph.
+  await preloadAppDetailPanel()
   render(
     <App
       router={router}
@@ -229,7 +233,7 @@ export async function given(
         throw new Error('Still loading...')
       }
     },
-    { timeout: 10000 },
+    { timeout: MOUNT_TIMEOUT },
   )
 
   // 10. Return tools

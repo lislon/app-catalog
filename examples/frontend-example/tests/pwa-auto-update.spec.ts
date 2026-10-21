@@ -17,15 +17,16 @@ test.describe('PWA Auto-Update', () => {
     page,
   }) => {
     page.on('console', (msg) => console.log('  [browser]', msg.text()))
-    await page.goto('/')
-
-    // Wait for SW to be ready (controller starts after registration)
-    await page.evaluate(async () => {
-      await navigator.serviceWorker.ready
+    // Listening before goto: the controller may start before goto resolves.
+    const started = page.waitForEvent('console', {
+      predicate: (msg) =>
+        msg
+          .text()
+          .includes('[PWA Auto-Update] Starting auto-update controller'),
     })
-
-    // Give React time to mount and controller to start
-    await page.waitForTimeout(500)
+    await page.goto('/')
+    // start() logs, then attaches the listener in the same synchronous call.
+    await started
 
     // Verify the controller's visibilitychange listener is attached by
     // dispatching the event and checking for the debug log
@@ -49,11 +50,10 @@ test.describe('PWA Auto-Update', () => {
   test('app loads and renders content', async ({ page }) => {
     await page.goto('/')
 
-    await page
-      .waitForSelector('[data-testid="user-avatar-button"], a[href="/"]', {
-        timeout: 10000,
-      })
-      .catch(() => {})
+    await page.waitForSelector(
+      '[data-testid="user-avatar-button"], a[href="/"]',
+      { timeout: 10000 },
+    )
 
     const hasContent = await page.evaluate(() => {
       return document.getElementById('root')?.innerHTML !== ''

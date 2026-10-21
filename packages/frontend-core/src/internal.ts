@@ -21,3 +21,4 @@ export {
   clearSessionState,
   seedSessionState,
 } from './modules/appCatalog/hooks/useSessionSyncedState'
+export { preloadAppDetailPanel } from './modules/appCatalog/ui/pages/AppCatalogPage'

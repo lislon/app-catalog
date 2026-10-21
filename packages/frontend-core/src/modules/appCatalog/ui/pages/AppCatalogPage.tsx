@@ -6,12 +6,17 @@ import { useAppCatalogFilters } from '../context/AppCatalogFiltersContext'
 import { AppCatalogGrid } from '../catalog/AppCatalogGrid'
 import { AttributionFooter } from '../catalog/AttributionFooter'
 
-// The detail card (and the markdown stack it renders) loads on first open, not
-// with the catalog grid every visitor sees first (#120).
+// The detail card (and the markdown stack it renders) stays out of the bundle
+// every visitor loads first (#120). The page fetches it after its first paint,
+// so the first click on a row does not wait for the chunk.
+const loadAppDetailPanel = () => import('../catalog/AppDetailPanel')
+
+/** Resolves once the detail card's chunk is loaded. */
+export const preloadAppDetailPanel = (): Promise<void> =>
+  loadAppDetailPanel().then(() => undefined)
+
 const AppDetailPanel = lazy(() =>
-  import('../catalog/AppDetailPanel').then((m) => ({
-    default: m.AppDetailPanel,
-  })),
+  loadAppDetailPanel().then((m) => ({ default: m.AppDetailPanel })),
 )
 
 export function AppCatalogPage({
@@ -83,6 +88,10 @@ export function AppCatalogPage({
       rootResources.filter((a) => filterState.showDeprecated || !a.deprecated),
     [rootResources, filterState.showDeprecated],
   )
+
+  useEffect(() => {
+    void preloadAppDetailPanel()
+  }, [])
 
   // Dev-only skew warning: data arrived (resources > 0) but nothing is top-level
   // (rootResources === 0). That fingerprints a frontend/backend-core version skew

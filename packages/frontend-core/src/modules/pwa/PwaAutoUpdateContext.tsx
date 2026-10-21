@@ -23,11 +23,29 @@ export function PwaAutoUpdateProvider({
   children,
 }: PwaAutoUpdateProviderProps) {
   const controllerRef = useRef<PwaAutoUpdateController | undefined>(undefined)
+  const handleRef = useRef(handle)
 
+  // A new handle (the registration arriving) goes to the running controller.
+  // Declared first, so the effect below reads the current handle.
   useEffect(() => {
-    if (!handle) return
+    handleRef.current = handle
+    if (handle) controllerRef.current?.updateHandle(handle)
+  }, [handle])
 
-    const controller = new PwaAutoUpdateController(handle, options)
+  // One controller for as long as there is a handle and the option values
+  // hold. Keyed on values, not identities: rebuilding it drops its pending
+  // visibility check and its idle tracking.
+  const hasHandle = handle !== undefined
+  const { idleTimeoutMs, minCheckIntervalMs, debug } = options ?? {}
+  useEffect(() => {
+    const current = handleRef.current
+    if (!current) return
+
+    const controller = new PwaAutoUpdateController(current, {
+      idleTimeoutMs,
+      minCheckIntervalMs,
+      debug,
+    })
     controllerRef.current = controller
     controller.start()
 
@@ -35,14 +53,7 @@ export function PwaAutoUpdateProvider({
       controller.destroy()
       controllerRef.current = undefined
     }
-  }, [handle, options])
-
-  // Update handle when registration arrives async
-  useEffect(() => {
-    if (handle && controllerRef.current) {
-      controllerRef.current.updateHandle(handle)
-    }
-  }, [handle])
+  }, [hasHandle, idleTimeoutMs, minCheckIntervalMs, debug])
 
   const contextValue = useMemo<PwaAutoUpdateContextValue>(
     () => ({
