@@ -39,6 +39,17 @@ export {
   type FeedbackList,
   type FeedbackView,
 } from './modules/feedback/service'
+
+// Community Tools
+// ToolInput and Writer are part of the router's inferred type, so they must be
+// nameable from outside the package or every consumer's trpc hooks become unportable.
+export { createCommunityToolsRouter } from './modules/communityTools/router'
+export {
+  toolInputSchema,
+  type ToolInput,
+  type ToolPreview,
+  type Writer,
+} from './modules/communityTools/writeService'
 // The identity every surface shares — rows store `hash`, clients may hold `publicId`,
 // and `visitorFromSeed` is how a test or a dev session becomes a chosen visitor.
 export {

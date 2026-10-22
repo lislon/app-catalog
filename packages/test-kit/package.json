@@ -72,6 +72,7 @@
     "@testing-library/react": "catalog:",
     "@testing-library/user-event": "^14.6.1",
     "@trpc/client": "catalog:",
+    "@trpc/server": "catalog:",
     "fake-indexeddb": "^6.2.4",
     "msw": "^2.12.14",
     "msw-trpc": "^2.0.1",
@@ -81,6 +82,7 @@
   "devDependencies": {
     "@igstack/app-catalog-backend-core": "workspace:*",
     "@igstack/app-catalog-frontend-core": "workspace:*",
+    "@igstack/app-catalog-shared-core": "workspace:*",
     "@tanstack/vite-config": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
@@ -94,6 +96,7 @@
   "peerDependencies": {
     "@igstack/app-catalog-backend-core": "workspace:^",
     "@igstack/app-catalog-frontend-core": "workspace:^",
+    "@igstack/app-catalog-shared-core": "workspace:^",
     "jsdom": ">=25",
     "react": "catalog:",
     "react-dom": "catalog:",

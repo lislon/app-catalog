@@ -3,10 +3,11 @@ import { z } from 'zod'
 import type { User } from 'better-auth/types'
 import type { CommunityToolsOptions } from '../../middleware/types'
 import {
-  adminProcedure,
-  protectedProcedure,
-  publicProcedure,
+  adminProcedure as adminBase,
+  protectedProcedure as protectedBase,
+  publicProcedure as publicBase,
   router,
+  t,
 } from '../../server/trpcSetup'
 import type { Actor } from '../visitor/visitorIdentity'
 import * as service from './service'
@@ -39,21 +40,29 @@ function writerOf(ctx: {
  * job (`createAcMiddleware`), so a router built directly never launches a browser.
  */
 export function createCommunityToolsRouter(options?: CommunityToolsOptions) {
-  // When disabled, return a minimal router with only config
-  if (!options?.enabled) {
-    return router({
-      config: publicProcedure.query(() => ({ enabled: false })),
-    })
-  }
-
+  const enabled = options?.enabled ?? false
   const deps = {
-    captureHosts: options.captureHosts ?? [],
-    capturer: options.capturer ?? null,
+    captureHosts: options?.captureHosts ?? [],
+    capturer: options?.capturer ?? null,
   }
 
-  // Full router when enabled
+  // One router shape whether enabled or not, so clients see every procedure in the
+  // type; when disabled every procedure but `config` answers NOT_FOUND.
+  const whenEnabled = t.middleware(({ next }) => {
+    if (!enabled) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Community tools are disabled',
+      })
+    }
+    return next()
+  })
+  const publicProcedure = publicBase.use(whenEnabled)
+  const protectedProcedure = protectedBase.use(whenEnabled)
+  const adminProcedure = adminBase.use(whenEnabled)
+
   return router({
-    config: publicProcedure.query(() => ({ enabled: true })),
+    config: publicBase.query(() => ({ enabled })),
 
     list: publicProcedure.query(({ ctx }) => {
       return service.listTools(ctx.user, ctx.isAdmin, new Date())

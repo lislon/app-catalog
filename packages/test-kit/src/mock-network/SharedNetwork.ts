@@ -1,5 +1,6 @@
 import { HttpResponse, http } from 'msw'
 import { createTRPCMsw, httpLink } from 'msw-trpc'
+import { TRPCError } from '@trpc/server'
 import type { TRPCRouter } from '@igstack/app-catalog-backend-core'
 import type { MockService } from '../mock-backend/MockService'
 import type { NetworkInterceptor } from './NetworkCatalog'
@@ -38,12 +39,15 @@ export const SharedNetwork = {
   feedbackList(store: MockFeedbackStore): NetworkInterceptor {
     return {
       scopeKey: ['feedback-list'],
-      // ponytail: community tool threads answer empty; store them when a scenario needs one
-      handler: trpcMsw.feedback.list.query(({ input }) =>
-        'resourceSlug' in input
-          ? store.listFor(input.resourceSlug)
-          : { items: [], openCount: 0 },
-      ),
+      handler: trpcMsw.feedback.list.query(({ input }) => {
+        if ('resourceSlug' in input && input.resourceSlug) {
+          return store.listFor(input.resourceSlug)
+        }
+        if ('communityToolSlug' in input && input.communityToolSlug) {
+          return store.listFor(input.communityToolSlug)
+        }
+        return { items: [], openCount: 0 }
+      }),
     }
   },
 
@@ -186,6 +190,318 @@ export const SharedNetwork = {
         return new HttpResponse(PLACEHOLDER_PNG, {
           headers: { 'Content-Type': 'image/png' },
         })
+      }),
+    }
+  },
+
+  communityToolsConfig(service: MockService): NetworkInterceptor {
+    return {
+      scopeKey: ['community-tools-config'],
+      handler: trpcMsw.communityTools.config.query(() => {
+        return service.communityToolsStore?.config() ?? { enabled: false }
+      }),
+    }
+  },
+
+  communityToolsList(service: MockService): NetworkInterceptor {
+    return {
+      scopeKey: ['community-tools-list'],
+      handler: trpcMsw.communityTools.list.query(() => {
+        if (!service.communityToolsStore) return []
+        return service.communityToolsStore.list()
+      }),
+    }
+  },
+
+  communityToolsGet(service: MockService): NetworkInterceptor {
+    return {
+      scopeKey: ['community-tools-get'],
+      handler: trpcMsw.communityTools.get.query(({ input }) => {
+        if (!service.communityToolsStore) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Tool not found' })
+        }
+        const tool = service.communityToolsStore.get(input.slug)
+        if (!tool) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Tool not found' })
+        }
+        return tool
+      }),
+    }
+  },
+
+  communityToolsRecordView(service: MockService): NetworkInterceptor {
+    return {
+      scopeKey: ['community-tools-record-view'],
+      handler: trpcMsw.communityTools.recordView.mutation(({ input }) => {
+        if (!service.communityToolsStore) {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'This action needs cookies enabled',
+          })
+        }
+        return service.communityToolsStore.recordView(input.slug)
+      }),
+    }
+  },
+
+  communityToolsRecent(service: MockService): NetworkInterceptor {
+    return {
+      scopeKey: ['community-tools-recent'],
+      handler: trpcMsw.communityTools.recent.query(() => {
+        if (!service.communityToolsStore) {
+          throw new TRPCError({ code: 'UNAUTHORIZED' })
+        }
+        try {
+          return service.communityToolsStore.recent()
+        } catch (error) {
+          if (error instanceof Error && error.message === 'UNAUTHORIZED') {
+            throw new TRPCError({ code: 'UNAUTHORIZED' })
+          }
+          throw error
+        }
+      }),
+    }
+  },
+
+  communityToolsPins(service: MockService): NetworkInterceptor {
+    return {
+      scopeKey: ['community-tools-pins'],
+      handler: trpcMsw.communityTools.pins.query(() => {
+        if (!service.communityToolsStore) {
+          throw new TRPCError({ code: 'UNAUTHORIZED' })
+        }
+        try {
+          return service.communityToolsStore.pins()
+        } catch (error) {
+          if (error instanceof Error && error.message === 'UNAUTHORIZED') {
+            throw new TRPCError({ code: 'UNAUTHORIZED' })
+          }
+          throw error
+        }
+      }),
+    }
+  },
+
+  communityToolsPin(service: MockService): NetworkInterceptor {
+    return {
+      scopeKey: ['community-tools-pin'],
+      handler: trpcMsw.communityTools.pin.mutation(({ input }) => {
+        if (!service.communityToolsStore) {
+          throw new TRPCError({ code: 'UNAUTHORIZED' })
+        }
+        try {
+          service.communityToolsStore.pin(input.slug)
+          return { ok: true } as never
+        } catch (error) {
+          if (error instanceof Error && error.message === 'UNAUTHORIZED') {
+            throw new TRPCError({ code: 'UNAUTHORIZED' })
+          }
+          throw error
+        }
+      }),
+    }
+  },
+
+  communityToolsUnpin(service: MockService): NetworkInterceptor {
+    return {
+      scopeKey: ['community-tools-unpin'],
+      handler: trpcMsw.communityTools.unpin.mutation(({ input }) => {
+        if (!service.communityToolsStore) {
+          throw new TRPCError({ code: 'UNAUTHORIZED' })
+        }
+        try {
+          service.communityToolsStore.unpin(input.slug)
+          return { ok: true } as never
+        } catch (error) {
+          if (error instanceof Error && error.message === 'UNAUTHORIZED') {
+            throw new TRPCError({ code: 'UNAUTHORIZED' })
+          }
+          throw error
+        }
+      }),
+    }
+  },
+
+  communityToolsReorderPins(service: MockService): NetworkInterceptor {
+    return {
+      scopeKey: ['community-tools-reorder-pins'],
+      handler: trpcMsw.communityTools.reorderPins.mutation(({ input }) => {
+        if (!service.communityToolsStore) {
+          throw new TRPCError({ code: 'UNAUTHORIZED' })
+        }
+        try {
+          service.communityToolsStore.reorderPins(input.slugs)
+          return { ok: true } as never
+        } catch (error) {
+          if (error instanceof Error && error.message === 'UNAUTHORIZED') {
+            throw new TRPCError({ code: 'UNAUTHORIZED' })
+          }
+          throw error
+        }
+      }),
+    }
+  },
+
+  communityToolsPreview(service: MockService): NetworkInterceptor {
+    return {
+      scopeKey: ['community-tools-preview'],
+      handler: trpcMsw.communityTools.preview.mutation(({ input }) => {
+        if (!service.communityToolsStore) {
+          throw new TRPCError({ code: 'UNAUTHORIZED' })
+        }
+        try {
+          return service.communityToolsStore.preview(input.url)
+        } catch (error) {
+          if (error instanceof Error) {
+            if (error.message === 'UNAUTHORIZED') {
+              throw new TRPCError({ code: 'UNAUTHORIZED' })
+            }
+            if (error.message.startsWith('BAD_REQUEST:')) {
+              throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: error.message.replace('BAD_REQUEST: ', ''),
+              })
+            }
+          }
+          throw error
+        }
+      }),
+    }
+  },
+
+  communityToolsAdd(service: MockService): NetworkInterceptor {
+    return {
+      scopeKey: ['community-tools-add'],
+      handler: trpcMsw.communityTools.add.mutation(({ input }) => {
+        if (!service.communityToolsStore) {
+          throw new TRPCError({ code: 'UNAUTHORIZED' })
+        }
+        try {
+          return service.communityToolsStore.add(input)
+        } catch (error) {
+          if (error instanceof Error) {
+            if (error.message === 'UNAUTHORIZED') {
+              throw new TRPCError({ code: 'UNAUTHORIZED' })
+            }
+            if (error.message.startsWith('BAD_REQUEST:')) {
+              throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: error.message.replace('BAD_REQUEST: ', ''),
+              })
+            }
+          }
+          throw error
+        }
+      }),
+    }
+  },
+
+  communityToolsEdit(service: MockService): NetworkInterceptor {
+    return {
+      scopeKey: ['community-tools-edit'],
+      handler: trpcMsw.communityTools.edit.mutation(({ input }) => {
+        if (!service.communityToolsStore) {
+          throw new TRPCError({ code: 'UNAUTHORIZED' })
+        }
+        try {
+          return service.communityToolsStore.edit(input)
+        } catch (error) {
+          if (error instanceof Error) {
+            if (error.message === 'UNAUTHORIZED') {
+              throw new TRPCError({ code: 'UNAUTHORIZED' })
+            }
+            if (
+              error.message ===
+              'FORBIDDEN: Only an owner or an admin can change this tool'
+            ) {
+              throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'Only an owner or an admin can change this tool',
+              })
+            }
+            if (error.message === 'NOT_FOUND: Tool not found') {
+              throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Tool not found',
+              })
+            }
+            if (error.message.startsWith('BAD_REQUEST:')) {
+              throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: error.message.replace('BAD_REQUEST: ', ''),
+              })
+            }
+          }
+          throw error
+        }
+      }),
+    }
+  },
+
+  communityToolsArchive(service: MockService): NetworkInterceptor {
+    return {
+      scopeKey: ['community-tools-archive'],
+      handler: trpcMsw.communityTools.archive.mutation(({ input }) => {
+        if (!service.communityToolsStore) {
+          throw new TRPCError({ code: 'UNAUTHORIZED' })
+        }
+        try {
+          service.communityToolsStore.archive(input.slug, input.reason)
+          return { ok: true } as never
+        } catch (error) {
+          if (error instanceof Error) {
+            if (error.message === 'UNAUTHORIZED') {
+              throw new TRPCError({ code: 'UNAUTHORIZED' })
+            }
+            if (
+              error.message ===
+              'FORBIDDEN: Only an owner or an admin can change this tool'
+            ) {
+              throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'Only an owner or an admin can change this tool',
+              })
+            }
+            if (error.message === 'NOT_FOUND: Tool not found') {
+              throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Tool not found',
+              })
+            }
+          }
+          throw error
+        }
+      }),
+    }
+  },
+
+  communityToolsApprove(service: MockService): NetworkInterceptor {
+    return {
+      scopeKey: ['community-tools-approve'],
+      handler: trpcMsw.communityTools.approve.mutation(({ input }) => {
+        if (!service.communityToolsStore) {
+          throw new TRPCError({ code: 'UNAUTHORIZED' })
+        }
+        try {
+          service.communityToolsStore.approve(input.slug)
+          return { ok: true } as never
+        } catch (error) {
+          if (error instanceof Error) {
+            if (error.message === 'UNAUTHORIZED') {
+              throw new TRPCError({ code: 'UNAUTHORIZED' })
+            }
+            if (error.message === 'FORBIDDEN') {
+              throw new TRPCError({ code: 'FORBIDDEN' })
+            }
+            if (error.message === 'NOT_FOUND: Tool not found') {
+              throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'Tool not found',
+              })
+            }
+          }
+          throw error
+        }
       }),
     }
   },

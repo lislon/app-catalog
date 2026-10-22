@@ -335,6 +335,100 @@ function subResourcesMagazine(postConfigure?: Magazine): Magazine {
 }
 
 // ---------------------------------------------------------------------------
+// Community tools magazine
+// ---------------------------------------------------------------------------
+
+function communityMagazine(postConfigure?: Magazine): Magazine {
+  return (ctx) => {
+    const { backendCfg } = ctx
+
+    const supportPortal = backendCfg.withApprovalMethod({
+      slug: 'it-support',
+      type: 'service',
+      displayName: 'Support Portal',
+      config: { url: 'https://support.example.com' },
+    })
+
+    backendCfg.withApp({
+      slug: 'order-service',
+      displayName: 'Order Service',
+      description: 'Order management and tracking',
+      accessRequest: {
+        approvalMethodSlug: supportPortal.slug,
+        comments: 'Request access via support portal',
+      },
+    })
+
+    backendCfg.withTag({
+      prefix: 'category',
+      displayName: 'Category',
+      description: 'Application category',
+      values: [
+        {
+          value: 'runbook',
+          displayName: 'Runbook',
+          description: 'Operational runbooks',
+        },
+        {
+          value: 'sandbox',
+          displayName: 'Sandbox',
+          description: 'Testing and experimentation',
+        },
+      ],
+    })
+
+    backendCfg.withCommunityTools({
+      enabled: true,
+      captureHosts: ['example.com'],
+      tools: [
+        {
+          slug: 'ops-runbook',
+          name: 'Ops Runbook',
+          url: 'https://ops-runbook-1a2b.pages.example.com/',
+          summary: 'Operational procedures and troubleshooting guides',
+          descriptionMd: 'Standard operating procedures for common issues',
+          ownerSlugs: ['dana.lee@test.com'],
+          tags: [{ kind: 'topic', value: 'runbook' }],
+          views30d: 412,
+          viewsAll: 1203,
+        },
+        {
+          slug: 'kit-rules-playground',
+          name: 'Kit Rules Playground',
+          url: 'https://kit-rules-sandbox-7c01.pages.example.com/',
+          summary: 'Test environment for kit configuration rules',
+          descriptionMd: 'Sandbox for testing and validating kit rules',
+          ownerSlugs: ['sam.ortiz@test.com'],
+          tags: [{ kind: 'topic', value: 'sandbox' }],
+          views30d: 288,
+          viewsAll: 288,
+        },
+        {
+          slug: 'old-tracker',
+          name: 'Old Tracker',
+          url: 'https://old-tracker.pages.example.com/',
+          summary: 'Legacy issue tracking system',
+          descriptionMd: 'Original issue tracker, still in use for some teams',
+          ownerSlugs: ['robin.park@test.com'],
+          tags: [],
+          views30d: 22,
+          viewsAll: 22,
+        },
+      ],
+      persons: [
+        { slug: 'dana.lee@test.com', firstName: 'Dana', lastName: 'Lee' },
+        { slug: 'sam.ortiz@test.com', firstName: 'Sam', lastName: 'Ortiz' },
+        { slug: 'robin.park@test.com', firstName: 'Robin', lastName: 'Park' },
+      ],
+    })
+
+    backendCfg.withUser({ isAuthenticated: false })
+
+    postConfigure?.(ctx)
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Magazine entries
 // ---------------------------------------------------------------------------
 
@@ -358,6 +452,9 @@ export const magazine = {
   /** 1 parent with 47 sub-resources + 1 unrelated app — accepts optional post-configurer */
   subResources: (postConfigure?: Magazine) =>
     subResourcesMagazine(postConfigure),
+
+  /** Community tools catalog with 3 tools, 3 persons, and 1 official app — accepts optional post-configurer */
+  community: (postConfigure?: Magazine) => communityMagazine(postConfigure),
 
   /** Inline custom configurer — pass-through for ad-hoc tests */
   custom: (fn: Magazine): Magazine => fn,

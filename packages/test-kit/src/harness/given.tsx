@@ -27,6 +27,7 @@ import {
   MockBackendConfigurer,
   resetConfigurerCounter,
 } from '../mock-backend/MockBackendConfigurer'
+import { MockCommunityToolsStore } from '../mock-backend/MockCommunityToolsStore'
 import { BrowserStateCfg } from '../mock-backend/BrowserStateCfg'
 import { NetworkConfigurerCfg } from '../mock-network/NetworkConfigurerCfg'
 import type { ConfigurerContext, Magazine } from '../mock-backend/magazines'
@@ -108,7 +109,14 @@ export async function given(
   // 1. Create cfg objects (data carriers)
   const db = new MockDb()
   const userContext = new MockUserContext()
-  const backendCfg = new MockBackendConfigurer(db, userContext)
+  const communityToolsStore = new MockCommunityToolsStore(userContext, [
+    'example.com',
+  ])
+  const backendCfg = new MockBackendConfigurer(
+    db,
+    userContext,
+    communityToolsStore,
+  )
   const browserStateCfg = new BrowserStateCfg()
   const networkCfg = new NetworkConfigurerCfg()
 
@@ -118,7 +126,7 @@ export async function given(
   magazine(ctx)
 
   // 3. Materialize backend service
-  const service = new MockService(db, userContext)
+  const service = new MockService(db, userContext, communityToolsStore)
 
   // 4. Apply browser state using data from backend service
   if (browserStateCfg.shouldDismissOnboarding) {
@@ -237,7 +245,7 @@ export async function given(
   )
 
   // 10. Return tools
-  const backend = new MockBackendVerifier(db)
+  const backend = new MockBackendVerifier(db, communityToolsStore)
 
   const ui: UiTools = {
     catalog: new CatalogTools(),
