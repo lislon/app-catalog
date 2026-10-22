@@ -126,10 +126,6 @@ export function ToolCard({
     trpc.communityTools.recordView.mutationOptions({
       onSuccess: (c, { slug: viewed }) => {
         setCounts({ slug: viewed, ...c })
-        // The view just made is Recently opened's newest entry.
-        void queryClient.invalidateQueries({
-          queryKey: trpc.communityTools.recent.queryKey(),
-        })
       },
     }),
   )

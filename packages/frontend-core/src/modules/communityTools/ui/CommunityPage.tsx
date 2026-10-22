@@ -21,7 +21,6 @@ import { useCommunityTools } from '../useCommunityTools'
 import { FeedRow, ROW_THUMB } from './FeedRow'
 import { FeedWindowToggle } from './FeedWindowToggle'
 import { MyToolsShelf } from './MyToolsShelf'
-import { RecentChips } from './RecentChips'
 import { TagRow } from './TagRow'
 import { Toast } from './Toast'
 import type { ToastMessage } from './Toast'
@@ -68,7 +67,6 @@ export function CommunityPage({
   const {
     list,
     pins,
-    recent,
     appNames,
     isAuthenticated,
     isAuthLoading,
@@ -342,7 +340,7 @@ export function CommunityPage({
               aria-hidden="true"
               className="size-4 fill-amber-400 text-amber-600"
             />
-            My tools and Recently opened are hidden while you search
+            My tools is hidden while you search
           </div>
         ) : (
           <div className="mb-[26px]">
@@ -352,7 +350,6 @@ export function CommunityPage({
               onUnpin={(tool) => togglePin(tool)}
               onReorder={reorderPins}
             />
-            {isAuthenticated && <RecentChips tools={recent.data ?? []} />}
           </div>
         )}
 

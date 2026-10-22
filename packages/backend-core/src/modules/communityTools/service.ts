@@ -2,11 +2,7 @@ import { TRPCError } from '@trpc/server'
 import type { User } from 'better-auth/types'
 import { getDbClient } from '../../db/client'
 import type { Actor } from '../visitor/visitorIdentity'
-import type {
-  CommunityTool,
-  RecentTool,
-} from '@igstack/app-catalog-shared-core'
-import { RECENT_TOOLS_LIMIT } from '@igstack/app-catalog-shared-core'
+import type { CommunityTool } from '@igstack/app-catalog-shared-core'
 import type { CaptureDeps } from './healthJob'
 import { toView } from './toView'
 
@@ -182,120 +178,6 @@ export async function recordView(
   ])
 
   return { views30d, viewsAll }
-}
-
-export async function listRecent(
-  userId: string,
-  user: User | null,
-  isAdmin: boolean,
-  now: Date,
-  capture: CaptureDeps,
-): Promise<RecentTool[]> {
-  const db = getDbClient()
-
-  // The latest views first; enough rows to find RECENT_TOOLS_LIMIT distinct tools.
-  const recentViews = await db.dbCommunityToolView.findMany({
-    where: { userId },
-    orderBy: { at: 'desc' },
-    take: 100,
-    include: { tool: true },
-  })
-
-  const openedAt = new Map<string, Date>()
-  const distinctTools: (typeof recentViews)[0]['tool'][] = []
-  for (const view of recentViews) {
-    if (!openedAt.has(view.toolId)) {
-      openedAt.set(view.toolId, view.at)
-      distinctTools.push(view.tool)
-      if (distinctTools.length === RECENT_TOOLS_LIMIT) break
-    }
-  }
-
-  const toolIds = distinctTools.map((t) => t.id)
-
-  // Fetch related data
-  const owners = await db.dbCommunityToolOwner.findMany({
-    where: { toolId: { in: toolIds } },
-  })
-
-  const [tags, namedOwners, persons] = await Promise.all([
-    db.dbCommunityToolTag.findMany({
-      where: { toolId: { in: toolIds } },
-    }),
-    db.dbCommunityToolNamedOwner.findMany({
-      where: { toolId: { in: toolIds } },
-    }),
-    db.dbPerson.findMany({
-      where: {
-        slug: {
-          in: owners.map((o) => o.personSlug),
-        },
-      },
-    }),
-  ])
-
-  const ownerMap = new Map<string, typeof owners>()
-  for (const owner of owners) {
-    if (!ownerMap.has(owner.toolId)) {
-      ownerMap.set(owner.toolId, [])
-    }
-    ownerMap.get(owner.toolId)!.push(owner)
-  }
-
-  const tagMap = new Map<string, typeof tags>()
-  for (const tag of tags) {
-    if (!tagMap.has(tag.toolId)) {
-      tagMap.set(tag.toolId, [])
-    }
-    tagMap.get(tag.toolId)!.push(tag)
-  }
-
-  const personMap = new Map(persons.map((p) => [p.slug, p]))
-
-  const today = new Date(now)
-  today.setUTCHours(0, 0, 0, 0)
-  const thirtyDaysAgo = new Date(today)
-  thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 29)
-
-  const viewCounts = await Promise.all(
-    toolIds.map(async (toolId) => {
-      const [views30d, viewsAll] = await Promise.all([
-        db.dbCommunityToolView.count({
-          where: { toolId, day: { gte: thirtyDaysAgo } },
-        }),
-        db.dbCommunityToolView.count({ where: { toolId } }),
-      ])
-      return { toolId, views30d, viewsAll }
-    }),
-  )
-  const viewCountMap = new Map(
-    viewCounts.map((v) => [
-      v.toolId,
-      { views30d: v.views30d, viewsAll: v.viewsAll },
-    ]),
-  )
-
-  return Promise.all(
-    distinctTools.map(async (tool) => {
-      const toolWithRelations = {
-        ...tool,
-        owners: ownerMap.get(tool.id) || [],
-        namedOwners: namedOwners.filter((o) => o.toolId === tool.id),
-        tags: tagMap.get(tool.id) || [],
-      }
-      const counts = viewCountMap.get(tool.id) || { views30d: 0, viewsAll: 0 }
-      const view = await toView(
-        toolWithRelations,
-        personMap,
-        counts,
-        user,
-        isAdmin,
-        now,
-        capture,
-      )
-      return { ...view, openedAt: openedAt.get(tool.id)!.toISOString() }
-    }),
-  )
 }
 
 export async function listPins(

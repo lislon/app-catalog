@@ -45,15 +45,6 @@ export interface CommunityTool {
   canEdit: boolean
 }
 
-/** A tool in the visitor's Recently opened, with when they last opened its card. */
-export interface RecentTool extends CommunityTool {
-  /** ISO time of the visitor's latest view. */
-  openedAt: string
-}
-
-/** How many tools Recently opened holds. */
-export const RECENT_TOOLS_LIMIT = 5
-
 /** The longest tag value: a topic is a word or two, an app tag an app's slug. */
 export const TAG_VALUE_MAX = 32
 

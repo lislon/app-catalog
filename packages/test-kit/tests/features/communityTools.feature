@@ -44,39 +44,12 @@ Feature: Getting back to a tool a colleague built
     Then My tools shows "Ops Runbook"
     And Most opened by colleagues still lists every tool
 
-  Scenario: The tools I opened recently are remembered for me
-    Given I am signed in
-    When I open the card of "Kit Rules Playground"
-    And I close the card
-    Then Recently opened shows "Kit Rules Playground"
-
-  Scenario: The tools I opened before are listed
-    Given I am signed in
-    And I opened "Kit Rules Playground" before
-    When I open Community tools
-    Then Recently opened shows "Kit Rules Playground"
-
-  Scenario: Recently opened says when
-    Given I am signed in
-    And I opened "Kit Rules Playground" 2 hours ago
-    And I opened "Ops Runbook" 1 day ago
-    When I open Community tools
-    Then Recently opened shows "Kit Rules Playground" opened "2 h ago"
-    And Recently opened shows "Ops Runbook" opened "yesterday"
-
-  Scenario: Recently opened keeps the last five
-    Given I am signed in
-    And I opened 7 different tools
-    When I open Community tools
-    Then Recently opened lists "Opened Tool 7, Opened Tool 6, Opened Tool 5, Opened Tool 4, Opened Tool 3"
-
   Scenario: Searching makes room for the answer
     Given I am signed in
     And I pinned "Ops Runbook"
     When I open Community tools
     And I search for "kit"
     Then My tools is hidden
-    And Recently opened is hidden
 
   Scenario: My tools is hidden with no pins
     Given I am signed in
@@ -88,7 +61,6 @@ Feature: Getting back to a tool a colleague built
     When I open Community tools
     Then Most opened by colleagues still lists every tool
     And My tools is hidden
-    And Recently opened is hidden
     When I pin "Kit Rules Playground" from the feed
     Then I am asked to sign in
 

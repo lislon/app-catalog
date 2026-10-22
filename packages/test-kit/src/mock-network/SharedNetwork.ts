@@ -214,10 +214,6 @@ export const SharedNetwork = {
         handler: ct.recordView.mutation(({ input }) => store.recordView(input)),
       },
       {
-        scopeKey: ['community-tools-recent'],
-        handler: ct.recent.query(() => store.recent()),
-      },
-      {
         scopeKey: ['community-tools-pins'],
         handler: ct.pins.query(() => store.pins()),
       },

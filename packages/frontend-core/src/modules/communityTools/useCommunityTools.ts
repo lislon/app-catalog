@@ -6,7 +6,7 @@ import { useAppCatalogContext } from '~/modules/appCatalog/context/AppCatalogCon
 import { useAuth } from '~/modules/auth'
 
 /**
- * Everything the community page reads, and the pin writes. Pins and recents
+ * Everything the community page reads, and the pin writes. Pins
  * belong to the signed-in user, so they are not asked for until there is one.
  */
 export function useCommunityTools() {
@@ -18,11 +18,6 @@ export function useCommunityTools() {
   const list = useQuery(trpc.communityTools.list.queryOptions())
   const pins = useQuery(
     trpc.communityTools.pins.queryOptions(undefined, {
-      enabled: isAuthenticated,
-    }),
-  )
-  const recent = useQuery(
-    trpc.communityTools.recent.queryOptions(undefined, {
       enabled: isAuthenticated,
     }),
   )
@@ -95,7 +90,6 @@ export function useCommunityTools() {
   return {
     list,
     pins,
-    recent,
     appNames,
     isAuthenticated,
     isAuthLoading,

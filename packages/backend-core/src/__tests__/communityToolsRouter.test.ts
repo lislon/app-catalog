@@ -42,7 +42,6 @@ describe('communityTools router authorization', () => {
 
   it.each([
     ['pins', () => anonymous.pins()],
-    ['recent', () => anonymous.recent()],
     ['pin', () => anonymous.pin({ slug: 'my-tool' })],
     ['unpin', () => anonymous.unpin({ slug: 'my-tool' })],
     ['reorderPins', () => anonymous.reorderPins({ slugs: ['my-tool'] })],

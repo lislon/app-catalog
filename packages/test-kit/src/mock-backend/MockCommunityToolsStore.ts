@@ -3,10 +3,8 @@ import type { ToolPreview } from '@igstack/app-catalog-backend-core'
 import type {
   CommunityTag,
   CommunityTool,
-  RecentTool,
 } from '@igstack/app-catalog-shared-core'
 import {
-  RECENT_TOOLS_LIMIT,
   TAG_VALUE_MAX,
   hostOf,
   isCaptureAllowed,
@@ -69,9 +67,7 @@ export type ToolSeed = Partial<Omit<StoredTool, 'id' | 'host'>> & {
 interface View {
   toolId: string
   actorHash: string
-  userId: string | null
   day: Date
-  at: Date
 }
 
 /** The clock every scenario runs on, so "N days" reads the same on any day. */
@@ -176,9 +172,7 @@ export class MockCommunityToolsStore {
       this.views.push({
         toolId: tool.id,
         actorHash: `seed-${i}`,
-        userId: null,
         day,
-        at: day,
       })
     }
     return tool.slug
@@ -297,61 +291,18 @@ export class MockCommunityToolsStore {
     this.requireEnabled()
     const tool = this.tools.find((t) => t.slug === input.slug)
     if (!tool) throw new Error('Tool not found')
-    const userId = this.userContext.getSessionUser()?.id ?? null
     const day = startOfDay(MOCK_NOW)
-    // Distinct instants, so "most recent" has an order inside the frozen clock.
-    const at = new Date(MOCK_NOW.getTime() + ++this.tick)
-    const same = this.views.find(
+    // One view per visitor per day, as on the server.
+    const same = this.views.some(
       (v) =>
         v.toolId === tool.id &&
         v.actorHash === VISITOR_HASH &&
         v.day.getTime() === day.getTime(),
     )
-    if (same) {
-      same.at = at
-      same.userId = userId
-    } else {
-      this.views.push({
-        toolId: tool.id,
-        actorHash: VISITOR_HASH,
-        userId,
-        day,
-        at,
-      })
+    if (!same) {
+      this.views.push({ toolId: tool.id, actorHash: VISITOR_HASH, day })
     }
     return this.viewCounts(tool)
-  }
-
-  recent(): RecentTool[] {
-    const user = this.requireUser()
-    const openedAt = new Map<string, Date>()
-    for (const view of [...this.views]
-      .filter((v) => v.userId === user.id)
-      .sort((a, b) => b.at.getTime() - a.at.getTime())) {
-      if (!openedAt.has(view.toolId)) openedAt.set(view.toolId, view.at)
-      if (openedAt.size === RECENT_TOOLS_LIMIT) break
-    }
-    return [...openedAt].map(([id, at]) => ({
-      ...this.toView(this.tools.find((t) => t.id === id)!, user),
-      openedAt: at.toISOString(),
-    }))
-  }
-
-  /**
-   * The signed-in visitor opened this tool's card at `at`. The page reads
-   * "N h ago" off the browser's clock, so a scenario passes a real time here.
-   */
-  seedOpened(slug: string, at: Date): void {
-    const user = this.userContext.getSessionUser()
-    if (!user) throw new Error('Recently opened belongs to a signed-in user')
-    const tool = this.stored(slug)
-    this.views.push({
-      toolId: tool.id,
-      actorHash: VISITOR_HASH,
-      userId: user.id,
-      day: startOfDay(at),
-      at,
-    })
   }
 
   pins(): CommunityTool[] {

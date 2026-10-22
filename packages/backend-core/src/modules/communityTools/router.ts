@@ -96,16 +96,6 @@ export function createCommunityToolsRouter(options?: CommunityToolsOptions) {
         return service.recordView(input.slug, actor, ctx.user, new Date())
       }),
 
-    recent: protectedProcedure.query(({ ctx }) => {
-      return service.listRecent(
-        ctx.user.id,
-        ctx.user,
-        ctx.isAdmin,
-        new Date(),
-        deps,
-      )
-    }),
-
     pins: protectedProcedure.query(({ ctx }) => {
       return service.listPins(
         ctx.user.id,

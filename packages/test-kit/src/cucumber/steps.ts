@@ -610,54 +610,6 @@ function namesTagged(word: string): string[] {
     .map((t) => t.name)
 }
 
-Given('I opened {string} before', async (_world, tool: string) => {
-  await givenOnServer(({ backendCfg }) => {
-    const tools = backendCfg.communityTools
-    tools.recordView({ slug: tools.slugOf(tool) })
-  })
-})
-
-const HOUR_MS = 60 * 60 * 1000
-
-/** A view at a time before now on the real clock, which the page measures against. */
-function openedEarlier(tool: string, msAgo: number): Promise<void> {
-  // Fixed at the Given, so every reload replays the same instant.
-  const at = new Date(Date.now() - msAgo)
-  return givenOnServer(({ backendCfg }) => {
-    const tools = backendCfg.communityTools
-    tools.seedOpened(tools.slugOf(tool), at)
-  })
-}
-
-Given(
-  'I opened {string} {int} hour(s) ago',
-  async (_world, tool: string, hours: number) => {
-    await openedEarlier(tool, hours * HOUR_MS)
-  },
-)
-
-Given(
-  'I opened {string} {int} day(s) ago',
-  async (_world, tool: string, days: number) => {
-    await openedEarlier(tool, days * 24 * HOUR_MS)
-  },
-)
-
-Given('I opened {int} different tools', async (_world, count: number) => {
-  const now = Date.now()
-  await givenOnServer(({ backendCfg }) => {
-    const tools = backendCfg.communityTools
-    for (let i = 1; i <= count; i++) {
-      const slug = tools.seed({
-        name: `Opened Tool ${i}`,
-        url: `https://opened-tool-${i}.pages.example.com/`,
-      })
-      // Tool 1 the longest ago, the last one most recently.
-      tools.seedOpened(slug, new Date(now - (count - i + 1) * 60_000))
-    }
-  })
-})
-
 async function openCommunity(): Promise<void> {
   const user = userEvent.setup()
   await user.click(await waitFor(() => sectionTab('Community tools')))
@@ -778,45 +730,6 @@ Then('My tools is hidden', async () => {
 
 Then('I am asked to sign in', async () => {
   expect(await screen.findByRole('heading', { name: 'Sign In' })).toBeTruthy()
-})
-
-Then('Recently opened shows {string}', async (_world, name: string) => {
-  await waitFor(() => {
-    expect(recentNames()).toContain(name)
-  })
-})
-
-Then(
-  'Recently opened shows {string} opened {string}',
-  async (_world, name: string, when: string) => {
-    await waitFor(() => {
-      const chip = within(screen.getByTestId('recently-opened'))
-        .queryAllByTestId('recent-chip')
-        .find(
-          (c) => within(c).getByTestId('recent-chip-name').textContent === name,
-        )
-      if (!chip) throw new Error(`No "${name}" chip in Recently opened`)
-      expect(within(chip).getByTestId('recent-chip-time').textContent).toBe(
-        when,
-      )
-    })
-  },
-)
-
-function recentNames(): string[] {
-  return within(screen.getByTestId('recently-opened'))
-    .queryAllByTestId('recent-chip-name')
-    .map((n) => n.textContent)
-}
-
-Then('Recently opened lists {string}', async (_world, names: string) => {
-  await waitFor(() => {
-    expect(recentNames()).toEqual(names.split(', '))
-  })
-})
-
-Then('Recently opened is hidden', () => {
-  expect(screen.queryByTestId('recently-opened')).toBeNull()
 })
 
 Then('Most opened by colleagues still lists every tool', async () => {

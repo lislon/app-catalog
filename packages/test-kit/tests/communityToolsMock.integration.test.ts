@@ -240,7 +240,7 @@ describe('the "community" catalog mock', () => {
     })
   })
 
-  it('keeps pins and recents per signed-in user', async () => {
+  it('keeps pins per signed-in user, and counts views', async () => {
     await community(({ backendCfg }) => {
       backendCfg.withUser({ isAuthenticated: true })
       backendCfg.communityTools.seedPin('ops-runbook')
@@ -254,14 +254,10 @@ describe('the "community" catalog mock', () => {
       'ops-runbook',
     ])
 
-    await api.communityTools.recordView.mutate({ slug: 'kit-rules-playground' })
     const views = await api.communityTools.recordView.mutate({
       slug: 'ops-runbook',
     })
     expect(views).toEqual({ views30d: 413, viewsAll: 1204 })
-    expect(
-      (await api.communityTools.recent.query()).map((t) => t.slug),
-    ).toEqual(['ops-runbook', 'kit-rules-playground'])
     expect(
       (await api.communityTools.get.query({ slug: 'ops-runbook' })).tags,
     ).toContainEqual({ kind: 'app', value: 'order-service' })
