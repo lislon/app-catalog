@@ -731,7 +731,10 @@ export class MockCommunityToolsStore {
       siteUpdatedAt: tool.siteUpdatedAt?.toISOString() ?? null,
       likes: tool.likes.length,
       likedByMe: !!user && tool.likes.some((l) => l.userId === user.id),
-      likedBy: tool.likes.slice(0, 8).map((l) => l.userName),
+      likedBy: tool.likes
+        .filter((l) => l.userId !== user?.id)
+        .slice(0, 8)
+        .map((l) => l.userName),
       // The mock always has a capturer: the host list alone decides.
       capturePending:
         !tool.screenshotId &&

@@ -507,7 +507,7 @@ describe('Community tools service', () => {
         )
       ).capturePending
 
-    it('counts likes, says whether I liked it, and names the newest 8', async () => {
+    it('counts likes, says whether I liked it, and names 8 others, newest first', async () => {
       const likes = Array.from({ length: 10 }, (_, i) => ({
         userId: `user-${i}`,
         userName: `Person ${i}`,
@@ -523,7 +523,13 @@ describe('Community tools service', () => {
       )
       expect(view.likes).toBe(10)
       expect(view.likedByMe).toBe(true)
-      expect(view.likedBy).toEqual(likes.slice(0, 8).map((l) => l.userName))
+      // My own like is likedByMe, never one of the names.
+      expect(view.likedBy).toEqual(
+        likes
+          .filter((l) => l.userId !== 'user-3')
+          .slice(0, 8)
+          .map((l) => l.userName),
+      )
       const anonymous = await toView(
         row({ likes }),
         new Map(),

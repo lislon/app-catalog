@@ -148,9 +148,10 @@ Feature: Getting back to a tool a colleague built
     And I am signed in
     When I open Community tools
     Then "Kit Rules Playground" has 3 likes, not liked by me
-    And pointing at the like of "Kit Rules Playground" says "Liked by Cy Dee, Bo Ray and 1 other"
+    And pointing at the like of "Kit Rules Playground" says "Liked by Cy Dee, Bo Ray and Ann Lee"
     When I like "Kit Rules Playground"
     Then "Kit Rules Playground" has 4 likes, liked by me
+    And pointing at the like of "Kit Rules Playground" says "Liked by you, Cy Dee, Bo Ray and Ann Lee"
     When I like "Kit Rules Playground"
     Then "Kit Rules Playground" has 3 likes, not liked by me
 

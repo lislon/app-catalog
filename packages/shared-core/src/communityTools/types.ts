@@ -36,7 +36,10 @@ export interface CommunityTool {
   siteUpdatedAt: string | null
   likes: number
   likedByMe: boolean
-  /** Who liked it, newest first: up to 8 names; `likes` counts them all. */
+  /**
+   * Who else liked it, newest first: up to 8 names, never the viewer's own
+   * (that is `likedByMe`). `likes` counts them all.
+   */
   likedBy: string[]
   tags: CommunityTag[]
   views30d: number

@@ -1,28 +1,32 @@
 import type { CommunityTool } from '@igstack/app-catalog-shared-core'
 
-/** "Liked by A, B and 3 others": two names at most, the rest a count. */
-export function likedByText(names: string[], total: number): string {
-  if (total === 0) return 'No likes yet'
-  const shown = names.slice(0, 2)
-  const others = total - shown.length
-  if (others <= 0) return `Liked by ${shown.join(' and ')}`
-  return `Liked by ${shown.join(', ')} and ${others} ${others === 1 ? 'other' : 'others'}`
+/** How many likers the tooltip names; the rest are a count. */
+const NAMED = 8
+
+/**
+ * "Liked by you, A, B and 3 others": you first, then up to eight colleagues,
+ * newest first, then how many more.
+ */
+export function likedByText(
+  tool: Pick<CommunityTool, 'likes' | 'likedByMe' | 'likedBy'>,
+): string {
+  if (tool.likes === 0) return 'No likes yet'
+  const names = [
+    ...(tool.likedByMe ? ['you'] : []),
+    ...tool.likedBy.slice(0, NAMED),
+  ]
+  const others = tool.likes - names.length
+  if (others > 0) {
+    return `Liked by ${names.join(', ')} and ${others} ${others === 1 ? 'other' : 'others'}`
+  }
+  const last = names.pop()
+  return names.length > 0
+    ? `Liked by ${names.join(', ')} and ${last}`
+    : `Liked by ${last}`
 }
 
-/** The tool as it reads once `name` has liked it, or taken the like back. */
-export function withLike(
-  tool: CommunityTool,
-  liked: boolean,
-  name: string,
-): CommunityTool {
+/** The tool as it reads once I liked it, or took the like back. */
+export function withLike(tool: CommunityTool, liked: boolean): CommunityTool {
   if (tool.likedByMe === liked) return tool
-  const i = tool.likedBy.indexOf(name)
-  return {
-    ...tool,
-    likedByMe: liked,
-    likes: tool.likes + (liked ? 1 : -1),
-    likedBy: liked
-      ? [name, ...tool.likedBy].slice(0, 8)
-      : tool.likedBy.filter((_, j) => j !== i),
-  }
+  return { ...tool, likedByMe: liked, likes: tool.likes + (liked ? 1 : -1) }
 }

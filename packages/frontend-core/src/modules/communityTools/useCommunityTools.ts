@@ -13,7 +13,7 @@ import { withLike } from './likedBy'
 export function useCommunityTools() {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
-  const { isAuthenticated, isLoading: isAuthLoading, user } = useAuth()
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth()
   const { resources } = useAppCatalogContext()
 
   const list = useQuery(trpc.communityTools.list.queryOptions())
@@ -102,9 +102,7 @@ export function useCommunityTools() {
       )
       for (const key of keys) {
         queryClient.setQueryData<CommunityTool[]>(key, (old) =>
-          old?.map((t) =>
-            t.slug === slug ? withLike(t, liked, user?.name ?? '') : t,
-          ),
+          old?.map((t) => (t.slug === slug ? withLike(t, liked) : t)),
         )
       }
       return { previous }

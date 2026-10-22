@@ -92,7 +92,11 @@ export async function toView(
     // ponytail: every like row is read per view; a counted column if likes run to thousands.
     likes: tool.likes.length,
     likedByMe: !!user && tool.likes.some((l) => l.userId === user.id),
-    likedBy: tool.likes.slice(0, LIKED_BY_NAMES).map((l) => l.userName),
+    // The viewer's own like is `likedByMe`; the names are everyone else's.
+    likedBy: tool.likes
+      .filter((l) => l.userId !== user?.id)
+      .slice(0, LIKED_BY_NAMES)
+      .map((l) => l.userName),
     siteUpdatedAt: tool.siteUpdatedAt?.toISOString() ?? null,
     tags,
     views30d: viewCounts.views30d,

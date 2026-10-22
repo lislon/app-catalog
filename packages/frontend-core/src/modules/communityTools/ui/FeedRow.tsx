@@ -221,18 +221,19 @@ export function FeedRow({
           )}
         </div>
         {/* Meta on the left, the address on the right, flush to the panel.
-            Clicks fall through to the row link, except on the star. */}
+            The address keeps 150 px; a long author list gives way first.
+            Clicks fall through to the row link, except on star and like. */}
         <div
           className={cn(
             'pointer-events-none absolute right-[120px] bottom-0 z-[2] flex h-12 items-center gap-4',
             rank !== undefined ? 'left-[310px]' : 'left-[268px]',
           )}
         >
-          <div className="flex shrink-0 items-center gap-1.5 text-[13px] font-semibold text-foreground/75">
+          <div className="flex min-w-0 items-center gap-1.5 text-[13px] font-semibold whitespace-nowrap text-foreground/75 [&>*]:shrink-0">
             {tool.owners[0] && <PersonAvatar name={tool.owners[0].name} />}
             <span
               data-testid="feed-row-owner"
-              className="mr-1 max-w-[220px] truncate"
+              className="mr-1 min-w-0 !shrink truncate"
             >
               {highlightTokens(owners, tokens)}
             </span>
@@ -244,13 +245,7 @@ export function FeedRow({
                 name={tool.name}
                 onToggle={onTogglePin}
               />
-              <LikeButton
-                name={tool.name}
-                likes={tool.likes}
-                likedByMe={tool.likedByMe}
-                likedBy={tool.likedBy}
-                onToggle={onToggleLike}
-              />
+              <LikeButton tool={tool} onToggle={onToggleLike} />
             </span>
             <span
               data-testid="feed-row-views"
@@ -278,7 +273,7 @@ export function FeedRow({
             aria-hidden="true"
             data-testid="feed-row-address"
             className={cn(
-              'flex h-full min-w-0 flex-1 items-center justify-end gap-1.5 px-4 font-mono text-[12.5px] text-muted-foreground opacity-0 transition-opacity',
+              'flex h-full min-w-[150px] flex-1 items-center justify-end gap-1.5 px-4 font-mono text-[12.5px] text-muted-foreground opacity-0 transition-opacity',
               'group-hover/row:text-foreground group-hover/row:opacity-100 group-has-[[data-site]:focus-visible]/row:opacity-100 group-has-[[data-details]:hover]/row:opacity-0',
               selected && 'opacity-100',
             )}

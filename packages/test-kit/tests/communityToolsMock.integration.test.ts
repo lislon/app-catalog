@@ -85,11 +85,8 @@ describe('the "community" catalog mock', () => {
     expect(await likes()).toEqual([2, false, ['Bo Ray', 'Ann Lee']])
     await api.communityTools.like.mutate({ slug: 'ops-runbook' })
     await api.communityTools.like.mutate({ slug: 'ops-runbook' })
-    expect(await likes()).toEqual([
-      3,
-      true,
-      ['Robin Park', 'Bo Ray', 'Ann Lee'],
-    ])
+    // My like is likedByMe; the names stay everyone else's.
+    expect(await likes()).toEqual([3, true, ['Bo Ray', 'Ann Lee']])
     await api.communityTools.unlike.mutate({ slug: 'ops-runbook' })
     await api.communityTools.unlike.mutate({ slug: 'ops-runbook' })
     expect(await likes()).toEqual([2, false, ['Bo Ray', 'Ann Lee']])

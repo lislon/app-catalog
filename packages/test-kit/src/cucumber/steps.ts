@@ -21,7 +21,7 @@
  *   registerCatalog('production', myMagazine, { extensions: plugins })
  */
 import type { AcPlugin } from '@igstack/app-catalog-frontend-core'
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Given, Then, When } from 'quickpickle'
 import type { DataTable } from 'quickpickle'
@@ -876,7 +876,14 @@ Then(
 Then(
   'pointing at the like of {string} says {string}',
   async (_world, name: string, text: string) => {
-    await userEvent.setup().hover(rowLike(name))
+    // By keyboard: a click closes the tooltip under the pointer that made
+    // it, and focus is the other way it opens.
+    const like = rowLike(name)
+    await userEvent.setup().unhover(like)
+    act(() => {
+      like.blur()
+      like.focus()
+    })
     await waitFor(() => {
       expect(screen.getByRole('tooltip').textContent).toBe(text)
     })
