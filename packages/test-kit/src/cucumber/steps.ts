@@ -770,28 +770,10 @@ Then('My tools shows {string}', async (_world, name: string) => {
   })
 })
 
-Then('My tools says {string}', async (_world, text: string) => {
-  await waitFor(() => {
-    expect(
-      within(screen.getByTestId('my-tools')).getByTestId('shelf-empty-hint')
-        .textContent,
-    ).toContain(text)
-  })
-})
-
 Then('My tools is hidden', async () => {
   await waitFor(() => {
     expect(screen.queryByTestId('my-tools')).toBeNull()
   })
-})
-
-When('I choose to sign in from My tools', async () => {
-  const user = userEvent.setup()
-  await user.click(
-    within(screen.getByTestId('my-tools')).getByRole('button', {
-      name: 'Sign in',
-    }),
-  )
 })
 
 Then('I am asked to sign in', async () => {
@@ -861,6 +843,65 @@ Then('the results show {string} as archived', async (_world, name: string) => {
     expect(within(row).getByTestId('lifecycle-badge').textContent).toBe(
       'Archived',
     )
+  })
+})
+
+/** Where a tool's site is, as the server holds it. */
+function siteOf(name: string): string {
+  if (!current) throw new Error('No catalog opened — missing a Given step?')
+  const tools = current.backend.communityTools
+  return tools.get({ slug: tools.slugOf(name) }).url
+}
+
+function expectOpensInNewTab(link: HTMLElement, name: string): void {
+  expect(link.tagName).toBe('A')
+  expect(link.getAttribute('href')).toBe(siteOf(name))
+  expect(link.getAttribute('target')).toBe('_blank')
+  expect(link.getAttribute('rel')).toBe('noopener noreferrer')
+}
+
+Then(
+  'the row of {string} opens its site in a new tab',
+  async (_world, name: string) => {
+    const row = await waitFor(() => rowNamed('community-feed', name))
+    expectOpensInNewTab(
+      within(row).getByRole('link', { name: `Open ${name} in a new tab` }),
+      name,
+    )
+  },
+)
+
+When('I choose Details on {string}', async (_world, name: string) => {
+  const row = await waitFor(() => rowNamed('community-feed', name))
+  await userEvent
+    .setup()
+    .click(within(row).getByRole('link', { name: `Details for ${name}` }))
+})
+
+// jsdom has no hover, so the star's visibility is read off the classes that
+// set it: hidden by default, shown when its row is hovered or holds focus.
+function rowStar(name: string): HTMLElement {
+  return within(rowNamed('community-feed', name)).getByTestId('pin-button')
+}
+
+Then(
+  'the star on {string} shows only on hover or focus',
+  async (_world, name: string) => {
+    await waitFor(() => {
+      const star = rowStar(name)
+      expect(star.getAttribute('aria-pressed')).toBe('false')
+      expect(star.classList).toContain('opacity-0')
+      expect(star.classList).toContain('group-hover:opacity-100')
+      expect(star.classList).toContain('group-focus-within:opacity-100')
+    })
+  },
+)
+
+Then('the star on {string} stays in sight', async (_world, name: string) => {
+  await waitFor(() => {
+    const star = rowStar(name)
+    expect(star.getAttribute('aria-pressed')).toBe('true')
+    expect(star.classList).not.toContain('opacity-0')
   })
 })
 
@@ -1029,6 +1070,7 @@ Then('the card says there is no screenshot', async () => {
     const box = within(toolCard()).getByTestId('card-screenshot-box')
     expect(box.dataset['state']).toBe('missing')
     expect(box.textContent).toContain('No screenshot')
+    expect(within(box).queryByRole('link')).toBeNull()
   })
 })
 
@@ -1161,6 +1203,29 @@ Then('the card shows the screenshot', async () => {
   )
 })
 
+Then('the screenshot opens the site in a new tab', () => {
+  expectOpensInNewTab(
+    within(toolCard()).getByTestId('card-screenshot-link'),
+    cardToolName(),
+  )
+})
+
+When('I enlarge the screenshot', async () => {
+  await userEvent.setup().click(
+    within(toolCard()).getByRole('button', {
+      name: `Enlarge screenshot of ${cardToolName()}`,
+    }),
+  )
+})
+
+Then('the full-size viewer opens', async () => {
+  expect(
+    await screen.findByRole('dialog', {
+      name: `${cardToolName()} screenshot`,
+    }),
+  ).toBeTruthy()
+})
+
 Then('the card shows how to use it', () => {
   if (!current) throw new Error('No catalog opened — missing a Given step?')
   const tools = current.backend.communityTools
@@ -1263,6 +1328,7 @@ Then('the card says it is taking a screenshot', async () => {
     const box = within(toolCard()).getByTestId('card-screenshot-box')
     expect(box.dataset['state']).toBe('capturing')
     expect(box.textContent).toContain('Taking a screenshot of the site')
+    expect(within(box).queryByRole('link')).toBeNull()
   })
 })
 

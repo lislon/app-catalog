@@ -110,10 +110,13 @@ export interface FeedRowProps {
   onChooseTag: (tag: string | undefined) => void
 }
 
+/** The feed row's thumbnail: big enough to read the page title in its top left. */
+export const ROW_THUMB = 'h-[150px] w-[240px] rounded-[10px]'
+
 /**
  * One tool in the feed or the search results. The name links to the card and
- * stretches over the whole row, so a click anywhere opens it; Open, the star
- * and the tag chips sit above that link.
+ * stretches over the whole row, so a click anywhere opens it; Details | Open,
+ * the star and the tag chips sit above that link.
  */
 export function FeedRow({
   tool,
@@ -134,7 +137,7 @@ export function FeedRow({
   const cell = optionId ? 'gridcell' : undefined
   const owners = tool.owners.map((o) => o.name).join(', ')
   const opens = feedWindow === 'all' ? tool.viewsAll : tool.views30d
-  // Two chips fit beside the owner and host; the rest fold into "+N". The
+  // Two chips fit beside the owner; the rest fold into "+N". The
   // chosen tag always shows, so a filtered feed says why each row is in it.
   const tags = [...tool.tags].sort(
     (a, b) => Number(tagKey(b) === activeTag) - Number(tagKey(a) === activeTag),
@@ -170,11 +173,7 @@ export function FeedRow({
             {rank}
           </span>
         )}
-        <ToolThumb
-          tool={tool}
-          size={512}
-          className="aspect-[16/10] w-32 rounded-[10px]"
-        />
+        <ToolThumb tool={tool} size={512} className={ROW_THUMB} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2.5 text-[15.5px] font-extrabold">
             <Link
@@ -199,29 +198,18 @@ export function FeedRow({
             {!tool.reviewed && <UnreviewedBadge />}
           </div>
           {tool.summary && (
-            <div className="mt-0.5 truncate text-foreground/75">
+            <div className="mt-1 line-clamp-2 text-foreground/75">
               {highlightTokens(tool.summary, tokens)}
             </div>
           )}
-          {/* Who and where on one line; the tags join it while they fit and
-            wrap under it when the row is narrow. Nothing leaves the row. */}
-          <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 overflow-hidden text-[13px] font-semibold whitespace-nowrap text-foreground/75">
-            <span className="flex min-w-0 flex-1 basis-40 items-center gap-1.5">
-              {tool.owners[0] && (
-                <>
-                  <PersonAvatar name={tool.owners[0].name} />
-                  <span
-                    data-testid="feed-row-owner"
-                    className="max-w-[60%] shrink-0 truncate"
-                  >
-                    {highlightTokens(owners, tokens)}
-                  </span>
-                  <span className="text-muted-foreground">·</span>
-                </>
-              )}
-              <span className="min-w-0 truncate font-mono text-xs font-normal text-muted-foreground">
-                {highlightTokens(tool.host, tokens)}
-              </span>
+          {/* The author, then the tags while they fit; they wrap under it
+            when the row is narrow. Nothing leaves the row. */}
+          <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 overflow-hidden text-[13px] font-semibold whitespace-nowrap text-foreground/75">
+            <span
+              data-testid="feed-row-owner"
+              className="min-w-0 flex-1 basis-40 truncate"
+            >
+              {highlightTokens(owners, tokens)}
             </span>
             {tool.tags.length > 0 && (
               <span className="flex shrink-0 items-center gap-1.5">
@@ -262,21 +250,36 @@ export function FeedRow({
         </div>
       </div>
       <div role={cell} className="flex shrink-0 items-center gap-4">
-        <a
-          href={tool.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={cn(
-            'relative z-10 inline-flex h-[34px] shrink-0 items-center gap-1.5 rounded-[9px] border px-3 text-[13px] font-bold transition-opacity',
-            'focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-ring',
-            selected
-              ? 'border-primary bg-primary text-primary-foreground opacity-100'
-              : 'border-border bg-card opacity-0 group-hover:opacity-100',
-          )}
+        {/* One button, two doors: the card, or straight to the site. */}
+        <span
+          data-testid="feed-row-actions"
+          className="relative z-10 inline-flex h-[34px] shrink-0 overflow-hidden rounded-[9px] border border-border bg-card text-[13px] font-bold"
         >
-          <ExternalLink aria-hidden="true" className="size-3.5" />
-          Open
-        </a>
+          <Link
+            to="/community/$slug"
+            params={{ slug: tool.slug }}
+            search={(prev) => prev}
+            aria-label={`Details for ${tool.name}`}
+            className="inline-flex items-center px-3 hover:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+          >
+            Details
+          </Link>
+          <a
+            href={tool.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Open ${tool.name} in a new tab`}
+            className={cn(
+              'inline-flex items-center gap-1.5 border-l px-3 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
+              selected
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border hover:bg-accent',
+            )}
+          >
+            <ExternalLink aria-hidden="true" className="size-3.5" />
+            Open
+          </a>
+        </span>
         <PinButton
           pinned={pinned}
           busy={pinBusy}

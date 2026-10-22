@@ -1,5 +1,5 @@
 import type { CommunityTool } from '@igstack/app-catalog-shared-core'
-import { Camera, ImageOff, Maximize2 } from 'lucide-react'
+import { Camera, ExternalLink, ImageOff, Maximize2 } from 'lucide-react'
 import { useState } from 'react'
 import { ScreenshotGallery } from '~/modules/appCatalog/ui/components/ScreenshotGallery'
 import { cn } from '~/lib/utils'
@@ -18,8 +18,9 @@ export function formatCardDate(iso: string): string {
 }
 
 /**
- * The tool's screenshot, full width, with Enlarge opening the screenshot
- * viewer. A tool with none yet shows a placeholder in the same box: "still
+ * The tool's screenshot, full width: a click opens the site, like the title
+ * block, and the corner button enlarges it in the screenshot viewer. A tool
+ * with none yet shows a placeholder in the same box, not a link: "still
  * capturing" while its first visit is to come, otherwise "no screenshot".
  */
 export function CardScreenshot({
@@ -66,27 +67,42 @@ export function CardScreenshot({
 
   return (
     <figure data-testid="card-screenshot" className="mt-[22px]">
-      <button
-        type="button"
+      <div
         data-testid="card-screenshot-box"
         data-state="captured"
-        aria-label={`Enlarge screenshot of ${tool.name}`}
-        onClick={() => setOpen(true)}
-        className={cn(
-          BOX,
-          'cursor-zoom-in focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
-        )}
+        className={BOX}
       >
-        <img
-          src={screenshotUrl(screenshotId, 1280)}
-          alt={`Screenshot of ${tool.name}`}
-          className="size-full object-cover object-left-top"
-        />
-        <span className="absolute right-3 bottom-3 inline-flex items-center gap-1.5 rounded-lg bg-black/70 px-2.5 py-1.5 text-xs font-bold text-white">
-          <Maximize2 aria-hidden="true" className="size-3.5" />
-          Enlarge
-        </span>
-      </button>
+        <a
+          href={tool.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Open ${tool.name} in a new tab`}
+          data-testid="card-screenshot-link"
+          className="group/shot block size-full rounded-[14px] focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-ring"
+        >
+          <img
+            src={screenshotUrl(screenshotId, 1280)}
+            alt={`Screenshot of ${tool.name}`}
+            className="size-full object-cover object-left-top"
+          />
+          <span className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-focus-visible/shot:bg-black/20 group-hover/shot:bg-black/20">
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-extrabold text-primary-foreground opacity-0 shadow-sm transition-opacity group-focus-visible/shot:opacity-100 group-hover/shot:opacity-100">
+              Open site
+              <ExternalLink aria-hidden="true" className="size-4" />
+            </span>
+          </span>
+        </a>
+        {/* Beside the link, not in it: enlarging never opens the site. */}
+        <button
+          type="button"
+          aria-label={`Enlarge screenshot of ${tool.name}`}
+          title="Enlarge"
+          onClick={() => setOpen(true)}
+          className="absolute top-3 right-3 inline-flex size-8 items-center justify-center rounded-lg bg-black/65 text-white hover:bg-black/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          <Maximize2 aria-hidden="true" className="size-4" />
+        </button>
+      </div>
       {capturedAt && (
         <figcaption className="mt-2 text-[12.5px] font-semibold text-muted-foreground">
           Screenshot captured {formatCardDate(capturedAt)}

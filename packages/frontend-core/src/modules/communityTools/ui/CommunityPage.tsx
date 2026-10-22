@@ -18,7 +18,7 @@ import {
 import { useAuthModal } from '~/modules/auth/AuthModalContext'
 import { Skeleton } from '~/ui/skeleton'
 import { useCommunityTools } from '../useCommunityTools'
-import { FeedRow } from './FeedRow'
+import { FeedRow, ROW_THUMB } from './FeedRow'
 import { FeedWindowToggle } from './FeedWindowToggle'
 import { MyToolsShelf } from './MyToolsShelf'
 import { RecentChips } from './RecentChips'
@@ -266,7 +266,8 @@ export function CommunityPage({
     // holds the rows that will be visible.
     initialRect: { width: 0, height: 800 },
     count: items.length,
-    estimateSize: () => 112,
+    // The thumbnail sets the row: 150 px, 12 px padding either side, borders.
+    estimateSize: () => 176,
     overscan: 6,
     gap: 8,
     scrollMargin,
@@ -355,12 +356,9 @@ export function CommunityPage({
           <div className="mb-[26px]">
             <MyToolsShelf
               pins={pins.data ?? []}
-              isLoading={isAuthLoading || pins.isPending}
+              isLoading={isAuthLoading || (isAuthenticated && pins.isPending)}
               onUnpin={(tool) => togglePin(tool)}
               onReorder={reorderPins}
-              onSignIn={
-                !isAuthLoading && !isAuthenticated ? signInHere : undefined
-              }
             />
             {isAuthenticated && <RecentChips tools={recent.data ?? []} />}
           </div>
@@ -534,7 +532,7 @@ function FeedSkeleton() {
           className="flex items-center gap-4 rounded-[14px] border border-border bg-card py-3 pr-3.5 pl-3"
         >
           <Skeleton className="h-[22px] w-[26px]" />
-          <Skeleton className="aspect-[16/10] w-32 rounded-[10px]" />
+          <Skeleton className={ROW_THUMB} />
           <div className="flex flex-1 flex-col gap-2">
             <Skeleton className="h-2.5 w-2/5" />
             <Skeleton className="h-2.5 w-4/5" />

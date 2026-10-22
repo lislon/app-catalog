@@ -78,17 +78,35 @@ Feature: Getting back to a tool a colleague built
     Then My tools is hidden
     And Recently opened is hidden
 
-  Scenario: Nothing pinned yet
+  Scenario: My tools is hidden with no pins
     Given I am signed in
     When I open Community tools
-    Then My tools says "Keep your tools one click away. Click the star on any tool below and it stays at the top of this page."
+    Then Most opened by colleagues still lists every tool
+    And My tools is hidden
 
-  Scenario: A visitor who has not signed in is offered to
+  Scenario: A visitor who has not signed in is asked to when they pin
     When I open Community tools
-    Then My tools says "Sign in to keep your tools one click away"
+    Then Most opened by colleagues still lists every tool
+    And My tools is hidden
     And Recently opened is hidden
-    When I choose to sign in from My tools
+    When I pin "Kit Rules Playground" from the feed
     Then I am asked to sign in
+
+  Scenario: An unpinned star is hidden until hover
+    Given I am signed in
+    And I pinned "Ops Runbook"
+    When I open Community tools
+    Then the star on "Kit Rules Playground" shows only on hover or focus
+    And the star on "Ops Runbook" stays in sight
+
+  Scenario: The row's Open goes straight to the site
+    When I open Community tools
+    Then the row of "Ops Runbook" opens its site in a new tab
+
+  Scenario: The row's Details opens the card
+    When I open Community tools
+    And I choose Details on "Ops Runbook"
+    Then the card shows "Ops Runbook"
 
   Scenario: Pinning from the feed
     Given I am signed in

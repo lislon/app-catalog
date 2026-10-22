@@ -15,6 +15,15 @@ Feature: Checking it is the right tool before going
     And the card shows "Dana Lee" as owner
     And the card counts one more open this month
 
+  Scenario: Clicking the card's screenshot opens the site
+    When I open the card of "Ops Runbook"
+    Then the screenshot opens the site in a new tab
+
+  Scenario: Enlarge opens the full-size viewer
+    When I open the card of "Ops Runbook"
+    And I enlarge the screenshot
+    Then the full-size viewer opens
+
   Scenario: Stepping to the next tool without closing
     When I open the card of the first tool
     And I press the right arrow

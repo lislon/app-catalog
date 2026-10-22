@@ -1,5 +1,4 @@
 import type { CommunityTool } from '@igstack/app-catalog-shared-core'
-import { Star } from 'lucide-react'
 import { useState } from 'react'
 import { Skeleton } from '~/ui/skeleton'
 import { ShelfTile } from './ShelfTile'
@@ -11,18 +10,6 @@ function moved<T>(items: T[], from: number, to: number): T[] {
   const [item] = next.splice(from, 1)
   next.splice(to, 0, item!)
   return next
-}
-
-export function ShelfHint({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      data-testid="shelf-empty-hint"
-      className="flex items-center gap-3 rounded-[14px] border-[1.5px] border-dashed border-primary/30 bg-accent/40 px-4 py-3.5 text-accent-foreground"
-    >
-      <Star aria-hidden="true" className="size-5 shrink-0 text-amber-600" />
-      {children}
-    </div>
-  )
 }
 
 /** Same size as the real shelf, so nothing jumps when the pins arrive. */
@@ -47,21 +34,19 @@ function ShelfSkeleton() {
 
 /**
  * The visitor's pinned tools, in the order they arranged them. Native drag and
- * drop moves a tile; `onReorder` gets the whole new order.
+ * drop moves a tile; `onReorder` gets the whole new order. Nothing at all
+ * shows until there is a pin: the star on every row is the way in.
  */
 export function MyToolsShelf({
   pins,
   isLoading,
   onUnpin,
   onReorder,
-  onSignIn,
 }: {
   pins: CommunityTool[]
   isLoading: boolean
   onUnpin: (tool: CommunityTool) => void
   onReorder: (slugs: string[]) => void
-  /** Set for an anonymous visitor: pins need an identity to belong to. */
-  onSignIn?: () => void
 }) {
   const [dragFrom, setDragFrom] = useState<number | null>(null)
 
@@ -70,33 +55,11 @@ export function MyToolsShelf({
     onReorder(moved(pins, from, to).map((t) => t.slug))
   }
 
+  if (!isLoading && pins.length === 0) return null
+
   let body: React.ReactNode
-  if (onSignIn) {
-    body = (
-      <ShelfHint>
-        <span className="font-semibold">
-          Sign in to keep your tools one click away
-        </span>
-        <button
-          type="button"
-          onClick={onSignIn}
-          className="ml-auto inline-flex h-[34px] items-center rounded-[10px] border border-border bg-card px-3 text-[13px] font-bold text-foreground hover:border-primary/40 focus-visible:outline-2 focus-visible:outline-ring"
-        >
-          Sign in
-        </button>
-      </ShelfHint>
-    )
-  } else if (isLoading) {
+  if (isLoading) {
     body = <ShelfSkeleton />
-  } else if (pins.length === 0) {
-    body = (
-      <ShelfHint>
-        <span>
-          <b>Keep your tools one click away.</b> Click the star on any tool
-          below and it stays at the top of this page.
-        </span>
-      </ShelfHint>
-    )
   } else {
     body = (
       <div className={GRID}>

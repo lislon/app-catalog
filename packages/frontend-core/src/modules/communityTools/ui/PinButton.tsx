@@ -8,6 +8,8 @@ const BUSY_AFTER_MS = 400
 /**
  * The star on rows, tiles and the card: pins the tool to My tools, or takes it
  * off. The card's is `labelled`, a bordered button that says Pin or Pinned.
+ * An unpinned star on a row or tile waits for its `group` to be hovered or
+ * focused (always shown where nothing hovers); a filled one is state and stays.
  */
 export function PinButton({
   pinned,
@@ -55,7 +57,11 @@ export function PinButton({
                 ? 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300'
                 : 'border-border bg-card text-foreground',
             )
-          : 'size-[34px] text-muted-foreground/70',
+          : cn(
+              'size-[34px] text-muted-foreground/70',
+              !pinned &&
+                'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100',
+            ),
       )}
     >
       {showBusy ? (
