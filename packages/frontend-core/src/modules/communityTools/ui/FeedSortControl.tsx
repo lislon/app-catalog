@@ -10,6 +10,18 @@ export const SORT_OPTIONS: { value: FeedSort; label: string }[] = [
   { value: 'updated', label: 'Recently updated' },
 ]
 
+const HEADINGS: Record<FeedSort, Record<SortDir, string>> = {
+  liked: { desc: 'Most liked', asc: 'Least liked' },
+  popular: { desc: 'Most opened', asc: 'Least opened' },
+  newest: { desc: 'Newest', asc: 'Oldest' },
+  updated: { desc: 'Recently updated', asc: 'Longest unchanged' },
+}
+
+/** The feed's heading, saying the order it is in. */
+export function feedHeading(sort: FeedSort, dir: SortDir): string {
+  return HEADINGS[sort][dir]
+}
+
 const DIR_LABEL: Record<SortDir, string> = {
   desc: 'descending',
   asc: 'ascending',

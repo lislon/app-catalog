@@ -980,6 +980,17 @@ Then('the feed reads {string}', async (_world, names: string) => {
   })
 })
 
+Then('the feed is headed {string}', async (_world, heading: string) => {
+  await waitFor(() => {
+    expect(
+      within(screen.getByTestId('community-feed')).getByRole('heading', {
+        level: 2,
+      }).textContent,
+    ).toBe(heading)
+  })
+  expect(screen.getByRole('region', { name: heading })).toBeTruthy()
+})
+
 Then('the sort says {string}', async (_world, label: string) => {
   await waitFor(() => {
     expect(screen.getByTestId('feed-sort').getAttribute('aria-label')).toBe(

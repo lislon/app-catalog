@@ -105,6 +105,7 @@ Feature: Getting back to a tool a colleague built
     And "Cy Dee" liked "Kit Rules Playground"
     When I open Community tools
     Then the sort says "Sort by Most liked, descending"
+    And the feed is headed "Most liked"
     And the feed reads "Old Tracker, Kit Rules Playground, Ops Runbook"
     And the rows say no date
 
@@ -112,6 +113,7 @@ Feature: Getting back to a tool a colleague built
     When I open Community tools
     And I sort by "Popular"
     Then the sort says "Sort by Popular, descending"
+    And the feed is headed "Most opened"
     And the feed reads "Ops Runbook, Kit Rules Playground, Old Tracker"
 
   Scenario: Newest puts the latest addition first
@@ -125,6 +127,7 @@ Feature: Getting back to a tool a colleague built
     And I sort by "Newest"
     And I sort by "Newest"
     Then the sort says "Sort by Newest, ascending"
+    And the feed is headed "Oldest"
     And the feed reads "Old Tracker, Ops Runbook, Kit Rules Playground"
 
   Scenario: Recently updated goes by when the site changed, unknown last
@@ -132,7 +135,8 @@ Feature: Getting back to a tool a colleague built
     And the site of "Old Tracker" changed 10 days ago
     When I open Community tools
     And I sort by "Recently updated"
-    Then the feed reads "Kit Rules Playground, Old Tracker, Ops Runbook"
+    Then the feed is headed "Recently updated"
+    And the feed reads "Kit Rules Playground, Old Tracker, Ops Runbook"
     And the row of "Kit Rules Playground" says "Updated 3 days ago"
 
   Scenario: An old link to the newest tools still opens Newest

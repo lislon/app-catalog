@@ -20,7 +20,7 @@ import { useAuthModal } from '~/modules/auth/AuthModalContext'
 import { Skeleton } from '~/ui/skeleton'
 import { useCommunityTools } from '../useCommunityTools'
 import { FeedRow, ROW_THUMB } from './FeedRow'
-import { FeedSortControl } from './FeedSortControl'
+import { FeedSortControl, feedHeading } from './FeedSortControl'
 import { MarginPreview } from './MarginPreview'
 import { MyToolsShelf } from './MyToolsShelf'
 import { TagRow } from './TagRow'
@@ -384,16 +384,14 @@ export function CommunityPage({
         )}
 
         <section
-          aria-label={
-            searching ? 'Search results' : 'Most opened by colleagues'
-          }
+          aria-label={searching ? 'Search results' : feedHeading(sort, dir)}
           data-testid={searching ? 'community-results' : 'community-feed'}
         >
           {!searching && (
             <>
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="font-serif text-[19px] font-semibold">
-                  Most opened by colleagues
+                  {feedHeading(sort, dir)}
                 </h2>
                 <FeedSortControl
                   sort={sort}
