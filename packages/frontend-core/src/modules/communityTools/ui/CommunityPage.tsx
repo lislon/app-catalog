@@ -3,7 +3,7 @@ import type {
   FeedWindow,
   MatchField,
 } from '@igstack/app-catalog-shared-core'
-import { matchTool, rankTools } from '@igstack/app-catalog-shared-core'
+import { rankTools, searchTools } from '@igstack/app-catalog-shared-core'
 import { useLocation, useNavigate } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { AlertTriangle, Plus, RefreshCw, Search, Star } from 'lucide-react'
@@ -114,24 +114,16 @@ export function CommunityPage({
     [tools, feedWindow, withTag],
   )
 
-  // Archived tools leave the feed, but someone searching for one still finds
-  // it: after every live match, greyed.
-  const results = useMemo<ListItem[]>(() => {
-    if (!searching) return []
-    const hits = new Map<string, MatchField[]>()
-    for (const tool of withTag(tools)) {
-      const match = matchTool(tool, query, appNames)
-      if (match.matched) hits.set(tool.slug, match.fields)
-    }
-    const hit = tools.filter((t) => hits.has(t.slug))
-    const archived = hit
-      .filter((t) => t.lifecycle.state === 'archived')
-      .sort((a, b) => a.name.localeCompare(b.name))
-    return [...rankTools(hit, feedWindow), ...archived].map((tool) => ({
-      tool,
-      matched: hits.get(tool.slug),
-    }))
-  }, [searching, tools, query, appNames, feedWindow, withTag])
+  // Strongest match first; archived tools still found, after the rest.
+  const results = useMemo<ListItem[]>(
+    () =>
+      searching
+        ? searchTools(withTag(tools), query, appNames, feedWindow).map(
+            ({ tool, fields }) => ({ tool, matched: fields }),
+          )
+        : [],
+    [searching, tools, query, appNames, feedWindow, withTag],
+  )
 
   const items = searching ? results : feed
   const selectedIndex = Math.min(selected, results.length - 1)

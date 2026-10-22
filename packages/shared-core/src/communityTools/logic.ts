@@ -61,14 +61,14 @@ export function matchTool(
   tool: CommunityTool,
   query: string,
   appNames: Record<string, string>,
-): { matched: boolean; fields: MatchField[] } {
+): { matched: boolean; fields: MatchField[]; strength: number } {
   const tokens = query
     .trim()
     .split(/\s+/)
     .map((t) => t.toLowerCase())
 
   if (tokens.length === 0 || tokens[0] === '') {
-    return { matched: true, fields: [] }
+    return { matched: true, fields: [], strength: 0 }
   }
 
   // Build searchable text for each field
@@ -99,6 +99,7 @@ export function matchTool(
   }
 
   const matchedFields: MatchField[] = []
+  let strength = 0
 
   // For each token, find the first field (in canonical order) that matches
   for (const token of tokens) {
@@ -107,12 +108,13 @@ export function matchTool(
       const fieldText = fieldTexts[fieldName]
       if (fieldText.includes(token)) {
         matchedFields.push(fieldName)
+        strength += FIELD_TIER[fieldName]
         tokenMatched = true
         break // Only record the first matching field for this token
       }
     }
     if (!tokenMatched) {
-      return { matched: false, fields: [] }
+      return { matched: false, fields: [], strength: 0 }
     }
   }
 
@@ -120,7 +122,53 @@ export function matchTool(
   const uniqueFields = Array.from(new Set(matchedFields))
   const sorted = canonicalOrder.filter((f) => uniqueFields.includes(f))
 
-  return { matched: true, fields: sorted }
+  return { matched: true, fields: sorted, strength }
+}
+
+/**
+ * How strongly a hit in each field says "this is the tool": its name, then
+ * what it says about itself, then who made it, its tags and its address.
+ * Lower is stronger.
+ */
+const FIELD_TIER: Record<MatchField, number> = {
+  name: 0,
+  summary: 1,
+  description: 1,
+  owner: 2,
+  tag: 2,
+  address: 2,
+}
+
+/**
+ * The search results for `query`: live tools by match strength (the sum of
+ * each word's best field), ties in the feed's own order, then archived ones,
+ * greyed, by name. Archived tools leave the feed, but searching still finds
+ * them.
+ */
+export function searchTools(
+  tools: CommunityTool[],
+  query: string,
+  appNames: Record<string, string>,
+  window: FeedWindow,
+): { tool: CommunityTool; fields: MatchField[] }[] {
+  const hits = new Map<string, { fields: MatchField[]; strength: number }>()
+  for (const tool of tools) {
+    const match = matchTool(tool, query, appNames)
+    if (match.matched) hits.set(tool.slug, match)
+  }
+  const hit = tools.filter((t) => hits.has(t.slug))
+  const strengthOf = (t: CommunityTool) => hits.get(t.slug)!.strength
+  // Array.sort is stable: equal strength keeps rankTools' order.
+  const live = rankTools(hit, window).sort(
+    (a, b) => strengthOf(a) - strengthOf(b),
+  )
+  const archived = hit
+    .filter((t) => t.lifecycle.state === 'archived')
+    .sort((a, b) => a.name.localeCompare(b.name))
+  return [...live, ...archived].map((tool) => ({
+    tool,
+    fields: hits.get(tool.slug)!.fields,
+  }))
 }
 
 export function rankTools(

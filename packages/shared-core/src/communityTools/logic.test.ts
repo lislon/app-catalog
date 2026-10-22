@@ -9,6 +9,7 @@ import {
   normalizeTags,
   normalizeTopic,
   rankTools,
+  searchTools,
 } from './logic'
 
 describe('normalizeTopic', () => {
@@ -172,6 +173,7 @@ describe('matchTool', () => {
     expect(matchTool(opsRunbook(), 'runb dana', {})).toEqual({
       matched: true,
       fields: ['name', 'owner'],
+      strength: 2,
     })
     expect(matchTool(opsRunbook(), 'dana zzz', {}).matched).toBe(false)
   })
@@ -229,6 +231,49 @@ describe('matchTool', () => {
       'address',
       'tag',
     ])
+  })
+})
+
+describe('searchTools', () => {
+  const tool = (
+    slug: string,
+    patch: Partial<CommunityTool>,
+  ): CommunityTool => ({
+    ...opsRunbook(),
+    slug,
+    name: slug,
+    summary: '',
+    descriptionMd: '',
+    url: `https://${slug}.pages.example.com/`,
+    owners: [{ slug: 'sam@example.com', name: 'Sam Ortiz' }],
+    ...patch,
+  })
+
+  it('orders by match strength, and views only break ties', () => {
+    const byTag = tool('Deploy Notes', {
+      tags: [{ kind: 'topic', value: 'runbook' }],
+      views30d: 90,
+    })
+    const bySummary = tool('Shift Guide', {
+      summary: 'The on-call runbook',
+      views30d: 50,
+    })
+    const byNameQuiet = tool('Runbook Lite', { views30d: 1 })
+    const byNameBusy = tool('Runbook Pro', { views30d: 20 })
+    expect(
+      searchTools(
+        [byTag, bySummary, byNameQuiet, byNameBusy],
+        'runbook',
+        {},
+        'month',
+      ).map((r) => r.tool.slug),
+    ).toEqual(['Runbook Pro', 'Runbook Lite', 'Shift Guide', 'Deploy Notes'])
+  })
+
+  it('keeps archived matches, last, with the fields they matched', () => {
+    const results = searchTools([archived(900), live(3)], 'ops', {}, 'month')
+    expect(results.map((r) => r.tool.slug)).toEqual(['live', 'archived'])
+    expect(results[0]!.fields).toEqual(['name'])
   })
 })
 
