@@ -1,6 +1,6 @@
 {
   "name": "@igstack/app-catalog-test-kit",
-  "version": "6.10.3",
+  "version": "6.11.0",
   "description": "Integration test harness for App Catalog: mock backend, mock network and page objects",
   "homepage": "https://github.com/lislon/app-catalog",
   "repository": {
@@ -105,5 +105,5 @@
   "engines": {
     "node": ">=16"
   },
-  "gitHead": "980bbf4c4901132d351291df3522fa6b6eaaa123"
+  "gitHead": "f4c72c2178cd9a3ec6695cfbb243ff3d0737ad1b"
 }

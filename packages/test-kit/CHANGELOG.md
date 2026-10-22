@@ -1,5 +1,18 @@
 # @igstack/app-catalog-test-kit
 
+## 6.11.0
+
+### Minor Changes
+
+- [#334](https://github.com/lislon/app-catalog/pull/334) [`38debb3`](https://github.com/lislon/app-catalog/commit/38debb3a1e84075e52f2907d6817a7a77265a012) Thanks [@lislon](https://github.com/lislon)! - Community tools: a catalog area for colleague-built sites, with search, pins, auto screenshots, tags, review and a daily health check.
+
+### Patch Changes
+
+- Updated dependencies [[`38debb3`](https://github.com/lislon/app-catalog/commit/38debb3a1e84075e52f2907d6817a7a77265a012)]:
+  - @igstack/app-catalog-shared-core@6.11.0
+  - @igstack/app-catalog-backend-core@6.11.0
+  - @igstack/app-catalog-frontend-core@6.11.0
+
 ## 6.10.3
 
 ### Patch Changes
