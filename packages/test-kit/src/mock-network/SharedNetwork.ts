@@ -233,7 +233,9 @@ export const SharedNetwork = {
       },
       {
         scopeKey: ['community-tools-preview'],
-        handler: ct.preview.mutation(({ input }) => store.preview(input)),
+        handler: ct.preview.mutation(({ input }) =>
+          store.previewWhenRead(input),
+        ),
       },
       {
         scopeKey: ['community-tools-add'],

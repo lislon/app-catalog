@@ -6,6 +6,7 @@ import {
   TAG_VALUE_MAX,
   hostOf,
   isCaptureAllowed,
+  normalizeTags,
 } from '@igstack/app-catalog-shared-core'
 import { getDbClient } from '../../db/client'
 import { resizeImage } from '../assets/assetUtils'
@@ -20,17 +21,24 @@ export const toolInputSchema = z.object({
   summary: z.string().trim().max(160),
   descriptionMd: z.string().max(5000),
   ownerSlugs: z.array(z.string()).min(1).max(5),
+  // Topics are stored the way the next person will type them, each tag once;
+  // the caps hold for what is stored.
   tags: z
-    .array(
-      z.object({
-        kind: z.enum(['app', 'topic']),
-        value: z.string().max(TAG_VALUE_MAX),
-      }),
-    )
-    .max(8),
+    .array(z.object({ kind: z.enum(['app', 'topic']), value: z.string() }))
+    .transform(normalizeTags)
+    .pipe(
+      z
+        .array(
+          z.object({
+            kind: z.enum(['app', 'topic']),
+            value: z.string().min(1).max(TAG_VALUE_MAX),
+          }),
+        )
+        .max(8),
+    ),
 })
 
-export type ToolInput = z.infer<typeof toolInputSchema>
+export type ToolInput = z.output<typeof toolInputSchema>
 
 /** The signed-in person making the change. */
 export interface Writer {

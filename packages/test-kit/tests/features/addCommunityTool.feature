@@ -26,7 +26,18 @@ Feature: Adding a tool nobody listed
       And "QC Heatmap" is listed under Newest
       And "QC Heatmap" is marked new, not reviewed
       And "QC Heatmap" was added by "Robin Park"
-      And 1 tools are awaiting review
+      And 1 tool is awaiting review
+
+    Scenario: A slow answer for an address I already replaced is ignored
+      Given the page "https://slow-tool-4b4b.pages.example.com/" called "Slow Tool" takes 1500 ms to read
+      When I choose to add a tool
+      And I paste "https://slow-tool-4b4b.pages.example.com/"
+      And the site is being read
+      And I replace the address with "https://qc-heatmap-9f8e.pages.example.com/"
+      Then the name is filled in from the page title
+      When the answer for "https://slow-tool-4b4b.pages.example.com/" arrives
+      Then the name is filled in from the page title
+      And there is something to publish
 
     Scenario: The person adding it is its first owner
       When I choose to add a tool
@@ -104,6 +115,8 @@ Feature: Adding a tool nobody listed
       And I edit it
       And I archive it because "Everything moved to the new tracker"
       Then the card explains "Everything moved to the new tracker"
+      When I edit it
+      Then the edit form offers no way to archive it
 
   Rule: Someone not signed in is asked to sign in, then comes back
 

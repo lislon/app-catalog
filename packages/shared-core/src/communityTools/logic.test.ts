@@ -6,8 +6,34 @@ import {
   lifecycleOf,
   matchTool,
   nextLifecycle,
+  normalizeTags,
+  normalizeTopic,
   rankTools,
 } from './logic'
+
+describe('normalizeTopic', () => {
+  it('trims, lowercases and turns spaces into dashes', () => {
+    expect(normalizeTopic('  Plate   Maps ')).toBe('plate-maps')
+    expect(normalizeTopic('qc')).toBe('qc')
+  })
+})
+
+describe('normalizeTags', () => {
+  it('normalises topics only, and keeps each tag once', () => {
+    expect(
+      normalizeTags([
+        { kind: 'topic', value: 'Plate Maps' },
+        { kind: 'topic', value: 'plate-maps' },
+        { kind: 'app', value: 'Order-Service' },
+        { kind: 'topic', value: 'order-service' },
+      ]),
+    ).toEqual([
+      { kind: 'topic', value: 'plate-maps' },
+      { kind: 'app', value: 'Order-Service' },
+      { kind: 'topic', value: 'order-service' },
+    ])
+  })
+})
 
 // Test fixtures
 function opsRunbook(): CommunityTool {

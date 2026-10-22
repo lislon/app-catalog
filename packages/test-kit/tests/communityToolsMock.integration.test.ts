@@ -146,6 +146,22 @@ describe('the "community" catalog mock', () => {
     ).toBe('BAD_REQUEST')
   })
 
+  it('stores a topic normalised, and two spellings of it once', async () => {
+    await community(signedInAs('Robin Park', 'robin.park@example.com'))
+    const added = await api.communityTools.add.mutate({
+      url: 'https://qc-heatmap-9f8e.pages.example.com/',
+      name: 'QC Heatmap',
+      summary: '',
+      descriptionMd: '',
+      ownerSlugs: ['sam.ortiz@example.com'],
+      tags: [
+        { kind: 'topic', value: 'Plate Maps' },
+        { kind: 'topic', value: ' plate-maps' },
+      ],
+    })
+    expect(added.tags).toEqual([{ kind: 'topic', value: 'plate-maps' }])
+  })
+
   it('refuses a tag value longer than 32 characters, as the server does', async () => {
     await community(signedInAs('Robin Park', 'robin.park@example.com'))
     const withTag = (value: string) =>

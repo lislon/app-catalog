@@ -1279,6 +1279,43 @@ When('I paste {string}', async (_world, text: string) => {
   await user.paste(text)
 })
 
+Given(
+  'the page {string} called {string} takes {int} ms to read',
+  async (_world, url: string, title: string, ms: number) => {
+    await givenOnServer(({ backendCfg }) =>
+      backendCfg.communityTools.withPage(url, title, ms),
+    )
+  },
+)
+
+Then('the site is being read', async () => {
+  await waitFor(() => expect(store().previewsAsked).toContain(pastedUrl))
+})
+
+When('I replace the address with {string}', async (_world, url: string) => {
+  pastedUrl = url
+  const user = userEvent.setup()
+  await user.clear(formField(/^Site address/))
+  await user.paste(url)
+})
+
+When('the answer for {string} arrives', async (_world, url: string) => {
+  await waitFor(() => expect(store().previewsAnswered).toContain(url), {
+    timeout: 2500,
+  })
+  // The mock has answered; give the page the moment it needs to take it in,
+  // so a check after this one cannot pass before a stale answer lands.
+  await new Promise((resolve) => setTimeout(resolve, 150))
+})
+
+Then('there is something to publish', async () => {
+  await waitFor(() => {
+    expect(
+      within(toolForm()).getByRole('button', { name: 'Publish' }),
+    ).toHaveProperty('disabled', false)
+  })
+})
+
 Then('the name is filled in from the page title', async () => {
   const title = pastedUrl && store().pageTitle(pastedUrl)
   if (!title) throw new Error(`No page title for "${pastedUrl}"`)
@@ -1415,7 +1452,7 @@ Then(
   },
 )
 
-Then('{int} tools are awaiting review', (_world, count: number) => {
+Then('{int} tool(s) is/are awaiting review', (_world, count: number) => {
   expect(store().awaitingReview()).toBe(count)
 })
 
@@ -1539,6 +1576,12 @@ When('I edit it', async () => {
   await waitFor(() =>
     expect(screen.getByTestId('edit-tool-dialog')).toBeTruthy(),
   )
+})
+
+Then('the edit form offers no way to archive it', () => {
+  expect(
+    within(toolForm()).queryByRole('button', { name: 'Archive this tool' }),
+  ).toBeNull()
 })
 
 Then('the edit form shows the name {string}', (_world, name: string) => {

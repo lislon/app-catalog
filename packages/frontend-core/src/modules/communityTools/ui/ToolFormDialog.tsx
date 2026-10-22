@@ -152,18 +152,27 @@ export function ToolFormDialog({
   const { mutateAsync: readSite } = previewMutation
   useEffect(() => {
     const address = url.trim()
+    // Set once the address changes again: a slower answer for this one must
+    // not overwrite the newer address's preview or name.
+    let stale = false
     const timer = setTimeout(() => {
       setChecked(address)
       if (!needsPreviewFor(address, mode, initial?.url)) return
       readSite({ url: address }).then(
         (data) => {
+          if (stale) return
           setPreview({ url: address, data })
           if (data.title && !nameTouchedRef.current) setName(data.title)
         },
-        () => setPreview({ url: address, data: null }),
+        () => {
+          if (!stale) setPreview({ url: address, data: null })
+        },
       )
     }, PREVIEW_DELAY_MS)
-    return () => clearTimeout(timer)
+    return () => {
+      stale = true
+      clearTimeout(timer)
+    }
   }, [url, mode, initial?.url, readSite])
 
   const address = url.trim()
@@ -636,7 +645,8 @@ export function ToolFormDialog({
             </div>
           ) : (
             <div className="mt-2 flex items-center justify-end gap-2.5 border-t border-border px-5 pt-3 pb-4">
-              {mode === 'edit' && (
+              {/* Already archived: nothing to archive, as on the card. */}
+              {mode === 'edit' && initial?.lifecycle.state !== 'archived' && (
                 <button
                   type="button"
                   disabled={busy}

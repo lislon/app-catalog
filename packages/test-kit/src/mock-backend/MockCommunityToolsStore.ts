@@ -11,6 +11,7 @@ import {
   isCaptureAllowed,
   lifecycleOf,
   nextLifecycle,
+  normalizeTags,
 } from '@igstack/app-catalog-shared-core'
 import type { MockFeedbackStore } from '../mock-network/MockFeedbackStore'
 import type { MockDb } from './MockDb'
@@ -113,6 +114,11 @@ export class MockCommunityToolsStore {
   private captureHosts: string[] = []
   /** What the headless browser would read off a page, by address. Anything else fails to load. */
   private pageTitles = new Map<string, string>()
+  /** How long reading a page takes, by address; unlisted pages answer at once. */
+  private pageDelays = new Map<string, number>()
+  /** Addresses whose preview was asked for, and answered, in order. */
+  readonly previewsAsked: string[] = []
+  readonly previewsAnswered: string[] = []
   private tools: StoredTool[] = []
   private views: View[] = []
   private pinsByUser = new Map<string, string[]>()
@@ -140,8 +146,9 @@ export class MockCommunityToolsStore {
   }
 
   /** A page the capture browser can open, and the title it finds there. */
-  withPage(url: string, title: string): void {
+  withPage(url: string, title: string, delayMs = 0): void {
     this.pageTitles.set(url, title)
+    if (delayMs) this.pageDelays.set(url, delayMs)
   }
 
   /** The title the capture browser finds at this address, if it can open it. */
@@ -383,11 +390,23 @@ export class MockCommunityToolsStore {
     }
   }
 
+  /** `preview` as the network answers it: after the page's reading time. */
+  async previewWhenRead(input: { url: string }): Promise<ToolPreview> {
+    this.previewsAsked.push(input.url)
+    const ms = this.pageDelays.get(input.url) ?? 0
+    if (ms) await new Promise((resolve) => setTimeout(resolve, ms))
+    try {
+      return this.preview(input)
+    } finally {
+      this.previewsAnswered.push(input.url)
+    }
+  }
+
   add(input: ToolInput): CommunityTool {
     const user = this.requireUser()
     const host = this.requireHost(input.url)
     const ownerSlugs = this.requireOwnersExist(input.ownerSlugs)
-    this.requireTags(input.tags)
+    const tags = this.requireTags(input.tags)
     const tool = this.insert({
       name: input.name.trim(),
       url: input.url,
@@ -395,7 +414,7 @@ export class MockCommunityToolsStore {
       summary: input.summary.trim(),
       descriptionMd: input.descriptionMd,
       ownerSlugs,
-      tags: input.tags,
+      tags,
       addedBy: { userId: user.id, name: user.name },
       // After every seeded tool, so Newest has an order inside the frozen clock.
       createdAt: new Date(MOCK_NOW.getTime() + ++this.tick),
@@ -417,7 +436,7 @@ export class MockCommunityToolsStore {
     this.requireEditor(tool, user)
     const host = this.requireHost(input.url)
     const ownerSlugs = this.requireOwnersExist(input.ownerSlugs)
-    this.requireTags(input.tags)
+    const tags = this.requireTags(input.tags)
     const name = input.name.trim()
     const summary = input.summary.trim()
 
@@ -430,7 +449,7 @@ export class MockCommunityToolsStore {
       tool.summary !== summary && 'summary',
       tool.descriptionMd !== input.descriptionMd && 'description',
       !sameSet(tool.ownerSlugs, ownerSlugs) && 'owners',
-      !sameSet(tool.tags.map(tagKey), input.tags.map(tagKey)) && 'tags',
+      !sameSet(tool.tags.map(tagKey), tags.map(tagKey)) && 'tags',
     ].filter((f): f is string => !!f)
 
     if (changed.length > 0) {
@@ -441,7 +460,7 @@ export class MockCommunityToolsStore {
         summary,
         descriptionMd: input.descriptionMd,
         ownerSlugs,
-        tags: input.tags,
+        tags,
       })
       this.feedback.addReviewRow(
         tool.slug,
@@ -596,13 +615,18 @@ export class MockCommunityToolsStore {
   }
 
   /** The input schema's tag rules, which the msw layer does not run. */
-  private requireTags(tags: CommunityTag[]): void {
-    if (tags.length > 8 || tags.some((t) => t.value.length > TAG_VALUE_MAX)) {
+  private requireTags(input: CommunityTag[]): CommunityTag[] {
+    const tags = normalizeTags(input)
+    if (
+      tags.length > 8 ||
+      tags.some((t) => !t.value || t.value.length > TAG_VALUE_MAX)
+    ) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: `At most 8 tags, each at most ${TAG_VALUE_MAX} characters`,
       })
     }
+    return tags
   }
 
   private requireEditor(tool: StoredTool, user: SessionUser): void {

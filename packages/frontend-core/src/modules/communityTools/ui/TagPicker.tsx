@@ -1,17 +1,12 @@
 import type { Resource } from '@igstack/app-catalog-backend-core'
 import type { CommunityTag } from '@igstack/app-catalog-shared-core'
-import { TAG_VALUE_MAX } from '@igstack/app-catalog-shared-core'
+import { TAG_VALUE_MAX, normalizeTopic } from '@igstack/app-catalog-shared-core'
 import { AppWindow, Hash } from 'lucide-react'
 import { SuggestInput } from './OwnerPicker'
 import { tagKey } from './TagRow'
 
 const MAX_TAGS = 8
 const MAX_SUGGESTIONS = 6
-
-/** A topic the way the next person will type it: `Plate Maps` is `plate-maps`. */
-export function normalizeTopic(text: string): string {
-  return text.trim().toLowerCase().replace(/\s+/g, '-')
-}
 
 /**
  * App tags, picked from the catalog's own apps so they always resolve, and

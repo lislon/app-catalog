@@ -117,6 +117,32 @@ describe('Community tools write service', () => {
     expect(tagged('a'.repeat(33))).toBe(false)
   })
 
+  it('add stores a topic normalised, and two spellings of it once', async () => {
+    db.dbCommunityTool.findUnique
+      .mockResolvedValueOnce(null) // the slug is free
+      .mockResolvedValue(dbTool)
+    const parsed = write.toolInputSchema.parse({
+      ...input,
+      tags: [
+        { kind: 'topic', value: 'Plate Maps' },
+        { kind: 'topic', value: '  plate-maps ' },
+      ],
+    })
+    await write.addTool(
+      parsed,
+      { user: ann, isAdmin: false, actor: actorFor('user-1') },
+      noCapture,
+      NOW,
+    )
+    expect(db.dbCommunityTool.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          tags: { create: [{ kind: 'topic', value: 'plate-maps' }] },
+        }),
+      }),
+    )
+  })
+
   it('add rejects non-http url', async () => {
     await expect(
       write.addTool(

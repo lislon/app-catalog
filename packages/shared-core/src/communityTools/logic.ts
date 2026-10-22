@@ -1,4 +1,29 @@
-import type { CommunityTool, FeedWindow, Lifecycle, MatchField } from './types'
+import type {
+  CommunityTag,
+  CommunityTool,
+  FeedWindow,
+  Lifecycle,
+  MatchField,
+} from './types'
+
+/** A topic the way the next person will type it: `Plate Maps` is `plate-maps`. */
+export function normalizeTopic(text: string): string {
+  return text.trim().toLowerCase().replace(/\s+/g, '-')
+}
+
+/** Topics normalised, then each tag once: two spellings of a topic are one tag. */
+export function normalizeTags(tags: CommunityTag[]): CommunityTag[] {
+  const seen = new Set<string>()
+  const out: CommunityTag[] = []
+  for (const tag of tags) {
+    const value = tag.kind === 'topic' ? normalizeTopic(tag.value) : tag.value
+    const key = `${tag.kind}:${value}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push({ kind: tag.kind, value })
+  }
+  return out
+}
 
 export function hostOf(url: string): string | null {
   try {
