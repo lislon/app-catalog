@@ -1,5 +1,16 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.12.0
+
+### Minor Changes
+
+- [#335](https://github.com/lislon/app-catalog/pull/335) [`94ade32`](https://github.com/lislon/app-catalog/commit/94ade32ef879b41d8c62f2121a41e4b35f46b2ee) Thanks [@lislon](https://github.com/lislon)! - Community tools rows show the comment count, and the date a tool was added on every sort except Recently updated. The address strip that appeared on hover is gone.
+
+### Patch Changes
+
+- Updated dependencies [[`94ade32`](https://github.com/lislon/app-catalog/commit/94ade32ef879b41d8c62f2121a41e4b35f46b2ee)]:
+  - @igstack/app-catalog-shared-core@6.12.0
+
 ## 6.11.0
 
 ### Minor Changes
