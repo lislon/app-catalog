@@ -77,7 +77,7 @@ Feature: Getting back to a tool a colleague built
 
   Scenario: A row is three stops for the keyboard
     When I open Community tools
-    Then tabbing through the row of "Ops Runbook" reaches "site, star, Details"
+    Then tabbing through the row of "Ops Runbook" reaches "site, star, Like, Details"
 
   Scenario: The row's Details opens the card
     When I open Community tools
@@ -100,11 +100,19 @@ Feature: Getting back to a tool a colleague built
 
   Rule: Ordering the feed
 
-  Scenario: The feed starts with the most opened this month
+  Scenario: The feed starts with the most liked, views breaking ties
+    Given "Ann Lee, Bo Ray" liked "Old Tracker"
+    And "Cy Dee" liked "Kit Rules Playground"
     When I open Community tools
+    Then the sort says "Sort by Most liked, descending"
+    And the feed reads "Old Tracker, Kit Rules Playground, Ops Runbook"
+    And the rows say no date
+
+  Scenario: Popular goes by views this month
+    When I open Community tools
+    And I sort by "Popular"
     Then the sort says "Sort by Popular, descending"
     And the feed reads "Ops Runbook, Kit Rules Playground, Old Tracker"
-    And the rows say no date
 
   Scenario: Newest puts the latest addition first
     When I open Community tools
@@ -132,6 +140,24 @@ Feature: Getting back to a tool a colleague built
     And I go to "/community?window=newest"
     Then the sort says "Sort by Newest, descending"
     And the feed reads "Kit Rules Playground, Ops Runbook, Old Tracker"
+
+  Rule: Liking a tool
+
+  Scenario: Liking a tool counts me in, and liking it again takes it back
+    Given "Ann Lee, Bo Ray, Cy Dee" liked "Kit Rules Playground"
+    And I am signed in
+    When I open Community tools
+    Then "Kit Rules Playground" has 3 likes, not liked by me
+    And pointing at the like of "Kit Rules Playground" says "Liked by Cy Dee, Bo Ray and 1 other"
+    When I like "Kit Rules Playground"
+    Then "Kit Rules Playground" has 4 likes, liked by me
+    When I like "Kit Rules Playground"
+    Then "Kit Rules Playground" has 3 likes, not liked by me
+
+  Scenario: A visitor who has not signed in is asked to before liking
+    When I open Community tools
+    And I like "Ops Runbook"
+    Then I am asked to sign in
 
   Rule: Finding what colleagues built for the app I work in
 

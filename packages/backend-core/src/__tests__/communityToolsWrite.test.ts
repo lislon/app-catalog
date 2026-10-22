@@ -55,6 +55,7 @@ const dbTool = {
   siteUpdatedAt: null,
   owners: [{ toolId: 'tool-1', personSlug: 'ann@example.com' }],
   namedOwners: [] as { toolId: string; name: string }[],
+  likes: [] as { userId: string; userName: string }[],
   tags: [],
 }
 

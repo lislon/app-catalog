@@ -112,6 +112,18 @@ export function createCommunityToolsRouter(options?: CommunityToolsOptions) {
         return service.pinTool(input.slug, ctx.user.id)
       }),
 
+    like: protectedProcedure
+      .input(z.object({ slug: z.string() }))
+      .mutation(({ input, ctx }) => {
+        return service.likeTool(input.slug, ctx.user)
+      }),
+
+    unlike: protectedProcedure
+      .input(z.object({ slug: z.string() }))
+      .mutation(({ input, ctx }) => {
+        return service.unlikeTool(input.slug, ctx.user.id)
+      }),
+
     unpin: protectedProcedure
       .input(z.object({ slug: z.string() }))
       .mutation(({ input, ctx }) => {

@@ -226,6 +226,14 @@ export const SharedNetwork = {
         handler: ct.unpin.mutation(({ input }) => store.unpin(input)),
       },
       {
+        scopeKey: ['community-tools-like'],
+        handler: ct.like.mutation(({ input }) => store.like(input)),
+      },
+      {
+        scopeKey: ['community-tools-unlike'],
+        handler: ct.unlike.mutation(({ input }) => store.unlike(input)),
+      },
+      {
         scopeKey: ['community-tools-reorder-pins'],
         handler: ct.reorderPins.mutation(({ input }) =>
           store.reorderPins(input),

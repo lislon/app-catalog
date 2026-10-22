@@ -68,6 +68,33 @@ describe('the "community" catalog mock', () => {
     })
   })
 
+  it('counts likes once per person, names the newest likers, and takes a like back', async () => {
+    await community(({ backendCfg }) => {
+      backendCfg.communityTools.likedBy('ops-runbook', ['Ann Lee', 'Bo Ray'])
+      backendCfg.withUser({
+        name: 'Robin Park',
+        email: 'robin.park@example.com',
+        isAuthenticated: true,
+      })
+    })
+    const likes = async () => {
+      const t = await api.communityTools.get.query({ slug: 'ops-runbook' })
+      return [t.likes, t.likedByMe, t.likedBy]
+    }
+
+    expect(await likes()).toEqual([2, false, ['Bo Ray', 'Ann Lee']])
+    await api.communityTools.like.mutate({ slug: 'ops-runbook' })
+    await api.communityTools.like.mutate({ slug: 'ops-runbook' })
+    expect(await likes()).toEqual([
+      3,
+      true,
+      ['Robin Park', 'Bo Ray', 'Ann Lee'],
+    ])
+    await api.communityTools.unlike.mutate({ slug: 'ops-runbook' })
+    await api.communityTools.unlike.mutate({ slug: 'ops-runbook' })
+    expect(await likes()).toEqual([2, false, ['Bo Ray', 'Ann Lee']])
+  })
+
   it('refuses protected procedures to an anonymous visitor', async () => {
     await community()
 

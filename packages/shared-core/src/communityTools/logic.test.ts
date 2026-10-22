@@ -49,6 +49,9 @@ function opsRunbook(): CommunityTool {
     addedBy: { userId: 'user1', name: 'Dana Lee' },
     createdAt: '2026-01-01T00:00:00Z',
     siteUpdatedAt: null,
+    likes: 0,
+    likedByMe: false,
+    likedBy: [],
     tags: [],
     views30d: 10,
     viewsAll: 100,
@@ -291,6 +294,24 @@ describe('rankTools', () => {
     expect(rankTools(tools, 'popular', 'asc').map((t) => t.slug)).toEqual([
       'live',
       'dead',
+    ])
+  })
+
+  it('liked: most likes first, views this month breaking ties', () => {
+    const tools = [
+      { ...live(5), name: 'Few', likes: 1 },
+      { ...live(9), name: 'Many, busy', likes: 4 },
+      { ...live(2), name: 'Many, quiet', likes: 4 },
+    ]
+    expect(names(rankTools(tools, 'liked'))).toEqual([
+      'Many, busy',
+      'Many, quiet',
+      'Few',
+    ])
+    expect(names(rankTools(tools, 'liked', 'asc'))).toEqual([
+      'Few',
+      'Many, quiet',
+      'Many, busy',
     ])
   })
 

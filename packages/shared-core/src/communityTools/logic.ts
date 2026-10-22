@@ -174,7 +174,8 @@ export function searchTools(
 }
 
 /**
- * The feed's order: live tools by `sort` in `dir`, ties by name; tools that
+ * The feed's order: live tools by `sort` in `dir` (most liked breaks its ties
+ * by views this month), then by name; tools that
  * stopped working after them, in the same order; archived ones left out. A
  * tool whose site never said when it changed goes last in either direction.
  */
@@ -184,13 +185,15 @@ export function rankTools(
   dir: SortDir = 'desc',
 ): CommunityTool[] {
   const key = (t: CommunityTool): number | null =>
-    sort === 'popular'
-      ? t.views30d
-      : sort === 'newest'
-        ? Date.parse(t.createdAt)
-        : t.siteUpdatedAt
-          ? Date.parse(t.siteUpdatedAt)
-          : null
+    sort === 'liked'
+      ? t.likes
+      : sort === 'popular'
+        ? t.views30d
+        : sort === 'newest'
+          ? Date.parse(t.createdAt)
+          : t.siteUpdatedAt
+            ? Date.parse(t.siteUpdatedAt)
+            : null
   const sign = dir === 'desc' ? -1 : 1
   const order = (a: CommunityTool, b: CommunityTool): number => {
     const ka = key(a)
@@ -199,6 +202,9 @@ export function rankTools(
       if (ka === null) return 1
       if (kb === null) return -1
       return sign * (ka - kb)
+    }
+    if (sort === 'liked' && a.views30d !== b.views30d) {
+      return sign * (a.views30d - b.views30d)
     }
     return a.name.localeCompare(b.name)
   }

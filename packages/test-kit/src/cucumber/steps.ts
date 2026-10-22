@@ -834,6 +834,55 @@ Then(
   },
 )
 
+Given(
+  '{string} liked {string}',
+  async (_world, names: string, tool: string) => {
+    await givenOnServer(({ backendCfg }) => {
+      const tools = backendCfg.communityTools
+      tools.likedBy(tools.slugOf(tool), names.split(', '))
+    })
+  },
+)
+
+function rowLike(name: string): HTMLElement {
+  return within(rowNamed('community-feed', name)).getByTestId('like-button')
+}
+
+When('I like {string}', async (_world, name: string) => {
+  const like = await waitFor(() => rowLike(name))
+  await userEvent.setup().click(like)
+})
+
+async function expectLikes(name: string, count: number, mine: boolean) {
+  await waitFor(() => {
+    const like = rowLike(name)
+    expect(within(like).getByTestId('like-count').textContent).toBe(
+      String(count),
+    )
+    expect(like.getAttribute('aria-pressed')).toBe(String(mine))
+  })
+}
+
+Then(
+  '{string} has {int} like(s), liked by me',
+  (_world, name: string, count: number) => expectLikes(name, count, true),
+)
+
+Then(
+  '{string} has {int} like(s), not liked by me',
+  (_world, name: string, count: number) => expectLikes(name, count, false),
+)
+
+Then(
+  'pointing at the like of {string} says {string}',
+  async (_world, name: string, text: string) => {
+    await userEvent.setup().hover(rowLike(name))
+    await waitFor(() => {
+      expect(screen.getByRole('tooltip').textContent).toBe(text)
+    })
+  },
+)
+
 When('I pin {string} from the feed', async (_world, name: string) => {
   const user = userEvent.setup()
   const row = await waitFor(() => rowNamed('community-feed', name))

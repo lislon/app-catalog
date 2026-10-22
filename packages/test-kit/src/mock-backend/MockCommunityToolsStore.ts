@@ -56,6 +56,8 @@ interface StoredTool {
   capturedAt: Date | null
   /** The site's Last-Modified at its last visit that sent one. */
   siteUpdatedAt: Date | null
+  /** Newest first. */
+  likes: { userId: string; userName: string }[]
 }
 
 /** Everything a scenario may preset on a tool; name and url are all it must give. */
@@ -319,6 +321,28 @@ export class MockCommunityToolsStore {
     )
   }
 
+  /** Liking twice is one like. */
+  like(input: { slug: string }): void {
+    const user = this.requireUser()
+    const tool = this.requireTool(input.slug)
+    if (tool.likes.some((l) => l.userId === user.id)) return
+    tool.likes.unshift({ userId: user.id, userName: user.name })
+  }
+
+  unlike(input: { slug: string }): void {
+    const user = this.requireUser()
+    const tool = this.requireTool(input.slug)
+    tool.likes = tool.likes.filter((l) => l.userId !== user.id)
+  }
+
+  /** Colleagues liked it, the last named most recently. */
+  likedBy(slug: string, names: string[]): void {
+    const tool = this.stored(slug)
+    for (const name of names) {
+      tool.likes.unshift({ userId: `liker-${slugify(name)}`, userName: name })
+    }
+  }
+
   pin(input: { slug: string }): void {
     this.pinTool(input.slug, this.requireUser().id)
   }
@@ -538,6 +562,7 @@ export class MockCommunityToolsStore {
       faviconId: null,
       capturedAt: null,
       siteUpdatedAt: null,
+      likes: [],
       ...fields,
       id: `tool-${this.counter}`,
       slug: fields.slug ?? this.freeSlug(fields.name),
@@ -704,6 +729,9 @@ export class MockCommunityToolsStore {
       faviconId: tool.faviconId,
       capturedAt: tool.capturedAt?.toISOString() ?? null,
       siteUpdatedAt: tool.siteUpdatedAt?.toISOString() ?? null,
+      likes: tool.likes.length,
+      likedByMe: !!user && tool.likes.some((l) => l.userId === user.id),
+      likedBy: tool.likes.slice(0, 8).map((l) => l.userName),
       // The mock always has a capturer: the host list alone decides.
       capturePending:
         !tool.screenshotId &&

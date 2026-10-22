@@ -405,6 +405,9 @@ model DbCommunityTool {
   /// User pins for personalized ordering.
   pins DbCommunityToolPin[]
 
+  /// One per person who liked it.
+  likes DbCommunityToolLike[]
+
   /// Feedback comments about this tool.
   feedback DbFeedback[]
 
@@ -446,6 +449,17 @@ model DbCommunityToolOwner {
   personSlug String
 
   @@id([toolId, personSlug])
+}
+
+/// A signed-in person liked the tool; their name is kept for "Liked by".
+model DbCommunityToolLike {
+  toolId    String
+  tool      DbCommunityTool @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  userId    String
+  userName  String
+  createdAt DateTime        @default(now())
+
+  @@id([toolId, userId])
 }
 
 /// An owner outside the person directory: shown by name, never an editor.

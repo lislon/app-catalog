@@ -4,7 +4,7 @@ import { getDbClient } from '../../db/client'
 import type { Actor } from '../visitor/visitorIdentity'
 import type { CommunityTool } from '@igstack/app-catalog-shared-core'
 import type { CaptureDeps } from './healthJob'
-import { toView } from './toView'
+import { LIKES, toView } from './toView'
 
 export async function listTools(
   user: User | null,
@@ -18,6 +18,7 @@ export async function listTools(
     include: {
       owners: true,
       namedOwners: true,
+      likes: LIKES,
       tags: true,
     },
   })
@@ -95,6 +96,7 @@ export async function getTool(
     include: {
       owners: true,
       namedOwners: true,
+      likes: LIKES,
       tags: true,
     },
   })
@@ -197,6 +199,7 @@ export async function listPins(
         include: {
           owners: true,
           namedOwners: true,
+          likes: LIKES,
           tags: true,
         },
       },
@@ -275,6 +278,27 @@ export async function pinTool(slug: string, userId: string): Promise<void> {
     where: { userId_toolId: { userId, toolId } },
     create: { userId, toolId, position: maxPin ? maxPin.position + 1 : 0 },
     update: {},
+  })
+}
+
+/** Liking twice is one like. */
+export async function likeTool(
+  slug: string,
+  user: { id: string; name: string },
+): Promise<void> {
+  const toolId = await requireToolId(slug)
+  await getDbClient().dbCommunityToolLike.upsert({
+    where: { toolId_userId: { toolId, userId: user.id } },
+    create: { toolId, userId: user.id, userName: user.name },
+    update: {},
+  })
+}
+
+/** Unliking what was never liked changes nothing. */
+export async function unlikeTool(slug: string, userId: string): Promise<void> {
+  const toolId = await requireToolId(slug)
+  await getDbClient().dbCommunityToolLike.deleteMany({
+    where: { toolId, userId },
   })
 }
 

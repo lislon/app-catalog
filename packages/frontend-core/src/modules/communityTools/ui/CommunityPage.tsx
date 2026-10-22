@@ -78,6 +78,8 @@ export function CommunityPage({
     unpin,
     pinBusySlug,
     reorder,
+    like,
+    unlike,
   } = useCommunityTools()
   const { open: openSignIn } = useAuthModal()
   const navigate = useNavigate()
@@ -181,6 +183,25 @@ export function CommunityPage({
     }
     if (pinnedSlugs.has(tool.slug)) unpinTool(tool.slug)
     else pinTool(tool.slug)
+  }
+
+  const toggleLike = (tool: CommunityTool) => {
+    if (!isAuthenticated) {
+      signInHere()
+      return
+    }
+    const save = tool.likedByMe ? unlike : like
+    save.mutate(
+      { slug: tool.slug },
+      {
+        onError: () =>
+          showToast({
+            tone: 'error',
+            text: 'Could not save the like. Check your connection.',
+            action: { label: 'Try again', run: () => toggleLike(tool) },
+          }),
+      },
+    )
   }
 
   // A failed save puts the tiles back (the pins refetch); say why they moved.
@@ -442,6 +463,7 @@ export function CommunityPage({
                       pinned={pinnedSlugs.has(item.tool.slug)}
                       pinBusy={pinBusySlug === item.tool.slug}
                       onTogglePin={() => togglePin(item.tool)}
+                      onToggleLike={() => toggleLike(item.tool)}
                     />
                   </div>
                 )

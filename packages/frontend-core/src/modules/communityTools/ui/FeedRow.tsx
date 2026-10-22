@@ -15,6 +15,7 @@ import { cn } from '~/lib/utils'
 import { highlightTokens } from '~/util/highlightMatches'
 import { timeAgo } from '../timeAgo'
 import { LifecycleBadge, UnreviewedBadge } from './LifecycleBadge'
+import { LikeButton } from './LikeButton'
 import { PinButton } from './PinButton'
 
 export function screenshotUrl(id: string, size: number): string {
@@ -110,6 +111,7 @@ export interface FeedRowProps {
   /** Its pin is being saved. */
   pinBusy?: boolean
   onTogglePin: () => void
+  onToggleLike: () => void
 }
 
 /** The feed row's thumbnail: big enough to read the page title in its top left. */
@@ -136,6 +138,7 @@ export function FeedRow({
   pinned,
   pinBusy,
   onTogglePin,
+  onToggleLike,
 }: FeedRowProps) {
   const archived = tool.lifecycle.state === 'archived'
   const cell = optionId ? 'gridcell' : undefined
@@ -233,13 +236,20 @@ export function FeedRow({
             >
               {highlightTokens(owners, tokens)}
             </span>
-            <span className="pointer-events-auto -mr-1.5">
+            <span className="pointer-events-auto -mr-1 flex items-center">
               <PinButton
                 small
                 pinned={pinned}
                 busy={pinBusy}
                 name={tool.name}
                 onToggle={onTogglePin}
+              />
+              <LikeButton
+                name={tool.name}
+                likes={tool.likes}
+                likedByMe={tool.likedByMe}
+                likedBy={tool.likedBy}
+                onToggle={onToggleLike}
               />
             </span>
             <span

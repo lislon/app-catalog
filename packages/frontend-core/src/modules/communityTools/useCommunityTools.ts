@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { useTRPC } from '~/api/infra/trpc'
 import { useAppCatalogContext } from '~/modules/appCatalog/context/AppCatalogContext'
 import { useAuth } from '~/modules/auth'
+import { withLike } from './likedBy'
 
 /**
  * Everything the community page reads, and the pin writes. Pins
@@ -12,7 +13,7 @@ import { useAuth } from '~/modules/auth'
 export function useCommunityTools() {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
-  const { isAuthenticated, isLoading: isAuthLoading } = useAuth()
+  const { isAuthenticated, isLoading: isAuthLoading, user } = useAuth()
   const { resources } = useAppCatalogContext()
 
   const list = useQuery(trpc.communityTools.list.queryOptions())
@@ -87,6 +88,46 @@ export function useCommunityTools() {
     }),
   )
 
+  // The thumb and its count change at once, in the feed and on the shelf; a
+  // failed save puts both back.
+  const listKey = trpc.communityTools.list.queryKey()
+  const optimisticLike = (liked: boolean) => ({
+    onMutate: async ({ slug }: { slug: string }) => {
+      const keys = [listKey, pinsKey]
+      await Promise.all(
+        keys.map((queryKey) => queryClient.cancelQueries({ queryKey })),
+      )
+      const previous = keys.map(
+        (key) => [key, queryClient.getQueryData<CommunityTool[]>(key)] as const,
+      )
+      for (const key of keys) {
+        queryClient.setQueryData<CommunityTool[]>(key, (old) =>
+          old?.map((t) =>
+            t.slug === slug ? withLike(t, liked, user?.name ?? '') : t,
+          ),
+        )
+      }
+      return { previous }
+    },
+    onError: (
+      _error: unknown,
+      _input: { slug: string },
+      context:
+        | { previous: (readonly [unknown, CommunityTool[] | undefined])[] }
+        | undefined,
+    ) => {
+      for (const [key, data] of context?.previous ?? []) {
+        queryClient.setQueryData(key as typeof listKey, data)
+      }
+    },
+  })
+  const like = useMutation(
+    trpc.communityTools.like.mutationOptions(optimisticLike(true)),
+  )
+  const unlike = useMutation(
+    trpc.communityTools.unlike.mutationOptions(optimisticLike(false)),
+  )
+
   return {
     list,
     pins,
@@ -97,5 +138,7 @@ export function useCommunityTools() {
     unpin,
     pinBusySlug,
     reorder,
+    like,
+    unlike,
   }
 }

@@ -9,11 +9,21 @@ import type { DbPerson, Prisma } from '../../generated/prisma/client'
 import type { CaptureDeps } from './healthJob'
 import { computeCanEdit } from './service'
 
+/** The likes a view reads: newest first, for "Liked by". */
+export const LIKES = {
+  orderBy: { createdAt: 'desc' },
+  select: { userId: true, userName: true },
+} as const satisfies Prisma.DbCommunityTool$likesArgs
+
+/** How many likers a view names; the rest are a count. */
+const LIKED_BY_NAMES = 8
+
 type DbToolWithRelations = Prisma.DbCommunityToolGetPayload<{
   include: {
     owners: true
     namedOwners: true
     tags: true
+    likes: typeof LIKES
   }
 }>
 
@@ -79,6 +89,10 @@ export async function toView(
       name: tool.addedByName,
     },
     createdAt: tool.createdAt.toISOString(),
+    // ponytail: every like row is read per view; a counted column if likes run to thousands.
+    likes: tool.likes.length,
+    likedByMe: !!user && tool.likes.some((l) => l.userId === user.id),
+    likedBy: tool.likes.slice(0, LIKED_BY_NAMES).map((l) => l.userName),
     siteUpdatedAt: tool.siteUpdatedAt?.toISOString() ?? null,
     tags,
     views30d: viewCounts.views30d,

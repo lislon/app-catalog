@@ -17,8 +17,8 @@ const searchSchema = z
   .object({
     /** `<kind>:<value>`, e.g. `topic:sandbox` or `app:order-service`. */
     tag: z.string().optional().catch(undefined),
-    /** Popular when absent. */
-    sort: z.enum(['newest', 'updated']).optional().catch(undefined),
+    /** Most liked when absent. */
+    sort: z.enum(['popular', 'newest', 'updated']).optional().catch(undefined),
     /** Descending when absent. */
     dir: z.enum(['asc']).optional().catch(undefined),
     /** The old window toggle: `newest` still means Newest; the param is dropped. */
@@ -73,13 +73,13 @@ function RouteComponent() {
     <AppCatalogLayout queryClient={queryClient} trpcClient={trpcClient}>
       <CommunityPage
         tag={search.tag}
-        sort={search.sort ?? 'popular'}
+        sort={search.sort ?? 'liked'}
         dir={search.dir ?? 'desc'}
         cardSlug={slug}
         onTagChange={(tag) => setSearch({ tag })}
         onSortChange={(sort, dir) =>
           setSearch({
-            sort: sort === 'popular' ? undefined : sort,
+            sort: sort === 'liked' ? undefined : sort,
             dir: dir === 'asc' ? 'asc' : undefined,
           })
         }

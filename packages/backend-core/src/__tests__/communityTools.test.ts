@@ -176,6 +176,7 @@ describe('Community tools service', () => {
             archivedReason: null,
             owners: [],
             namedOwners: [],
+            likes: [] as { userId: string; userName: string }[],
             tags: [],
           },
         },
@@ -204,6 +205,7 @@ describe('Community tools service', () => {
             archivedReason: null,
             owners: [],
             namedOwners: [],
+            likes: [] as { userId: string; userName: string }[],
             tags: [],
           },
         },
@@ -232,6 +234,7 @@ describe('Community tools service', () => {
             archivedReason: null,
             owners: [],
             namedOwners: [],
+            likes: [] as { userId: string; userName: string }[],
             tags: [],
           },
         },
@@ -407,6 +410,7 @@ describe('Community tools service', () => {
           archivedReason: null,
           owners: [],
           namedOwners: [],
+          likes: [] as { userId: string; userName: string }[],
           tags: [],
         },
         {
@@ -431,6 +435,7 @@ describe('Community tools service', () => {
           archivedReason: null,
           owners: [],
           namedOwners: [],
+          likes: [] as { userId: string; userName: string }[],
           tags: [],
         },
       ])
@@ -482,6 +487,7 @@ describe('Community tools service', () => {
         siteUpdatedAt: null,
         owners: [],
         namedOwners: [],
+        likes: [] as { userId: string; userName: string }[],
         tags: [],
         ...over,
       }) as Parameters<typeof toView>[0]
@@ -500,6 +506,35 @@ describe('Community tools service', () => {
           capture,
         )
       ).capturePending
+
+    it('counts likes, says whether I liked it, and names the newest 8', async () => {
+      const likes = Array.from({ length: 10 }, (_, i) => ({
+        userId: `user-${i}`,
+        userName: `Person ${i}`,
+      }))
+      const view = await toView(
+        row({ likes }),
+        new Map(),
+        { views30d: 0, viewsAll: 0 },
+        mockUser({ id: 'user-3', email: 'p3@example.com', name: 'Person 3' }),
+        false,
+        new Date('2024-01-15T12:00:00Z'),
+        CAPTURES,
+      )
+      expect(view.likes).toBe(10)
+      expect(view.likedByMe).toBe(true)
+      expect(view.likedBy).toEqual(likes.slice(0, 8).map((l) => l.userName))
+      const anonymous = await toView(
+        row({ likes }),
+        new Map(),
+        { views30d: 0, viewsAll: 0 },
+        null,
+        false,
+        new Date('2024-01-15T12:00:00Z'),
+        CAPTURES,
+      )
+      expect(anonymous.likedByMe).toBe(false)
+    })
 
     it('lists an owner outside the directory by name, with no slug', async () => {
       const view = await toView(
@@ -671,6 +706,59 @@ describe('pin and unpin', () => {
       where: { userId_toolId: { userId: 'user-1', toolId: 'tool-a' } },
       create: { userId: 'user-1', toolId: 'tool-a', position: 5 },
       update: {},
+    })
+  })
+})
+
+describe('like and unlike', () => {
+  const db = {
+    dbCommunityTool: { findUnique: vi.fn() },
+    dbCommunityToolLike: { upsert: vi.fn(), deleteMany: vi.fn() },
+  }
+  const ann = { id: 'user-1', name: 'Ann Owner' }
+
+  beforeEach(() => {
+    vi.spyOn(dbClient, 'getDbClient').mockReturnValue(
+      db as unknown as PrismaClient,
+    )
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('likes once however often it is asked, keeping the name for Liked by', async () => {
+    db.dbCommunityTool.findUnique.mockResolvedValue({ id: 'tool-a' })
+
+    await service.likeTool('tool-a', ann)
+    await service.likeTool('tool-a', ann)
+
+    expect(db.dbCommunityToolLike.upsert).toHaveBeenCalledTimes(2)
+    expect(db.dbCommunityToolLike.upsert).toHaveBeenLastCalledWith({
+      where: { toolId_userId: { toolId: 'tool-a', userId: 'user-1' } },
+      create: { toolId: 'tool-a', userId: 'user-1', userName: 'Ann Owner' },
+      update: {},
+    })
+  })
+
+  it('unlikes only my own like, and an unliked tool stays unliked', async () => {
+    db.dbCommunityTool.findUnique.mockResolvedValue({ id: 'tool-a' })
+
+    await service.unlikeTool('tool-a', 'user-1')
+
+    expect(db.dbCommunityToolLike.deleteMany).toHaveBeenCalledWith({
+      where: { toolId: 'tool-a', userId: 'user-1' },
+    })
+  })
+
+  it('answers NOT_FOUND for an unknown slug', async () => {
+    db.dbCommunityTool.findUnique.mockResolvedValue(null)
+
+    await expect(service.likeTool('nope', ann)).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    })
+    await expect(service.unlikeTool('nope', 'user-1')).rejects.toMatchObject({
+      code: 'NOT_FOUND',
     })
   })
 })

@@ -4,6 +4,7 @@ import { useRef } from 'react'
 import { cn } from '~/lib/utils'
 
 export const SORT_OPTIONS: { value: FeedSort; label: string }[] = [
+  { value: 'liked', label: 'Most liked' },
   { value: 'popular', label: 'Popular' },
   { value: 'newest', label: 'Newest' },
   { value: 'updated', label: 'Recently updated' },
