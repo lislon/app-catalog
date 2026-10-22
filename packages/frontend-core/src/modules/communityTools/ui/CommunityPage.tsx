@@ -21,6 +21,7 @@ import { Skeleton } from '~/ui/skeleton'
 import { useCommunityTools } from '../useCommunityTools'
 import { FeedRow, ROW_THUMB } from './FeedRow'
 import { FeedSortControl } from './FeedSortControl'
+import { MarginPreview } from './MarginPreview'
 import { MyToolsShelf } from './MyToolsShelf'
 import { TagRow } from './TagRow'
 import { Toast } from './Toast'
@@ -312,9 +313,14 @@ export function CommunityPage({
   return (
     <div
       ref={scrollRef}
+      data-preview-scroller
       className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]"
     >
-      <div ref={pageRef} className="mx-auto w-full max-w-[1000px] pt-1.5 pb-10">
+      <div
+        ref={pageRef}
+        data-preview-column
+        className="mx-auto w-full max-w-[1000px] pt-1.5 pb-10"
+      >
         <div className="mb-[22px] flex items-center gap-2.5">
           <ToolSearch
             value={query}
@@ -458,6 +464,11 @@ export function CommunityPage({
           )}
         </section>
 
+        <MarginPreview
+          list={listEl}
+          tools={tools}
+          disabled={!!cardSlug || !!adding}
+        />
         {cardSlug && (
           <ToolCard
             slug={cardSlug}
@@ -519,7 +530,7 @@ function FeedSkeleton() {
       {[0, 1, 2].map((i) => (
         <div
           key={i}
-          className="flex items-center gap-4 rounded-[14px] border border-border bg-card py-3 pr-3.5 pl-3"
+          className="flex min-h-[176px] items-center gap-4 rounded-[14px] border border-border bg-card py-3 pl-3"
         >
           <Skeleton className="h-[22px] w-[26px]" />
           <Skeleton className={ROW_THUMB} />
@@ -528,7 +539,8 @@ function FeedSkeleton() {
             <Skeleton className="h-2.5 w-4/5" />
             <Skeleton className="h-2.5 w-1/4" />
           </div>
-          <Skeleton className="h-[46px] w-16 rounded-[10px]" />
+          {/* The Details panel's reserved width. */}
+          <div className="w-[120px] shrink-0" />
         </div>
       ))}
     </div>

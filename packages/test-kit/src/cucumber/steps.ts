@@ -778,7 +778,9 @@ Then(
   async (_world, name: string) => {
     const row = await waitFor(() => rowNamed('community-feed', name))
     expectOpensInNewTab(
-      within(row).getByRole('link', { name: `Open ${name} in a new tab` }),
+      within(row).getByRole('link', {
+        name: `${name}, opens ${new URL(siteOf(name)).host} in a new tab`,
+      }),
       name,
     )
   },
@@ -791,32 +793,46 @@ When('I choose Details on {string}', async (_world, name: string) => {
     .click(within(row).getByRole('link', { name: `Details for ${name}` }))
 })
 
-// jsdom has no hover, so the star's visibility is read off the classes that
-// set it: hidden by default, shown when its row is hovered or holds focus.
 function rowStar(name: string): HTMLElement {
   return within(rowNamed('community-feed', name)).getByTestId('pin-button')
 }
 
+// jsdom has no hover, so "in sight" is read off the classes: nothing hides it.
 Then(
-  'the star on {string} shows only on hover or focus',
-  async (_world, name: string) => {
+  'the star on {string} is in sight, {word}',
+  async (_world, name: string, state: string) => {
     await waitFor(() => {
       const star = rowStar(name)
-      expect(star.getAttribute('aria-pressed')).toBe('false')
-      expect(star.classList).toContain('opacity-0')
-      expect(star.classList).toContain('group-hover:opacity-100')
-      expect(star.classList).toContain('group-focus-within:opacity-100')
+      expect(star.getAttribute('aria-pressed')).toBe(
+        state === 'pinned' ? 'true' : 'false',
+      )
+      expect(star.getAttribute('class')).not.toMatch(/opacity-0/)
     })
   },
 )
 
-Then('the star on {string} stays in sight', async (_world, name: string) => {
-  await waitFor(() => {
-    const star = rowStar(name)
-    expect(star.getAttribute('aria-pressed')).toBe('true')
-    expect(star.classList).not.toContain('opacity-0')
-  })
-})
+Then(
+  'tabbing through the row of {string} reaches {string}',
+  async (_world, name: string, stops: string) => {
+    const row = await waitFor(() => rowNamed('community-feed', name))
+    const user = userEvent.setup()
+    within(row).getByTestId('feed-row-name').focus()
+    const reached = [document.activeElement]
+    for (let i = 1; i < stops.split(', ').length; i++) {
+      await user.tab()
+      reached.push(document.activeElement)
+    }
+    expect(
+      reached.map((el) =>
+        el?.getAttribute('data-testid') === 'feed-row-name'
+          ? 'site'
+          : el?.getAttribute('data-testid') === 'pin-button'
+            ? 'star'
+            : (el?.getAttribute('aria-label')?.split(' ')[0] ?? '?'),
+      ),
+    ).toEqual(stops.split(', '))
+  },
+)
 
 When('I pin {string} from the feed', async (_world, name: string) => {
   const user = userEvent.setup()
@@ -979,7 +995,10 @@ async function openCard(name: string): Promise<void> {
   if (!screen.queryByLabelText('Search community tools')) await openCommunity()
   const user = userEvent.setup()
   const row = await waitFor(() => rowNamed('community-feed', name))
-  await user.click(within(row).getByTestId('feed-row-name'))
+  // The row itself opens the site; its Details panel opens the card.
+  await user.click(
+    within(row).getByRole('link', { name: `Details for ${name}` }),
+  )
   await waitFor(() => expect(cardToolName()).toBe(name))
 }
 

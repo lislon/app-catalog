@@ -4,7 +4,13 @@ import type {
   MatchField,
 } from '@igstack/app-catalog-shared-core'
 import { Link } from '@tanstack/react-router'
-import { CornerDownLeft, ExternalLink, Globe } from 'lucide-react'
+import {
+  CornerDownLeft,
+  ExternalLink,
+  Eye,
+  Globe,
+  PanelRight,
+} from 'lucide-react'
 import { cn } from '~/lib/utils'
 import { highlightTokens } from '~/util/highlightMatches'
 import { timeAgo } from '../timeAgo'
@@ -109,10 +115,15 @@ export interface FeedRowProps {
 /** The feed row's thumbnail: big enough to read the page title in its top left. */
 export const ROW_THUMB = 'h-[150px] w-[240px] rounded-[10px]'
 
+/** The Details panel's width, reserved at rest so nothing moves when it shows. */
+const PANEL = 'w-[120px]'
+
 /**
- * One tool in the feed or the search results. The name links to the card and
- * stretches over the whole row, so a click anywhere opens it; Details | Open,
- * the star and the tag chips sit above that link.
+ * One tool in the feed or the search results. Everything left of the end
+ * panel (rank, picture, name, summary, meta) is one link that opens the site
+ * in a new tab; the 120 px panel opens the card. The star sits in the meta
+ * line as its own target, above that link. The bottom strip shows the address
+ * the big click goes to, on hover or focus only.
  */
 export function FeedRow({
   tool,
@@ -129,13 +140,13 @@ export function FeedRow({
   const archived = tool.lifecycle.state === 'archived'
   const cell = optionId ? 'gridcell' : undefined
   const owners = tool.owners.map((o) => o.name).join(', ')
-  const opens = tool.views30d
   const dated =
     sort === 'newest'
       ? `Added ${timeAgo(tool.createdAt)}`
       : sort === 'updated' && tool.siteUpdatedAt
         ? `Updated ${timeAgo(tool.siteUpdatedAt)}`
         : null
+  const address = tool.url.replace(/^https?:\/\//, '').replace(/\/$/, '')
 
   return (
     <div
@@ -144,21 +155,21 @@ export function FeedRow({
       data-selected={selected || undefined}
       role={optionId ? 'row' : undefined}
       className={cn(
-        'group relative flex items-center gap-4 rounded-[14px] border bg-card py-3 pr-3.5 pl-3 transition-[border-color,box-shadow]',
+        'group/row relative flex min-h-[176px] items-center overflow-hidden rounded-[14px] border bg-card transition-[border-color,box-shadow]',
         selected
           ? 'border-primary ring-[3px] ring-primary/20'
-          : 'border-border hover:border-primary/40 hover:shadow-sm',
+          : 'border-border hover:border-primary/35 hover:shadow-sm has-[:focus-visible]:border-primary/35',
         archived && 'opacity-55',
       )}
     >
-      {/* Two cells while searching: what the tool is, and what can be done
-          with it. A grid rather than a listbox, because an option's content
-          is presentational and would hide the link, the tags and the star. */}
+      {/* Two cells while searching: the site, and the card. A grid rather
+          than a listbox, because an option's content is presentational and
+          would hide the link and the star. */}
       <div
         id={optionId}
         role={cell}
         aria-selected={optionId ? selected : undefined}
-        className="flex min-w-0 flex-1 items-center gap-4"
+        className="flex min-w-0 flex-1 items-center gap-4 self-stretch py-3 pl-3"
       >
         {rank !== undefined && (
           <span className="w-[26px] shrink-0 text-center font-serif text-[22px] font-semibold text-muted-foreground/70">
@@ -166,20 +177,23 @@ export function FeedRow({
           </span>
         )}
         <ToolThumb tool={tool} size={512} className={ROW_THUMB} />
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 self-start pt-5 pr-6 pb-[52px]">
           <div className="flex items-center gap-2.5 text-[15.5px] font-extrabold">
-            <Link
-              to="/community/$slug"
-              params={{ slug: tool.slug }}
-              search={(prev) => prev}
+            <a
+              href={tool.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-site
               data-testid="feed-row-name"
+              aria-label={`${tool.name}, opens ${tool.host} in a new tab`}
               className={cn(
-                'truncate after:absolute after:inset-0 after:rounded-[14px] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring',
+                'truncate decoration-1 underline-offset-[3px] after:absolute after:inset-y-0 after:left-0 after:right-[120px] after:z-[1] after:rounded-l-[13px] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:-outline-offset-[3px] focus-visible:after:outline-ring',
+                'group-hover/row:underline group-has-[[data-details]:hover]/row:no-underline',
                 archived && 'text-muted-foreground',
               )}
             >
               {highlightTokens(tool.name, tokens)}
-            </Link>
+            </a>
             {selected && (
               <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11.5px] font-bold text-primary">
                 <CornerDownLeft aria-hidden="true" className="size-3" />
@@ -194,24 +208,6 @@ export function FeedRow({
               {highlightTokens(tool.summary, tokens)}
             </div>
           )}
-          {/* Tags are on the card and in the tag row above the feed; here
-            they wrapped unevenly. A tag search still says it matched one. */}
-          <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 overflow-hidden text-[13px] font-semibold whitespace-nowrap text-foreground/75">
-            <span className="flex min-w-0 flex-1 basis-40 items-center gap-1.5">
-              {tool.owners[0] && <PersonAvatar name={tool.owners[0].name} />}
-              <span data-testid="feed-row-owner" className="min-w-0 truncate">
-                {highlightTokens(owners, tokens)}
-              </span>
-              {dated && (
-                <span
-                  data-testid="feed-row-date"
-                  className="shrink-0 font-normal text-muted-foreground"
-                >
-                  · {dated}
-                </span>
-              )}
-            </span>
-          </div>
           {matched && matched.length > 0 && (
             <div
               data-testid="match-reason"
@@ -221,52 +217,87 @@ export function FeedRow({
             </div>
           )}
         </div>
-      </div>
-      <div role={cell} className="flex shrink-0 items-center gap-4">
-        {/* One button, two doors: the card, or straight to the site. */}
-        <span
-          data-testid="feed-row-actions"
-          className="relative z-10 inline-flex h-[34px] shrink-0 overflow-hidden rounded-[9px] border border-border bg-card text-[13px] font-bold"
+        {/* Meta on the left, the address on the right, flush to the panel.
+            Clicks fall through to the row link, except on the star. */}
+        <div
+          className={cn(
+            'pointer-events-none absolute right-[120px] bottom-0 z-[2] flex h-12 items-center gap-4',
+            rank !== undefined ? 'left-[310px]' : 'left-[268px]',
+          )}
         >
-          <Link
-            to="/community/$slug"
-            params={{ slug: tool.slug }}
-            search={(prev) => prev}
-            aria-label={`Details for ${tool.name}`}
-            className="inline-flex items-center px-3 hover:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
-          >
-            Details
-          </Link>
-          <a
-            href={tool.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`Open ${tool.name} in a new tab`}
+          <div className="flex shrink-0 items-center gap-1.5 text-[13px] font-semibold text-foreground/75">
+            {tool.owners[0] && <PersonAvatar name={tool.owners[0].name} />}
+            <span
+              data-testid="feed-row-owner"
+              className="mr-1 max-w-[220px] truncate"
+            >
+              {highlightTokens(owners, tokens)}
+            </span>
+            <span className="pointer-events-auto -mr-1.5">
+              <PinButton
+                small
+                pinned={pinned}
+                busy={pinBusy}
+                name={tool.name}
+                onToggle={onTogglePin}
+              />
+            </span>
+            <span
+              data-testid="feed-row-views"
+              aria-label={`${tool.views30d} views this month`}
+              className="inline-flex items-center gap-1 text-muted-foreground"
+            >
+              <Eye aria-hidden="true" className="size-[15px]" />
+              {tool.views30d}
+            </span>
+            {dated && (
+              <>
+                <span aria-hidden="true" className="text-muted-foreground">
+                  ·
+                </span>
+                <span
+                  data-testid="feed-row-date"
+                  className="text-muted-foreground"
+                >
+                  {dated}
+                </span>
+              </>
+            )}
+          </div>
+          <div
+            aria-hidden="true"
+            data-testid="feed-row-address"
             className={cn(
-              'inline-flex items-center gap-1.5 border-l px-3 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
-              selected
-                ? 'border-primary bg-primary text-primary-foreground'
-                : 'border-border hover:bg-accent',
+              'flex h-full min-w-0 flex-1 items-center justify-end gap-1.5 px-4 font-mono text-[12.5px] text-muted-foreground opacity-0 transition-opacity',
+              'group-hover/row:text-foreground group-hover/row:opacity-100 group-has-[[data-site]:focus-visible]/row:opacity-100 group-has-[[data-details]:hover]/row:opacity-0',
+              selected && 'opacity-100',
             )}
           >
-            <ExternalLink aria-hidden="true" className="size-3.5" />
-            Open
-          </a>
-        </span>
-        <PinButton
-          pinned={pinned}
-          busy={pinBusy}
-          name={tool.name}
-          onToggle={onTogglePin}
-        />
-        <div className="w-16 shrink-0 rounded-[10px] border border-border bg-muted pt-1.5 pb-[5px] text-center">
-          <b className="block font-serif text-lg leading-tight font-semibold">
-            {opens}
-          </b>
-          <span className="text-[11px] font-semibold text-muted-foreground">
-            opens
-          </span>
+            <span className="min-w-0 truncate">{address}</span>
+            <ExternalLink aria-hidden="true" className="size-3.5 shrink-0" />
+          </div>
         </div>
+      </div>
+      <div role={cell} className="flex self-stretch">
+        <Link
+          to="/community/$slug"
+          params={{ slug: tool.slug }}
+          search={(prev) => prev}
+          data-details
+          aria-label={`Details for ${tool.name}`}
+          className={cn(
+            PANEL,
+            'relative z-[2] flex flex-none flex-col items-center justify-center gap-1.5 border-l border-border/55 text-[13.5px] font-extrabold text-muted-foreground transition-colors',
+            'group-hover/row:border-border group-hover/row:bg-primary/[0.025] group-has-[:focus-visible]/row:bg-primary/[0.025]',
+            'hover:!border-primary/30 hover:!bg-primary/12 hover:text-foreground',
+            'focus-visible:rounded-r-[13px] focus-visible:!bg-primary/12 focus-visible:text-foreground focus-visible:outline-2 focus-visible:-outline-offset-[3px] focus-visible:outline-ring',
+          )}
+        >
+          <span className="flex flex-col items-center gap-1.5 opacity-0 transition-opacity group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100">
+            <PanelRight aria-hidden="true" className="size-[18px]" />
+            <span>Details</span>
+          </span>
+        </Link>
       </div>
     </div>
   )

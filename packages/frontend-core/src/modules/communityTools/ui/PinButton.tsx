@@ -7,21 +7,22 @@ const BUSY_AFTER_MS = 400
 
 /**
  * The star on rows, tiles and the card: pins the tool to My tools, or takes it
- * off. The card's is `labelled`, a bordered button that says Pin or Pinned.
- * An unpinned star on a row or tile waits for its `group` to be hovered or
- * focused (always shown where nothing hovers); a filled one is state and stays.
+ * off. The card's is `labelled`, a bordered button that says Pin or Pinned;
+ * a feed row's is `small`, a 32 px target in its meta line.
  */
 export function PinButton({
   pinned,
   name,
   onToggle,
   labelled = false,
+  small = false,
   busy = false,
 }: {
   pinned: boolean
   name: string
   onToggle: () => void
   labelled?: boolean
+  small?: boolean
   /** The pin is being saved; the star shows the state it will have. */
   busy?: boolean
 }) {
@@ -58,9 +59,10 @@ export function PinButton({
                 : 'border-border bg-card text-foreground',
             )
           : cn(
-              'size-[34px] text-muted-foreground/70',
-              !pinned &&
-                'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100',
+              'text-muted-foreground',
+              small
+                ? 'size-8 rounded-lg focus-visible:outline-offset-0'
+                : 'size-[34px]',
             ),
       )}
     >
@@ -73,7 +75,7 @@ export function PinButton({
         <Star
           aria-hidden="true"
           className={cn(
-            labelled ? 'size-4' : 'size-[18px]',
+            labelled ? 'size-4' : small ? 'size-[15px]' : 'size-[18px]',
             pinned && 'fill-amber-400 text-amber-600',
           )}
         />

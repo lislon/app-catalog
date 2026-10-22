@@ -64,16 +64,20 @@ Feature: Getting back to a tool a colleague built
     When I pin "Kit Rules Playground" from the feed
     Then I am asked to sign in
 
-  Scenario: An unpinned star is hidden until hover
+  Scenario: The star is always in sight, pinned or not
     Given I am signed in
     And I pinned "Ops Runbook"
     When I open Community tools
-    Then the star on "Kit Rules Playground" shows only on hover or focus
-    And the star on "Ops Runbook" stays in sight
+    Then the star on "Kit Rules Playground" is in sight, unpinned
+    And the star on "Ops Runbook" is in sight, pinned
 
-  Scenario: The row's Open goes straight to the site
+  Scenario: The row itself goes straight to the site
     When I open Community tools
     Then the row of "Ops Runbook" opens its site in a new tab
+
+  Scenario: A row is three stops for the keyboard
+    When I open Community tools
+    Then tabbing through the row of "Ops Runbook" reaches "site, star, Details"
 
   Scenario: The row's Details opens the card
     When I open Community tools
