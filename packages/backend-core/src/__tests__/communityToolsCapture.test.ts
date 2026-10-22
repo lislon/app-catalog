@@ -18,6 +18,8 @@ function fakePage(fields: { landedOn?: string; iconHref?: string | null }) {
   const page = {
     setDefaultTimeout: vi.fn(),
     goto: vi.fn().mockResolvedValue({ ok: () => true, status: () => 200 }),
+    waitForLoadState: vi.fn().mockResolvedValue(undefined),
+    waitForTimeout: vi.fn().mockResolvedValue(undefined),
     url: vi.fn(() => fields.landedOn ?? URL_OK),
     screenshot: vi.fn().mockResolvedValue(Buffer.from('png')),
     title: vi.fn().mockResolvedValue(' My Tool '),
@@ -79,6 +81,53 @@ describe('Community tools capture', () => {
     await capturePage(page, URL_OK, HOSTS)
 
     expect(page.setDefaultTimeout).toHaveBeenCalledWith(20_000)
+  })
+
+  it('photographs a page once its data has loaded and rendered', async () => {
+    const { page } = fakePage({})
+
+    await capturePage(page, URL_OK, HOSTS)
+
+    expect(page.waitForLoadState).toHaveBeenCalledWith('networkidle', {
+      timeout: expect.any(Number),
+    })
+    expect(page.waitForTimeout).toHaveBeenCalledWith(1_500)
+    const order = (fn: { mock: { invocationCallOrder: number[] } }) =>
+      fn.mock.invocationCallOrder[0]!
+    expect(order(page.goto)).toBeLessThan(order(page.waitForLoadState))
+    expect(order(page.waitForLoadState)).toBeLessThan(
+      order(page.waitForTimeout),
+    )
+    expect(order(page.waitForTimeout)).toBeLessThan(order(page.screenshot))
+  })
+
+  it('photographs a page that never goes quiet', async () => {
+    const { page } = fakePage({})
+    page.waitForLoadState.mockRejectedValue(new Error('Timeout exceeded'))
+
+    const result = await capturePage(page, URL_OK, HOSTS)
+
+    expect(result.ok).toBe(true)
+  })
+
+  it('keeps the waits inside the one capture timeout', async () => {
+    const { page } = fakePage({})
+    const start = 1_000_000
+    const now = vi.spyOn(Date, 'now').mockReturnValue(start)
+    // The page took 19 of the 20 seconds to load.
+    page.goto.mockImplementation(() => {
+      now.mockReturnValue(start + 19_000)
+      return Promise.resolve({ ok: () => true, status: () => 200 })
+    })
+
+    try {
+      await capturePage(page, URL_OK, HOSTS)
+    } finally {
+      now.mockRestore()
+    }
+
+    expect(page.waitForLoadState).not.toHaveBeenCalled()
+    expect(page.waitForTimeout).toHaveBeenCalledWith(1_000)
   })
 
   it('lets only allowed hosts and inline urls through the browser', () => {

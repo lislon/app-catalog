@@ -26,6 +26,11 @@ export interface CapturePage {
     url: string,
     options: { timeout: number; waitUntil: 'load' },
   ) => Promise<{ ok: () => boolean; status: () => number } | null>
+  waitForLoadState: (
+    state: 'networkidle',
+    options: { timeout: number },
+  ) => Promise<void>
+  waitForTimeout: (ms: number) => Promise<void>
   url: () => string
   screenshot: (options: { type: 'png' }) => Promise<Buffer>
   title: () => Promise<string>
@@ -40,6 +45,8 @@ export interface CapturePage {
 
 const VIEWPORT = { width: 1280, height: 800 }
 const TIMEOUT_MS = 20_000
+/** After the network goes quiet, for the page to render what it fetched. */
+const SETTLE_MS = 1_500
 
 /**
  * Whether the browser may load this URL: navigations, redirects and subresources alike.
@@ -160,6 +167,7 @@ export async function capturePage(
   allowedHosts: string[],
 ): Promise<CaptureResult> {
   page.setDefaultTimeout(TIMEOUT_MS)
+  const deadline = Date.now() + TIMEOUT_MS
   const response = await page.goto(url, {
     timeout: TIMEOUT_MS,
     waitUntil: 'load',
@@ -174,6 +182,18 @@ export async function capturePage(
       error: response ? `HTTP ${response.status()}` : 'No response',
     }
   }
+  // `load` is only the HTML and its assets: a page that fetches its data after
+  // that would be photographed saying "Loading…". So wait for the network to go
+  // quiet, then a moment for it to render, all inside the one timeout. A page
+  // that never goes quiet (polling, a live feed) is photographed as it is.
+  const idleBudget = deadline - Date.now() - SETTLE_MS
+  if (idleBudget > 0) {
+    await page
+      .waitForLoadState('networkidle', { timeout: idleBudget })
+      .catch(() => undefined)
+  }
+  const settle = Math.min(SETTLE_MS, deadline - Date.now())
+  if (settle > 0) await page.waitForTimeout(settle)
   const png = await page.screenshot({ type: 'png' })
   const title = (await page.title()).trim() || null
 
