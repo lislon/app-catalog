@@ -1211,3 +1211,363 @@ Then('the screenshot box keeps the shape of a screenshot', () => {
 Then('the card is closed', async () => {
   await waitFor(() => expect(screen.queryByTestId('tool-card')).toBeNull())
 })
+
+/* ------------------------------------------------------ Adding a tool ---
+ * The add and edit form, the admin's Approve and Archive on the card, and the
+ * sign-in a visitor is sent through first, which must bring them back.
+ */
+
+function toolForm(): HTMLElement {
+  const form =
+    screen.queryByTestId('add-tool-dialog') ??
+    screen.queryByTestId('edit-tool-dialog')
+  if (!form) throw new Error('No add or edit form is open')
+  return form
+}
+
+function formField(label: RegExp): HTMLInputElement {
+  return within(toolForm()).getByLabelText<HTMLInputElement>(label)
+}
+
+/** The chips of a picker field, as their labels read. */
+function chipsOf(label: RegExp): string[] {
+  const box = formField(label).parentElement
+  if (!box) throw new Error(`No box around the ${String(label)} field`)
+  return within(box)
+    .queryAllByTestId('picker-chip-label')
+    .map((c) => c.textContent.trim())
+}
+
+function store() {
+  if (!current) throw new Error('No catalog opened — missing a Given step?')
+  return current.backend.communityTools
+}
+
+/** The address pasted last, so a step can ask what the page there is called. */
+let pastedUrl: string | null = null
+
+afterEach(() => {
+  pastedUrl = null
+})
+
+When('I choose to add a tool', async () => {
+  await userEvent
+    .setup()
+    .click(await screen.findByRole('button', { name: 'Add a tool' }))
+})
+
+When('I choose to add it', async () => {
+  await userEvent.setup().click(
+    within(screen.getByTestId('no-results')).getByRole('button', {
+      name: 'Add it',
+    }),
+  )
+})
+
+Then('the add form opens with the name {string}', async (_world, name) => {
+  await waitFor(() => {
+    expect(
+      within(screen.getByTestId('add-tool-dialog')).getByLabelText('Name'),
+    ).toHaveProperty('value', name)
+  })
+})
+
+When('I paste {string}', async (_world, text: string) => {
+  pastedUrl = text
+  const user = userEvent.setup()
+  await user.click(await waitFor(() => formField(/^Site address/)))
+  await user.paste(text)
+})
+
+Then('the name is filled in from the page title', async () => {
+  const title = pastedUrl && store().pageTitle(pastedUrl)
+  if (!title) throw new Error(`No page title for "${pastedUrl}"`)
+  await waitFor(() => {
+    expect(formField(/^Name/).value).toBe(title)
+  })
+})
+
+Then('a screenshot preview appears', async () => {
+  await waitFor(() => {
+    expect(
+      within(toolForm())
+        .getByAltText('Screenshot preview of the site')
+        .getAttribute('src'),
+    ).toMatch(/^data:image\//)
+  })
+})
+
+When('I add {string} as owner', async (_world, name: string) => {
+  const user = userEvent.setup()
+  await user.click(formField(/^Owners/))
+  await user.keyboard(name.split(' ')[0]!)
+  await user.click(
+    await within(toolForm()).findByRole('option', { name: new RegExp(name) }),
+  )
+  await waitFor(() => expect(chipsOf(/^Owners/)).toContain(name))
+})
+
+Then('the owners are {string}', async (_world, names: string) => {
+  await waitFor(() => {
+    expect(chipsOf(/^Owners/).join(', ')).toBe(names)
+  })
+})
+
+When('I describe it as {string}', async (_world, text: string) => {
+  const user = userEvent.setup()
+  await user.click(await waitFor(() => formField(/^How to use/)))
+  await user.paste(text)
+})
+
+When('I preview the description', async () => {
+  await userEvent
+    .setup()
+    .click(within(toolForm()).getByRole('tab', { name: 'Preview' }))
+})
+
+Then('the preview shows {string} in bold', async (_world, text: string) => {
+  await waitFor(() => {
+    const preview = within(toolForm()).getByTestId('description-preview')
+    expect(
+      [...preview.querySelectorAll('strong')].map((b) => b.textContent),
+    ).toContain(text)
+  })
+})
+
+async function typeTag(text: string, pick?: string): Promise<void> {
+  const user = userEvent.setup()
+  await user.click(await waitFor(() => formField(/^Tags/)))
+  await user.keyboard(text)
+  if (pick) {
+    await user.click(
+      await within(toolForm()).findByRole('option', {
+        name: new RegExp(`^${pick}`),
+      }),
+    )
+  } else {
+    await user.keyboard('{Enter}')
+  }
+}
+
+When(
+  'I tag it with the app {string} and the topic {string}',
+  async (_world, app: string, topic: string) => {
+    await typeTag(app.split(' ')[0]!, app)
+    await typeTag(topic)
+    await waitFor(() => {
+      expect(chipsOf(/^Tags/)).toEqual([app, topic])
+    })
+  },
+)
+
+When('I tag it with the topic {string}', async (_world, topic: string) => {
+  await typeTag(topic)
+})
+
+Then('the topics read {string}', async (_world, topics: string) => {
+  await waitFor(() => {
+    expect(chipsOf(/^Tags/).join(', ')).toBe(topics)
+  })
+})
+
+When('I publish', async () => {
+  // Publish waits for the site to be read; a person waits for it too.
+  const publish = await waitFor(() => {
+    const button = within(toolForm()).getByRole('button', { name: 'Publish' })
+    expect(button).toHaveProperty('disabled', false)
+    return button
+  })
+  await userEvent.setup().click(publish)
+})
+
+Then('I am told it is live now', async () => {
+  await waitFor(() => {
+    expect(screen.getByTestId('toast').textContent).toContain(
+      'Live now, in the review list',
+    )
+  })
+  expect(screen.queryByTestId('add-tool-dialog')).toBeNull()
+  expect(
+    within(screen.getByTestId('toast')).getByRole('button', {
+      name: 'Open card',
+    }),
+  ).toBeTruthy()
+})
+
+Then('{string} is listed under Newest', async (_world, name: string) => {
+  await userEvent.setup().click(screen.getByRole('radio', { name: 'Newest' }))
+  await waitFor(() => expect(feedNames()[0]).toBe(name))
+})
+
+Then('{string} is marked new, not reviewed', async (_world, name: string) => {
+  await waitFor(() => {
+    expect(
+      within(rowNamed('community-feed', name)).getByTestId('unreviewed-badge')
+        .textContent,
+    ).toBe('New · not reviewed')
+  })
+})
+
+Then(
+  '{string} was added by {string}',
+  (_world, tool: string, person: string) => {
+    expect(store().inspect(tool).addedBy.name).toBe(person)
+  },
+)
+
+Then('{int} tools are awaiting review', (_world, count: number) => {
+  expect(store().awaitingReview()).toBe(count)
+})
+
+When('I approve it', async () => {
+  await userEvent
+    .setup()
+    .click(within(toolCard()).getByRole('button', { name: 'Approve' }))
+})
+
+Then('{string} is no longer marked new', async (_world, name: string) => {
+  expect(cardToolName()).toBe(name)
+  await waitFor(() => {
+    expect(within(toolCard()).queryByTestId('unreviewed-badge')).toBeNull()
+  })
+})
+
+Then('there is no way to approve it', async () => {
+  await waitFor(() => expect(cardToolName()).toBeTruthy())
+  expect(
+    within(toolCard()).queryByRole('button', { name: 'Approve' }),
+  ).toBeNull()
+  expect(
+    within(toolCard()).queryByRole('button', { name: 'Archive' }),
+  ).toBeNull()
+})
+
+Then('there is no way to edit it', async () => {
+  await waitFor(() => expect(cardToolName()).toBeTruthy())
+  expect(within(toolCard()).queryByRole('button', { name: 'Edit' })).toBeNull()
+})
+
+When('I archive it because {string}', async (_world, reason: string) => {
+  const user = userEvent.setup()
+  // From the edit form when it is open, otherwise the admin's card control.
+  const where = screen.queryByTestId('edit-tool-dialog') ?? toolCard()
+  await user.click(
+    within(where).getByRole('button', {
+      name: /^Archive( this tool)?$/,
+    }),
+  )
+  await user.click(within(where).getByLabelText('Why archive it?'))
+  await user.paste(reason)
+  await user.click(within(where).getByRole('button', { name: 'Archive' }))
+  // Done when the confirm step leaves: the edit form closes, the card's folds.
+  await waitFor(() => {
+    expect(
+      where.isConnected && within(where).queryByTestId('archive-confirm'),
+    ).toBeFalsy()
+  })
+})
+
+Then(
+  'I am warned that {string} is already listed',
+  async (_world, name: string) => {
+    await waitFor(() => {
+      expect(
+        within(toolForm()).getByTestId('duplicate-warning').textContent,
+      ).toContain(`“${name}”`)
+    })
+  },
+)
+
+When('I open that card', async () => {
+  await userEvent
+    .setup()
+    .click(within(toolForm()).getByRole('button', { name: 'Open that card' }))
+})
+
+Then('the card shows {string}', async (_world, name: string) => {
+  await waitFor(() => expect(cardToolName()).toBe(name))
+  expect(screen.queryByTestId('add-tool-dialog')).toBeNull()
+})
+
+When('I add it anyway', async () => {
+  await userEvent
+    .setup()
+    .click(
+      await within(toolForm()).findByRole('button', { name: 'Add anyway' }),
+    )
+})
+
+Then('the add form asks for a name', async () => {
+  await waitFor(() => expect(formField(/^Name/)).toBeTruthy())
+  expect(within(toolForm()).queryByTestId('duplicate-warning')).toBeNull()
+})
+
+Then('I am told it is not a web address', async () => {
+  await waitFor(() => {
+    expect(within(toolForm()).getByRole('alert').textContent).toContain(
+      'That is not a web address',
+    )
+  })
+  expect(formField(/^Site address/).getAttribute('aria-invalid')).toBe('true')
+})
+
+Then('there is nothing to publish yet', () => {
+  expect(
+    within(toolForm()).getByRole('button', { name: 'Publish' }),
+  ).toHaveProperty('disabled', true)
+})
+
+Then('I am told the name is missing', async () => {
+  await waitFor(() => {
+    const name = formField(/^Name/)
+    expect(name.getAttribute('aria-invalid')).toBe('true')
+    const error = document.getElementById(
+      name.getAttribute('aria-describedby') ?? '',
+    )
+    expect(error?.textContent).toContain('Give it the name colleagues call it')
+  })
+})
+
+Then('the caret is in the name', () => {
+  expect(document.activeElement).toBe(formField(/^Name/))
+})
+
+When('I edit it', async () => {
+  await userEvent
+    .setup()
+    .click(await within(toolCard()).findByRole('button', { name: 'Edit' }))
+  await waitFor(() =>
+    expect(screen.getByTestId('edit-tool-dialog')).toBeTruthy(),
+  )
+})
+
+Then('the edit form shows the name {string}', (_world, name: string) => {
+  expect(formField(/^Name/).value).toBe(name)
+})
+
+When('I rename it to {string}', async (_world, name: string) => {
+  const user = userEvent.setup()
+  await user.clear(formField(/^Name/))
+  await user.type(formField(/^Name/), name)
+})
+
+When('I save the changes', async () => {
+  await userEvent
+    .setup()
+    .click(within(toolForm()).getByRole('button', { name: 'Save changes' }))
+  await waitFor(() =>
+    expect(screen.queryByTestId('edit-tool-dialog')).toBeNull(),
+  )
+})
+
+Then('signing in brings me back to {string}', async (_world, path: string) => {
+  // The provider round trip leaves the page, which a test cannot follow; the
+  // address the modal will hand the provider is what decides where it lands.
+  await waitFor(() => {
+    expect(
+      document
+        .querySelector('[data-testid="login-modal"]')
+        ?.getAttribute('data-return-to'),
+    ).toBe(path)
+  })
+})

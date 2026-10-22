@@ -102,6 +102,8 @@ export interface FeedRowProps {
    */
   optionId?: string
   pinned: boolean
+  /** Its pin is being saved. */
+  pinBusy?: boolean
   appNames: Record<string, string>
   activeTag: string | undefined
   onTogglePin: () => void
@@ -122,6 +124,7 @@ export function FeedRow({
   selected = false,
   optionId,
   pinned,
+  pinBusy,
   appNames,
   activeTag,
   onTogglePin,
@@ -274,7 +277,12 @@ export function FeedRow({
           <ExternalLink aria-hidden="true" className="size-3.5" />
           Open
         </a>
-        <PinButton pinned={pinned} name={tool.name} onToggle={onTogglePin} />
+        <PinButton
+          pinned={pinned}
+          busy={pinBusy}
+          name={tool.name}
+          onToggle={onTogglePin}
+        />
         <div className="w-16 shrink-0 rounded-[10px] border border-border bg-muted pt-1.5 pb-[5px] text-center">
           <b className="block font-serif text-lg leading-tight font-semibold">
             {opens}

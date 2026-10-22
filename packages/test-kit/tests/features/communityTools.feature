@@ -24,9 +24,8 @@ Feature: Getting back to a tool a colleague built
     Then the first result is "Kit Rules Playground"
     And the result says it matched the address
 
-  # The add form arrives with the add flow; until then "Add it" has nowhere to go.
-  @todo
   Scenario: Nothing matches, so adding it is one step away
+    Given I am signed in
     When I open Community tools
     And I search for "primer calculator"
     Then I see that nothing is listed yet

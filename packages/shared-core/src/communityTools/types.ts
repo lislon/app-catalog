@@ -53,6 +53,9 @@ export interface RecentTool extends CommunityTool {
 /** How many tools Recently opened holds. */
 export const RECENT_TOOLS_LIMIT = 5
 
+/** The longest tag value: a topic is a word or two, an app tag an app's slug. */
+export const TAG_VALUE_MAX = 32
+
 export type FeedWindow = 'month' | 'all' | 'newest'
 
 export type MatchField =

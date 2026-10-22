@@ -146,6 +146,24 @@ describe('the "community" catalog mock', () => {
     ).toBe('BAD_REQUEST')
   })
 
+  it('refuses a tag value longer than 32 characters, as the server does', async () => {
+    await community(signedInAs('Robin Park', 'robin.park@example.com'))
+    const withTag = (value: string) =>
+      api.communityTools.add.mutate({
+        url: 'https://qc-heatmap-9f8e.pages.example.com/',
+        name: 'QC Heatmap',
+        summary: '',
+        descriptionMd: '',
+        ownerSlugs: ['sam.ortiz@example.com'],
+        tags: [{ kind: 'topic', value }],
+      })
+
+    expect(await codeOf(withTag('a'.repeat(33)))).toBe('BAD_REQUEST')
+    expect((await withTag('a'.repeat(32))).tags).toEqual([
+      { kind: 'topic', value: 'a'.repeat(32) },
+    ])
+  })
+
   it('an admin approval clears the badge and settles the review rows', async () => {
     await community(({ backendCfg }) => {
       backendCfg.communityTools.seedUnreviewed({

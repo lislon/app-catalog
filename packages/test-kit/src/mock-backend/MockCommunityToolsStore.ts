@@ -6,6 +6,7 @@ import type {
 } from '@igstack/app-catalog-shared-core'
 import {
   RECENT_TOOLS_LIMIT,
+  TAG_VALUE_MAX,
   hostOf,
   isCaptureAllowed,
   lifecycleOf,
@@ -143,6 +144,11 @@ export class MockCommunityToolsStore {
     this.pageTitles.set(url, title)
   }
 
+  /** The title the capture browser finds at this address, if it can open it. */
+  pageTitle(url: string): string | undefined {
+    return this.pageTitles.get(url)
+  }
+
   pageTitled(title: string): string | undefined {
     return [...this.pageTitles].find(([, t]) => t === title)?.[0]
   }
@@ -230,6 +236,11 @@ export class MockCommunityToolsStore {
       )
     }
     return tool.slug
+  }
+
+  /** How many tools wait in the maintainer's review list. */
+  awaitingReview(): number {
+    return this.feedback.pendingToolSlugs().length
   }
 
   /** The stored row, for a verifier: the client never sees review or archive details. */
@@ -376,6 +387,7 @@ export class MockCommunityToolsStore {
     const user = this.requireUser()
     const host = this.requireHost(input.url)
     const ownerSlugs = this.requireOwnersExist(input.ownerSlugs)
+    this.requireTags(input.tags)
     const tool = this.insert({
       name: input.name.trim(),
       url: input.url,
@@ -385,6 +397,8 @@ export class MockCommunityToolsStore {
       ownerSlugs,
       tags: input.tags,
       addedBy: { userId: user.id, name: user.name },
+      // After every seeded tool, so Newest has an order inside the frozen clock.
+      createdAt: new Date(MOCK_NOW.getTime() + ++this.tick),
       reviewedAt: null,
       lastCheckAt: null,
     })
@@ -403,6 +417,7 @@ export class MockCommunityToolsStore {
     this.requireEditor(tool, user)
     const host = this.requireHost(input.url)
     const ownerSlugs = this.requireOwnersExist(input.ownerSlugs)
+    this.requireTags(input.tags)
     const name = input.name.trim()
     const summary = input.summary.trim()
 
@@ -578,6 +593,16 @@ export class MockCommunityToolsStore {
       })
     }
     return unique
+  }
+
+  /** The input schema's tag rules, which the msw layer does not run. */
+  private requireTags(tags: CommunityTag[]): void {
+    if (tags.length > 8 || tags.some((t) => t.value.length > TAG_VALUE_MAX)) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: `At most 8 tags, each at most ${TAG_VALUE_MAX} characters`,
+      })
+    }
   }
 
   private requireEditor(tool: StoredTool, user: SessionUser): void {

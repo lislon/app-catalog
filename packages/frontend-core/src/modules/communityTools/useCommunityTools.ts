@@ -36,12 +36,50 @@ export function useCommunityTools() {
   const pinsKey = trpc.communityTools.pins.queryKey()
   const refreshPins = () => queryClient.invalidateQueries({ queryKey: pinsKey })
 
+  // The star and the shelf change at once; a failed save puts them back.
+  const optimisticPins = (
+    change: (old: CommunityTool[], slug: string) => CommunityTool[],
+  ) => ({
+    onMutate: async ({ slug }: { slug: string }) => {
+      await queryClient.cancelQueries({ queryKey: pinsKey })
+      const previous = queryClient.getQueryData<CommunityTool[]>(pinsKey)
+      queryClient.setQueryData<CommunityTool[]>(pinsKey, (old) =>
+        old ? change(old, slug) : old,
+      )
+      return { previous }
+    },
+    onError: (
+      _error: unknown,
+      _input: { slug: string },
+      context: { previous?: CommunityTool[] } | undefined,
+    ) => {
+      queryClient.setQueryData(pinsKey, context?.previous)
+    },
+    // Not awaited: the pin is saved once the server answers; the refetch
+    // behind it only confirms what the star already shows.
+    onSettled: () => {
+      void refreshPins()
+    },
+  })
   const pin = useMutation(
-    trpc.communityTools.pin.mutationOptions({ onSettled: refreshPins }),
+    trpc.communityTools.pin.mutationOptions(
+      optimisticPins((old, slug) => {
+        const tool = list.data?.find((t) => t.slug === slug)
+        return tool && !old.some((t) => t.slug === slug) ? [...old, tool] : old
+      }),
+    ),
   )
   const unpin = useMutation(
-    trpc.communityTools.unpin.mutationOptions({ onSettled: refreshPins }),
+    trpc.communityTools.unpin.mutationOptions(
+      optimisticPins((old, slug) => old.filter((t) => t.slug !== slug)),
+    ),
   )
+  /** The tool whose pin is being saved, if any. */
+  const pinBusySlug = pin.isPending
+    ? pin.variables.slug
+    : unpin.isPending
+      ? unpin.variables.slug
+      : undefined
   const reorder = useMutation(
     trpc.communityTools.reorderPins.mutationOptions({
       onMutate: ({ slugs }) => {
@@ -63,6 +101,7 @@ export function useCommunityTools() {
     isAuthLoading,
     pin,
     unpin,
+    pinBusySlug,
     reorder,
   }
 }

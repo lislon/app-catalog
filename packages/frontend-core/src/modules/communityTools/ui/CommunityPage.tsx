@@ -4,7 +4,7 @@ import type {
   MatchField,
 } from '@igstack/app-catalog-shared-core'
 import { matchTool, rankTools } from '@igstack/app-catalog-shared-core'
-import { useNavigate } from '@tanstack/react-router'
+import { useLocation, useNavigate } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { AlertTriangle, Plus, RefreshCw, Search, Star } from 'lucide-react'
 import {
@@ -26,6 +26,7 @@ import { TagRow } from './TagRow'
 import { Toast } from './Toast'
 import type { ToastMessage } from './Toast'
 import { ToolCard } from './ToolCard'
+import { ToolFormDialog } from './ToolFormDialog'
 import { ToolSearch } from './ToolSearch'
 
 const KBD =
@@ -53,10 +54,6 @@ function optionIdOf(slug: string): string {
   return `community-option-${slug}`
 }
 
-function signInHere(open: (url: string) => void) {
-  open(window.location.pathname + window.location.search)
-}
-
 function openSite(url: string) {
   window.open(url, '_blank', 'noopener,noreferrer')
 }
@@ -77,10 +74,15 @@ export function CommunityPage({
     isAuthLoading,
     pin,
     unpin,
+    pinBusySlug,
     reorder,
   } = useCommunityTools()
   const { open: openSignIn } = useAuthModal()
   const navigate = useNavigate()
+  // Signing in comes back here: this page, or the card open over it. The
+  // router's own location, so it holds under any history (and in tests).
+  const here = useLocation({ select: (l) => l.href })
+  const signInHere = () => openSignIn(here)
 
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(0)
@@ -180,7 +182,7 @@ export function CommunityPage({
     )
   const togglePin = (tool: CommunityTool) => {
     if (!isAuthenticated) {
-      signInHere(openSignIn)
+      signInHere()
       return
     }
     if (pinnedSlugs.has(tool.slug)) unpinTool(tool.slug)
@@ -201,9 +203,12 @@ export function CommunityPage({
       },
     )
 
-  const startAdd = () => {
-    // Adding needs an identity; the add form itself comes with the add flow.
-    if (!isAuthenticated) signInHere(openSignIn)
+  // Open: `{}` from Add a tool, the search text from "Add it".
+  const [adding, setAdding] = useState<{ prefillName?: string } | null>(null)
+  const startAdd = (prefillName?: string) => {
+    // Adding needs an identity: sign in, then come back to this page.
+    if (!isAuthenticated) signInHere()
+    else setAdding({ prefillName })
   }
 
   const openCard = (slug: string, replace = false) =>
@@ -330,7 +335,7 @@ export function CommunityPage({
           />
           <button
             type="button"
-            onClick={startAdd}
+            onClick={() => startAdd()}
             className="inline-flex h-10 shrink-0 items-center gap-[7px] rounded-[10px] border border-border bg-card px-3.5 text-[13.5px] font-bold whitespace-nowrap hover:border-primary/40 focus-visible:outline-2 focus-visible:outline-ring"
           >
             <Plus aria-hidden="true" className="size-4" />
@@ -354,9 +359,7 @@ export function CommunityPage({
               onUnpin={(tool) => togglePin(tool)}
               onReorder={reorderPins}
               onSignIn={
-                !isAuthLoading && !isAuthenticated
-                  ? () => signInHere(openSignIn)
-                  : undefined
+                !isAuthLoading && !isAuthenticated ? signInHere : undefined
               }
             />
             {isAuthenticated && <RecentChips tools={recent.data ?? []} />}
@@ -394,7 +397,10 @@ export function CommunityPage({
           ) : list.isError ? (
             <FeedError onRetry={() => void list.refetch()} />
           ) : searching && results.length === 0 ? (
-            <NoResults query={query.trim()} onAdd={startAdd} />
+            <NoResults
+              query={query.trim()}
+              onAdd={() => startAdd(query.trim())}
+            />
           ) : (
             <div
               ref={setListEl}
@@ -437,6 +443,7 @@ export function CommunityPage({
                         searching ? optionIdOf(item.tool.slug) : undefined
                       }
                       pinned={pinnedSlugs.has(item.tool.slug)}
+                      pinBusy={pinBusySlug === item.tool.slug}
                       appNames={appNames}
                       activeTag={tag}
                       onTogglePin={() => togglePin(item.tool)}
@@ -471,6 +478,7 @@ export function CommunityPage({
             // Stepping swaps the card in place; Back still leaves the card.
             onNavigate={(slug) => void openCard(slug, true)}
             pinned={pinnedSlugs.has(cardSlug)}
+            pinBusy={pinBusySlug === cardSlug}
             onTogglePin={togglePin}
             appNames={appNames}
             // One step: the card closes onto the feed already filtered.
@@ -480,6 +488,29 @@ export function CommunityPage({
                 search: (prev) => ({ ...prev, tag: chosen }),
               })
             }
+          />
+        )}
+        {adding && (
+          <ToolFormDialog
+            mode="add"
+            prefillName={adding.prefillName}
+            onClose={() => setAdding(null)}
+            onOpenCard={(slug) => {
+              setAdding(null)
+              void openCard(slug)
+            }}
+            onDone={(slug) => {
+              setAdding(null)
+              showToast({
+                tone: 'ok',
+                text: (
+                  <>
+                    <b>Live now</b>, in the review list
+                  </>
+                ),
+                action: { label: 'Open card', run: () => void openCard(slug) },
+              })
+            }}
           />
         )}
         {/* After the card, so a toast raised from it shows above its scrim. */}

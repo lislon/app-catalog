@@ -2,7 +2,11 @@ import { TRPCError } from '@trpc/server'
 import type { User } from 'better-auth/types'
 import { z } from 'zod'
 import type { CommunityTool } from '@igstack/app-catalog-shared-core'
-import { hostOf, isCaptureAllowed } from '@igstack/app-catalog-shared-core'
+import {
+  TAG_VALUE_MAX,
+  hostOf,
+  isCaptureAllowed,
+} from '@igstack/app-catalog-shared-core'
 import { getDbClient } from '../../db/client'
 import { resizeImage } from '../assets/assetUtils'
 import type { Actor } from '../visitor/visitorIdentity'
@@ -17,7 +21,12 @@ export const toolInputSchema = z.object({
   descriptionMd: z.string().max(5000),
   ownerSlugs: z.array(z.string()).min(1).max(5),
   tags: z
-    .array(z.object({ kind: z.enum(['app', 'topic']), value: z.string() }))
+    .array(
+      z.object({
+        kind: z.enum(['app', 'topic']),
+        value: z.string().max(TAG_VALUE_MAX),
+      }),
+    )
     .max(8),
 })
 

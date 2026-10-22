@@ -1,7 +1,14 @@
 import type { Claim } from '@igstack/app-catalog-backend-core'
 import type { CommunityTool } from '@igstack/app-catalog-shared-core'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, ArrowRight, Eye } from 'lucide-react'
+import {
+  Archive,
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Eye,
+  Pencil,
+} from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 import { useTRPC } from '~/api/infra/trpc'
 import {
@@ -14,6 +21,7 @@ import { CommentsHelp } from '~/modules/appCatalog/ui/detail/CommentsHelp'
 import { CommunityInput } from '~/modules/appCatalog/ui/detail/CommunityInput'
 import type { CommunityInputHandle } from '~/modules/appCatalog/ui/detail/CommunityInput'
 import { cn } from '~/lib/utils'
+import { useAuth } from '~/modules/auth'
 import { Skeleton } from '~/ui/skeleton'
 import { CardScreenshot, formatCardDate } from './CardScreenshot'
 import { CardTitleBlock } from './CardTitleBlock'
@@ -21,6 +29,7 @@ import { PersonAvatar } from './FeedRow'
 import { useTimeUp } from '../useTimeUp'
 import { PinButton } from './PinButton'
 import { TagChip, tagKey, tagLabel } from './TagRow'
+import { ArchiveConfirm, GHOST_BUTTON, ToolFormDialog } from './ToolFormDialog'
 
 const KBD =
   'rounded-[5px] border border-b-2 border-border bg-card px-1.5 py-px text-[11px] font-semibold text-muted-foreground'
@@ -47,6 +56,8 @@ export interface ToolCardProps {
   onClose: () => void
   onNavigate: (slug: string) => void
   pinned: boolean
+  /** Its pin is being saved. */
+  pinBusy?: boolean
   onTogglePin: (tool: CommunityTool) => void
   /** Display names of official apps by slug, for app tags. */
   appNames: Record<string, string>
@@ -73,10 +84,13 @@ export function ToolCard({
   onClose,
   onNavigate,
   pinned,
+  pinBusy,
   onTogglePin,
   appNames,
   onChooseTag,
 }: ToolCardProps) {
+  const { user } = useAuth()
+  const isAdmin = user?.isAdmin === true
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   // The feed already holds every tool, so the card paints at once from it
@@ -126,6 +140,25 @@ export function ToolCard({
     recordView({ slug })
   }, [slug, recordView])
   const views = counts?.slug === slug ? counts : tool
+
+  const [editing, setEditing] = useState(false)
+  const [archiving, setArchiving] = useState(false)
+  const refreshTools = () =>
+    queryClient.invalidateQueries({
+      queryKey: trpc.communityTools.pathKey(),
+    })
+  const approve = useMutation(
+    trpc.communityTools.approve.mutationOptions({ onSuccess: refreshTools }),
+  )
+  const archive = useMutation(
+    trpc.communityTools.archive.mutationOptions({
+      onSuccess: () => {
+        setArchiving(false)
+        return refreshTools()
+      },
+    }),
+  )
+  const adminError = approve.error ?? archive.error
 
   const commentsRef = useRef<CommunityInputHandle>(null)
   const commentsHeadingId = useId()
@@ -205,9 +238,21 @@ export function ToolCard({
             <div className="flex items-end justify-between gap-4 pr-44">
               <CardTitleBlock tool={tool} />
               <div className="-mr-40 flex shrink-0 items-center gap-2">
+                {tool.canEdit && (
+                  <button
+                    type="button"
+                    data-testid="card-edit-button"
+                    onClick={() => setEditing(true)}
+                    className={cn(GHOST_BUTTON, 'h-10 px-3.5 text-[13.5px]')}
+                  >
+                    <Pencil aria-hidden="true" className="size-4" />
+                    Edit
+                  </button>
+                )}
                 <PinButton
                   labelled
                   pinned={pinned}
+                  busy={pinBusy}
                   name={tool.name}
                   onToggle={() => onTogglePin(tool)}
                 />
@@ -262,6 +307,56 @@ export function ToolCard({
               tool={tool}
               onTellOwner={() => commentsRef.current?.focus()}
             />
+            {isAdmin && (
+              <div
+                data-testid="card-admin"
+                className="mt-3.5 flex flex-col gap-2.5 rounded-[10px] border border-dashed border-border px-3 py-2.5"
+              >
+                {archiving ? (
+                  <ArchiveConfirm
+                    busy={archive.isPending}
+                    onCancel={() => setArchiving(false)}
+                    onArchive={(reason) => archive.mutate({ slug, reason })}
+                  />
+                ) : (
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <span className="mr-auto text-[12.5px] font-bold tracking-wider text-muted-foreground uppercase">
+                      Admin
+                    </span>
+                    {!tool.reviewed && (
+                      <button
+                        type="button"
+                        disabled={approve.isPending}
+                        aria-busy={approve.isPending || undefined}
+                        onClick={() => approve.mutate({ slug })}
+                        className={GHOST_BUTTON}
+                      >
+                        <Check aria-hidden="true" className="size-4" />
+                        {approve.isPending ? 'Approving…' : 'Approve'}
+                      </button>
+                    )}
+                    {tool.lifecycle.state !== 'archived' && (
+                      <button
+                        type="button"
+                        onClick={() => setArchiving(true)}
+                        className={GHOST_BUTTON}
+                      >
+                        <Archive aria-hidden="true" className="size-4" />
+                        Archive
+                      </button>
+                    )}
+                  </div>
+                )}
+                {adminError && (
+                  <p
+                    role="alert"
+                    className="text-[13px] font-semibold text-destructive"
+                  >
+                    {adminError.message}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <CardScreenshot
@@ -356,6 +451,14 @@ export function ToolCard({
               </span>
             </span>
           </p>
+          {editing && (
+            <ToolFormDialog
+              mode="edit"
+              initial={tool}
+              onClose={() => setEditing(false)}
+              onDone={() => setEditing(false)}
+            />
+          )}
         </>
       ) : get.isError ? (
         <p className="py-10 text-center text-muted-foreground">

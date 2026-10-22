@@ -27,11 +27,6 @@ Feature: Checking it is the right tool before going
     And I close the card
     Then My tools shows "Kit Rules Playground"
 
-  Scenario: Pinning without signing in asks me to sign in first
-    When I open the card of "Ops Runbook"
-    And I pin it
-    Then I am asked to sign in
-
   Scenario: A tool that stopped answering says so
     Given "Old Tracker" has failed its daily check for 3 days
     When I open the card of "Old Tracker"

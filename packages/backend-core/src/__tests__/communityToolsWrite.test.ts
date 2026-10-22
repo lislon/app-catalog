@@ -107,6 +107,16 @@ describe('Community tools write service', () => {
     vi.restoreAllMocks()
   })
 
+  it('caps a tag value at 32 characters', () => {
+    const tagged = (value: string) =>
+      write.toolInputSchema.safeParse({
+        ...input,
+        tags: [{ kind: 'topic', value }],
+      }).success
+    expect(tagged('a'.repeat(32))).toBe(true)
+    expect(tagged('a'.repeat(33))).toBe(false)
+  })
+
   it('add rejects non-http url', async () => {
     await expect(
       write.addTool(

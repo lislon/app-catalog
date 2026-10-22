@@ -124,6 +124,17 @@ export class MockFeedbackStore {
     }
   }
 
+  /** Community tools with a review row still open: the maintainer's queue. */
+  pendingToolSlugs(): string[] {
+    return [
+      ...new Set(
+        this.items
+          .filter((i) => i.communityToolSlug && i.status === null)
+          .map((i) => i.communityToolSlug!),
+      ),
+    ]
+  }
+
   /** One entry's thread, newest last, with the unreviewed count beside it. */
   listFor(target: { resourceSlug: string } | { communityToolSlug: string }): {
     items: MockFeedbackItem[]
