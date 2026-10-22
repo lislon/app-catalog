@@ -6,12 +6,14 @@ import type {
   RecentTool,
 } from '@igstack/app-catalog-shared-core'
 import { RECENT_TOOLS_LIMIT } from '@igstack/app-catalog-shared-core'
+import type { CaptureDeps } from './healthJob'
 import { toView } from './toView'
 
 export async function listTools(
   user: User | null,
   isAdmin: boolean,
   now: Date,
+  capture: CaptureDeps,
 ): Promise<CommunityTool[]> {
   const db = getDbClient()
 
@@ -58,7 +60,15 @@ export async function listTools(
 
   return Promise.all(
     tools.map((tool) =>
-      toView(tool, personMap, viewCountMap.get(tool.id)!, user, isAdmin, now),
+      toView(
+        tool,
+        personMap,
+        viewCountMap.get(tool.id)!,
+        user,
+        isAdmin,
+        now,
+        capture,
+      ),
     ),
   )
 }
@@ -68,6 +78,7 @@ export async function getTool(
   user: User | null,
   isAdmin: boolean,
   now: Date,
+  capture: CaptureDeps,
 ): Promise<CommunityTool | null> {
   const db = getDbClient()
 
@@ -99,7 +110,15 @@ export async function getTool(
     db.dbCommunityToolView.count({ where: { toolId: tool.id } }),
   ])
 
-  return toView(tool, personMap, { views30d, viewsAll }, user, isAdmin, now)
+  return toView(
+    tool,
+    personMap,
+    { views30d, viewsAll },
+    user,
+    isAdmin,
+    now,
+    capture,
+  )
 }
 
 export async function recordView(
@@ -157,6 +176,7 @@ export async function listRecent(
   user: User | null,
   isAdmin: boolean,
   now: Date,
+  capture: CaptureDeps,
 ): Promise<RecentTool[]> {
   const db = getDbClient()
 
@@ -254,6 +274,7 @@ export async function listRecent(
         user,
         isAdmin,
         now,
+        capture,
       )
       return { ...view, openedAt: openedAt.get(tool.id)!.toISOString() }
     }),
@@ -265,6 +286,7 @@ export async function listPins(
   user: User | null,
   isAdmin: boolean,
   now: Date,
+  capture: CaptureDeps,
 ): Promise<CommunityTool[]> {
   const db = getDbClient()
 
@@ -322,6 +344,7 @@ export async function listPins(
         user,
         isAdmin,
         now,
+        capture,
       ),
     ),
   )

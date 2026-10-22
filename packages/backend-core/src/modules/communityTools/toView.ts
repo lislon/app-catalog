@@ -4,8 +4,9 @@ import type {
   CommunityTool,
   PersonRef,
 } from '@igstack/app-catalog-shared-core'
-import { lifecycleOf } from '@igstack/app-catalog-shared-core'
+import { isCaptureAllowed, lifecycleOf } from '@igstack/app-catalog-shared-core'
 import type { DbPerson, Prisma } from '../../generated/prisma/client'
+import type { CaptureDeps } from './healthJob'
 import { computeCanEdit } from './service'
 
 type DbToolWithRelations = Prisma.DbCommunityToolGetPayload<{
@@ -22,6 +23,7 @@ export async function toView(
   user: User | null,
   isAdmin: boolean,
   now: Date,
+  capture: CaptureDeps,
 ): Promise<CommunityTool> {
   const owners: PersonRef[] = tool.owners.map((o) => {
     const person = personMap.get(o.personSlug)
@@ -46,6 +48,14 @@ export async function toView(
     },
     now,
   )
+
+  // Never visited yet, and a visit will come: the same conditions `checkTool`
+  // runs under. A finished visit sets `lastCheckAt`, failed or not.
+  const capturePending =
+    !tool.screenshotAssetId &&
+    !tool.lastCheckAt &&
+    capture.capturer !== null &&
+    isCaptureAllowed(tool.url, capture.captureHosts)
 
   const canEdit = await computeCanEdit(
     { id: tool.id, addedByUserId: tool.addedByUserId },
@@ -74,6 +84,7 @@ export async function toView(
     screenshotId: tool.screenshotAssetId ?? null,
     faviconId: tool.faviconAssetId ?? null,
     capturedAt: tool.capturedAt?.toISOString() ?? null,
+    capturePending,
     canEdit,
   }
 }

@@ -11,7 +11,15 @@ export interface CommunityTag {
 export type Lifecycle =
   | { state: 'active' }
   | { state: 'not-working'; days: number }
-  | { state: 'archived'; by: 'auto' | 'person'; reason: string | null }
+  | {
+      state: 'archived'
+      by: 'auto' | 'person'
+      reason: string | null
+      /** ISO time it was archived. */
+      at: string
+      /** Who archived it; null when it was archived automatically. */
+      byName: string | null
+    }
 
 export interface CommunityTool {
   slug: string
@@ -31,6 +39,8 @@ export interface CommunityTool {
   screenshotId: string | null
   faviconId: string | null
   capturedAt: string | null
+  /** No screenshot yet, and the first visit is still to come: worth waiting for. */
+  capturePending: boolean
   canEdit: boolean
 }
 

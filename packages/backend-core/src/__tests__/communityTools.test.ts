@@ -2,8 +2,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as dbClient from '../db/client'
 import type { PrismaClient } from '../generated/prisma/client'
+import type { CaptureDeps } from '../modules/communityTools/healthJob'
 import * as service from '../modules/communityTools/service'
+import { toView } from '../modules/communityTools/toView'
 import type { User } from 'better-auth/types'
+
+/** A deployment that captures nothing: the OSS default. */
+const NO_CAPTURE: CaptureDeps = { captureHosts: [], capturer: null }
 
 const mockUser = (partial: {
   id: string
@@ -158,6 +163,7 @@ describe('Community tools service', () => {
         null,
         false,
         new Date('2024-01-15T12:00:00Z'),
+        NO_CAPTURE,
       )
 
       expect(result.map((t) => [t.slug, t.openedAt])).toEqual([
@@ -260,7 +266,13 @@ describe('Community tools service', () => {
       mockDb.dbCommunityToolView.count = vi.fn().mockResolvedValue(0)
 
       const now = new Date('2024-01-15T12:00:00Z')
-      const result = await service.listPins(userId, null, false, now)
+      const result = await service.listPins(
+        userId,
+        null,
+        false,
+        now,
+        NO_CAPTURE,
+      )
 
       // Should be sorted by position ascending
       expect(result.map((t) => t.slug)).toEqual(['tool-a', 'tool-c', 'tool-b'])
@@ -447,15 +459,90 @@ describe('Community tools service', () => {
       mockDb.dbPerson.findMany = vi.fn().mockResolvedValue([])
       mockDb.dbCommunityToolView.count = vi.fn().mockResolvedValue(0)
 
-      const result = await service.listTools(null, false, now)
+      const result = await service.listTools(null, false, now, NO_CAPTURE)
 
       // Active tool should have state: 'active'
       expect(result[0]?.lifecycle).toEqual({ state: 'active' })
 
       // Failing tool should have state: 'not-working' with days calculated
-      // lifecycleOf uses Math.ceil, so 5.5 days becomes 6
+      // Whole days of the streak: 5.5 days is 5
       expect(result[1]?.lifecycle.state).toBe('not-working')
-      expect((result[1]?.lifecycle as any).days).toBe(6)
+      expect((result[1]?.lifecycle as any).days).toBe(5)
+    })
+  })
+
+  describe('capturePending', () => {
+    const capturer = { capture: vi.fn() }
+    const CAPTURES: CaptureDeps = {
+      captureHosts: ['example.com'],
+      capturer,
+    }
+    const row = (over: Record<string, unknown> = {}) =>
+      ({
+        id: 'tool-1',
+        slug: 'new-tool',
+        name: 'New Tool',
+        url: 'https://new-tool.pages.example.com/',
+        host: 'new-tool.pages.example.com',
+        summary: '',
+        descriptionMd: '',
+        addedByUserId: 'user-1',
+        addedByName: 'User One',
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
+        reviewedAt: null,
+        reviewedByName: null,
+        lastCheckAt: null,
+        failingSince: null,
+        archivedAt: null,
+        archivedReason: null,
+        archivedBy: null,
+        screenshotAssetId: null,
+        faviconAssetId: null,
+        capturedAt: null,
+        owners: [],
+        tags: [],
+        ...over,
+      }) as Parameters<typeof toView>[0]
+    const pending = async (
+      over: Record<string, unknown>,
+      capture: CaptureDeps = CAPTURES,
+    ) =>
+      (
+        await toView(
+          row(over),
+          new Map(),
+          { views30d: 0, viewsAll: 0 },
+          null,
+          false,
+          new Date('2024-01-15T12:00:00Z'),
+          capture,
+        )
+      ).capturePending
+
+    it('is pending for a new tool on an allowed host with a capturer', async () => {
+      expect(await pending({})).toBe(true)
+    })
+
+    it('is not pending once there is a screenshot', async () => {
+      expect(await pending({ screenshotAssetId: 'shot-1' })).toBe(false)
+    })
+
+    it('is not pending once the first visit ran, even if it failed', async () => {
+      expect(await pending({ lastCheckAt: new Date('2024-01-15') })).toBe(false)
+    })
+
+    it('is not pending without a capturer', async () => {
+      expect(await pending({}, { ...CAPTURES, capturer: null })).toBe(false)
+    })
+
+    it('is not pending for a host outside the capture suffixes', async () => {
+      expect(
+        await pending({
+          url: 'https://tool.other.test/',
+          host: 'tool.other.test',
+        }),
+      ).toBe(false)
     })
   })
 })

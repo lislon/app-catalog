@@ -65,7 +65,7 @@ export function createCommunityToolsRouter(options?: CommunityToolsOptions) {
     config: publicBase.query(() => ({ enabled })),
 
     list: publicProcedure.query(({ ctx }) => {
-      return service.listTools(ctx.user, ctx.isAdmin, new Date())
+      return service.listTools(ctx.user, ctx.isAdmin, new Date(), deps)
     }),
 
     get: publicProcedure
@@ -76,6 +76,7 @@ export function createCommunityToolsRouter(options?: CommunityToolsOptions) {
           ctx.user,
           ctx.isAdmin,
           new Date(),
+          deps,
         )
         if (!tool) {
           throw new TRPCError({
@@ -94,11 +95,23 @@ export function createCommunityToolsRouter(options?: CommunityToolsOptions) {
       }),
 
     recent: protectedProcedure.query(({ ctx }) => {
-      return service.listRecent(ctx.user.id, ctx.user, ctx.isAdmin, new Date())
+      return service.listRecent(
+        ctx.user.id,
+        ctx.user,
+        ctx.isAdmin,
+        new Date(),
+        deps,
+      )
     }),
 
     pins: protectedProcedure.query(({ ctx }) => {
-      return service.listPins(ctx.user.id, ctx.user, ctx.isAdmin, new Date())
+      return service.listPins(
+        ctx.user.id,
+        ctx.user,
+        ctx.isAdmin,
+        new Date(),
+        deps,
+      )
     }),
 
     pin: protectedProcedure

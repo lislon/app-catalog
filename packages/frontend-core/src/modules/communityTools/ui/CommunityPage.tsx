@@ -4,7 +4,6 @@ import type {
   MatchField,
 } from '@igstack/app-catalog-shared-core'
 import { matchTool, rankTools } from '@igstack/app-catalog-shared-core'
-import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { AlertTriangle, Plus, RefreshCw, Search, Star } from 'lucide-react'
@@ -16,7 +15,6 @@ import {
   useRef,
   useState,
 } from 'react'
-import { useTRPC } from '~/api/infra/trpc'
 import { useAuthModal } from '~/modules/auth/AuthModalContext'
 import { Skeleton } from '~/ui/skeleton'
 import { useCommunityTools } from '../useCommunityTools'
@@ -83,8 +81,6 @@ export function CommunityPage({
   } = useCommunityTools()
   const { open: openSignIn } = useAuthModal()
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const trpc = useTRPC()
 
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(0)
@@ -219,14 +215,6 @@ export function CommunityPage({
     })
   const closeCard = () =>
     void navigate({ to: '/community', search: (prev) => prev })
-
-  // Closing the card, however it closes (Close, Esc, Back), refreshes
-  // Recently opened, which the card's view just changed.
-  useEffect(() => {
-    if (!cardSlug) return
-    const queryKey = trpc.communityTools.recent.queryKey()
-    return () => void queryClient.invalidateQueries({ queryKey })
-  }, [cardSlug, queryClient, trpc])
 
   // The page column scrolls (the layout pins the header), not the list: the
   // virtualizer needs where the list starts inside that column. Everything
@@ -484,6 +472,14 @@ export function CommunityPage({
             onNavigate={(slug) => void openCard(slug, true)}
             pinned={pinnedSlugs.has(cardSlug)}
             onTogglePin={togglePin}
+            appNames={appNames}
+            // One step: the card closes onto the feed already filtered.
+            onChooseTag={(chosen) =>
+              void navigate({
+                to: '/community',
+                search: (prev) => ({ ...prev, tag: chosen }),
+              })
+            }
           />
         )}
         {/* After the card, so a toast raised from it shows above its scrim. */}

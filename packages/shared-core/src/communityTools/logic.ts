@@ -207,13 +207,16 @@ export function lifecycleOf(
       state: 'archived',
       by,
       reason: t.archivedReason,
+      at: t.archivedAt.toISOString(),
+      byName: by === 'auto' ? null : t.archivedBy,
     }
   }
 
   if (t.failingSince) {
+    // Whole days since the streak began; a streak started today is day 1.
     const daysFailing = Math.max(
       1,
-      Math.ceil(
+      Math.floor(
         (now.getTime() - t.failingSince.getTime()) / (1000 * 60 * 60 * 24),
       ),
     )

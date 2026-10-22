@@ -29,6 +29,7 @@ function opsRunbook(): CommunityTool {
     screenshotId: null,
     faviconId: null,
     capturedAt: null,
+    capturePending: false,
     canEdit: false,
   }
 }
@@ -64,7 +65,13 @@ function archived(views30d: number): CommunityTool {
     ...opsRunbook(),
     slug: 'archived',
     views30d,
-    lifecycle: { state: 'archived', by: 'auto', reason: 'Failed checks' },
+    lifecycle: {
+      state: 'archived',
+      by: 'auto',
+      reason: 'Failed checks',
+      at: '2026-10-01T00:00:00.000Z',
+      byName: null,
+    },
   }
 }
 
@@ -310,6 +317,27 @@ describe('lifecycle', () => {
     ).toEqual({ state: 'not-working', days: 3 })
   })
 
+  it('lifecycleOf: counts whole days of the streak, at least one', () => {
+    const now = new Date('2026-10-21T12:00:00Z')
+    const failingFor = (ms: number) =>
+      lifecycleOf(
+        {
+          failingSince: new Date(now.getTime() - ms),
+          archivedAt: null,
+          archivedBy: null,
+          archivedReason: null,
+        },
+        now,
+      )
+    const HOUR = 60 * 60 * 1000
+    // A streak that began 3 days ago, a little before this check, is 3 days.
+    expect(failingFor(3 * 24 * HOUR + 60_000)).toEqual({
+      state: 'not-working',
+      days: 3,
+    })
+    expect(failingFor(2 * HOUR)).toEqual({ state: 'not-working', days: 1 })
+  })
+
   it('lifecycleOf: active when not failing or archived', () => {
     expect(
       lifecycleOf(
@@ -324,7 +352,7 @@ describe('lifecycle', () => {
     ).toEqual({ state: 'active' })
   })
 
-  it('lifecycleOf: archived state includes by and reason', () => {
+  it('lifecycleOf: archived state includes by, reason, when and who', () => {
     const d0 = new Date('2026-10-01T00:00:00Z')
     expect(
       lifecycleOf(
@@ -340,6 +368,8 @@ describe('lifecycle', () => {
       state: 'archived',
       by: 'auto',
       reason: 'Failed checks',
+      at: '2026-10-01T00:00:00.000Z',
+      byName: null,
     })
 
     expect(
@@ -356,6 +386,8 @@ describe('lifecycle', () => {
       state: 'archived',
       by: 'person',
       reason: null,
+      at: '2026-10-01T00:00:00.000Z',
+      byName: 'Dana Lee',
     })
   })
 

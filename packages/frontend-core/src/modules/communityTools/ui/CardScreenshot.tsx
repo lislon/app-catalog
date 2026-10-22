@@ -5,9 +5,6 @@ import { ScreenshotGallery } from '~/modules/appCatalog/ui/components/Screenshot
 import { cn } from '~/lib/utils'
 import { screenshotUrl } from './FeedRow'
 
-/** How long after adding a tool its first screenshot is still expected. */
-const CAPTURE_GRACE_MS = 10 * 60 * 1000
-
 /** The 16:10 box every state shares, so swapping one for another moves nothing. */
 const BOX =
   'relative flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-[14px] border border-border bg-muted shadow-sm'
@@ -23,19 +20,15 @@ export function formatCardDate(iso: string): string {
 /**
  * The tool's screenshot, full width, with Enlarge opening the screenshot
  * viewer. A tool with none yet shows a placeholder in the same box: "still
- * capturing" right after it was added, otherwise "no screenshot".
+ * capturing" while its first visit is to come, otherwise "no screenshot".
  */
 export function CardScreenshot({ tool }: { tool: CommunityTool }) {
   const [open, setOpen] = useState(false)
-  // When the card opened: the placeholder does not change its mind mid-read.
-  const [openedAt] = useState(Date.now)
   const { screenshotId, capturedAt } = tool
 
   if (!screenshotId) {
-    // ponytail: "capturing" is guessed from the tool's age; a capture-state field from the server would make it exact.
-    const capturing =
-      tool.lifecycle.state === 'active' &&
-      openedAt - Date.parse(tool.createdAt) < CAPTURE_GRACE_MS
+    // The server says whether a first visit is still to come.
+    const capturing = tool.capturePending
     return (
       <figure data-testid="card-screenshot" className="mt-[22px]">
         <div

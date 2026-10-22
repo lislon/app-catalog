@@ -38,6 +38,23 @@ Feature: Checking it is the right tool before going
     Then the card says "Not working · 3 days"
     And "Old Tracker" is ranked below every working tool
 
+  Scenario: An archived tool says who archived it and when
+    Given "Old Tracker" was archived by "Dana Lee"
+    When I open the card of "Old Tracker" from an old link
+    Then the card says "Archived"
+    And the card explains "Archived by Dana Lee on 21 Oct 2026."
+
+  Scenario: A tool dead for a month says it was archived automatically
+    Given "Old Tracker" has failed its daily check for 30 days
+    When I open the card of "Old Tracker" from an old link
+    Then the card explains "Archived automatically on 21 Oct 2026 after 30 days not working."
+
+  Scenario: A tag on the card narrows the feed
+    When I open the card of "Kit Rules Playground"
+    And I choose the tag "sandbox" on the card
+    Then the card is closed
+    And every listed tool carries the tag "sandbox"
+
   Scenario: Enter on the card opens the site
     When I open the card of "Ops Runbook"
     And I press Enter on the card
@@ -48,7 +65,11 @@ Feature: Checking it is the right tool before going
     And I press Escape
     Then the card is closed
 
-  Rule: Typing in the comment box keeps its own keys
+  Rule: The comment box keeps its own keys
+
+  Scenario: What others found comes before the comment box
+    When I open the card of "Ops Runbook"
+    Then the comments read first and the comment box comes last
 
   Scenario: Arrow keys in the comment box move the caret
     When I open the card of the first tool
@@ -73,3 +94,11 @@ Feature: Checking it is the right tool before going
     When I open the card of "Fresh Tool"
     Then the card says it is taking a screenshot
     And the screenshot box keeps the shape of a screenshot
+    When its first screenshot is taken
+    And a few seconds pass
+    Then the card shows the screenshot
+
+  Scenario: A tool that will never be captured says so at once
+    Given "Off Site Tool" was just added on a host outside the capture list
+    When I open the card of "Off Site Tool"
+    Then the card says there is no screenshot

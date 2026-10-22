@@ -200,7 +200,7 @@ export async function addTool(
   await writeMarker(created.id, `New tool added: ${input.name}`, writer, null)
   captureLater(created, deps, now)
 
-  return (await getTool(created.slug, writer.user, writer.isAdmin, now))!
+  return (await getTool(created.slug, writer.user, writer.isAdmin, now, deps))!
 }
 
 export async function editTool(
@@ -255,7 +255,7 @@ export async function editTool(
   }
 
   // The slug stays: pins, links and bookmarks point at it.
-  return (await getTool(tool.slug, writer.user, writer.isAdmin, now))!
+  return (await getTool(tool.slug, writer.user, writer.isAdmin, now, deps))!
 }
 
 export async function archiveTool(

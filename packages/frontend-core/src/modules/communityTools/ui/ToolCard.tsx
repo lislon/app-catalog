@@ -1,21 +1,25 @@
+import type { Claim } from '@igstack/app-catalog-backend-core'
 import type { CommunityTool } from '@igstack/app-catalog-shared-core'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { ArrowLeft, ArrowRight, Eye, Pencil } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ArrowLeft, ArrowRight, Eye } from 'lucide-react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useTRPC } from '~/api/infra/trpc'
 import {
   DIALOG_ROUND_BUTTON,
   DetailDialogShell,
 } from '~/modules/appCatalog/ui/catalog/DetailDialogShell'
 import { MarkdownText } from '~/modules/appCatalog/ui/components/MarkdownText'
-import { CommunitySection } from '~/modules/appCatalog/ui/detail/CommunitySection'
-import type { CommunitySectionHandle } from '~/modules/appCatalog/ui/detail/CommunitySection'
+import { CommentsFeed } from '~/modules/appCatalog/ui/detail/CommentsFeed'
+import { CommentsHelp } from '~/modules/appCatalog/ui/detail/CommentsHelp'
+import { CommunityInput } from '~/modules/appCatalog/ui/detail/CommunityInput'
+import type { CommunityInputHandle } from '~/modules/appCatalog/ui/detail/CommunityInput'
 import { cn } from '~/lib/utils'
 import { Skeleton } from '~/ui/skeleton'
 import { CardScreenshot, formatCardDate } from './CardScreenshot'
 import { CardTitleBlock } from './CardTitleBlock'
 import { PersonAvatar } from './FeedRow'
 import { PinButton } from './PinButton'
+import { TagChip, tagKey, tagLabel } from './TagRow'
 
 const KBD =
   'rounded-[5px] border border-b-2 border-border bg-card px-1.5 py-px text-[11px] font-semibold text-muted-foreground'
@@ -25,7 +29,12 @@ const SECTION = 'mt-6 border-t border-border pt-[22px]'
 const LABEL =
   'text-[11.5px] font-bold tracking-wider text-muted-foreground uppercase'
 
+const NO_CLAIMS: Claim[] = []
+
 const DAY_MS = 24 * 60 * 60 * 1000
+
+/** How often a card whose first screenshot is on its way asks again. */
+const CAPTURE_POLL_MS = 5000
 
 export interface ToolCardProps {
   slug: string
@@ -35,6 +44,10 @@ export interface ToolCardProps {
   onNavigate: (slug: string) => void
   pinned: boolean
   onTogglePin: (tool: CommunityTool) => void
+  /** Display names of official apps by slug, for app tags. */
+  appNames: Record<string, string>
+  /** A tag chip on the card: close it and filter the feed to that tag. */
+  onChooseTag: (tag: string) => void
 }
 
 /** Typing belongs to the field: the card's keys stay out of it. */
@@ -57,8 +70,11 @@ export function ToolCard({
   onNavigate,
   pinned,
   onTogglePin,
+  appNames,
+  onChooseTag,
 }: ToolCardProps) {
   const trpc = useTRPC()
+  const queryClient = useQueryClient()
   // The feed already holds every tool, so the card paints at once from it
   // and the tool's own query only refreshes it.
   const list = useQuery(trpc.communityTools.list.queryOptions())
@@ -66,6 +82,10 @@ export function ToolCard({
   const get = useQuery({
     ...trpc.communityTools.get.queryOptions({ slug }),
     placeholderData: fromList,
+    // Until the first visit lands, keep asking, so the screenshot replaces
+    // the placeholder without a reload.
+    refetchInterval: (query) =>
+      query.state.data?.capturePending ? CAPTURE_POLL_MS : false,
   })
   const tool = get.data
 
@@ -81,7 +101,13 @@ export function ToolCard({
   // never fires and the count stayed one short.
   const { mutate: recordView } = useMutation(
     trpc.communityTools.recordView.mutationOptions({
-      onSuccess: (c, { slug: viewed }) => setCounts({ slug: viewed, ...c }),
+      onSuccess: (c, { slug: viewed }) => {
+        setCounts({ slug: viewed, ...c })
+        // The view just made is Recently opened's newest entry.
+        void queryClient.invalidateQueries({
+          queryKey: trpc.communityTools.recent.queryKey(),
+        })
+      },
     }),
   )
   const recordedForRef = useRef<string | null>(null)
@@ -92,7 +118,11 @@ export function ToolCard({
   }, [slug, recordView])
   const views = counts?.slug === slug ? counts : tool
 
-  const commentsRef = useRef<CommunitySectionHandle>(null)
+  const commentsRef = useRef<CommunityInputHandle>(null)
+  const commentsHeadingId = useId()
+  const commentTarget = { communityToolSlug: slug }
+  const comments = useQuery(trpc.feedback.list.queryOptions(commentTarget))
+  const commentCount = comments.data?.items.length ?? 0
 
   const index = siblings.indexOf(slug)
   const prev = index > 0 ? siblings[index - 1] : undefined
@@ -166,18 +196,6 @@ export function ToolCard({
             <div className="flex items-end justify-between gap-4 pr-44">
               <CardTitleBlock tool={tool} />
               <div className="-mr-40 flex shrink-0 items-center gap-2">
-                {tool.canEdit && (
-                  // The edit form arrives with the add flow; until then the
-                  // button is shown to those who may edit, and does nothing.
-                  <button
-                    type="button"
-                    data-testid="card-edit-button"
-                    className="inline-flex h-10 items-center gap-[7px] rounded-[10px] border border-border bg-card px-3.5 text-[13.5px] font-bold hover:border-primary/40 focus-visible:outline-2 focus-visible:outline-ring"
-                  >
-                    <Pencil aria-hidden="true" className="size-4" />
-                    Edit
-                  </button>
-                )}
                 <PinButton
                   labelled
                   pinned={pinned}
@@ -195,6 +213,20 @@ export function ToolCard({
                 <p className="mt-3.5 text-[15px] text-foreground/80">
                   {tool.summary}
                 </p>
+              )}
+              {tool.tags.length > 0 && (
+                <div
+                  data-testid="card-tags"
+                  className="mt-2.5 flex flex-wrap gap-1.5"
+                >
+                  {tool.tags.map((tag) => (
+                    <TagChip
+                      key={tagKey(tag)}
+                      label={tagLabel(tag, appNames)}
+                      onClick={() => onChooseTag(tagKey(tag))}
+                    />
+                  ))}
+                </div>
               )}
               {views && (
                 <p
@@ -266,13 +298,36 @@ export function ToolCard({
             </div>
           </section>
 
-          <div data-testid="card-comments" className={SECTION}>
-            <CommunitySection
-              ref={commentsRef}
-              target={{ communityToolSlug: tool.slug }}
-              appName={tool.name}
+          {/* The card's own order: what was said first, the input last. The
+              official card's CommunitySection puts the input on top. */}
+          <section data-testid="card-comments" className={SECTION}>
+            <div className="comments-head">
+              <h2 id={commentsHeadingId} className="behind-group__title">
+                Comments
+              </h2>
+              {commentCount > 0 && (
+                <span
+                  data-testid="card-comment-count"
+                  className="rounded-full bg-muted px-2 text-xs leading-5 font-bold text-muted-foreground"
+                >
+                  {commentCount}
+                </span>
+              )}
+              <CommentsHelp appName={tool.name} />
+            </div>
+            <CommentsFeed
+              target={commentTarget}
+              claims={NO_CLAIMS}
+              labelledBy={commentsHeadingId}
             />
-          </div>
+            <div className="mt-3.5">
+              <CommunityInput
+                ref={commentsRef}
+                target={commentTarget}
+                appName={tool.name}
+              />
+            </div>
+          </section>
 
           <p className="mt-[22px] flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[12.5px] font-semibold text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
@@ -335,14 +390,15 @@ function LifecycleNote({
     )
   }
   if (lifecycle.state === 'archived') {
+    const on = formatCardDate(lifecycle.at)
     return (
       <p
         data-testid="lifecycle-note"
         className="mt-3 rounded-[10px] bg-muted px-3 py-[9px] text-[13.5px] text-muted-foreground"
       >
-        {lifecycle.by === 'auto'
-          ? 'Archived after a month of failed daily checks.'
-          : `Archived${lifecycle.reason ? `: ${lifecycle.reason}` : '.'}`}{' '}
+        {lifecycle.byName
+          ? `Archived by ${lifecycle.byName} on ${on}${lifecycle.reason ? `: ${lifecycle.reason}` : ''}.`
+          : `Archived automatically on ${on} after 30 days not working.`}{' '}
         Kept here so old links still land somewhere.
       </p>
     )

@@ -84,7 +84,13 @@ describe('the "community" catalog mock', () => {
     })
     expect(
       (await api.communityTools.get.query({ slug: 'old-tracker' })).lifecycle,
-    ).toEqual({ state: 'archived', by: 'person', reason: 'Moved' })
+    ).toEqual({
+      state: 'archived',
+      by: 'person',
+      reason: 'Moved',
+      at: '2026-10-21T12:00:00.000Z',
+      byName: 'Robin Park',
+    })
   })
 
   it('previews the stub page, catches a duplicate host, and publishes for review', async () => {
@@ -195,6 +201,8 @@ describe('the "community" catalog mock', () => {
       state: 'archived',
       by: 'auto',
       reason: 'Failed availability checks for 30 days',
+      at: '2026-10-21T12:00:00.000Z',
+      byName: null,
     })
   })
 

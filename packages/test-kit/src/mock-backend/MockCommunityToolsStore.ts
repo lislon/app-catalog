@@ -47,6 +47,8 @@ interface StoredTool {
   addedBy: { userId: string; name: string }
   createdAt: Date
   reviewedAt: Date | null
+  /** The last daily visit, failed or not; null until the first one ran. */
+  lastCheckAt: Date | null
   failingSince: Date | null
   archivedAt: Date | null
   archivedBy: string | null
@@ -172,7 +174,23 @@ export class MockCommunityToolsStore {
     for (let daysAgo = days; daysAgo >= 0; daysAgo--) {
       const at = new Date(MOCK_NOW.getTime() - daysAgo * DAY_MS)
       Object.assign(tool, nextLifecycle(tool, false, at))
+      tool.lastCheckAt = at
     }
+  }
+
+  /** An owner or a maintainer archived the tool. */
+  archiveAs(slug: string, name: string): void {
+    const tool = this.stored(slug)
+    tool.archivedAt = MOCK_NOW
+    tool.archivedBy = name
+  }
+
+  /** The first visit of a tool waiting for one lands, with a screenshot. */
+  finishCapture(slug: string): void {
+    const tool = this.stored(slug)
+    tool.lastCheckAt = MOCK_NOW
+    tool.screenshotId = `${slug}-shot`
+    tool.capturedAt = MOCK_NOW
   }
 
   tagWithApp(slug: string, appSlug: string): void {
@@ -368,6 +386,7 @@ export class MockCommunityToolsStore {
       tags: input.tags,
       addedBy: { userId: user.id, name: user.name },
       reviewedAt: null,
+      lastCheckAt: null,
     })
     this.feedback.addReviewRow(
       tool.slug,
@@ -468,6 +487,8 @@ export class MockCommunityToolsStore {
       addedBy: { userId: 'seed-user-id', name: 'A colleague' },
       createdAt: MOCK_NOW,
       reviewedAt: MOCK_NOW,
+      // A seeded tool has been around: its first visit is behind it.
+      lastCheckAt: MOCK_NOW,
       failingSince: null,
       archivedAt: null,
       archivedBy: null,
@@ -610,6 +631,11 @@ export class MockCommunityToolsStore {
       screenshotId: tool.screenshotId,
       faviconId: tool.faviconId,
       capturedAt: tool.capturedAt?.toISOString() ?? null,
+      // The mock always has a capturer: the host list alone decides.
+      capturePending:
+        !tool.screenshotId &&
+        !tool.lastCheckAt &&
+        isCaptureAllowed(tool.url, this.captureHosts),
       canEdit: this.canEdit(tool, user),
     }
   }

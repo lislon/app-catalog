@@ -946,15 +946,117 @@ function feedNames(): string[] {
 }
 
 Given('{string} was just added', async (_world, name: string) => {
-  // On the real clock: the card tells "still capturing" by the tool's age.
-  const createdAt = new Date()
   await givenOnServer(({ backendCfg }) => {
     backendCfg.communityTools.seed({
       name,
       url: `https://${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pages.example.com/`,
-      createdAt,
+      // Its first visit has not run yet.
+      lastCheckAt: null,
     })
   })
+  // The card asks again every few seconds while it waits; fake clocks let a
+  // scenario step over that wait. They still tick with real time, so the
+  // network and user-event delays run as usual.
+  vi.useFakeTimers({
+    shouldAdvanceTime: true,
+    toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
+  })
+})
+
+afterEach(() => {
+  vi.useRealTimers()
+})
+
+Given(
+  '{string} was just added on a host outside the capture list',
+  async (_world, name: string) => {
+    await givenOnServer(({ backendCfg }) => {
+      backendCfg.communityTools.seed({
+        name,
+        url: `https://${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.other.test/`,
+        lastCheckAt: null,
+      })
+    })
+  },
+)
+
+Then('the card says there is no screenshot', async () => {
+  await waitFor(() => {
+    const box = within(toolCard()).getByTestId('card-screenshot-box')
+    expect(box.dataset['state']).toBe('missing')
+    expect(box.textContent).toContain('No screenshot')
+  })
+})
+
+Given(
+  '{string} was archived by {string}',
+  async (_world, tool: string, name: string) => {
+    await givenOnServer(({ backendCfg }) => {
+      const tools = backendCfg.communityTools
+      tools.archiveAs(tools.slugOf(tool), name)
+    })
+  },
+)
+
+// The clock is faked from "was just added" on. Each step moves it under 3 s:
+// quickpickle's own step timeout is a timer on that same clock, so a step that
+// jumped the card's whole 5 s wait would time itself out.
+const CLOCK_STEP_MS = 2600
+
+When('its first screenshot is taken', () => {
+  if (!current) throw new Error('No catalog opened — missing a Given step?')
+  const tools = current.backend.communityTools
+  tools.finishCapture(tools.slugOf(cardToolName()))
+  vi.advanceTimersByTime(CLOCK_STEP_MS)
+})
+
+When('a few seconds pass', () => {
+  vi.advanceTimersByTime(CLOCK_STEP_MS)
+})
+
+When(
+  'I open the card of {string} from an old link',
+  async (_world, name: string) => {
+    if (!current) throw new Error('No catalog opened — missing a Given step?')
+    const tools = current.backend.communityTools
+    await current.router.navigate({
+      to: '/community/$slug',
+      params: { slug: tools.slugOf(name) },
+    })
+    await waitFor(() => expect(cardToolName()).toBe(name))
+  },
+)
+
+When('I choose the tag {string} on the card', async (_world, label: string) => {
+  const user = userEvent.setup()
+  const chip = within(within(toolCard()).getByTestId('card-tags'))
+    .getAllByTestId('tool-tag')
+    .find((c) => c.textContent.startsWith(label))
+  if (!chip) throw new Error(`No "${label}" chip on the card`)
+  await user.click(chip)
+})
+
+Then('the card explains {string}', async (_world, text: string) => {
+  await waitFor(() => {
+    expect(
+      within(toolCard()).getByTestId('lifecycle-note').textContent,
+    ).toContain(text)
+  })
+})
+
+Then('the comments read first and the comment box comes last', async () => {
+  const block = within(toolCard()).getByTestId('card-comments')
+  const heading = within(block).getByRole('heading', { name: 'Comments' })
+  const said = await waitFor(
+    () =>
+      within(block).queryByRole('list', { name: 'Comments' }) ??
+      within(block).getByText(/No comments yet/),
+  )
+  const box = commentBox()
+  const follows = (a: Element, b: Element) =>
+    (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
+  expect(follows(heading, said)).toBe(true)
+  expect(follows(said, box)).toBe(true)
 })
 
 When('I open the card of {string}', async (_world, name: string) => {
