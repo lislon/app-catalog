@@ -351,6 +351,7 @@ function communityMagazine(postConfigure?: Magazine): Magazine {
       slug: 'order-service',
       displayName: 'Order Service',
       description: 'Order management and tracking',
+      appUrl: 'https://orders.pages.example.com/',
     })
 
     // A directory slug is the person's email: that is what makes the signed-in owner an owner.

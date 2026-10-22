@@ -52,6 +52,8 @@ export interface ToolPreview {
   title: string | null
   screenshotDataUrl: string | null
   duplicate: { slug: string; name: string } | null
+  /** An official app on the same host: the tool would duplicate a catalog entry. */
+  officialApp: { slug: string; name: string } | null
   captureAllowed: boolean
 }
 
@@ -155,6 +157,19 @@ function captureLater(
   })
 }
 
+/** The top-level catalog app whose address is on this host, if any. */
+async function findOfficialApp(
+  host: string,
+): Promise<{ slug: string; name: string } | null> {
+  // ponytail: scans every top-level app; a stored host column if the catalog grows past thousands.
+  const apps = await getDbClient().dbResource.findMany({
+    where: { parentSlug: null, appUrl: { not: null } },
+    select: { slug: true, displayName: true, appUrl: true },
+  })
+  const app = apps.find((a) => a.appUrl && hostOf(a.appUrl) === host)
+  return app ? { slug: app.slug, name: app.displayName } : null
+}
+
 export async function previewTool(
   url: string,
   deps: CaptureDeps,
@@ -166,6 +181,7 @@ export async function previewTool(
     where: { host },
     select: { slug: true, name: true },
   })
+  const officialApp = await findOfficialApp(host)
 
   let title: string | null = null
   let screenshotDataUrl: string | null = null
@@ -187,7 +203,14 @@ export async function previewTool(
     }
   }
 
-  return { host, title, screenshotDataUrl, duplicate, captureAllowed }
+  return {
+    host,
+    title,
+    screenshotDataUrl,
+    duplicate,
+    officialApp,
+    captureAllowed,
+  }
 }
 
 export async function addTool(

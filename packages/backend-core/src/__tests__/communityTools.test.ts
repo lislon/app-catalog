@@ -61,6 +61,28 @@ describe('Community tools service', () => {
     vi.clearAllMocks()
   })
 
+  describe('countByApp', () => {
+    it('counts live tools per app tag', async () => {
+      const groupBy = vi.fn().mockResolvedValue([
+        { value: 'order-service', _count: { _all: 2 } },
+        { value: 'docs', _count: { _all: 1 } },
+      ])
+      vi.spyOn(dbClient, 'getDbClient').mockReturnValue({
+        dbCommunityToolTag: { groupBy },
+      } as unknown as PrismaClient)
+
+      expect(await service.countByApp()).toEqual({
+        'order-service': 2,
+        docs: 1,
+      })
+      expect(groupBy).toHaveBeenCalledWith({
+        by: ['value'],
+        where: { kind: 'app', tool: { archivedAt: null } },
+        _count: { _all: true },
+      })
+    })
+  })
+
   describe('recordView', () => {
     it('counts view twice same day once', async () => {
       const actor = {

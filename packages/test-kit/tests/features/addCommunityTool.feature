@@ -89,6 +89,19 @@ Feature: Adding a tool nobody listed
       And I add it anyway
       Then the add form asks for a name
 
+    Scenario: An app already in the catalog is not added again
+      When I choose to add a tool
+      And I paste "https://orders.pages.example.com/today"
+      Then I am told it is already in the catalog as "Order Service"
+      When I open "Order Service" from the warning
+      Then the open resource is "Order Service"
+
+    Scenario: An app already in the catalog can still be added on purpose
+      When I choose to add a tool
+      And I paste "https://orders.pages.example.com/today"
+      And I add it anyway
+      Then the add form asks for a name
+
     Scenario: Not an address
       When I choose to add a tool
       And I paste "ops runbook"

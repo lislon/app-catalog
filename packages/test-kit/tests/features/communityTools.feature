@@ -106,6 +106,18 @@ Feature: Getting back to a tool a colleague built
 
   Rule: Finding what colleagues built for the app I work in
 
+  Scenario: The app's card points at community tools for it
+    Given "Ops Runbook" is tagged with the app "Order Service"
+    When I open the "Order Service" resource
+    Then the card says there is 1 community tool for it
+    When I follow that link
+    Then the feed is filtered to "app:order-service"
+    And the feed lists "Ops Runbook"
+
+  Scenario: An app with no community tools says nothing about them
+    When I open the "Order Service" resource
+    Then the card does not mention community tools
+
   Scenario: A tag chip narrows the feed
     When I open Community tools
     And I choose the tag "sandbox"

@@ -93,6 +93,7 @@ describe('Community tools write service', () => {
         create: vi.fn().mockResolvedValue({}),
         updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       },
+      dbResource: { findMany: vi.fn().mockResolvedValue([]) },
     }
   }
 
@@ -313,7 +314,37 @@ describe('Community tools write service', () => {
       title: null,
       screenshotDataUrl: null,
       duplicate: null,
+      officialApp: null,
       captureAllowed: false,
+    })
+  })
+
+  it('preview names the official app on the same host, any case', async () => {
+    db.dbResource.findMany.mockResolvedValue([
+      {
+        slug: 'docs',
+        displayName: 'Docs',
+        appUrl: 'https://docs.example.com/',
+      },
+      {
+        slug: 'order-service',
+        displayName: 'Order Service',
+        appUrl: 'https://Orders.pages.example.com/app',
+      },
+    ])
+
+    const preview = await write.previewTool(
+      'https://orders.pages.example.com/today',
+      noCapture,
+    )
+
+    expect(db.dbResource.findMany).toHaveBeenCalledWith({
+      where: { parentSlug: null, appUrl: { not: null } },
+      select: { slug: true, displayName: true, appUrl: true },
+    })
+    expect(preview.officialApp).toEqual({
+      slug: 'order-service',
+      name: 'Order Service',
     })
   })
 

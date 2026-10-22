@@ -202,6 +202,10 @@ export const SharedNetwork = {
         handler: ct.list.query(() => store.list()),
       },
       {
+        scopeKey: ['community-tools-count-by-app'],
+        handler: ct.countByApp.query(() => store.countByApp()),
+      },
+      {
         scopeKey: ['community-tools-get'],
         handler: ct.get.query(({ input }) => store.get(input)),
       },

@@ -32,6 +32,7 @@ export interface ToolPreview {
   title: string | null
   screenshotDataUrl: string | null
   duplicate: { slug: string; name: string } | null
+  officialApp: { slug: string; name: string } | null
   captureAllowed: boolean
 }
 
@@ -119,6 +120,8 @@ export class MockCommunityToolsStore {
   /** Addresses whose preview was asked for, and answered, in order. */
   readonly previewsAsked: string[] = []
   readonly previewsAnswered: string[] = []
+  /** How many times the app counts were answered: a "no link" check waits for one. */
+  countsAnswered = 0
   private tools: StoredTool[] = []
   private views: View[] = []
   private pinsByUser = new Map<string, string[]>()
@@ -269,6 +272,19 @@ export class MockCommunityToolsStore {
     return this.tools.map((tool) => this.toView(tool, user))
   }
 
+  countByApp(): Record<string, number> {
+    this.requireEnabled()
+    const counts: Record<string, number> = {}
+    for (const tool of this.tools) {
+      if (tool.archivedAt) continue
+      for (const tag of tool.tags) {
+        if (tag.kind === 'app') counts[tag.value] = (counts[tag.value] ?? 0) + 1
+      }
+    }
+    this.countsAnswered += 1
+    return counts
+  }
+
   get(input: { slug: string }): CommunityTool {
     this.requireEnabled()
     const tool = this.tools.find((t) => t.slug === input.slug)
@@ -376,6 +392,9 @@ export class MockCommunityToolsStore {
     const host = this.requireHost(input.url)
     const captureAllowed = isCaptureAllowed(input.url, this.captureHosts)
     const duplicate = this.tools.find((t) => t.host === host)
+    const officialApp = this.db.resources.find(
+      (r) => !r.parentSlug && r.appUrl && hostOf(r.appUrl) === host,
+    )
     const title = captureAllowed
       ? (this.pageTitles.get(input.url) ?? null)
       : null
@@ -385,6 +404,9 @@ export class MockCommunityToolsStore {
       screenshotDataUrl: title === null ? null : PIXEL_DATA_URL,
       duplicate: duplicate
         ? { slug: duplicate.slug, name: duplicate.name }
+        : null,
+      officialApp: officialApp
+        ? { slug: officialApp.slug, name: officialApp.displayName }
         : null,
       captureAllowed,
     }

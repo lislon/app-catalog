@@ -68,6 +68,8 @@ export function createCommunityToolsRouter(options?: CommunityToolsOptions) {
       return service.listTools(ctx.user, ctx.isAdmin, new Date(), deps)
     }),
 
+    countByApp: publicProcedure.query(() => service.countByApp()),
+
     get: publicProcedure
       .input(z.object({ slug: z.string() }))
       .query(async ({ input, ctx }) => {

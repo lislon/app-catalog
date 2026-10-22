@@ -73,6 +73,16 @@ export async function listTools(
   )
 }
 
+/** How many live tools carry each official app's tag, by app slug. */
+export async function countByApp(): Promise<Record<string, number>> {
+  const rows = await getDbClient().dbCommunityToolTag.groupBy({
+    by: ['value'],
+    where: { kind: 'app', tool: { archivedAt: null } },
+    _count: { _all: true },
+  })
+  return Object.fromEntries(rows.map((r) => [r.value, r._count._all]))
+}
+
 export async function getTool(
   slug: string,
   user: User | null,

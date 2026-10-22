@@ -4,6 +4,7 @@ import type {
 } from '@igstack/app-catalog-shared-core'
 import { TAG_VALUE_MAX, hostOf } from '@igstack/app-catalog-shared-core'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import {
   AlertCircle,
   AlertTriangle,
@@ -48,6 +49,7 @@ interface Preview {
   title: string | null
   screenshotDataUrl: string | null
   duplicate: { slug: string; name: string } | null
+  officialApp: { slug: string; name: string } | null
   captureAllowed: boolean
 }
 
@@ -186,7 +188,10 @@ export function ToolFormDialog({
     current?.duplicate && current.duplicate.slug !== initial?.slug
       ? current.duplicate
       : null
-  const blockedByDuplicate = duplicate !== null && addAnywayFor !== address
+  // An official catalog app on the same host outranks a community duplicate.
+  const officialApp = current?.officialApp ?? null
+  const blockedByDuplicate =
+    (officialApp !== null || duplicate !== null) && addAnywayFor !== address
   const showDetails =
     mode === 'edit' ||
     (validAddress && !reading && !blockedByDuplicate) ||
@@ -368,7 +373,39 @@ export function ToolFormDialog({
 
             {validAddress && reading && <ReadingSkeleton />}
 
-            {blockedByDuplicate && (
+            {blockedByDuplicate && officialApp && (
+              <div
+                data-testid="official-app-warning"
+                role="alert"
+                className="flex gap-2.5 rounded-[10px] bg-amber-50 px-3.5 py-3 text-[13.5px] text-amber-900 dark:bg-amber-950 dark:text-amber-200"
+              >
+                <AlertTriangle
+                  aria-hidden="true"
+                  className="mt-px size-[18px] shrink-0"
+                />
+                <div>
+                  <b>This is already in the catalog as {officialApp.name}.</b>
+                  <div className="mt-2.5 flex items-center gap-3.5">
+                    <Link
+                      to="/app/$slug"
+                      params={{ slug: officialApp.slug }}
+                      className={GHOST_BUTTON}
+                    >
+                      Open {officialApp.name}
+                    </Link>
+                    <button
+                      type="button"
+                      className="font-bold underline underline-offset-2"
+                      onClick={() => setAddAnywayFor(address)}
+                    >
+                      Add anyway
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {blockedByDuplicate && !officialApp && duplicate && (
               <div
                 data-testid="duplicate-warning"
                 role="alert"

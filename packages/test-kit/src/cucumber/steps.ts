@@ -896,6 +896,39 @@ Then(
 )
 
 Then(
+  'the card says there is {int} community tool(s) for it',
+  async (_world, count: number) => {
+    const link = await screen.findByTestId('app-community-tools')
+    expect(link.textContent).toMatch(new RegExp(`· ${count}$`))
+  },
+)
+
+Then('the card does not mention community tools', async () => {
+  // The count arrives after the card: wait until it has been answered.
+  await waitFor(() => {
+    expect(current?.backend.communityTools.countsAnswered).toBeGreaterThan(0)
+  })
+  await waitFor(() => expect(ui().app.getOpenTitle()).toBeTruthy())
+  expect(screen.queryByTestId('app-community-tools')).toBeNull()
+})
+
+When('I follow that link', async () => {
+  await userEvent.setup().click(screen.getByTestId('app-community-tools'))
+})
+
+Then('the feed is filtered to {string}', async (_world, tag: string) => {
+  await waitFor(() => {
+    expect(current?.router.state.location.search).toMatchObject({ tag })
+  })
+})
+
+Then('the feed lists {string}', async (_world, name: string) => {
+  await waitFor(() => {
+    expect(communityList('community-feed').map(rowName)).toContain(name)
+  })
+})
+
+Then(
   'the results include every tool tagged {string}',
   async (_world, word: string) => {
     const tagged = namesTagged(word)
@@ -1526,6 +1559,23 @@ Then('the card shows {string}', async (_world, name: string) => {
   expect(screen.queryByTestId('add-tool-dialog')).toBeNull()
 })
 
+Then(
+  'I am told it is already in the catalog as {string}',
+  async (_world, name: string) => {
+    await waitFor(() => {
+      expect(
+        within(toolForm()).getByTestId('official-app-warning').textContent,
+      ).toContain(`This is already in the catalog as ${name}.`)
+    })
+  },
+)
+
+When('I open {string} from the warning', async (_world, name: string) => {
+  await userEvent
+    .setup()
+    .click(within(toolForm()).getByRole('link', { name: `Open ${name}` }))
+})
+
 When('I add it anyway', async () => {
   await userEvent
     .setup()
@@ -1537,6 +1587,7 @@ When('I add it anyway', async () => {
 Then('the add form asks for a name', async () => {
   await waitFor(() => expect(formField(/^Name/)).toBeTruthy())
   expect(within(toolForm()).queryByTestId('duplicate-warning')).toBeNull()
+  expect(within(toolForm()).queryByTestId('official-app-warning')).toBeNull()
 })
 
 Then('I am told it is not a web address', async () => {
