@@ -17,7 +17,16 @@ Feature: Checking it is the right tool before going
 
   Scenario: Clicking the card's screenshot opens the site
     When I open the card of "Ops Runbook"
-    Then the screenshot opens the site in a new tab
+    Then the screenshot opens the site in this tab
+
+  Scenario: The card says when the site was last updated
+    Given the site of "Ops Runbook" changed 3 days ago
+    When I open the card of "Ops Runbook"
+    Then the card says the site was updated "3 days ago"
+
+  Scenario: A site with no known update date shows none
+    When I open the card of "Ops Runbook"
+    Then the card does not say when the site was updated
 
   Scenario: Enlarge opens the full-size viewer
     When I open the card of "Ops Runbook"
@@ -67,7 +76,7 @@ Feature: Checking it is the right tool before going
   Scenario: Enter on the card opens the site
     When I open the card of "Ops Runbook"
     And I press Enter on the card
-    Then "https://ops-runbook-1a2b.pages.example.com/" opens in a new tab
+    Then "https://ops-runbook-1a2b.pages.example.com/" opens in this tab
 
   Scenario: Escape closes the card
     When I open the card of "Ops Runbook"

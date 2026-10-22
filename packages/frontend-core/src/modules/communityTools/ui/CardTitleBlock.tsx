@@ -1,20 +1,18 @@
 import type { CommunityTool } from '@igstack/app-catalog-shared-core'
-import { ExternalLink, Globe } from 'lucide-react'
+import { Globe } from 'lucide-react'
 import { cn } from '~/lib/utils'
 import { screenshotUrl } from './FeedRow'
 import { LifecycleBadge, UnreviewedBadge } from './LifecycleBadge'
 
 /**
  * The card's door: favicon (a globe when the site has none), name, badges and
- * address, all one link that opens the site in a new tab.
+ * address, all one link that opens the site.
  */
 export function CardTitleBlock({ tool }: { tool: CommunityTool }) {
   const archived = tool.lifecycle.state === 'archived'
   return (
     <a
       href={tool.url}
-      target="_blank"
-      rel="noopener noreferrer"
       data-testid="card-title-block"
       className={cn(
         'group/door inline-flex min-w-0 items-center gap-[15px] rounded-[14px] border border-border bg-primary/[0.025] px-[17px] py-[11px] transition-colors',
@@ -47,12 +45,7 @@ export function CardTitleBlock({ tool }: { tool: CommunityTool }) {
         <span className="truncate font-mono text-[13px] text-muted-foreground">
           {tool.host}
         </span>
-        <span className="sr-only">(opens in a new tab)</span>
       </span>
-      <ExternalLink
-        aria-hidden="true"
-        className="size-[18px] shrink-0 self-start text-muted-foreground group-hover/door:text-primary"
-      />
     </a>
   )
 }

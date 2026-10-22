@@ -14,3 +14,15 @@ export function timeAgo(iso: string, now: Date = new Date()): string {
   const years = Math.floor(days / 365)
   return years === 1 ? '1 year ago' : `${years} years ago`
 }
+
+/** The exact moment, for the tooltip of a timeAgo: "22 Oct 2026, 15:04". */
+export function exactDate(iso: string): string {
+  return new Date(iso).toLocaleString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+}

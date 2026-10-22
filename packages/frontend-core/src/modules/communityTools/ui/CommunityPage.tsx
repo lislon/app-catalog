@@ -57,7 +57,7 @@ function optionIdOf(slug: string): string {
 }
 
 function openSite(url: string) {
-  window.open(url, '_blank', 'noopener,noreferrer')
+  window.location.assign(url)
 }
 
 export function CommunityPage({

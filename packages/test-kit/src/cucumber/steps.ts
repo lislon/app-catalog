@@ -26,7 +26,7 @@ import userEvent from '@testing-library/user-event'
 import { Given, Then, When } from 'quickpickle'
 import type { DataTable } from 'quickpickle'
 import { afterEach, expect, vi } from 'vitest'
-import type { MockInstance } from 'vitest'
+import type { Mock } from 'vitest'
 import { given } from '../harness/given'
 import type { GivenResult } from '../harness/given'
 import { magazine } from '../mock-backend/magazines'
@@ -639,27 +639,48 @@ Then('the caret is in the search', async () => {
   })
 })
 
-// The tab the page asked for. Restored after every scenario, so no later test
-// inherits a window.open that does nothing.
-let openSpy: MockInstance<typeof window.open> | null = null
+// Where the page sent this tab. jsdom cannot navigate and its location cannot
+// be spied on, so the scenario sees a location whose assign is recorded.
+// Restored after every scenario.
+let assignSpy: Mock<(url: string | URL) => void> | null = null
+function watchNavigation(): void {
+  if (assignSpy) {
+    assignSpy.mockClear()
+    return
+  }
+  const spy = vi.fn<(url: string | URL) => void>()
+  assignSpy = spy
+  const real = window.location
+  vi.stubGlobal(
+    'location',
+    // An empty target: the real location's own properties are locked, and a
+    // proxy may not report anything else for those.
+    new Proxy(
+      {},
+      {
+        get: (_target, key) => {
+          if (key === 'assign') return spy
+          const value: unknown = Reflect.get(real, key, real)
+          return typeof value === 'function' ? value.bind(real) : value
+        },
+      },
+    ),
+  )
+}
 afterEach(() => {
-  openSpy?.mockRestore()
-  openSpy = null
+  if (!assignSpy) return
+  vi.unstubAllGlobals()
+  assignSpy = null
 })
 
 When('I press Enter', async () => {
-  openSpy ??= vi.spyOn(window, 'open').mockImplementation(() => null)
-  openSpy.mockClear()
+  watchNavigation()
   const user = userEvent.setup()
   await user.keyboard('{Enter}')
 })
 
-Then('{string} opens in a new tab', (_world, url: string) => {
-  expect(openSpy).toHaveBeenCalledWith(
-    url,
-    '_blank',
-    expect.stringContaining('noopener'),
-  )
+Then('{string} opens in this tab', (_world, url: string) => {
+  expect(assignSpy).toHaveBeenCalledWith(url)
 })
 
 Then('the first result is {string}', async (_world, name: string) => {
@@ -766,20 +787,19 @@ function siteOf(name: string): string {
   return tools.get({ slug: tools.slugOf(name) }).url
 }
 
-function expectOpensInNewTab(link: HTMLElement, name: string): void {
+function expectOpensInThisTab(link: HTMLElement, name: string): void {
   expect(link.tagName).toBe('A')
   expect(link.getAttribute('href')).toBe(siteOf(name))
-  expect(link.getAttribute('target')).toBe('_blank')
-  expect(link.getAttribute('rel')).toBe('noopener noreferrer')
+  expect(link.getAttribute('target')).toBeNull()
 }
 
 Then(
-  'the row of {string} opens its site in a new tab',
+  'the row of {string} opens its site in this tab',
   async (_world, name: string) => {
     const row = await waitFor(() => rowNamed('community-feed', name))
-    expectOpensInNewTab(
+    expectOpensInThisTab(
       within(row).getByRole('link', {
-        name: `${name}, opens ${new URL(siteOf(name)).host} in a new tab`,
+        name: `${name}, opens ${new URL(siteOf(name)).host}`,
       }),
       name,
     )
@@ -1032,6 +1052,19 @@ Then(
   },
 )
 
+/** "22 Oct 2026, 15:04": what a date's tooltip carries. */
+const EXACT_TIME = /^\d{1,2} \w{3} \d{4}, \d{2}:\d{2}$/
+
+Then(
+  'the date on the row of {string} has the exact time as its tooltip',
+  async (_world, name: string) => {
+    const date = await waitFor(() =>
+      within(rowNamed('community-feed', name)).getByTestId('feed-row-date'),
+    )
+    expect(date.getAttribute('title')).toMatch(EXACT_TIME)
+  },
+)
+
 Given(
   '{string} has {int} comments',
   async (_world, name: string, count: number) => {
@@ -1274,8 +1307,7 @@ When('I type {string} in the comment box', async (_world, text: string) => {
 })
 
 When('I press Enter on the card', async () => {
-  openSpy ??= vi.spyOn(window, 'open').mockImplementation(() => null)
-  openSpy.mockClear()
+  watchNavigation()
   toolCard().focus()
   await userEvent.setup().keyboard('{Enter}')
 })
@@ -1293,8 +1325,8 @@ Then('the card shows the screenshot', async () => {
   )
 })
 
-Then('the screenshot opens the site in a new tab', () => {
-  expectOpensInNewTab(
+Then('the screenshot opens the site in this tab', () => {
+  expectOpensInThisTab(
     within(toolCard()).getByTestId('card-screenshot-link'),
     cardToolName(),
   )
@@ -1369,6 +1401,22 @@ Then("the card's badge reads {string}", async (_world, text: string) => {
   })
 })
 
+Then(
+  'the card says the site was updated {string}',
+  async (_world, ago: string) => {
+    const updated = await waitFor(() =>
+      within(toolCard()).getByTestId('card-site-updated'),
+    )
+    expect(updated.textContent).toBe(`Site updated ${ago}`)
+    expect(updated.getAttribute('title')).toMatch(EXACT_TIME)
+  },
+)
+
+Then('the card does not say when the site was updated', async () => {
+  await waitFor(() => within(toolCard()).getByTestId('card-views'))
+  expect(within(toolCard()).queryByTestId('card-site-updated')).toBeNull()
+})
+
 Then('the card says {string}', async (_world, text: string) => {
   await waitFor(() => {
     expect(
@@ -1410,7 +1458,7 @@ Then(
 )
 
 Then('no site opened', () => {
-  expect(openSpy?.mock.calls ?? []).toEqual([])
+  expect(assignSpy?.mock.calls ?? []).toEqual([])
 })
 
 Then('the card says it is taking a screenshot', async () => {

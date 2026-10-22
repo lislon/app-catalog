@@ -1,5 +1,5 @@
 import type { CommunityTool } from '@igstack/app-catalog-shared-core'
-import { Camera, ExternalLink, ImageOff, Maximize2 } from 'lucide-react'
+import { Camera, ImageOff, Maximize2 } from 'lucide-react'
 import { useState } from 'react'
 import { ScreenshotGallery } from '~/modules/appCatalog/ui/components/ScreenshotGallery'
 import { cn } from '~/lib/utils'
@@ -78,9 +78,7 @@ export function CardScreenshot({
       >
         <a
           href={tool.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={`Open ${tool.name} in a new tab`}
+          aria-label={`Open ${tool.name}`}
           data-testid="card-screenshot-link"
           className="group/shot block size-full rounded-[14px] focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-ring"
         >
@@ -90,9 +88,8 @@ export function CardScreenshot({
             className="size-full object-cover object-left-top"
           />
           <span className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-focus-visible/shot:bg-black/20 group-hover/shot:bg-black/20">
-            <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-extrabold text-primary-foreground opacity-0 shadow-sm transition-opacity group-focus-visible/shot:opacity-100 group-hover/shot:opacity-100">
+            <span className="rounded-lg bg-primary px-3.5 py-2 text-sm font-extrabold text-primary-foreground opacity-0 shadow-sm transition-opacity group-focus-visible/shot:opacity-100 group-hover/shot:opacity-100">
               Open site
-              <ExternalLink aria-hidden="true" className="size-4" />
             </span>
           </span>
         </a>
