@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
+import { Route as LayoutCommunityRouteImport } from './routes/_layout/community'
 import { Route as LayoutLoginRouteImport } from './routes/_layout/login'
 import { Route as LayoutMcpRouteImport } from './routes/_layout/mcp'
 import { Route as LayoutServiceDesksRouteImport } from './routes/_layout/service-desks'
@@ -26,6 +27,11 @@ const LayoutRoute = LayoutRouteImport.update({
 const LayoutIndexRoute = LayoutIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutCommunityRoute = LayoutCommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutLoginRoute = LayoutLoginRouteImport.update({
@@ -66,6 +72,7 @@ const LayoutAppSlugSubSubSlugRoute = LayoutAppSlugSubSubSlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
+  '/community': typeof LayoutCommunityRoute
   '/login': typeof LayoutLoginRoute
   '/mcp': typeof LayoutMcpRoute
   '/service-desks': typeof LayoutServiceDesksRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/app/$slug/sub/$subSlug': typeof LayoutAppSlugSubSubSlugRoute
 }
 export interface FileRoutesByTo {
+  '/community': typeof LayoutCommunityRoute
   '/login': typeof LayoutLoginRoute
   '/mcp': typeof LayoutMcpRoute
   '/service-desks': typeof LayoutServiceDesksRoute
@@ -87,6 +95,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_layout': typeof LayoutRouteWithChildren
+  '/_layout/community': typeof LayoutCommunityRoute
   '/_layout/login': typeof LayoutLoginRoute
   '/_layout/mcp': typeof LayoutMcpRoute
   '/_layout/service-desks': typeof LayoutServiceDesksRoute
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/community'
     | '/login'
     | '/mcp'
     | '/service-desks'
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/app/$slug/sub/$subSlug'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/community'
     | '/login'
     | '/mcp'
     | '/service-desks'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_layout'
+    | '/_layout/community'
     | '/_layout/login'
     | '/_layout/mcp'
     | '/_layout/service-desks'
@@ -149,6 +161,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof LayoutIndexRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/community': {
+      id: '/_layout/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof LayoutCommunityRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/login': {
@@ -204,6 +223,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface LayoutRouteChildren {
+  LayoutCommunityRoute: typeof LayoutCommunityRoute
   LayoutLoginRoute: typeof LayoutLoginRoute
   LayoutMcpRoute: typeof LayoutMcpRoute
   LayoutServiceDesksRoute: typeof LayoutServiceDesksRoute
@@ -214,6 +234,7 @@ interface LayoutRouteChildren {
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
+  LayoutCommunityRoute: LayoutCommunityRoute,
   LayoutLoginRoute: LayoutLoginRoute,
   LayoutMcpRoute: LayoutMcpRoute,
   LayoutServiceDesksRoute: LayoutServiceDesksRoute,

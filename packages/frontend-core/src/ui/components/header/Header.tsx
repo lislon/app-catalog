@@ -4,7 +4,7 @@ import type {
 } from '@igstack/app-catalog-backend-core'
 import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { LogOut, X } from 'lucide-react'
+import { LogOut, Plug, X } from 'lucide-react'
 import React, { use } from 'react'
 import AppCatalogLogo from '~/assets/app-catalog.svg?react'
 import { useTRPC } from '~/api/infra/trpc'
@@ -211,6 +211,12 @@ export function Header({ middle }: HeaderProps) {
       </div>
       {middle && <div className="flex-1">{middle}</div>}
       <div className="flex items-center gap-3 ml-auto">
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/mcp">
+            <Plug />
+            MCP
+          </Link>
+        </Button>
         <ThemeSwitcher />
         {isLoading ? (
           <Skeleton className="w-8 h-8 rounded-full" />

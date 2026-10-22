@@ -56,9 +56,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (response.ok) {
           const data = await response.json()
           setSession(data)
-          setUser(data?.user || null)
-          if (data?.user) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data.user))
+          const userWithAdmin = data?.user
+            ? {
+                ...data.user,
+                isAdmin: data.isAdmin ?? data.user.isAdmin ?? false,
+              }
+            : null
+          setUser(userWithAdmin)
+          if (userWithAdmin) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(userWithAdmin))
           } else {
             localStorage.removeItem(STORAGE_KEY)
           }

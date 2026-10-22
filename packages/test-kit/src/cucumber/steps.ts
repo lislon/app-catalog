@@ -21,9 +21,10 @@
  *   registerCatalog('production', myMagazine, { extensions: plugins })
  */
 import type { AcPlugin } from '@igstack/app-catalog-frontend-core'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Given, Then, When } from 'quickpickle'
+import type { DataTable } from 'quickpickle'
 import { expect } from 'vitest'
 import { given } from '../harness/given'
 import type { GivenResult } from '../harness/given'
@@ -413,7 +414,70 @@ Then('the open tab is {string}', async (_world, name: string) => {
   })
 })
 
+/* ---------------------------------------------------------- Section tabs ---
+ * Each tab is a link whose name is its title followed by its caption, so the
+ * steps find a tab by the title it starts with.
+ */
+
+function sectionTabs(): HTMLElement[] {
+  return within(screen.getByTestId('section-tabs')).getAllByRole('link')
+}
+
+function sectionTab(title: string): HTMLElement {
+  const tab = sectionTabs().find((t) => t.textContent.startsWith(title))
+  if (!tab) throw new Error(`No "${title}" section tab`)
+  return tab
+}
+
+Then('the section tabs read:', async (_world, table: DataTable) => {
+  await waitFor(() => {
+    expect(
+      sectionTabs().map((tab) =>
+        [...tab.children].map((line) => line.textContent),
+      ),
+    ).toEqual(table.raw())
+  })
+})
+
+When('I open the {string} section', async (_world, title: string) => {
+  const user = userEvent.setup()
+  await user.click(await waitFor(() => sectionTab(title)))
+})
+
+Then('the current section is {string}', async (_world, title: string) => {
+  // Every section renders its own layout, so look the tabs up afresh each try.
+  await waitFor(() => {
+    const marked = sectionTabs().filter(
+      (tab) => tab.getAttribute('aria-current') === 'page',
+    )
+    expect(marked.map((tab) => tab.textContent)).toEqual([
+      sectionTab(title).textContent,
+    ])
+  })
+})
+
+Then('no section tab is {string}', (_world, title: string) => {
+  expect(sectionTabs().map((tab) => tab.textContent)).not.toContainEqual(
+    expect.stringMatching(new RegExp(`^${title}`)),
+  )
+})
+
+Then('the header actions are {string}', async (_world, names: string) => {
+  // Everything right of the section tabs, in order: MCP's row.
+  await waitFor(() => {
+    const row = screen.getByRole('link', { name: 'MCP' }).parentElement
+    if (!row) throw new Error('MCP has no row')
+    expect(
+      [...row.querySelectorAll('a, button')].map((el) => el.textContent.trim()),
+    ).toEqual(names.split(', '))
+  })
+})
+
 // Community tools: server state a scenario starts from
+
+Given('community tools are turned off', async () => {
+  await givenOnServer(({ backendCfg }) => backendCfg.communityTools.disable())
+})
 
 Given('I am signed in', async () => {
   await givenOnServer(({ backendCfg }) =>

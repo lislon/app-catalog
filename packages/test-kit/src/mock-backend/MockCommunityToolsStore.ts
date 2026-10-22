@@ -129,6 +129,11 @@ export class MockCommunityToolsStore {
     this.captureHosts = opts.captureHosts
   }
 
+  /** The deployment has not turned the feature on: only `config` answers. */
+  disable(): void {
+    this.enabled = false
+  }
+
   /** A page the capture browser can open, and the title it finds there. */
   withPage(url: string, title: string): void {
     this.pageTitles.set(url, title)
