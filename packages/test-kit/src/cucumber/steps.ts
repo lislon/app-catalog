@@ -1043,14 +1043,14 @@ Given(
 )
 
 Then(
-  'the row of {string} shows {int} comments',
+  'the row of {string} shows {int} comment(s)',
   async (_world, name: string, count: number) => {
     await waitFor(() => {
       expect(
         within(rowNamed('community-feed', name)).getByTestId(
           'feed-row-comments',
         ).textContent,
-      ).toBe(`${count} comments`)
+      ).toBe(`${count} ${count === 1 ? 'comment' : 'comments'}`)
     })
   },
 )
