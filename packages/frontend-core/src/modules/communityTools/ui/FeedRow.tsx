@@ -1,12 +1,13 @@
 import type {
   CommunityTool,
-  FeedWindow,
+  FeedSort,
   MatchField,
 } from '@igstack/app-catalog-shared-core'
 import { Link } from '@tanstack/react-router'
 import { CornerDownLeft, ExternalLink, Globe } from 'lucide-react'
 import { cn } from '~/lib/utils'
 import { highlightTokens } from '~/util/highlightMatches'
+import { timeAgo } from '../timeAgo'
 import { LifecycleBadge, UnreviewedBadge } from './LifecycleBadge'
 import { PinButton } from './PinButton'
 
@@ -88,7 +89,8 @@ export interface FeedRowProps {
   tool: CommunityTool
   /** Shown in the ranked feed; search results have no rank. */
   rank?: number
-  feedWindow: FeedWindow
+  /** A date sort shows its date on the row. */
+  sort: FeedSort
   tokens: string[]
   /** Set while searching: which fields the query hit. */
   matched?: MatchField[]
@@ -115,7 +117,7 @@ export const ROW_THUMB = 'h-[150px] w-[240px] rounded-[10px]'
 export function FeedRow({
   tool,
   rank,
-  feedWindow,
+  sort,
   tokens,
   matched,
   selected = false,
@@ -127,7 +129,13 @@ export function FeedRow({
   const archived = tool.lifecycle.state === 'archived'
   const cell = optionId ? 'gridcell' : undefined
   const owners = tool.owners.map((o) => o.name).join(', ')
-  const opens = feedWindow === 'all' ? tool.viewsAll : tool.views30d
+  const opens = tool.views30d
+  const dated =
+    sort === 'newest'
+      ? `Added ${timeAgo(tool.createdAt)}`
+      : sort === 'updated' && tool.siteUpdatedAt
+        ? `Updated ${timeAgo(tool.siteUpdatedAt)}`
+        : null
 
   return (
     <div
@@ -194,6 +202,14 @@ export function FeedRow({
               <span data-testid="feed-row-owner" className="min-w-0 truncate">
                 {highlightTokens(owners, tokens)}
               </span>
+              {dated && (
+                <span
+                  data-testid="feed-row-date"
+                  className="shrink-0 font-normal text-muted-foreground"
+                >
+                  · {dated}
+                </span>
+              )}
             </span>
           </div>
           {matched && matched.length > 0 && (

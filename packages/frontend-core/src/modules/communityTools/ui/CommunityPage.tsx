@@ -1,7 +1,8 @@
 import type {
   CommunityTool,
-  FeedWindow,
+  FeedSort,
   MatchField,
+  SortDir,
 } from '@igstack/app-catalog-shared-core'
 import { rankTools, searchTools } from '@igstack/app-catalog-shared-core'
 import { useLocation, useNavigate } from '@tanstack/react-router'
@@ -19,7 +20,7 @@ import { useAuthModal } from '~/modules/auth/AuthModalContext'
 import { Skeleton } from '~/ui/skeleton'
 import { useCommunityTools } from '../useCommunityTools'
 import { FeedRow, ROW_THUMB } from './FeedRow'
-import { FeedWindowToggle } from './FeedWindowToggle'
+import { FeedSortControl } from './FeedSortControl'
 import { MyToolsShelf } from './MyToolsShelf'
 import { TagRow } from './TagRow'
 import { Toast } from './Toast'
@@ -39,9 +40,10 @@ interface ListItem {
 export interface CommunityPageProps {
   /** `?tag=`: `<kind>:<value>`, or none for the whole feed. */
   tag: string | undefined
-  feedWindow: FeedWindow
+  sort: FeedSort
+  dir: SortDir
   onTagChange: (tag: string | undefined) => void
-  onWindowChange: (feedWindow: FeedWindow) => void
+  onSortChange: (sort: FeedSort, dir: SortDir) => void
   /** The tool whose card is open over the page (`/community/<slug>`). */
   cardSlug?: string
 }
@@ -59,9 +61,10 @@ function openSite(url: string) {
 
 export function CommunityPage({
   tag,
-  feedWindow,
+  sort,
+  dir,
   onTagChange,
-  onWindowChange,
+  onSortChange,
   cardSlug,
 }: CommunityPageProps) {
   const {
@@ -108,19 +111,19 @@ export function CommunityPage({
   )
 
   const feed = useMemo<ListItem[]>(
-    () => withTag(rankTools(tools, feedWindow)).map((tool) => ({ tool })),
-    [tools, feedWindow, withTag],
+    () => withTag(rankTools(tools, sort, dir)).map((tool) => ({ tool })),
+    [tools, sort, dir, withTag],
   )
 
   // Strongest match first; archived tools still found, after the rest.
   const results = useMemo<ListItem[]>(
     () =>
       searching
-        ? searchTools(withTag(tools), query, appNames, feedWindow).map(
+        ? searchTools(withTag(tools), query, appNames, sort, dir).map(
             ({ tool, fields }) => ({ tool, matched: fields }),
           )
         : [],
-    [searching, tools, query, appNames, feedWindow, withTag],
+    [searching, tools, query, appNames, sort, dir, withTag],
   )
 
   const items = searching ? results : feed
@@ -365,13 +368,14 @@ export function CommunityPage({
                 <h2 className="font-serif text-[19px] font-semibold">
                   Most opened by colleagues
                 </h2>
-                <FeedWindowToggle
-                  value={feedWindow}
-                  onChange={onWindowChange}
+                <FeedSortControl
+                  sort={sort}
+                  dir={dir}
+                  onChange={onSortChange}
                 />
               </div>
               <TagRow
-                tools={rankTools(tools, feedWindow)}
+                tools={rankTools(tools, sort, dir)}
                 activeTag={tag}
                 appNames={appNames}
                 onChoose={onTagChange}
@@ -422,7 +426,7 @@ export function CommunityPage({
                     <FeedRow
                       tool={item.tool}
                       rank={searching ? undefined : row.index + 1}
-                      feedWindow={feedWindow}
+                      sort={sort}
                       tokens={tokens}
                       matched={item.matched}
                       selected={searching && row.index === selectedIndex}

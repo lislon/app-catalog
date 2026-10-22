@@ -882,6 +882,56 @@ Then('the feed is filtered to {string}', async (_world, tag: string) => {
   })
 })
 
+Given(
+  'the site of {string} changed {int} day(s) ago',
+  async (_world, name: string, days: number) => {
+    // On the real clock: the row measures "N days ago" against it.
+    const at = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+    await givenOnServer(({ backendCfg }) => {
+      const tools = backendCfg.communityTools
+      tools.siteUpdated(tools.slugOf(name), at)
+    })
+  },
+)
+
+When('I sort by {string}', async (_world, label: string) => {
+  await userEvent.setup().click(
+    within(await screen.findByTestId('feed-sort')).getByRole('radio', {
+      name: new RegExp(`^${label}`),
+    }),
+  )
+})
+
+Then('the feed reads {string}', async (_world, names: string) => {
+  await waitFor(() => {
+    expect(communityList('community-feed').map(rowName).join(', ')).toBe(names)
+  })
+})
+
+Then('the sort says {string}', async (_world, label: string) => {
+  await waitFor(() => {
+    expect(screen.getByTestId('feed-sort').getAttribute('aria-label')).toBe(
+      label,
+    )
+  })
+})
+
+Then(
+  'the row of {string} says {string}',
+  async (_world, name: string, text: string) => {
+    await waitFor(() => {
+      expect(
+        within(rowNamed('community-feed', name)).getByTestId('feed-row-date')
+          .textContent,
+      ).toContain(text)
+    })
+  },
+)
+
+Then('the rows say no date', () => {
+  expect(screen.queryAllByTestId('feed-row-date')).toEqual([])
+})
+
 Then('the feed lists {string}', async (_world, name: string) => {
   await waitFor(() => {
     expect(communityList('community-feed').map(rowName)).toContain(name)
@@ -1507,7 +1557,7 @@ Then('I am told it is live now', async () => {
 })
 
 Then('{string} is listed under Newest', async (_world, name: string) => {
-  await userEvent.setup().click(screen.getByRole('radio', { name: 'Newest' }))
+  await userEvent.setup().click(screen.getByRole('radio', { name: /^Newest/ }))
   await waitFor(() => expect(feedNames()[0]).toBe(name))
 })
 

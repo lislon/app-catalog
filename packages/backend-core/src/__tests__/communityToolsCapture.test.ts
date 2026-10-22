@@ -13,11 +13,19 @@ import {
 const HOSTS = ['pages.example.com']
 const URL_OK = 'https://my-tool.pages.example.com/'
 
-function fakePage(fields: { landedOn?: string; iconHref?: string | null }) {
+function fakePage(fields: {
+  landedOn?: string
+  iconHref?: string | null
+  headers?: Record<string, string>
+}) {
   const iconBody = Buffer.from('icon')
   const page = {
     setDefaultTimeout: vi.fn(),
-    goto: vi.fn().mockResolvedValue({ ok: () => true, status: () => 200 }),
+    goto: vi.fn().mockResolvedValue({
+      ok: () => true,
+      status: () => 200,
+      headers: () => fields.headers ?? {},
+    }),
     waitForLoadState: vi.fn().mockResolvedValue(undefined),
     waitForTimeout: vi.fn().mockResolvedValue(undefined),
     url: vi.fn(() => fields.landedOn ?? URL_OK),
@@ -60,6 +68,7 @@ describe('Community tools capture', () => {
       png: Buffer.from('png'),
       title: 'My Tool',
       favicon: null,
+      lastModified: null,
     })
   })
 
@@ -101,6 +110,27 @@ describe('Community tools capture', () => {
     expect(order(page.waitForTimeout)).toBeLessThan(order(page.screenshot))
   })
 
+  it('reads when the site last changed from its Last-Modified', async () => {
+    const { page } = fakePage({
+      headers: { 'last-modified': 'Wed, 21 Oct 2026 07:28:00 GMT' },
+    })
+
+    const result = await capturePage(page, URL_OK, HOSTS)
+
+    expect(result.ok && result.lastModified).toEqual(
+      new Date('2026-10-21T07:28:00Z'),
+    )
+  })
+
+  it('has no change date for a page without, or with a garbled, Last-Modified', async () => {
+    const cases: Record<string, string>[] = [{}, { 'last-modified': 'soon' }]
+    for (const headers of cases) {
+      const { page } = fakePage({ headers })
+      const result = await capturePage(page, URL_OK, HOSTS)
+      expect(result.ok && result.lastModified).toBeNull()
+    }
+  })
+
   it('photographs a page that never goes quiet', async () => {
     const { page } = fakePage({})
     page.waitForLoadState.mockRejectedValue(new Error('Timeout exceeded'))
@@ -117,7 +147,11 @@ describe('Community tools capture', () => {
     // The page took 19 of the 20 seconds to load.
     page.goto.mockImplementation(() => {
       now.mockReturnValue(start + 19_000)
-      return Promise.resolve({ ok: () => true, status: () => 200 })
+      return Promise.resolve({
+        ok: () => true,
+        status: () => 200,
+        headers: () => ({}),
+      })
     })
 
     try {

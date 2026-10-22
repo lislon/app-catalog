@@ -1,9 +1,10 @@
 import type {
   CommunityTag,
   CommunityTool,
-  FeedWindow,
+  FeedSort,
   Lifecycle,
   MatchField,
+  SortDir,
 } from './types'
 
 /** A topic the way the next person will type it: `Plate Maps` is `plate-maps`. */
@@ -149,7 +150,8 @@ export function searchTools(
   tools: CommunityTool[],
   query: string,
   appNames: Record<string, string>,
-  window: FeedWindow,
+  sort: FeedSort,
+  dir: SortDir = 'desc',
 ): { tool: CommunityTool; fields: MatchField[] }[] {
   const hits = new Map<string, { fields: MatchField[]; strength: number }>()
   for (const tool of tools) {
@@ -159,7 +161,7 @@ export function searchTools(
   const hit = tools.filter((t) => hits.has(t.slug))
   const strengthOf = (t: CommunityTool) => hits.get(t.slug)!.strength
   // Array.sort is stable: equal strength keeps rankTools' order.
-  const live = rankTools(hit, window).sort(
+  const live = rankTools(hit, sort, dir).sort(
     (a, b) => strengthOf(a) - strengthOf(b),
   )
   const archived = hit
@@ -171,49 +173,40 @@ export function searchTools(
   }))
 }
 
+/**
+ * The feed's order: live tools by `sort` in `dir`, ties by name; tools that
+ * stopped working after them, in the same order; archived ones left out. A
+ * tool whose site never said when it changed goes last in either direction.
+ */
 export function rankTools(
   tools: CommunityTool[],
-  window: FeedWindow,
+  sort: FeedSort,
+  dir: SortDir = 'desc',
 ): CommunityTool[] {
-  // Filter out archived tools
-  const active = tools.filter((t) => t.lifecycle.state !== 'archived')
-
-  // Partition into working and not-working
-  const working = active.filter((t) => t.lifecycle.state !== 'not-working')
-  const notWorking = active.filter((t) => t.lifecycle.state === 'not-working')
-
-  // Sort each partition
-  const sortFn = (a: CommunityTool, b: CommunityTool): number => {
-    let valueA: number | string
-    let valueB: number | string
-
-    if (window === 'month') {
-      valueA = a.views30d
-      valueB = b.views30d
-    } else if (window === 'all') {
-      valueA = a.viewsAll
-      valueB = b.viewsAll
-    } else {
-      // newest
-      valueA = a.createdAt
-      valueB = b.createdAt
+  const key = (t: CommunityTool): number | null =>
+    sort === 'popular'
+      ? t.views30d
+      : sort === 'newest'
+        ? Date.parse(t.createdAt)
+        : t.siteUpdatedAt
+          ? Date.parse(t.siteUpdatedAt)
+          : null
+  const sign = dir === 'desc' ? -1 : 1
+  const order = (a: CommunityTool, b: CommunityTool): number => {
+    const ka = key(a)
+    const kb = key(b)
+    if (ka !== kb) {
+      if (ka === null) return 1
+      if (kb === null) return -1
+      return sign * (ka - kb)
     }
-
-    // Sort desc for views, desc for dates (newest first)
-    if (typeof valueA === 'number' && typeof valueB === 'number') {
-      if (valueB !== valueA) return valueB - valueA
-    } else if (typeof valueA === 'string' && typeof valueB === 'string') {
-      if (valueB !== valueA) return valueB.localeCompare(valueA)
-    }
-
-    // Tie-breaker: name ascending
     return a.name.localeCompare(b.name)
   }
-
-  const sortedWorking = working.sort(sortFn)
-  const sortedNotWorking = notWorking.sort(sortFn)
-
-  return [...sortedWorking, ...sortedNotWorking]
+  const active = tools.filter((t) => t.lifecycle.state !== 'archived')
+  return [
+    ...active.filter((t) => t.lifecycle.state !== 'not-working').sort(order),
+    ...active.filter((t) => t.lifecycle.state === 'not-working').sort(order),
+  ]
 }
 
 interface LifecycleFields {

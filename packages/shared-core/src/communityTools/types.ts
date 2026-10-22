@@ -32,6 +32,8 @@ export interface CommunityTool {
   owners: PersonRef[]
   addedBy: { userId: string; name: string }
   createdAt: string
+  /** When the site last changed, from its Last-Modified; null when never sent. */
+  siteUpdatedAt: string | null
   tags: CommunityTag[]
   views30d: number
   viewsAll: number
@@ -48,7 +50,11 @@ export interface CommunityTool {
 /** The longest tag value: a topic is a word or two, an app tag an app's slug. */
 export const TAG_VALUE_MAX = 32
 
-export type FeedWindow = 'month' | 'all' | 'newest'
+/** How the feed is ordered: views this month, date added, date the site changed. */
+export type FeedSort = 'popular' | 'newest' | 'updated'
+
+/** `desc` puts the most, or the latest, first. */
+export type SortDir = 'asc' | 'desc'
 
 export type MatchField =
   | 'name'

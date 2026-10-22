@@ -2,7 +2,14 @@ import { createRequire } from 'node:module'
 import { isCaptureAllowed } from '@igstack/app-catalog-shared-core'
 
 export type CaptureResult =
-  | { ok: true; png: Buffer; title: string | null; favicon: Buffer | null }
+  | {
+      ok: true
+      png: Buffer
+      title: string | null
+      favicon: Buffer | null
+      /** The page's `Last-Modified`: a static host sets it on each deploy. */
+      lastModified: Date | null
+    }
   | { ok: false; error: string }
 
 /**
@@ -25,7 +32,11 @@ export interface CapturePage {
   goto: (
     url: string,
     options: { timeout: number; waitUntil: 'load' },
-  ) => Promise<{ ok: () => boolean; status: () => number } | null>
+  ) => Promise<{
+    ok: () => boolean
+    status: () => number
+    headers: () => Record<string, string>
+  } | null>
   waitForLoadState: (
     state: 'networkidle',
     options: { timeout: number },
@@ -220,7 +231,20 @@ export async function capturePage(
     }
   }
 
-  return { ok: true, png, title, favicon }
+  return {
+    ok: true,
+    png,
+    title,
+    favicon,
+    lastModified: httpDate(response.headers()['last-modified']),
+  }
+}
+
+/** An HTTP date header as a Date; null when absent or unreadable. */
+export function httpDate(value: string | undefined): Date | null {
+  if (!value) return null
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? null : date
 }
 
 /** Runs captures one at a time, so concurrent previews cannot start a browser each. */

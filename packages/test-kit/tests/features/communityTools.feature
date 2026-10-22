@@ -94,6 +94,41 @@ Feature: Getting back to a tool a colleague built
     When I search for "tracker"
     Then the results show "Old Tracker" as archived
 
+  Rule: Ordering the feed
+
+  Scenario: The feed starts with the most opened this month
+    When I open Community tools
+    Then the sort says "Sort by Popular, descending"
+    And the feed reads "Ops Runbook, Kit Rules Playground, Old Tracker"
+    And the rows say no date
+
+  Scenario: Newest puts the latest addition first
+    When I open Community tools
+    And I sort by "Newest"
+    Then the feed reads "Kit Rules Playground, Ops Runbook, Old Tracker"
+    And the row of "Kit Rules Playground" says "Added"
+
+  Scenario: Clicking Newest twice sorts oldest first
+    When I open Community tools
+    And I sort by "Newest"
+    And I sort by "Newest"
+    Then the sort says "Sort by Newest, ascending"
+    And the feed reads "Old Tracker, Ops Runbook, Kit Rules Playground"
+
+  Scenario: Recently updated goes by when the site changed, unknown last
+    Given the site of "Kit Rules Playground" changed 3 days ago
+    And the site of "Old Tracker" changed 10 days ago
+    When I open Community tools
+    And I sort by "Recently updated"
+    Then the feed reads "Kit Rules Playground, Old Tracker, Ops Runbook"
+    And the row of "Kit Rules Playground" says "Updated 3 days ago"
+
+  Scenario: An old link to the newest tools still opens Newest
+    When I open Community tools
+    And I go to "/community?window=newest"
+    Then the sort says "Sort by Newest, descending"
+    And the feed reads "Kit Rules Playground, Ops Runbook, Old Tracker"
+
   Rule: Finding what colleagues built for the app I work in
 
   Scenario: The app's card points at community tools for it

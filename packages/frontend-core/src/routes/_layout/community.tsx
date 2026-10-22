@@ -1,4 +1,9 @@
-import { Outlet, createFileRoute, useParams } from '@tanstack/react-router'
+import {
+  Outlet,
+  createFileRoute,
+  stripSearchParams,
+  useParams,
+} from '@tanstack/react-router'
 import { z } from 'zod'
 import { AppCatalogLayout } from '~/modules/appCatalog/ui/layout/AppCatalogLayout'
 import { CommunityPage } from '~/modules/communityTools/ui/CommunityPage'
@@ -6,17 +11,30 @@ import { useCommunityToolsConfig } from '~/modules/communityTools/useCommunityTo
 import { NotFoundError } from '~/ui/error/NotFoundError'
 import { TopLevelProvidersForErrors } from '~/ui/layout/TopLevelProvidersForErrors'
 
-// Both default to absent, so a plain /community link stays plain. A value that
+// Each defaults to absent, so a plain /community link stays plain. A value that
 // does not parse reads as absent rather than failing the route.
-const searchSchema = z.object({
-  /** `<kind>:<value>`, e.g. `topic:sandbox` or `app:order-service`. */
-  tag: z.string().optional().catch(undefined),
-  window: z.enum(['all', 'newest']).optional().catch(undefined),
-})
+const searchSchema = z
+  .object({
+    /** `<kind>:<value>`, e.g. `topic:sandbox` or `app:order-service`. */
+    tag: z.string().optional().catch(undefined),
+    /** Popular when absent. */
+    sort: z.enum(['newest', 'updated']).optional().catch(undefined),
+    /** Descending when absent. */
+    dir: z.enum(['asc']).optional().catch(undefined),
+    /** The old window toggle: `newest` still means Newest; the param is dropped. */
+    window: z.string().optional().catch(undefined),
+  })
+  .transform(({ window, ...search }) => ({
+    ...search,
+    sort:
+      search.sort ?? (window === 'newest' ? ('newest' as const) : undefined),
+    window: undefined,
+  }))
 
 export const Route = createFileRoute('/_layout/community')({
   component: RouteComponent,
   validateSearch: searchSchema,
+  search: { middlewares: [stripSearchParams(['window'])] },
 })
 
 function RouteComponent() {
@@ -29,7 +47,7 @@ function RouteComponent() {
   // off answers a typed-in /community with the usual not-found page.
   const config = useCommunityToolsConfig({ queryClient, trpcClient })
 
-  // A tag or window change keeps an open card open: it navigates from the
+  // A tag or sort change keeps an open card open: it navigates from the
   // current match, not from this parent route, which would drop the slug.
   const setSearch = (patch: Partial<typeof search>) =>
     void (slug
@@ -55,11 +73,15 @@ function RouteComponent() {
     <AppCatalogLayout queryClient={queryClient} trpcClient={trpcClient}>
       <CommunityPage
         tag={search.tag}
-        feedWindow={search.window ?? 'month'}
+        sort={search.sort ?? 'popular'}
+        dir={search.dir ?? 'desc'}
         cardSlug={slug}
         onTagChange={(tag) => setSearch({ tag })}
-        onWindowChange={(feedWindow) =>
-          setSearch({ window: feedWindow === 'month' ? undefined : feedWindow })
+        onSortChange={(sort, dir) =>
+          setSearch({
+            sort: sort === 'popular' ? undefined : sort,
+            dir: dir === 'asc' ? 'asc' : undefined,
+          })
         }
       />
       {/* The card route renders nothing; the page above reads its slug. */}

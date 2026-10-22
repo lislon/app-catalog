@@ -1,4 +1,5 @@
 // @vitest-environment node
+import sharp from 'sharp'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as dbClient from '../db/client'
 import type { PrismaClient } from '../generated/prisma/client'
@@ -168,6 +169,7 @@ describe('Community tools service', () => {
             screenshotAssetId: null,
             faviconAssetId: null,
             capturedAt: null,
+            siteUpdatedAt: null,
             failingSince: null,
             archivedAt: null,
             archivedBy: null,
@@ -195,6 +197,7 @@ describe('Community tools service', () => {
             screenshotAssetId: null,
             faviconAssetId: null,
             capturedAt: null,
+            siteUpdatedAt: null,
             failingSince: null,
             archivedAt: null,
             archivedBy: null,
@@ -222,6 +225,7 @@ describe('Community tools service', () => {
             screenshotAssetId: null,
             faviconAssetId: null,
             capturedAt: null,
+            siteUpdatedAt: null,
             failingSince: null,
             archivedAt: null,
             archivedBy: null,
@@ -396,6 +400,7 @@ describe('Community tools service', () => {
           screenshotId: null,
           faviconId: null,
           capturedAt: null,
+          siteUpdatedAt: null,
           failingSince: null,
           archivedAt: null,
           archivedBy: null,
@@ -419,6 +424,7 @@ describe('Community tools service', () => {
           screenshotId: null,
           faviconId: null,
           capturedAt: null,
+          siteUpdatedAt: null,
           failingSince: new Date('2024-01-10T00:00:00Z'),
           archivedAt: null,
           archivedBy: null,
@@ -473,6 +479,7 @@ describe('Community tools service', () => {
         screenshotAssetId: null,
         faviconAssetId: null,
         capturedAt: null,
+        siteUpdatedAt: null,
         owners: [],
         namedOwners: [],
         tags: [],
@@ -554,6 +561,58 @@ describe('Community tools service', () => {
       const written = db.dbCommunityTool.update.mock.calls[0]?.[0].data
       expect(written).toEqual({ lastCheckAt: now })
       expect(await pending(written)).toBe(false)
+    })
+
+    describe('when the site last changed', () => {
+      const visit = async (lastModified: Date | null) => {
+        const db = {
+          dbCommunityTool: { update: vi.fn().mockResolvedValue({}) },
+          dbAsset: {
+            findUnique: vi.fn().mockResolvedValue(null),
+            create: vi.fn().mockResolvedValue({ id: 'asset-1' }),
+          },
+        }
+        vi.spyOn(dbClient, 'getDbClient').mockReturnValue(
+          db as unknown as PrismaClient,
+        )
+        const png = await sharp({
+          create: { width: 4, height: 4, channels: 3, background: '#fff' },
+        })
+          .png()
+          .toBuffer()
+        const capture = vi.fn().mockResolvedValue({
+          ok: true,
+          png,
+          title: null,
+          favicon: null,
+          lastModified,
+        })
+        await checkTool(
+          {
+            id: 'tool-1',
+            slug: 'new-tool',
+            url: 'https://new-tool.pages.example.com/',
+            failingSince: null,
+            archivedAt: null,
+            archivedBy: null,
+          },
+          { ...CAPTURES, capturer: { capture } },
+          new Date('2024-01-15T12:00:00Z'),
+        )
+        return db.dbCommunityTool.update.mock.calls[0]?.[0].data as Record<
+          string,
+          unknown
+        >
+      }
+
+      it('is stored from the page Last-Modified', async () => {
+        const changed = new Date('2024-01-10T08:00:00Z')
+        expect((await visit(changed))['siteUpdatedAt']).toEqual(changed)
+      })
+
+      it('is left as it was when the page sends none', async () => {
+        expect(await visit(null)).not.toHaveProperty('siteUpdatedAt')
+      })
     })
 
     it('is not pending without a capturer', async () => {

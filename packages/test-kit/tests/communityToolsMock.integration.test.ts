@@ -52,6 +52,22 @@ describe('the "community" catalog mock', () => {
     })
   })
 
+  it('says when a site last changed, and nothing for one that never said', async () => {
+    const changed = new Date('2026-10-18T07:28:00.000Z')
+    await community(({ backendCfg }) => {
+      backendCfg.communityTools.siteUpdated('ops-runbook', changed)
+    })
+
+    const tools = await api.communityTools.list.query()
+    expect(
+      Object.fromEntries(tools.map((t) => [t.slug, t.siteUpdatedAt])),
+    ).toEqual({
+      'ops-runbook': changed.toISOString(),
+      'kit-rules-playground': null,
+      'old-tracker': null,
+    })
+  })
+
   it('refuses protected procedures to an anonymous visitor', async () => {
     await community()
 

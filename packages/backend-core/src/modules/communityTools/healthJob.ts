@@ -99,6 +99,11 @@ export async function checkTool(
       lastCheckAt: now,
       ...nextLifecycle(tool, result.ok, now),
       ...(result.ok && (await storeCapture(tool.slug, result, now))),
+      // A visit without the header leaves the date it last had.
+      ...(result.ok &&
+        result.lastModified && {
+          siteUpdatedAt: result.lastModified,
+        }),
     },
   })
 }

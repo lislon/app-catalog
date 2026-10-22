@@ -54,6 +54,8 @@ interface StoredTool {
   screenshotId: string | null
   faviconId: string | null
   capturedAt: Date | null
+  /** The site's Last-Modified at its last visit that sent one. */
+  siteUpdatedAt: Date | null
 }
 
 /** Everything a scenario may preset on a tool; name and url are all it must give. */
@@ -305,6 +307,11 @@ export class MockCommunityToolsStore {
     return this.viewCounts(tool)
   }
 
+  /** A visit read the site's Last-Modified as `at`. */
+  siteUpdated(slug: string, at: Date): void {
+    this.stored(slug).siteUpdatedAt = at
+  }
+
   pins(): CommunityTool[] {
     const user = this.requireUser()
     return (this.pinsByUser.get(user.id) ?? []).map((slug) =>
@@ -530,6 +537,7 @@ export class MockCommunityToolsStore {
       screenshotId: null,
       faviconId: null,
       capturedAt: null,
+      siteUpdatedAt: null,
       ...fields,
       id: `tool-${this.counter}`,
       slug: fields.slug ?? this.freeSlug(fields.name),
@@ -695,6 +703,7 @@ export class MockCommunityToolsStore {
       screenshotId: tool.screenshotId,
       faviconId: tool.faviconId,
       capturedAt: tool.capturedAt?.toISOString() ?? null,
+      siteUpdatedAt: tool.siteUpdatedAt?.toISOString() ?? null,
       // The mock always has a capturer: the host list alone decides.
       capturePending:
         !tool.screenshotId &&

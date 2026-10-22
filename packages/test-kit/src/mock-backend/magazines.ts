@@ -3,6 +3,8 @@ import { MOCK_NOW } from './MockCommunityToolsStore'
 import type { BrowserStateCfg } from './BrowserStateCfg'
 import type { NetworkConfigurerCfg } from '../mock-network/NetworkConfigurerCfg'
 
+const DAY_MS = 24 * 60 * 60 * 1000
+
 // ---------------------------------------------------------------------------
 // Core types
 // ---------------------------------------------------------------------------
@@ -376,6 +378,7 @@ function communityMagazine(postConfigure?: Magazine): Magazine {
       tags: [{ kind: 'topic', value: 'runbook' }],
       screenshotId: 'ops-runbook-shot',
       capturedAt: MOCK_NOW,
+      createdAt: new Date(MOCK_NOW.getTime() - 200 * DAY_MS),
       views30d: 412,
       viewsAll: 1203,
     })
@@ -389,6 +392,7 @@ function communityMagazine(postConfigure?: Magazine): Magazine {
       tags: [{ kind: 'topic', value: 'sandbox' }],
       screenshotId: 'kit-rules-shot',
       capturedAt: MOCK_NOW,
+      createdAt: new Date(MOCK_NOW.getTime() - 40 * DAY_MS),
       views30d: 288,
       viewsAll: 288,
     })
@@ -400,6 +404,7 @@ function communityMagazine(postConfigure?: Magazine): Magazine {
       ownerSlugs: [robin.slug],
       screenshotId: 'old-tracker-shot',
       capturedAt: MOCK_NOW,
+      createdAt: new Date(MOCK_NOW.getTime() - 400 * DAY_MS),
       views30d: 22,
       viewsAll: 22,
     })

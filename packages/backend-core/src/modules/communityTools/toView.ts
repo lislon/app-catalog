@@ -79,6 +79,7 @@ export async function toView(
       name: tool.addedByName,
     },
     createdAt: tool.createdAt.toISOString(),
+    siteUpdatedAt: tool.siteUpdatedAt?.toISOString() ?? null,
     tags,
     views30d: viewCounts.views30d,
     viewsAll: viewCounts.viewsAll,

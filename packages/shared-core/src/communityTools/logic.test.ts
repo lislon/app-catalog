@@ -48,6 +48,7 @@ function opsRunbook(): CommunityTool {
     owners: [{ slug: 'dana@example.com', name: 'Dana Lee' }],
     addedBy: { userId: 'user1', name: 'Dana Lee' },
     createdAt: '2026-01-01T00:00:00Z',
+    siteUpdatedAt: null,
     tags: [],
     views30d: 10,
     viewsAll: 100,
@@ -265,54 +266,73 @@ describe('searchTools', () => {
         [byTag, bySummary, byNameQuiet, byNameBusy],
         'runbook',
         {},
-        'month',
+        'popular',
       ).map((r) => r.tool.slug),
     ).toEqual(['Runbook Pro', 'Runbook Lite', 'Shift Guide', 'Deploy Notes'])
   })
 
   it('keeps archived matches, last, with the fields they matched', () => {
-    const results = searchTools([archived(900), live(3)], 'ops', {}, 'month')
+    const results = searchTools([archived(900), live(3)], 'ops', {}, 'popular')
     expect(results.map((r) => r.tool.slug)).toEqual(['live', 'archived'])
     expect(results[0]!.fields).toEqual(['name'])
   })
 })
 
 describe('rankTools', () => {
-  it('rank: archived dropped, not-working sinks', () => {
-    expect(
-      rankTools([dead(500), live(3), archived(900)], 'month').map(
-        (t) => t.slug,
-      ),
-    ).toEqual(['live', 'dead'])
-  })
+  const at = (n: number) => `2026-0${n}-01T00:00:00.000Z`
+  const names = (tools: CommunityTool[]) => tools.map((t) => t.name)
 
-  it('sorts by views30d in month window', () => {
-    expect(
-      rankTools([live(10), live(50), live(30)], 'month').map((t) => t.views30d),
-    ).toEqual([50, 30, 10])
-  })
-
-  it('sorts by viewsAll in all window', () => {
-    const tools = [
-      { ...live(10), viewsAll: 100 },
-      { ...live(50), viewsAll: 200 },
-      { ...live(30), viewsAll: 150 },
-    ]
-    expect(rankTools(tools, 'all').map((t) => t.viewsAll)).toEqual([
-      200, 150, 100,
+  it('drops archived tools and sinks not-working ones, in either direction', () => {
+    const tools = [dead(500), live(3), archived(900)]
+    expect(rankTools(tools, 'popular').map((t) => t.slug)).toEqual([
+      'live',
+      'dead',
+    ])
+    expect(rankTools(tools, 'popular', 'asc').map((t) => t.slug)).toEqual([
+      'live',
+      'dead',
     ])
   })
 
-  it('sorts by createdAt desc in newest window', () => {
+  it('popular: views this month, most first, or least first ascending', () => {
     const tools = [
-      { ...live(10), createdAt: '2026-01-01T00:00:00Z' },
-      { ...live(50), createdAt: '2026-03-01T00:00:00Z' },
-      { ...live(30), createdAt: '2026-02-01T00:00:00Z' },
+      { ...live(10), name: 'A' },
+      { ...live(50), name: 'B' },
+      { ...live(30), name: 'C' },
     ]
-    expect(rankTools(tools, 'newest').map((t) => t.createdAt)).toEqual([
-      '2026-03-01T00:00:00Z',
-      '2026-02-01T00:00:00Z',
-      '2026-01-01T00:00:00Z',
+    expect(names(rankTools(tools, 'popular'))).toEqual(['B', 'C', 'A'])
+    expect(names(rankTools(tools, 'popular', 'asc'))).toEqual(['A', 'C', 'B'])
+  })
+
+  it('newest: date added, latest first, or oldest first ascending', () => {
+    const tools = [
+      { ...live(1), name: 'Jan', createdAt: at(1) },
+      { ...live(1), name: 'Mar', createdAt: at(3) },
+      { ...live(1), name: 'Feb', createdAt: at(2) },
+    ]
+    expect(names(rankTools(tools, 'newest'))).toEqual(['Mar', 'Feb', 'Jan'])
+    expect(names(rankTools(tools, 'newest', 'asc'))).toEqual([
+      'Jan',
+      'Feb',
+      'Mar',
+    ])
+  })
+
+  it('updated: date the site changed, and a site that never said goes last both ways', () => {
+    const tools = [
+      { ...live(1), name: 'Unknown', siteUpdatedAt: null },
+      { ...live(1), name: 'Jan', siteUpdatedAt: at(1) },
+      { ...live(1), name: 'Mar', siteUpdatedAt: at(3) },
+    ]
+    expect(names(rankTools(tools, 'updated'))).toEqual([
+      'Mar',
+      'Jan',
+      'Unknown',
+    ])
+    expect(names(rankTools(tools, 'updated', 'asc'))).toEqual([
+      'Jan',
+      'Mar',
+      'Unknown',
     ])
   })
 
@@ -322,7 +342,7 @@ describe('rankTools', () => {
       { ...live(10), name: 'Alice' },
       { ...live(10), name: 'Bob' },
     ]
-    expect(rankTools(tools, 'month').map((t) => t.name)).toEqual([
+    expect(names(rankTools(tools, 'popular'))).toEqual([
       'Alice',
       'Bob',
       'Charlie',

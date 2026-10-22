@@ -429,6 +429,8 @@ model DbCommunityTool {
   faviconAssetId    String?
   /// When screenshots were last captured.
   capturedAt        DateTime?
+  /// When the site itself last changed: its page's Last-Modified, at the last visit that sent one.
+  siteUpdatedAt     DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
