@@ -5,9 +5,13 @@ import { ScreenshotGallery } from '~/modules/appCatalog/ui/components/Screenshot
 import { cn } from '~/lib/utils'
 import { screenshotUrl } from './FeedRow'
 
-/** The 16:10 box every state shares, so swapping one for another moves nothing. */
+/**
+ * The 16:10 box every state shares, so swapping one for another moves nothing.
+ * Capped in height, so how to use it and who to ask stay above the fold; the
+ * top of the page, where its title is, is what shows.
+ */
 const BOX =
-  'relative flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-[14px] border border-border bg-muted shadow-sm'
+  'relative flex aspect-[16/10] max-h-[320px] w-full items-center justify-center overflow-hidden rounded-[14px] border border-border bg-muted shadow-sm'
 
 export function formatCardDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', {

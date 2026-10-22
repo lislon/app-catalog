@@ -1338,6 +1338,8 @@ Then('the screenshot box keeps the shape of a screenshot', () => {
   const box = within(toolCard()).getByTestId('card-screenshot-box')
   expect(box.className).toContain('aspect-[16/10]')
   expect(box.className).toContain('w-full')
+  // Capped, so how to use it stays above the fold.
+  expect(box.className).toContain('max-h-[320px]')
 })
 
 Then('the card is closed', async () => {

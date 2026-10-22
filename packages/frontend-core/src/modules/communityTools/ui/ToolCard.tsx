@@ -302,6 +302,34 @@ export function ToolCard({
                   </span>
                 </p>
               )}
+              {/* Who to ask, up here with the facts: below the screenshot
+                  it fell under the fold. */}
+              <p
+                data-testid="card-people"
+                className="mt-2.5 flex flex-wrap items-center gap-x-[18px] gap-y-1.5 text-[13px] font-semibold text-muted-foreground"
+              >
+                {tool.owners.length > 0 && (
+                  <span className="inline-flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                    <span className={LABEL}>Owners</span>
+                    {tool.owners.map((owner) => (
+                      <span
+                        key={owner.slug}
+                        className="inline-flex items-center gap-1.5 text-foreground"
+                      >
+                        <PersonAvatar name={owner.name} />
+                        <span data-testid="card-owner">{owner.name}</span>
+                      </span>
+                    ))}
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1.5">
+                  <span className={LABEL}>Added by</span>
+                  <span className="text-foreground">{tool.addedBy.name}</span>
+                  <span className="font-normal">
+                    {formatCardDate(tool.createdAt)}
+                  </span>
+                </span>
+              </p>
             </div>
             <LifecycleNote
               tool={tool}
@@ -377,33 +405,6 @@ export function ToolCard({
               </div>
             </section>
           )}
-
-          <section className={cn(SECTION, 'flex flex-wrap gap-12')}>
-            {tool.owners.length > 0 && (
-              <div className="flex flex-col gap-2">
-                <span className={LABEL}>Owners</span>
-                {tool.owners.map((owner) => (
-                  <span
-                    key={owner.slug}
-                    className="inline-flex items-center gap-2 text-sm font-semibold"
-                  >
-                    <PersonAvatar name={owner.name} />
-                    <span data-testid="card-owner">{owner.name}</span>
-                  </span>
-                ))}
-              </div>
-            )}
-            <div className="flex flex-col gap-2">
-              <span className={LABEL}>Added by</span>
-              <span className="inline-flex items-center gap-2 text-sm font-semibold">
-                <PersonAvatar name={tool.addedBy.name} />
-                {tool.addedBy.name}
-                <span className="ml-1 font-normal text-muted-foreground">
-                  {formatCardDate(tool.createdAt)}
-                </span>
-              </span>
-            </div>
-          </section>
 
           {/* The card's own order: what was said first, the input last. The
               official card's CommunitySection puts the input on top. */}
