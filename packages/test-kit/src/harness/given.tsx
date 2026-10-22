@@ -222,7 +222,10 @@ export async function given(
     () => {
       const hasAlert = screen.queryByRole('alert')
       const hasTable = screen.queryAllByRole('table').length > 0
-      const hasSearchbox = screen.queryByLabelText('Search apps')
+      // Either section's search: a reload can land on the community page.
+      const hasSearchbox =
+        screen.queryByLabelText('Search apps') ??
+        screen.queryByLabelText('Search community tools')
       const hasLoginPage = screen.queryByTestId('login-page')
       const hasTanstackError = document.body.textContent.includes(
         'Something went wrong',

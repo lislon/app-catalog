@@ -458,7 +458,7 @@ export function AppDetails({
         <div className="behind-panel">
           <CommunitySection
             ref={knowMoreRef}
-            appSlug={app.slug}
+            target={{ resourceSlug: app.slug }}
             appName={app.displayName}
             claims={app.claims}
           />

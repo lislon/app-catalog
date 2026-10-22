@@ -9,6 +9,7 @@ import { cn } from '~/lib/utils'
 import { Button } from '~/ui/button'
 import { formatRelativeTime } from '../../utils/formatRelativeTime'
 import { attachmentUrl } from './communityDraft'
+import type { CommentTarget } from './communityDraft'
 import { formatCommunityError } from './communityError'
 import { composeComments } from './composeComments'
 import type { CommentEntry } from './composeComments'
@@ -84,18 +85,18 @@ function Meta({ entry, edited }: { entry: CommentEntry; edited: boolean }) {
  * instant so a skewed client clock cannot show a control the server would refuse.
  */
 export function CommentsFeed({
-  appSlug,
+  target,
   claims,
   labelledBy,
 }: {
-  appSlug: string
+  target: CommentTarget
   claims: Claim[]
   /** Id of the heading that names the list. */
   labelledBy: string
 }) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
-  const listOptions = trpc.feedback.list.queryOptions({ resourceSlug: appSlug })
+  const listOptions = trpc.feedback.list.queryOptions(target)
   const { data, error, isPending } = useQuery(listOptions)
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [editDraft, setEditDraft] = React.useState('')

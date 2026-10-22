@@ -1,4 +1,4 @@
-import { Outlet, createFileRoute } from '@tanstack/react-router'
+import { Outlet, createFileRoute, useParams } from '@tanstack/react-router'
 import { z } from 'zod'
 import { AppCatalogLayout } from '~/modules/appCatalog/ui/layout/AppCatalogLayout'
 import { CommunityPage } from '~/modules/communityTools/ui/CommunityPage'
@@ -20,23 +20,32 @@ function RouteComponent() {
   const { queryClient, trpcClient } = Route.useRouteContext()
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
+  // Set while a card is open: the child route's slug.
+  const { slug } = useParams({ strict: false })
+
+  // A tag or window change keeps an open card open: it navigates from the
+  // current match, not from this parent route, which would drop the slug.
+  const setSearch = (patch: Partial<typeof search>) =>
+    void (slug
+      ? navigate({
+          to: '/community/$slug',
+          params: { slug },
+          search: (prev) => ({ ...prev, ...patch }),
+        })
+      : navigate({
+          to: '/community',
+          search: (prev) => ({ ...prev, ...patch }),
+        }))
 
   return (
     <AppCatalogLayout queryClient={queryClient} trpcClient={trpcClient}>
       <CommunityPage
         tag={search.tag}
         feedWindow={search.window ?? 'month'}
-        onTagChange={(tag) =>
-          void navigate({ to: '.', search: (prev) => ({ ...prev, tag }) })
-        }
+        cardSlug={slug}
+        onTagChange={(tag) => setSearch({ tag })}
         onWindowChange={(feedWindow) =>
-          void navigate({
-            to: '.',
-            search: (prev) => ({
-              ...prev,
-              window: feedWindow === 'month' ? undefined : feedWindow,
-            }),
-          })
+          setSearch({ window: feedWindow === 'month' ? undefined : feedWindow })
         }
       />
       {/* The card route renders nothing; the page above reads its slug. */}

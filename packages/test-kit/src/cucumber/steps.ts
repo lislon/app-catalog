@@ -658,13 +658,15 @@ Given('I opened {int} different tools', async (_world, count: number) => {
   })
 })
 
-When('I open Community tools', async () => {
+async function openCommunity(): Promise<void> {
   const user = userEvent.setup()
   await user.click(await waitFor(() => sectionTab('Community tools')))
   await waitFor(() => {
     expect(screen.getByLabelText('Search community tools')).toBeTruthy()
   })
-})
+}
+
+When('I open Community tools', openCommunity)
 
 Then('the caret is in the search', async () => {
   await waitFor(() => {
@@ -704,11 +706,13 @@ Then('the first result is {string}', async (_world, name: string) => {
   })
 })
 
-Then('it is the selected option', () => {
-  const listbox = screen.getByRole('listbox', { name: 'Search results' })
-  const selected = within(listbox).getByRole('option', { selected: true })
-  expect(selected).toBe(communityList('community-results')[0])
-  expect(listbox.getAttribute('aria-activedescendant')).toBe(selected.id)
+Then('it is the selected result', () => {
+  const grid = screen.getByRole('grid', { name: 'Search results' })
+  const selected = within(grid).getByRole('gridcell', { selected: true })
+  expect(selected.closest('[data-testid="feed-row"]')).toBe(
+    communityList('community-results')[0],
+  )
+  expect(grid.getAttribute('aria-activedescendant')).toBe(selected.id)
   expect(
     screen
       .getByLabelText('Search community tools')
@@ -903,3 +907,205 @@ Then(
     })
   },
 )
+
+/* ------------------------------------------------------ Community tool card ---
+ * The card over the page: what identifies the tool, stepping through the list
+ * it was opened from, pinning, and the comment box that keeps its own keys.
+ */
+
+function toolCard(): HTMLElement {
+  return screen.getByTestId('tool-card')
+}
+
+function cardToolName(): string {
+  return within(toolCard()).getByTestId('card-tool-name').textContent.trim()
+}
+
+function commentBox(): HTMLTextAreaElement {
+  return within(toolCard()).getByLabelText(/^Know more about /)
+}
+
+/** The tool's opens this month on the server just before its card opened. */
+let opensBefore: number | null = null
+
+async function openCard(name: string): Promise<void> {
+  if (!current) throw new Error('No catalog opened — missing a Given step?')
+  const tools = current.backend.communityTools
+  opensBefore = tools.get({ slug: tools.slugOf(name) }).views30d
+  // A card opens from the page, so a scenario may start anywhere.
+  if (!screen.queryByLabelText('Search community tools')) await openCommunity()
+  const user = userEvent.setup()
+  const row = await waitFor(() => rowNamed('community-feed', name))
+  await user.click(within(row).getByTestId('feed-row-name'))
+  await waitFor(() => expect(cardToolName()).toBe(name))
+}
+
+/** A tool the server holds, as its row in the feed names it. */
+function feedNames(): string[] {
+  return communityList('community-feed').map(rowName)
+}
+
+Given('{string} was just added', async (_world, name: string) => {
+  // On the real clock: the card tells "still capturing" by the tool's age.
+  const createdAt = new Date()
+  await givenOnServer(({ backendCfg }) => {
+    backendCfg.communityTools.seed({
+      name,
+      url: `https://${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pages.example.com/`,
+      createdAt,
+    })
+  })
+})
+
+When('I open the card of {string}', async (_world, name: string) => {
+  await openCard(name)
+})
+
+When('I open the card of the first tool', async () => {
+  const first = await waitFor(() => {
+    const name = feedNames()[0]
+    if (!name) throw new Error('The feed is empty')
+    return name
+  })
+  await openCard(first)
+})
+
+When('I close the card', async () => {
+  const user = userEvent.setup()
+  await user.click(within(toolCard()).getByRole('button', { name: 'Close' }))
+  await waitFor(() => expect(screen.queryByTestId('tool-card')).toBeNull())
+})
+
+When('I press the right arrow', async () => {
+  await userEvent.setup().keyboard('{ArrowRight}')
+})
+
+When('I press the left arrow', async () => {
+  await userEvent.setup().keyboard('{ArrowLeft}')
+})
+
+When('I pin it', async () => {
+  const user = userEvent.setup()
+  await user.click(within(toolCard()).getByTestId('pin-button'))
+})
+
+When('I type {string} in the comment box', async (_world, text: string) => {
+  const user = userEvent.setup()
+  await user.click(commentBox())
+  await user.keyboard(text)
+})
+
+When('I press Enter on the card', async () => {
+  openSpy ??= vi.spyOn(window, 'open').mockImplementation(() => null)
+  openSpy.mockClear()
+  toolCard().focus()
+  await userEvent.setup().keyboard('{Enter}')
+})
+
+Then('the card shows the screenshot', async () => {
+  await waitFor(() => {
+    const box = within(toolCard()).getByTestId('card-screenshot-box')
+    expect(box.dataset['state']).toBe('captured')
+    expect(within(box).getByRole('img').getAttribute('src')).toMatch(
+      /^\/api\/screenshots\//,
+    )
+  })
+  expect(within(toolCard()).getByTestId('card-screenshot').textContent).toMatch(
+    /Screenshot captured \d{1,2} \w{3} \d{4}/,
+  )
+})
+
+Then('the card shows how to use it', () => {
+  if (!current) throw new Error('No catalog opened — missing a Given step?')
+  const tools = current.backend.communityTools
+  const tool = tools.get({ slug: tools.slugOf(cardToolName()) })
+  expect(
+    within(toolCard()).getByTestId('card-how-to-use').textContent,
+  ).toContain(tool.descriptionMd)
+})
+
+Then('the card shows {string} as owner', (_world, name: string) => {
+  expect(
+    within(toolCard())
+      .getAllByTestId('card-owner')
+      .map((o) => o.textContent.trim()),
+  ).toContain(name)
+})
+
+Then('the card counts one more open this month', async () => {
+  if (opensBefore === null) throw new Error('No card opened')
+  const expected = (opensBefore + 1).toLocaleString('en-US')
+  await waitFor(() => {
+    expect(within(toolCard()).getByTestId('card-views').textContent).toContain(
+      `${expected} opens this month`,
+    )
+  })
+})
+
+Then('the card shows the second tool', async () => {
+  const second = feedNames()[1]
+  await waitFor(() => expect(cardToolName()).toBe(second))
+  expect(within(toolCard()).getByTestId('card-position').textContent).toBe(
+    `2 of ${feedNames().length}`,
+  )
+})
+
+Then('the card still shows the first tool', () => {
+  expect(cardToolName()).toBe(feedNames()[0])
+})
+
+Then('the caret in the comment box is at {int}', (_world, position: number) => {
+  const box = commentBox()
+  expect(document.activeElement).toBe(box)
+  expect([box.selectionStart, box.selectionEnd]).toEqual([position, position])
+})
+
+Then('the card says {string}', async (_world, text: string) => {
+  await waitFor(() => {
+    expect(
+      within(toolCard()).getByTestId('card-title-block').textContent,
+    ).toContain(text)
+  })
+})
+
+Then(
+  '{string} is ranked below every working tool',
+  async (_world, name: string) => {
+    await waitFor(() => expect(feedNames()).toContain(name))
+    expect(feedNames().at(-1)).toBe(name)
+  },
+)
+
+Then("the card's comments show {string}", async (_world, text: string) => {
+  await waitFor(() => {
+    expect(
+      within(within(toolCard()).getByTestId('card-comments'))
+        .getAllByRole('listitem')
+        .map((li) => li.textContent),
+    ).toEqual(expect.arrayContaining([expect.stringContaining(text)]))
+  })
+})
+
+Then('no site opened', () => {
+  expect(openSpy?.mock.calls ?? []).toEqual([])
+})
+
+Then('the card says it is taking a screenshot', async () => {
+  await waitFor(() => {
+    const box = within(toolCard()).getByTestId('card-screenshot-box')
+    expect(box.dataset['state']).toBe('capturing')
+    expect(box.textContent).toContain('Taking a screenshot of the site')
+  })
+})
+
+Then('the screenshot box keeps the shape of a screenshot', () => {
+  // jsdom lays nothing out, so the reserved height is read off the class that
+  // reserves it: the same 16:10 box the captured screenshot fills.
+  const box = within(toolCard()).getByTestId('card-screenshot-box')
+  expect(box.className).toContain('aspect-[16/10]')
+  expect(box.className).toContain('w-full')
+})
+
+Then('the card is closed', async () => {
+  await waitFor(() => expect(screen.queryByTestId('tool-card')).toBeNull())
+})

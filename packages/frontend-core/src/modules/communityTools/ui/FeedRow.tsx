@@ -96,7 +96,10 @@ export interface FeedRowProps {
   /** Set while searching: which fields the query hit. */
   matched?: MatchField[]
   selected?: boolean
-  /** Set while searching: the row is an option of the results listbox. */
+  /**
+   * Set while searching: the row is a row of the results grid, and this is the
+   * id of its main cell, the one the search box points at.
+   */
   optionId?: string
   pinned: boolean
   appNames: Record<string, string>
@@ -125,6 +128,7 @@ export function FeedRow({
   onChooseTag,
 }: FeedRowProps) {
   const archived = tool.lifecycle.state === 'archived'
+  const cell = optionId ? 'gridcell' : undefined
   const owners = tool.owners.map((o) => o.name).join(', ')
   const opens = feedWindow === 'all' ? tool.viewsAll : tool.views30d
   // Two chips fit beside the owner and host; the rest fold into "+N". The
@@ -140,9 +144,7 @@ export function FeedRow({
       data-testid="feed-row"
       data-slug={tool.slug}
       data-selected={selected || undefined}
-      id={optionId}
-      role={optionId ? 'option' : undefined}
-      aria-selected={optionId ? selected : undefined}
+      role={optionId ? 'row' : undefined}
       className={cn(
         'group relative flex items-center gap-4 rounded-[14px] border bg-card py-3 pr-3.5 pl-3 transition-[border-color,box-shadow]',
         selected
@@ -151,124 +153,136 @@ export function FeedRow({
         archived && 'opacity-55',
       )}
     >
-      {rank !== undefined && (
-        <span className="w-[26px] shrink-0 text-center font-serif text-[22px] font-semibold text-muted-foreground/70">
-          {rank}
-        </span>
-      )}
-      <ToolThumb
-        tool={tool}
-        size={512}
-        className="aspect-[16/10] w-32 rounded-[10px]"
-      />
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2.5 text-[15.5px] font-extrabold">
-          <Link
-            to="/community/$slug"
-            params={{ slug: tool.slug }}
-            search={(prev) => prev}
-            data-testid="feed-row-name"
-            className={cn(
-              'truncate after:absolute after:inset-0 after:rounded-[14px] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring',
-              archived && 'text-muted-foreground',
-            )}
-          >
-            {highlightTokens(tool.name, tokens)}
-          </Link>
-          {selected && (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11.5px] font-bold text-primary">
-              <CornerDownLeft aria-hidden="true" className="size-3" />
-              Enter opens site
-            </span>
-          )}
-          <LifecycleBadge lifecycle={tool.lifecycle} />
-          {!tool.reviewed && <UnreviewedBadge />}
-        </div>
-        {tool.summary && (
-          <div className="mt-0.5 truncate text-foreground/75">
-            {highlightTokens(tool.summary, tokens)}
-          </div>
-        )}
-        {/* Who and where on one line; the tags join it while they fit and
-            wrap under it when the row is narrow. Nothing leaves the row. */}
-        <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 overflow-hidden text-[13px] font-semibold whitespace-nowrap text-foreground/75">
-          <span className="flex min-w-0 flex-1 basis-40 items-center gap-1.5">
-            {tool.owners[0] && (
-              <>
-                <PersonAvatar name={tool.owners[0].name} />
-                <span
-                  data-testid="feed-row-owner"
-                  className="max-w-[60%] shrink-0 truncate"
-                >
-                  {highlightTokens(owners, tokens)}
-                </span>
-                <span className="text-muted-foreground">·</span>
-              </>
-            )}
-            <span className="min-w-0 truncate font-mono text-xs font-normal text-muted-foreground">
-              {highlightTokens(tool.host, tokens)}
-            </span>
-          </span>
-          {tool.tags.length > 0 && (
-            <span className="flex shrink-0 items-center gap-1.5">
-              {shownTags.map((tag) => {
-                const key = tagKey(tag)
-                return (
-                  <TagChip
-                    key={key}
-                    label={tagLabel(tag, appNames)}
-                    active={key === activeTag}
-                    onClick={() =>
-                      onChooseTag(key === activeTag ? undefined : key)
-                    }
-                  />
-                )
-              })}
-              {hiddenTags.length > 0 && (
-                <span
-                  title={hiddenTags
-                    .map((t) => tagLabel(t, appNames))
-                    .join(', ')}
-                  className="rounded-full border border-border px-2 text-xs leading-[22px] font-semibold text-muted-foreground"
-                >
-                  +{hiddenTags.length}
-                </span>
-              )}
-            </span>
-          )}
-        </div>
-        {matched && matched.length > 0 && (
-          <div
-            data-testid="match-reason"
-            className="mt-1 text-xs font-semibold text-muted-foreground"
-          >
-            Matched: {matched.map((f) => FIELD_LABELS[f]).join(', ')}
-          </div>
-        )}
-      </div>
-      <a
-        href={tool.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={cn(
-          'relative z-10 inline-flex h-[34px] shrink-0 items-center gap-1.5 rounded-[9px] border px-3 text-[13px] font-bold transition-opacity',
-          'focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-ring',
-          selected
-            ? 'border-primary bg-primary text-primary-foreground opacity-100'
-            : 'border-border bg-card opacity-0 group-hover:opacity-100',
-        )}
+      {/* Two cells while searching: what the tool is, and what can be done
+          with it. A grid rather than a listbox, because an option's content
+          is presentational and would hide the link, the tags and the star. */}
+      <div
+        id={optionId}
+        role={cell}
+        aria-selected={optionId ? selected : undefined}
+        className="flex min-w-0 flex-1 items-center gap-4"
       >
-        <ExternalLink aria-hidden="true" className="size-3.5" />
-        Open
-      </a>
-      <PinButton pinned={pinned} name={tool.name} onToggle={onTogglePin} />
-      <div className="w-16 shrink-0 rounded-[10px] border border-border bg-muted pt-1.5 pb-[5px] text-center">
-        <b className="block font-serif text-lg leading-tight font-semibold">
-          {opens}
-        </b>
-        <span className="text-[11px] font-semibold text-muted-foreground">
-          opens
-        </span>
+        {rank !== undefined && (
+          <span className="w-[26px] shrink-0 text-center font-serif text-[22px] font-semibold text-muted-foreground/70">
+            {rank}
+          </span>
+        )}
+        <ToolThumb
+          tool={tool}
+          size={512}
+          className="aspect-[16/10] w-32 rounded-[10px]"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2.5 text-[15.5px] font-extrabold">
+            <Link
+              to="/community/$slug"
+              params={{ slug: tool.slug }}
+              search={(prev) => prev}
+              data-testid="feed-row-name"
+              className={cn(
+                'truncate after:absolute after:inset-0 after:rounded-[14px] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring',
+                archived && 'text-muted-foreground',
+              )}
+            >
+              {highlightTokens(tool.name, tokens)}
+            </Link>
+            {selected && (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11.5px] font-bold text-primary">
+                <CornerDownLeft aria-hidden="true" className="size-3" />
+                Enter opens site
+              </span>
+            )}
+            <LifecycleBadge lifecycle={tool.lifecycle} />
+            {!tool.reviewed && <UnreviewedBadge />}
+          </div>
+          {tool.summary && (
+            <div className="mt-0.5 truncate text-foreground/75">
+              {highlightTokens(tool.summary, tokens)}
+            </div>
+          )}
+          {/* Who and where on one line; the tags join it while they fit and
+            wrap under it when the row is narrow. Nothing leaves the row. */}
+          <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 overflow-hidden text-[13px] font-semibold whitespace-nowrap text-foreground/75">
+            <span className="flex min-w-0 flex-1 basis-40 items-center gap-1.5">
+              {tool.owners[0] && (
+                <>
+                  <PersonAvatar name={tool.owners[0].name} />
+                  <span
+                    data-testid="feed-row-owner"
+                    className="max-w-[60%] shrink-0 truncate"
+                  >
+                    {highlightTokens(owners, tokens)}
+                  </span>
+                  <span className="text-muted-foreground">·</span>
+                </>
+              )}
+              <span className="min-w-0 truncate font-mono text-xs font-normal text-muted-foreground">
+                {highlightTokens(tool.host, tokens)}
+              </span>
+            </span>
+            {tool.tags.length > 0 && (
+              <span className="flex shrink-0 items-center gap-1.5">
+                {shownTags.map((tag) => {
+                  const key = tagKey(tag)
+                  return (
+                    <TagChip
+                      key={key}
+                      label={tagLabel(tag, appNames)}
+                      active={key === activeTag}
+                      onClick={() =>
+                        onChooseTag(key === activeTag ? undefined : key)
+                      }
+                    />
+                  )
+                })}
+                {hiddenTags.length > 0 && (
+                  <span
+                    title={hiddenTags
+                      .map((t) => tagLabel(t, appNames))
+                      .join(', ')}
+                    className="rounded-full border border-border px-2 text-xs leading-[22px] font-semibold text-muted-foreground"
+                  >
+                    +{hiddenTags.length}
+                  </span>
+                )}
+              </span>
+            )}
+          </div>
+          {matched && matched.length > 0 && (
+            <div
+              data-testid="match-reason"
+              className="mt-1 text-xs font-semibold text-muted-foreground"
+            >
+              Matched: {matched.map((f) => FIELD_LABELS[f]).join(', ')}
+            </div>
+          )}
+        </div>
+      </div>
+      <div role={cell} className="flex shrink-0 items-center gap-4">
+        <a
+          href={tool.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn(
+            'relative z-10 inline-flex h-[34px] shrink-0 items-center gap-1.5 rounded-[9px] border px-3 text-[13px] font-bold transition-opacity',
+            'focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-ring',
+            selected
+              ? 'border-primary bg-primary text-primary-foreground opacity-100'
+              : 'border-border bg-card opacity-0 group-hover:opacity-100',
+          )}
+        >
+          <ExternalLink aria-hidden="true" className="size-3.5" />
+          Open
+        </a>
+        <PinButton pinned={pinned} name={tool.name} onToggle={onTogglePin} />
+        <div className="w-16 shrink-0 rounded-[10px] border border-border bg-muted pt-1.5 pb-[5px] text-center">
+          <b className="block font-serif text-lg leading-tight font-semibold">
+            {opens}
+          </b>
+          <span className="text-[11px] font-semibold text-muted-foreground">
+            opens
+          </span>
+        </div>
       </div>
     </div>
   )

@@ -4,6 +4,7 @@ import type {
   MatchField,
 } from '@igstack/app-catalog-shared-core'
 import { matchTool, rankTools } from '@igstack/app-catalog-shared-core'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { AlertTriangle, Plus, RefreshCw, Search, Star } from 'lucide-react'
@@ -15,6 +16,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { useTRPC } from '~/api/infra/trpc'
 import { useAuthModal } from '~/modules/auth/AuthModalContext'
 import { Skeleton } from '~/ui/skeleton'
 import { useCommunityTools } from '../useCommunityTools'
@@ -25,6 +27,7 @@ import { RecentChips } from './RecentChips'
 import { TagRow } from './TagRow'
 import { Toast } from './Toast'
 import type { ToastMessage } from './Toast'
+import { ToolCard } from './ToolCard'
 import { ToolSearch } from './ToolSearch'
 
 const KBD =
@@ -41,9 +44,11 @@ export interface CommunityPageProps {
   feedWindow: FeedWindow
   onTagChange: (tag: string | undefined) => void
   onWindowChange: (feedWindow: FeedWindow) => void
+  /** The tool whose card is open over the page (`/community/<slug>`). */
+  cardSlug?: string
 }
 
-const RESULTS_ID = 'community-results-listbox'
+const RESULTS_ID = 'community-results-grid'
 
 /** Stable per tool, so the active descendant survives re-renders and re-ranking. */
 function optionIdOf(slug: string): string {
@@ -63,6 +68,7 @@ export function CommunityPage({
   feedWindow,
   onTagChange,
   onWindowChange,
+  cardSlug,
 }: CommunityPageProps) {
   const {
     list,
@@ -77,6 +83,8 @@ export function CommunityPage({
   } = useCommunityTools()
   const { open: openSignIn } = useAuthModal()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const trpc = useTRPC()
 
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(0)
@@ -202,12 +210,23 @@ export function CommunityPage({
     if (!isAuthenticated) signInHere(openSignIn)
   }
 
-  const openCard = (slug: string) =>
+  const openCard = (slug: string, replace = false) =>
     navigate({
       to: '/community/$slug',
       params: { slug },
       search: (prev) => prev,
+      replace,
     })
+  const closeCard = () =>
+    void navigate({ to: '/community', search: (prev) => prev })
+
+  // Closing the card, however it closes (Close, Esc, Back), refreshes
+  // Recently opened, which the card's view just changed.
+  useEffect(() => {
+    if (!cardSlug) return
+    const queryKey = trpc.communityTools.recent.queryKey()
+    return () => void queryClient.invalidateQueries({ queryKey })
+  }, [cardSlug, queryClient, trpc])
 
   // The page column scrolls (the layout pins the header), not the list: the
   // virtualizer needs where the list starts inside that column. Everything
@@ -317,7 +336,7 @@ export function CommunityPage({
               setSelected(0)
             }}
             resultCount={results.length}
-            listboxId={searching && results.length > 0 ? RESULTS_ID : undefined}
+            resultsId={searching && results.length > 0 ? RESULTS_ID : undefined}
             activeDescendant={activeOptionId}
             onKey={onSearchKey}
           />
@@ -392,7 +411,7 @@ export function CommunityPage({
             <div
               ref={setListEl}
               id={searching ? RESULTS_ID : undefined}
-              role={searching ? 'listbox' : undefined}
+              role={searching ? 'grid' : undefined}
               aria-label={searching ? 'Search results' : undefined}
               aria-activedescendant={activeOptionId}
               className={hasLayout ? 'relative' : 'flex flex-col gap-2'}
@@ -456,6 +475,18 @@ export function CommunityPage({
           )}
         </section>
 
+        {cardSlug && (
+          <ToolCard
+            slug={cardSlug}
+            siblings={items.map((item) => item.tool.slug)}
+            onClose={closeCard}
+            // Stepping swaps the card in place; Back still leaves the card.
+            onNavigate={(slug) => void openCard(slug, true)}
+            pinned={pinnedSlugs.has(cardSlug)}
+            onTogglePin={togglePin}
+          />
+        )}
+        {/* After the card, so a toast raised from it shows above its scrim. */}
         <Toast toast={toast} onDismiss={dismissToast} />
       </div>
     </div>

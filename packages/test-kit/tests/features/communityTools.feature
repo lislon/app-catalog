@@ -12,7 +12,7 @@ Feature: Getting back to a tool a colleague built
     Then the caret is in the search
     When I search for "dana runb"
     Then the first result is "Ops Runbook"
-    And it is the selected option
+    And it is the selected result
     And "Dana" is highlighted in its owner
     And "runb" is highlighted in its name
     When I press Enter
@@ -45,8 +45,6 @@ Feature: Getting back to a tool a colleague built
     Then My tools shows "Ops Runbook"
     And Most opened by colleagues still lists every tool
 
-  # Opening and closing the card arrive with the card overlay.
-  @todo
   Scenario: The tools I opened recently are remembered for me
     Given I am signed in
     When I open the card of "Kit Rules Playground"
