@@ -1,7 +1,7 @@
 import type { CommunityTool } from '@igstack/app-catalog-shared-core'
 import { ExternalLink, GripVertical } from 'lucide-react'
 import { cn } from '~/lib/utils'
-import { ToolThumb } from './FeedRow'
+import { PersonAvatar, ToolThumb } from './FeedRow'
 import { PinButton } from './PinButton'
 
 /**
@@ -61,8 +61,11 @@ export function ShelfTile({
           >
             {tool.name}
           </span>
-          <span className="block truncate text-[12.5px] font-medium text-muted-foreground">
-            {tool.owners.map((o) => o.name).join(', ')}
+          <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[12.5px] font-medium text-muted-foreground">
+            {tool.owners[0] && <PersonAvatar name={tool.owners[0].name} />}
+            <span className="truncate">
+              {tool.owners.map((o) => o.name).join(', ')}
+            </span>
           </span>
         </span>
       </a>

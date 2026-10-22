@@ -205,11 +205,11 @@ export function FeedRow({
           {/* The author, then the tags while they fit; they wrap under it
             when the row is narrow. Nothing leaves the row. */}
           <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 overflow-hidden text-[13px] font-semibold whitespace-nowrap text-foreground/75">
-            <span
-              data-testid="feed-row-owner"
-              className="min-w-0 flex-1 basis-40 truncate"
-            >
-              {highlightTokens(owners, tokens)}
+            <span className="flex min-w-0 flex-1 basis-40 items-center gap-1.5">
+              {tool.owners[0] && <PersonAvatar name={tool.owners[0].name} />}
+              <span data-testid="feed-row-owner" className="min-w-0 truncate">
+                {highlightTokens(owners, tokens)}
+              </span>
             </span>
             {tool.tags.length > 0 && (
               <span className="flex shrink-0 items-center gap-1.5">
