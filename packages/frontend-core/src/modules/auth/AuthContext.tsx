@@ -19,7 +19,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const STORAGE_KEY = 'ac_auth_user'
+export const AUTH_USER_STORAGE_KEY = 'ac_auth_user'
 
 /**
  * Provider component for authentication state
@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Hydrate from localStorage on mount to avoid flickering
     if (typeof window === 'undefined') return null
     try {
-      const stored = localStorage.getItem(STORAGE_KEY)
+      const stored = localStorage.getItem(AUTH_USER_STORAGE_KEY)
       return stored ? JSON.parse(stored) : null
     } catch {
       return null
@@ -64,14 +64,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             : null
           setUser(userWithAdmin)
           if (userWithAdmin) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(userWithAdmin))
+            localStorage.setItem(
+              AUTH_USER_STORAGE_KEY,
+              JSON.stringify(userWithAdmin),
+            )
           } else {
-            localStorage.removeItem(STORAGE_KEY)
+            localStorage.removeItem(AUTH_USER_STORAGE_KEY)
           }
         } else {
           setSession(null)
           setUser(null)
-          localStorage.removeItem(STORAGE_KEY)
+          localStorage.removeItem(AUTH_USER_STORAGE_KEY)
         }
       } catch (error) {
         // Ignore abort errors (happens on cleanup)
@@ -81,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Failed to fetch session:', error)
         setSession(null)
         setUser(null)
-        localStorage.removeItem(STORAGE_KEY)
+        localStorage.removeItem(AUTH_USER_STORAGE_KEY)
       } finally {
         setIsLoading(false)
       }
