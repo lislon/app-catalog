@@ -16,7 +16,7 @@ Feature: Getting back to a tool a colleague built
     And "Dana" is highlighted in its owner
     And "runb" is highlighted in its name
     When I press Enter
-    Then "https://ops-runbook-1a2b.pages.example.com/" opens in a new tab
+    Then "https://ops-runbook-1a2b.pages.example.com/" opens in this tab
 
   Scenario: Words from the address find it too
     When I open Community tools
@@ -73,7 +73,12 @@ Feature: Getting back to a tool a colleague built
 
   Scenario: The row itself goes straight to the site
     When I open Community tools
-    Then the row of "Ops Runbook" opens its site in a new tab
+    Then the row of "Ops Runbook" opens its site in this tab
+
+  Scenario: Every click through to the site counts
+    When I open Community tools
+    And I click through to the site of "Ops Runbook" 2 times
+    Then the server counts 2 more opens of "Ops Runbook"
 
   Scenario: A row is three stops for the keyboard
     When I open Community tools
@@ -145,6 +150,19 @@ Feature: Getting back to a tool a colleague built
     Then the feed is headed "Recently updated"
     And the feed reads "Kit Rules Playground, Old Tracker, Ops Runbook"
     And the row of "Kit Rules Playground" says "Updated 3 days ago"
+
+  Scenario: A row shows when its site last changed, else when it was added
+    Given the site of "Kit Rules Playground" changed 3 days ago
+    When I open Community tools
+    Then the row of "Kit Rules Playground" says "Updated 3 days ago"
+    And the date on the row of "Kit Rules Playground" has the exact time as its tooltip
+    And the row of "Ops Runbook" says "Added"
+
+  Scenario: Newest shows when each tool was added
+    Given the site of "Kit Rules Playground" changed 3 days ago
+    When I open Community tools
+    And I sort by "Newest"
+    Then the row of "Kit Rules Playground" says "Added"
 
   Scenario: An old link to the views this month opens Popular
     When I open Community tools

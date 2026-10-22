@@ -26,6 +26,8 @@ import { Skeleton } from '~/ui/skeleton'
 import { CardScreenshot, formatCardDate } from './CardScreenshot'
 import { CardTitleBlock } from './CardTitleBlock'
 import { PersonAvatar } from './FeedRow'
+import { openSite } from '../siteOpen'
+import { exactDate, timeAgo } from '../timeAgo'
 import { useTimeUp } from '../useTimeUp'
 import { PinButton } from './PinButton'
 import { TagChip, tagKey, tagLabel } from './TagRow'
@@ -184,7 +186,7 @@ export function ToolCard({
       // that opens the site.
       if (target.closest('a, button')) return
       e.preventDefault()
-      window.open(tool.url, '_blank', 'noopener,noreferrer')
+      openSite(tool)
     }
   }
 
@@ -296,6 +298,14 @@ export function ToolCard({
                     </b>{' '}
                     all time
                   </span>
+                  {tool.siteUpdatedAt && (
+                    <span
+                      data-testid="card-site-updated"
+                      title={exactDate(tool.siteUpdatedAt)}
+                    >
+                      Site updated {timeAgo(tool.siteUpdatedAt)}
+                    </span>
+                  )}
                 </p>
               )}
               {/* Who to ask, up here with the facts: below the screenshot

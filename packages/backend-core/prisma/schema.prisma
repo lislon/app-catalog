@@ -399,8 +399,11 @@ model DbCommunityTool {
   /// Categorization tags (app associations and topic labels).
   tags DbCommunityToolTag[]
 
-  /// View tracking for ranking.
+  /// Superseded by `opens`; kept so the schema stays additive.
   views DbCommunityToolView[]
+
+  /// Every card open and click through to the site: what the view counts count.
+  opens DbCommunityToolOpen[]
 
   /// User pins for personalized ordering.
   pins DbCommunityToolPin[]
@@ -420,6 +423,10 @@ model DbCommunityTool {
 
   /// When the tool first started failing checks (null when healthy).
   failingSince DateTime?
+
+  /// Since when the server's checks get no answer at all (timeout, refused):
+  /// says nothing about the site, so it is not a failure. Null once one answers.
+  unreachableSince DateTime?
 
   /// When archived (null when active).
   archivedAt     DateTime?
@@ -483,7 +490,23 @@ model DbCommunityToolTag {
   @@index([kind, value])
 }
 
-/// View tracking for community tools (one row per viewer per tool per day).
+/// One card open or click through to the site.
+model DbCommunityToolOpen {
+  id     String          @id @default(cuid())
+  toolId String
+  tool   DbCommunityTool @relation(fields: [toolId], references: [id], onDelete: Cascade)
+
+  /// 'card' or 'site'.
+  kind      String
+  /// Hash of the actor id, for the rate limit.
+  actorHash String?
+  userId    String?
+  at        DateTime @default(now())
+
+  @@index([toolId, at])
+}
+
+/// Superseded by DbCommunityToolOpen and no longer written; kept so the schema stays additive.
 model DbCommunityToolView {
   toolId String
   tool   DbCommunityTool @relation(fields: [toolId], references: [id], onDelete: Cascade)

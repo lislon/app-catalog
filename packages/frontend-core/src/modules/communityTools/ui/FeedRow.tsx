@@ -13,7 +13,8 @@ import {
 } from 'lucide-react'
 import { cn } from '~/lib/utils'
 import { highlightTokens } from '~/util/highlightMatches'
-import { timeAgo } from '../timeAgo'
+import { recordSiteOpen } from '../siteOpen'
+import { exactDate, timeAgo } from '../timeAgo'
 import { LifecycleBadge, UnreviewedBadge } from './LifecycleBadge'
 import { LikeButton } from './LikeButton'
 import { PinButton } from './PinButton'
@@ -96,7 +97,10 @@ export interface FeedRowProps {
   tool: CommunityTool
   /** Shown in the ranked feed; search results have no rank. */
   rank?: number
-  /** Recently updated shows when the site changed; every other sort, when it was added. */
+  /**
+   * Newest shows when it was added, Recently updated when the site changed;
+   * every other sort the site's date, or when it was added if that is unknown.
+   */
   sort: FeedSort
   tokens: string[]
   /** Set while searching: which fields the query hit. */
@@ -122,8 +126,8 @@ const PANEL = 'w-[120px]'
 
 /**
  * One tool in the feed or the search results. Everything left of the end
- * panel (rank, picture, name, summary, meta) is one link that opens the site
- * in a new tab; the 120 px panel opens the card. The star sits in the meta
+ * panel (rank, picture, name, summary, meta) is one link that opens the
+ * site; the 120 px panel opens the card. The star sits in the meta
  * line as its own target, above that link.
  */
 export function FeedRow({
@@ -142,12 +146,12 @@ export function FeedRow({
   const archived = tool.lifecycle.state === 'archived'
   const cell = optionId ? 'gridcell' : undefined
   const owners = tool.owners.map((o) => o.name).join(', ')
-  const dated =
-    sort !== 'updated'
-      ? `Added ${timeAgo(tool.createdAt)}`
-      : tool.siteUpdatedAt
-        ? `Updated ${timeAgo(tool.siteUpdatedAt)}`
-        : null
+  const siteUpdatedAt = sort !== 'newest' ? tool.siteUpdatedAt : null
+  const dated = siteUpdatedAt
+    ? { label: 'Updated', at: siteUpdatedAt }
+    : sort !== 'updated'
+      ? { label: 'Added', at: tool.createdAt }
+      : null
 
   return (
     <div
@@ -182,11 +186,10 @@ export function FeedRow({
           <div className="flex items-center gap-2.5 text-[15.5px] font-extrabold">
             <a
               href={tool.url}
-              target="_blank"
-              rel="noopener noreferrer"
+              onClick={() => recordSiteOpen(tool.slug)}
               data-site
               data-testid="feed-row-name"
-              aria-label={`${tool.name}, opens ${tool.host} in a new tab`}
+              aria-label={`${tool.name}, opens ${tool.host}`}
               className={cn(
                 'truncate decoration-1 underline-offset-[3px] after:absolute after:inset-y-0 after:left-0 after:right-[120px] after:z-[1] after:rounded-l-[13px] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:-outline-offset-[3px] focus-visible:after:outline-ring',
                 'group-hover/row:underline group-has-[[data-details]:hover]/row:no-underline',
@@ -269,9 +272,10 @@ export function FeedRow({
           {dated && (
             <span
               data-testid="feed-row-date"
-              className="ml-auto shrink-0 pr-4 text-[13px] font-semibold whitespace-nowrap text-muted-foreground"
+              title={exactDate(dated.at)}
+              className="pointer-events-auto ml-auto shrink-0 pr-4 text-[13px] font-semibold whitespace-nowrap text-muted-foreground"
             >
-              {dated}
+              {dated.label} {timeAgo(dated.at)}
             </span>
           )}
         </div>

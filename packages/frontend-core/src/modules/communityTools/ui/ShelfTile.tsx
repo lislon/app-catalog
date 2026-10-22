@@ -1,7 +1,8 @@
 import type { CommunityTool } from '@igstack/app-catalog-shared-core'
-import { ExternalLink, GripVertical } from 'lucide-react'
+import { GripVertical } from 'lucide-react'
 import { cn } from '~/lib/utils'
 import { PersonAvatar, ToolThumb } from './FeedRow'
+import { recordSiteOpen } from '../siteOpen'
 import { PinButton } from './PinButton'
 
 /**
@@ -35,8 +36,7 @@ export function ShelfTile({
     >
       <a
         href={tool.url}
-        target="_blank"
-        rel="noopener noreferrer"
+        onClick={() => recordSiteOpen(tool.slug)}
         aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
         onKeyDown={(e) => {
           if (!e.altKey) return
@@ -49,8 +49,7 @@ export function ShelfTile({
       >
         <span className="relative block aspect-[16/9.5] border-b border-border">
           <ToolThumb tool={tool} size={512} className="size-full border-0" />
-          <span className="absolute right-2.5 bottom-2.5 inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-extrabold text-primary-foreground opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-            <ExternalLink aria-hidden="true" className="size-4" />
+          <span className="absolute right-2.5 bottom-2.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-extrabold text-primary-foreground opacity-0 shadow-sm transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
             Open site
           </span>
         </span>

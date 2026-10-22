@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as dbClient from '../db/client'
 import type { PrismaClient } from '../generated/prisma/client'
+import { failureOf } from '../modules/communityTools/capture'
 import type { ScreenshotCapturer } from '../modules/communityTools/capture'
 import {
   runHealthCheckOnce,
@@ -20,6 +21,7 @@ function tool(id: string, fields: Record<string, unknown> = {}) {
     failingSince: null,
     archivedAt: null,
     archivedBy: null,
+    unreachableSince: null,
     ...fields,
   }
 }
@@ -79,6 +81,66 @@ describe('Community tools health job', () => {
     expect(db.dbCommunityTool.update).toHaveBeenCalledWith({
       where: { id: 'due' },
       data: { lastCheckAt: NOW, failingSince: NOW },
+    })
+  })
+
+  it('a timeout is not a failure; a 500 and an unknown name are', async () => {
+    const since = new Date(NOW.getTime() - 5 * DAY)
+    db.dbCommunityTool.findMany.mockResolvedValue([
+      tool('timeout', { failingSince: since }),
+      tool('http-500'),
+      tool('nxdomain'),
+    ])
+    const results: Record<string, unknown> = {
+      'https://timeout.pages.example.com/': failureOf(
+        new Error('connect ETIMEDOUT 10.0.0.1:443'),
+      ),
+      'https://http-500.pages.example.com/': { ok: false, error: 'HTTP 500' },
+      'https://nxdomain.pages.example.com/': failureOf(
+        new Error('getaddrinfo ENOTFOUND nxdomain.pages.example.com'),
+      ),
+    }
+    const capturer: ScreenshotCapturer = {
+      capture: vi.fn((url: string) => Promise.resolve(results[url] as never)),
+    }
+
+    await runHealthCheckOnce({ ...opts, capturer }, NOW)
+
+    expect(db.dbCommunityTool.update.mock.calls.map((c) => c[0])).toEqual([
+      // The streak is left as it was, and nothing is archived.
+      {
+        where: { id: 'timeout' },
+        data: { lastCheckAt: NOW, unreachableSince: NOW },
+      },
+      {
+        where: { id: 'http-500' },
+        data: { lastCheckAt: NOW, failingSince: NOW },
+      },
+      {
+        where: { id: 'nxdomain' },
+        data: { lastCheckAt: NOW, failingSince: NOW },
+      },
+    ])
+  })
+
+  it('a month of timeouts never archives', async () => {
+    db.dbCommunityTool.findMany.mockResolvedValue([
+      tool('timeout', {
+        failingSince: new Date(NOW.getTime() - 40 * DAY),
+        unreachableSince: new Date(NOW.getTime() - 35 * DAY),
+      }),
+    ])
+    const capturer: ScreenshotCapturer = {
+      capture: vi
+        .fn()
+        .mockResolvedValue(failureOf(new Error('Timeout 20000ms exceeded'))),
+    }
+
+    await runHealthCheckOnce({ ...opts, capturer }, NOW)
+
+    expect(db.dbCommunityTool.update).toHaveBeenCalledWith({
+      where: { id: 'timeout' },
+      data: { lastCheckAt: NOW },
     })
   })
 

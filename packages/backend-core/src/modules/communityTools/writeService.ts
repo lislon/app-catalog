@@ -319,6 +319,7 @@ export async function editTool(
     // automatic archive says nothing about the new one.
     const newSite = host !== tool.host && {
       failingSince: null,
+      unreachableSince: null,
       lastCheckAt: null,
       ...(tool.archivedBy === 'auto' && {
         archivedAt: null,

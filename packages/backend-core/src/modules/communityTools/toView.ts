@@ -64,6 +64,7 @@ export async function toView(
       archivedAt: tool.archivedAt,
       archivedBy: tool.archivedBy,
       archivedReason: tool.archivedReason,
+      unreachableSince: tool.unreachableSince,
     },
     now,
   )
@@ -114,6 +115,7 @@ export async function toView(
     faviconId: tool.faviconAssetId ?? null,
     capturedAt: tool.capturedAt?.toISOString() ?? null,
     capturePending,
+    serverUnreachable: tool.unreachableSince !== null,
     canEdit,
   }
 }

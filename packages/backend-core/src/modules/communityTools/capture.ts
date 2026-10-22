@@ -10,13 +10,23 @@ export type CaptureResult =
       /** The page's `Last-Modified`: a static host sets it on each deploy. */
       lastModified: Date | null
     }
-  | { ok: false; error: string }
+  | {
+      ok: false
+      error: string
+      /**
+       * No answer at all (a timeout, a refused connection), which may be the
+       * server's own network. Absent for a definitive failure: an HTTP error
+       * status, or a name that does not resolve.
+       */
+      unreachable?: true
+    }
 
 /**
  * Visits a page and photographs it, reaching only `allowedHosts`.
  *
  * Resolves `{ ok: false }` when the page itself failed (no response, an error status, a
- * timeout, a redirect off the list) — that is the tool's health. Throws when the
+ * timeout, a redirect off the list) — that is the tool's health; `unreachable` when
+ * it never answered. Throws when the
  * browser could not be started, which is ours: the health job must not mark every tool
  * broken because Chromium is missing on one pod.
  */
@@ -191,6 +201,7 @@ export async function capturePage(
     return {
       ok: false,
       error: response ? `HTTP ${response.status()}` : 'No response',
+      ...(!response && { unreachable: true as const }),
     }
   }
   // `load` is only the HTML and its assets: a page that fetches its data after
@@ -238,6 +249,19 @@ export async function capturePage(
     favicon,
     lastModified: httpDate(response.headers()['last-modified']),
   }
+}
+
+/**
+ * A capture that threw, from the browser or the network under it. Only a name
+ * that does not resolve is definitive; anything else got no answer at all.
+ */
+export function failureOf(
+  error: unknown,
+): Extract<CaptureResult, { ok: false }> {
+  const message = error instanceof Error ? error.message : String(error)
+  return /ENOTFOUND|ERR_NAME_NOT_RESOLVED/.test(message)
+    ? { ok: false, error: message }
+    : { ok: false, error: message, unreachable: true }
 }
 
 /** An HTTP date header as a Date; null when absent or unreadable. */
@@ -293,6 +317,9 @@ export function createPlaywrightCapturer(): ScreenshotCapturer | null {
         viewport: VIEWPORT,
         serviceWorkers: 'block',
       })
+      // The fence answers the page itself, so the browser only sees that it
+      // failed; why it failed (no such name, or no answer) is kept here.
+      let navigationError: unknown = null
       // Second layer under the resolver fence: per-request and per-hop checks.
       await context.route('**/*', (route) =>
         fenceRoute(
@@ -300,17 +327,25 @@ export function createPlaywrightCapturer(): ScreenshotCapturer | null {
             url: route.request().url(),
             abort: (code) => route.abort(code),
             continue: () => route.continue(),
-            fetch: (hop, mode) =>
-              mode === 'get'
-                ? context.request.get(hop, {
-                    maxRedirects: 0,
-                    timeout: HOP_TIMEOUT_MS,
-                  })
-                : route.fetch({
-                    url: hop,
-                    maxRedirects: 0,
-                    timeout: HOP_TIMEOUT_MS,
-                  }),
+            fetch: async (hop, mode) => {
+              try {
+                return await (mode === 'get'
+                  ? context.request.get(hop, {
+                      maxRedirects: 0,
+                      timeout: HOP_TIMEOUT_MS,
+                    })
+                  : route.fetch({
+                      url: hop,
+                      maxRedirects: 0,
+                      timeout: HOP_TIMEOUT_MS,
+                    }))
+              } catch (error) {
+                if (route.request().isNavigationRequest()) {
+                  navigationError ??= error
+                }
+                throw error
+              }
+            },
             fulfill: (response) => route.fulfill({ response }),
           },
           allowedHosts,
@@ -319,12 +354,13 @@ export function createPlaywrightCapturer(): ScreenshotCapturer | null {
       // A screenshot needs no live socket, and `route` does not see them.
       await context.routeWebSocket(/.*/, (ws) => ws.close())
       const page = await context.newPage()
-      return await capturePage(page, url, allowedHosts)
-    } catch (error) {
-      return {
-        ok: false,
-        error: error instanceof Error ? error.message : String(error),
+      try {
+        return await capturePage(page, url, allowedHosts)
+      } catch (error) {
+        return failureOf(navigationError ?? error)
       }
+    } catch (error) {
+      return failureOf(error)
     } finally {
       await browser.close()
     }

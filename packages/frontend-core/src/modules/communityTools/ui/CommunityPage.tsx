@@ -29,6 +29,7 @@ import type { ToastMessage } from './Toast'
 import { ToolCard } from './ToolCard'
 import { ToolFormDialog } from './ToolFormDialog'
 import { ToolSearch } from './ToolSearch'
+import { openSite } from '../siteOpen'
 
 const KBD =
   'rounded-[5px] border border-b-2 border-border bg-card px-1.5 py-px text-[11px] font-semibold text-muted-foreground'
@@ -54,10 +55,6 @@ const RESULTS_ID = 'community-results-grid'
 /** Stable per tool, so the active descendant survives re-renders and re-ranking. */
 function optionIdOf(slug: string): string {
   return `community-option-${slug}`
-}
-
-function openSite(url: string) {
-  window.open(url, '_blank', 'noopener,noreferrer')
 }
 
 export function CommunityPage({
@@ -311,7 +308,7 @@ export function CommunityPage({
       )
     } else if (e.key === 'Enter' && current) {
       e.preventDefault()
-      openSite(current.tool.url)
+      openSite(current.tool)
     } else if (
       e.key === 'ArrowRight' &&
       current &&

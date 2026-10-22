@@ -89,11 +89,36 @@ export function createCommunityToolsRouter(options?: CommunityToolsOptions) {
         return tool
       }),
 
+    /** The card opened. */
     recordView: publicProcedure
       .input(z.object({ slug: z.string() }))
       .mutation(({ input, ctx }) => {
         const actor = requireActor(ctx.actor)
-        return service.recordView(input.slug, actor, ctx.user, new Date())
+        return service.recordOpen(
+          input.slug,
+          'card',
+          actor,
+          ctx.user,
+          new Date(),
+        )
+      }),
+
+    /**
+     * A click through to the site. The page leaves as it is sent, so the
+     * client posts it with `keepalive` rather than through the tRPC client.
+     */
+    recordSiteOpen: publicProcedure
+      .input(z.object({ slug: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        const actor = requireActor(ctx.actor)
+        await service.recordOpen(
+          input.slug,
+          'site',
+          actor,
+          ctx.user,
+          new Date(),
+        )
+        return { ok: true }
       }),
 
     pins: protectedProcedure.query(({ ctx }) => {

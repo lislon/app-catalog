@@ -5,6 +5,7 @@ import {
   allowRequest,
   capturePage,
   chromiumFenceArgs,
+  failureOf,
   fenceRoute,
   followWithinHosts,
   oneAtATime,
@@ -53,6 +54,39 @@ describe('Community tools capture', () => {
       error: 'redirected off the allowed hosts',
     })
     expect(page.screenshot).not.toHaveBeenCalled()
+  })
+
+  it('tells an error status and an unknown name from no answer at all', async () => {
+    const { page } = fakePage({})
+    page.goto.mockResolvedValueOnce({
+      ok: () => false,
+      status: () => 500,
+      headers: () => ({}),
+    })
+    expect(await capturePage(page, URL_OK, HOSTS)).toEqual({
+      ok: false,
+      error: 'HTTP 500',
+    })
+    page.goto.mockResolvedValueOnce(null)
+    expect(await capturePage(page, URL_OK, HOSTS)).toEqual({
+      ok: false,
+      error: 'No response',
+      unreachable: true,
+    })
+    expect(
+      failureOf(new Error('getaddrinfo ENOTFOUND gone.pages.example.com')),
+    ).toEqual({
+      ok: false,
+      error: 'getaddrinfo ENOTFOUND gone.pages.example.com',
+    })
+    expect(failureOf(new Error('connect ETIMEDOUT 10.0.0.1:443'))).toEqual({
+      ok: false,
+      error: 'connect ETIMEDOUT 10.0.0.1:443',
+      unreachable: true,
+    })
+    expect(failureOf(new Error('connect ECONNREFUSED'))).toMatchObject({
+      unreachable: true,
+    })
   })
 
   it('skips the favicon fetch for an off-list href', async () => {

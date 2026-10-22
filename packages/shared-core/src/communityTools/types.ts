@@ -53,6 +53,8 @@ export interface CommunityTool {
   capturedAt: string | null
   /** No screenshot yet, and the first visit is still to come: worth waiting for. */
   capturePending: boolean
+  /** The server's last checks got no answer from the site, which users may still reach. */
+  serverUnreachable: boolean
   canEdit: boolean
 }
 

@@ -62,6 +62,7 @@ function opsRunbook(): CommunityTool {
     faviconId: null,
     capturedAt: null,
     capturePending: false,
+    serverUnreachable: false,
     canEdit: false,
   }
 }
@@ -379,8 +380,13 @@ describe('lifecycle', () => {
     // First failure starts the streak
     expect(
       nextLifecycle(
-        { failingSince: null, archivedAt: null, archivedBy: null },
-        false,
+        {
+          failingSince: null,
+          archivedAt: null,
+          archivedBy: null,
+          unreachableSince: null,
+        },
+        'failed',
         d0,
       ),
     ).toEqual({ failingSince: d0 })
@@ -388,8 +394,13 @@ describe('lifecycle', () => {
     // 30 days of failure triggers auto-archive
     expect(
       nextLifecycle(
-        { failingSince: d0, archivedAt: null, archivedBy: null },
-        false,
+        {
+          failingSince: d0,
+          archivedAt: null,
+          archivedBy: null,
+          unreachableSince: null,
+        },
+        'failed',
         addDays(d0, 30),
       ),
     ).toMatchObject({ archivedBy: 'auto' })
@@ -397,8 +408,13 @@ describe('lifecycle', () => {
     // Recovery clears auto-archive
     expect(
       nextLifecycle(
-        { failingSince: d0, archivedAt: addDays(d0, 30), archivedBy: 'auto' },
-        true,
+        {
+          failingSince: d0,
+          archivedAt: addDays(d0, 30),
+          archivedBy: 'auto',
+          unreachableSince: null,
+        },
+        'ok',
         addDays(d0, 31),
       ),
     ).toEqual({
@@ -410,8 +426,13 @@ describe('lifecycle', () => {
     // Person archive sticks even on success
     expect(
       nextLifecycle(
-        { failingSince: null, archivedAt: d0, archivedBy: 'Dana Lee' },
-        true,
+        {
+          failingSince: null,
+          archivedAt: d0,
+          archivedBy: 'Dana Lee',
+          unreachableSince: null,
+        },
+        'ok',
         d0,
       ),
     ).toEqual({})
@@ -424,10 +445,46 @@ describe('lifecycle', () => {
           archivedAt: null,
           archivedBy: null,
           archivedReason: null,
+          unreachableSince: null,
         },
         addDays(d0, 3),
       ),
     ).toEqual({ state: 'not-working', days: 3 })
+  })
+
+  it('lifecycle: only a definitive failure counts, no answer changes nothing', () => {
+    const d0 = new Date('2026-10-01T00:00:00Z')
+    const healthy = {
+      failingSince: null,
+      archivedAt: null,
+      archivedBy: null,
+      unreachableSince: null,
+    }
+    // An HTTP 500 and NXDOMAIN are both 'failed': the streak starts.
+    expect(nextLifecycle(healthy, 'failed', d0)).toEqual({ failingSince: d0 })
+    // A timeout records only that the server got no answer.
+    expect(nextLifecycle(healthy, 'unreachable', d0)).toEqual({
+      unreachableSince: d0,
+    })
+    // A month of timeouts on a failing tool neither archives nor clears it.
+    const failing = { ...healthy, failingSince: d0, unreachableSince: d0 }
+    expect(nextLifecycle(failing, 'unreachable', addDays(d0, 40))).toEqual({})
+    // The next answer clears it.
+    expect(nextLifecycle(failing, 'ok', addDays(d0, 41))).toEqual({
+      unreachableSince: null,
+      failingSince: null,
+    })
+    expect(
+      nextLifecycle(
+        { ...healthy, unreachableSince: d0 },
+        'failed',
+        addDays(d0, 1),
+      ),
+    ).toEqual({ unreachableSince: null, failingSince: addDays(d0, 1) })
+    // Unreachable is not shown as not working.
+    expect(
+      lifecycleOf({ ...failing, archivedReason: null }, addDays(d0, 3)),
+    ).toEqual({ state: 'active' })
   })
 
   it('lifecycleOf: counts whole days of the streak, at least one', () => {
@@ -439,6 +496,7 @@ describe('lifecycle', () => {
           archivedAt: null,
           archivedBy: null,
           archivedReason: null,
+          unreachableSince: null,
         },
         now,
       )
@@ -459,6 +517,7 @@ describe('lifecycle', () => {
           archivedAt: null,
           archivedBy: null,
           archivedReason: null,
+          unreachableSince: null,
         },
         new Date(),
       ),
@@ -474,6 +533,7 @@ describe('lifecycle', () => {
           archivedAt: d0,
           archivedBy: 'auto',
           archivedReason: 'Failed checks',
+          unreachableSince: null,
         },
         d0,
       ),
@@ -492,6 +552,7 @@ describe('lifecycle', () => {
           archivedAt: d0,
           archivedBy: 'Dana Lee',
           archivedReason: null,
+          unreachableSince: null,
         },
         d0,
       ),
@@ -508,8 +569,13 @@ describe('lifecycle', () => {
     const d0 = new Date('2026-10-01T00:00:00Z')
     expect(
       nextLifecycle(
-        { failingSince: d0, archivedAt: null, archivedBy: null },
-        true,
+        {
+          failingSince: d0,
+          archivedAt: null,
+          archivedBy: null,
+          unreachableSince: null,
+        },
+        'ok',
         addDays(d0, 5),
       ),
     ).toEqual({ failingSince: null })
@@ -519,8 +585,13 @@ describe('lifecycle', () => {
     const d0 = new Date('2026-10-01T00:00:00Z')
     expect(
       nextLifecycle(
-        { failingSince: d0, archivedAt: null, archivedBy: null },
-        false,
+        {
+          failingSince: d0,
+          archivedAt: null,
+          archivedBy: null,
+          unreachableSince: null,
+        },
+        'failed',
         addDays(d0, 15),
       ),
     ).toEqual({})
@@ -535,6 +606,7 @@ describe('lifecycle', () => {
         archivedAt: null,
         archivedBy: null,
         archivedReason: null,
+        unreachableSince: null,
       },
       d0,
     )
@@ -548,6 +620,7 @@ describe('lifecycle', () => {
         archivedAt: null,
         archivedBy: null,
         archivedReason: null,
+        unreachableSince: null,
       },
       d1,
     )

@@ -1,8 +1,9 @@
 import type { CommunityTool } from '@igstack/app-catalog-shared-core'
-import { Camera, ExternalLink, ImageOff, Maximize2 } from 'lucide-react'
+import { Camera, ImageOff, Maximize2 } from 'lucide-react'
 import { useState } from 'react'
 import { ScreenshotGallery } from '~/modules/appCatalog/ui/components/ScreenshotGallery'
 import { cn } from '~/lib/utils'
+import { recordSiteOpen } from '../siteOpen'
 import { screenshotUrl } from './FeedRow'
 
 /**
@@ -12,6 +13,10 @@ import { screenshotUrl } from './FeedRow'
  */
 const BOX =
   'relative flex aspect-[16/10] max-h-[320px] w-full items-center justify-center overflow-hidden rounded-[14px] border border-border bg-muted shadow-sm'
+
+/** The server's checks get no answer, so there is no fresh screenshot to show. */
+const UNREACHABLE =
+  "Screenshot unavailable: the catalog's server can't reach this site."
 
 export function formatCardDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', {
@@ -58,7 +63,11 @@ export function CardScreenshot({
           ) : (
             <>
               <ImageOff aria-hidden="true" className="size-7" />
-              No screenshot. The site may need a login, or it did not load.
+              {tool.serverUnreachable ? (
+                <span data-testid="card-server-unreachable">{UNREACHABLE}</span>
+              ) : (
+                'No screenshot. The site may need a login, or it did not load.'
+              )}
             </>
           )}
         </div>
@@ -78,9 +87,8 @@ export function CardScreenshot({
       >
         <a
           href={tool.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={`Open ${tool.name} in a new tab`}
+          onClick={() => recordSiteOpen(tool.slug)}
+          aria-label={`Open ${tool.name}`}
           data-testid="card-screenshot-link"
           className="group/shot block size-full rounded-[14px] focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-ring"
         >
@@ -90,9 +98,8 @@ export function CardScreenshot({
             className="size-full object-cover object-left-top"
           />
           <span className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-focus-visible/shot:bg-black/20 group-hover/shot:bg-black/20">
-            <span className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-extrabold text-primary-foreground opacity-0 shadow-sm transition-opacity group-focus-visible/shot:opacity-100 group-hover/shot:opacity-100">
+            <span className="rounded-lg bg-primary px-3.5 py-2 text-sm font-extrabold text-primary-foreground opacity-0 shadow-sm transition-opacity group-focus-visible/shot:opacity-100 group-hover/shot:opacity-100">
               Open site
-              <ExternalLink aria-hidden="true" className="size-4" />
             </span>
           </span>
         </a>
@@ -107,9 +114,14 @@ export function CardScreenshot({
           <Maximize2 aria-hidden="true" className="size-4" />
         </button>
       </div>
-      {capturedAt && (
+      {(capturedAt || tool.serverUnreachable) && (
         <figcaption className="mt-2 text-[12.5px] font-semibold text-muted-foreground">
-          Screenshot captured {formatCardDate(capturedAt)}
+          {capturedAt && `Screenshot captured ${formatCardDate(capturedAt)}`}
+          {tool.serverUnreachable && (
+            <span data-testid="card-server-unreachable" className="block">
+              {UNREACHABLE}
+            </span>
+          )}
         </figcaption>
       )}
       <ScreenshotGallery
