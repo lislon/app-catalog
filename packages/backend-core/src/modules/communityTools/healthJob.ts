@@ -80,7 +80,19 @@ export async function checkTool(
 ): Promise<void> {
   if (!deps.capturer || !isCaptureAllowed(tool.url, deps.captureHosts)) return
 
-  const result = await deps.capturer.capture(tool.url, deps.captureHosts)
+  let result: CaptureResult
+  try {
+    result = await deps.capturer.capture(tool.url, deps.captureHosts)
+  } catch (error) {
+    // A browser that would not start says nothing about the page, so the
+    // lifecycle stays as it was. The attempt is still recorded: without it a
+    // new tool reads "capture pending" forever and its open card keeps asking.
+    await getDbClient().dbCommunityTool.update({
+      where: { id: tool.id },
+      data: { lastCheckAt: now },
+    })
+    throw error
+  }
   await getDbClient().dbCommunityTool.update({
     where: { id: tool.id },
     data: {

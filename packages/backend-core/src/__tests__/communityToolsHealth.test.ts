@@ -94,10 +94,11 @@ describe('Community tools health job', () => {
 
     await runHealthCheckOnce({ ...opts, capturer: flaky }, NOW)
 
-    expect(db.dbCommunityTool.update).toHaveBeenCalledTimes(1)
-    expect(db.dbCommunityTool.update.mock.calls[0]?.[0].where).toEqual({
-      id: 'b',
-    })
+    // a: the attempt is recorded and nothing else; b: the failed page.
+    expect(db.dbCommunityTool.update.mock.calls.map((c) => c[0])).toEqual([
+      { where: { id: 'a' }, data: { lastCheckAt: NOW } },
+      { where: { id: 'b' }, data: { lastCheckAt: NOW, failingSince: NOW } },
+    ])
   })
 
   it('health run stops once its time budget is spent', async () => {

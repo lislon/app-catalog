@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as dbClient from '../db/client'
 import type { PrismaClient } from '../generated/prisma/client'
+import { checkTool } from '../modules/communityTools/healthJob'
 import type { CaptureDeps } from '../modules/communityTools/healthJob'
 import * as service from '../modules/communityTools/service'
 import { toView } from '../modules/communityTools/toView'
@@ -530,6 +531,37 @@ describe('Community tools service', () => {
 
     it('is not pending once the first visit ran, even if it failed', async () => {
       expect(await pending({ lastCheckAt: new Date('2024-01-15') })).toBe(false)
+    })
+
+    it('is not pending after a capture that threw', async () => {
+      const db = {
+        dbCommunityTool: { update: vi.fn().mockResolvedValue({}) },
+      }
+      vi.spyOn(dbClient, 'getDbClient').mockReturnValue(
+        db as unknown as PrismaClient,
+      )
+      const now = new Date('2024-01-15T12:00:00Z')
+      const launchFails = {
+        capture: vi.fn().mockRejectedValue(new Error('launch failed')),
+      }
+      await expect(
+        checkTool(
+          {
+            id: 'tool-1',
+            slug: 'new-tool',
+            url: 'https://new-tool.pages.example.com/',
+            failingSince: null,
+            archivedAt: null,
+            archivedBy: null,
+          },
+          { ...CAPTURES, capturer: launchFails },
+          now,
+        ),
+      ).rejects.toThrow('launch failed')
+      // Whatever the throw wrote is what the next read sees.
+      const written = db.dbCommunityTool.update.mock.calls[0]?.[0].data
+      expect(written).toEqual({ lastCheckAt: now })
+      expect(await pending(written)).toBe(false)
     })
 
     it('is not pending without a capturer', async () => {

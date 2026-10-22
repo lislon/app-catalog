@@ -22,13 +22,18 @@ export function formatCardDate(iso: string): string {
  * viewer. A tool with none yet shows a placeholder in the same box: "still
  * capturing" while its first visit is to come, otherwise "no screenshot".
  */
-export function CardScreenshot({ tool }: { tool: CommunityTool }) {
+export function CardScreenshot({
+  tool,
+  capturing,
+}: {
+  tool: CommunityTool
+  /** A first screenshot is on its way and still worth waiting for. */
+  capturing: boolean
+}) {
   const [open, setOpen] = useState(false)
   const { screenshotId, capturedAt } = tool
 
   if (!screenshotId) {
-    // The server says whether a first visit is still to come.
-    const capturing = tool.capturePending
     return (
       <figure data-testid="card-screenshot" className="mt-[22px]">
         <div

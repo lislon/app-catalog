@@ -18,6 +18,7 @@ import { Skeleton } from '~/ui/skeleton'
 import { CardScreenshot, formatCardDate } from './CardScreenshot'
 import { CardTitleBlock } from './CardTitleBlock'
 import { PersonAvatar } from './FeedRow'
+import { useTimeUp } from '../useTimeUp'
 import { PinButton } from './PinButton'
 import { TagChip, tagKey, tagLabel } from './TagRow'
 
@@ -35,6 +36,9 @@ const DAY_MS = 24 * 60 * 60 * 1000
 
 /** How often a card whose first screenshot is on its way asks again. */
 const CAPTURE_POLL_MS = 5000
+
+/** How long one open card waits for a first screenshot before it stops asking. */
+const CAPTURE_WAIT_MS = 2 * 60 * 1000
 
 export interface ToolCardProps {
   slug: string
@@ -79,13 +83,18 @@ export function ToolCard({
   // and the tool's own query only refreshes it.
   const list = useQuery(trpc.communityTools.list.queryOptions())
   const fromList = list.data?.find((t) => t.slug === slug)
+  // Whatever the server says, an open card stops waiting after a while: a
+  // capture that never reports back must not keep it asking forever.
+  const gaveUpOnCapture = useTimeUp(slug, CAPTURE_WAIT_MS)
   const get = useQuery({
     ...trpc.communityTools.get.queryOptions({ slug }),
     placeholderData: fromList,
     // Until the first visit lands, keep asking, so the screenshot replaces
     // the placeholder without a reload.
     refetchInterval: (query) =>
-      query.state.data?.capturePending ? CAPTURE_POLL_MS : false,
+      query.state.data?.capturePending && !gaveUpOnCapture
+        ? CAPTURE_POLL_MS
+        : false,
   })
   const tool = get.data
 
@@ -255,7 +264,10 @@ export function ToolCard({
             />
           </div>
 
-          <CardScreenshot tool={tool} />
+          <CardScreenshot
+            tool={tool}
+            capturing={tool.capturePending && !gaveUpOnCapture}
+          />
 
           {tool.descriptionMd.trim() && (
             <section
