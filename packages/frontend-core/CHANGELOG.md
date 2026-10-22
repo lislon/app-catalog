@@ -1,5 +1,14 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.10.3
+
+### Patch Changes
+
+- [#333](https://github.com/lislon/app-catalog/pull/333) [`e8cfe15`](https://github.com/lislon/app-catalog/commit/e8cfe15d8fa020bdb72ec2d5a20fc27ef2bb8104) Thanks [@lislon](https://github.com/lislon)! - Signing out keeps you on the page you were on and re-renders it signed out, instead of sending you to the home page.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.10.3
+
 ## 6.10.2
 
 ### Patch Changes
