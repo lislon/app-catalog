@@ -5,7 +5,7 @@ import type { MockCommunityToolsStore } from '../mock-backend/MockCommunityTools
 export class MockBackendVerifier {
   constructor(
     readonly db: MockDb,
-    readonly communityToolsStore?: MockCommunityToolsStore,
+    readonly communityTools: MockCommunityToolsStore,
   ) {}
 
   apps(): Resource[] {

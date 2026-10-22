@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { createTRPCClient, httpLink } from '@trpc/client'
 import { QueryClient } from '@tanstack/react-query'
@@ -30,6 +30,7 @@ import {
 import { MockCommunityToolsStore } from '../mock-backend/MockCommunityToolsStore'
 import { BrowserStateCfg } from '../mock-backend/BrowserStateCfg'
 import { NetworkConfigurerCfg } from '../mock-network/NetworkConfigurerCfg'
+import { MockFeedbackStore } from '../mock-network/MockFeedbackStore'
 import type { ConfigurerContext, Magazine } from '../mock-backend/magazines'
 import { makeNetworkReplyWithCatalog } from '../mock-network/makeNetworkReplyWithCatalog'
 import { MockBackendVerifier } from './MockBackendVerifier'
@@ -102,21 +103,18 @@ export async function given(
     createRouter?: CreateRouterFn
   } = {},
 ): Promise<GivenResult> {
-  // Clean up any previous resources
+  // Clean up any previous resources, the rendered app included: a second given()
+  // in one test is a reload, not a second app beside the first.
+  cleanup()
   await cleanupTestResources()
   resetConfigurerCounter()
 
   // 1. Create cfg objects (data carriers)
   const db = new MockDb()
   const userContext = new MockUserContext()
-  const communityToolsStore = new MockCommunityToolsStore(userContext, [
-    'example.com',
-  ])
-  const backendCfg = new MockBackendConfigurer(
-    db,
-    userContext,
-    communityToolsStore,
-  )
+  const feedback = new MockFeedbackStore()
+  const communityTools = new MockCommunityToolsStore(db, userContext, feedback)
+  const backendCfg = new MockBackendConfigurer(db, userContext, communityTools)
   const browserStateCfg = new BrowserStateCfg()
   const networkCfg = new NetworkConfigurerCfg()
 
@@ -126,7 +124,7 @@ export async function given(
   magazine(ctx)
 
   // 3. Materialize backend service
-  const service = new MockService(db, userContext, communityToolsStore)
+  const service = new MockService(db, userContext, feedback, communityTools)
 
   // 4. Apply browser state using data from backend service
   if (browserStateCfg.shouldDismissOnboarding) {
@@ -245,7 +243,7 @@ export async function given(
   )
 
   // 10. Return tools
-  const backend = new MockBackendVerifier(db, communityToolsStore)
+  const backend = new MockBackendVerifier(db, communityTools)
 
   const ui: UiTools = {
     catalog: new CatalogTools(),

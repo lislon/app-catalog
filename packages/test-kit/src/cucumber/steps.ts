@@ -79,15 +79,37 @@ export function registerCatalog(
 // feature's scenarios sequentially, so a module-level handle is enough — and it
 // matches `given()`, whose msw server and IndexedDB are already module-global.
 let current: GivenResult | null = null
+/** The catalog the scenario opened, and the server state its later Givens added. */
+let scenario: { entry: RegisteredCatalog; extras: Magazine[] } | null = null
 
 function ui() {
   if (!current) throw new Error('No catalog opened — missing a Given step?')
   return current.ui
 }
 
-function backend() {
-  if (!current) throw new Error('No catalog opened — missing a Given step?')
-  return current.backend
+async function boot(initialRoute?: string): Promise<void> {
+  if (!scenario) throw new Error('No catalog opened — missing a Given step?')
+  const { entry, extras } = scenario
+  current = await given(
+    (ctx) => {
+      entry.fixture(ctx)
+      for (const extra of extras) extra(ctx)
+    },
+    { extensions: entry.extensions, initialRoute },
+  )
+}
+
+/**
+ * Changes what the server holds, then reloads the page where it is.
+ *
+ * The app reads the session once on mount and caches what it fetched, so state
+ * changed under a running page would never show. A reload is what a person sees
+ * too: they sign in, or a colleague pins something, and the next load has it.
+ */
+async function givenOnServer(extra: Magazine): Promise<void> {
+  if (!scenario) throw new Error('No catalog opened — missing a Given step?')
+  scenario.extras.push(extra)
+  await boot(current?.router.state.location.href)
 }
 
 Given('the {string} catalog', async (_world, name: string) => {
@@ -97,7 +119,8 @@ Given('the {string} catalog', async (_world, name: string) => {
       `Unknown catalog "${name}". Registered: [${[...catalogs.keys()].join(', ')}]`,
     )
   }
-  current = await given(entry.fixture, { extensions: entry.extensions })
+  scenario = { entry, extras: [] }
+  await boot()
 })
 
 When('I search for {string}', async (_world, query: string) => {
@@ -390,113 +413,81 @@ Then('the open tab is {string}', async (_world, name: string) => {
   })
 })
 
-// Community tools steps
+// Community tools: server state a scenario starts from
 
 Given('I am signed in', async () => {
-  if (!current) throw new Error('No catalog opened')
-  current.ui // Trigger error if needed, but sign-in is done via withUser in fixture
+  await givenOnServer(({ backendCfg }) =>
+    backendCfg.withUser({ isAuthenticated: true }),
+  )
 })
 
 Given('I am signed in as {string}', async (_world, name: string) => {
-  if (!current) throw new Error('No catalog opened')
-  const store = backend().communityToolsStore
-  if (!store) throw new Error('Community tools store not available')
-
-  // Find person by name from fixture
-  const persons = [
-    { name: 'Dana Lee', email: 'dana.lee@test.com' },
-    { name: 'Sam Ortiz', email: 'sam.ortiz@test.com' },
-    { name: 'Robin Park', email: 'robin.park@test.com' },
-  ]
-  const person = persons.find((p) => p.name === name)
-  if (!person) {
-    throw new Error(
-      `Unknown person "${name}". Available: ${persons.map((p) => p.name).join(', ')}`,
+  await givenOnServer(({ backendCfg }) => {
+    const person = backendCfg.db.persons.find(
+      (p) => `${p.firstName} ${p.lastName}` === name,
     )
-  }
-
-  // Set the user (this updates the userContext that the store uses)
-  // Note: This is a workaround - ideally the fixture would handle this
-  // For now, just verify the step works
-  current.ui
+    if (!person) {
+      throw new Error(
+        `No person "${name}" in the directory. Available: ${backendCfg.db.persons.map((p) => `${p.firstName} ${p.lastName}`).join(', ')}`,
+      )
+    }
+    backendCfg.withUser({
+      name,
+      email: person.email ?? person.slug,
+      isAuthenticated: true,
+      isAdmin: false,
+    })
+  })
 })
 
 Given('I am signed in as an admin', async () => {
-  if (!current) throw new Error('No catalog opened')
-  // The fixture already configured the user as admin
-  current.ui
+  await givenOnServer(({ backendCfg }) =>
+    backendCfg.withUser({ isAuthenticated: true, isAdmin: true }),
+  )
 })
 
 Given(
   '{string} has failed its daily check for {int} days',
-  async (_world, toolName: string, days: number) => {
-    const store = backend().communityToolsStore
-    if (!store) throw new Error('Community tools store not available')
-
-    // Find tool by name
-    const tools = store.list()
-    const tool = tools.find((t) => t.name === toolName)
-    if (!tool) {
-      throw new Error(
-        `Tool "${toolName}" not found. Available: ${tools.map((t) => t.name).join(', ')}`,
-      )
-    }
-
-    store.setFailingSince(tool.slug, days)
+  async (_world, tool: string, days: number) => {
+    await givenOnServer(({ backendCfg }) => {
+      const tools = backendCfg.communityTools
+      tools.failDailyChecks(tools.slugOf(tool), days)
+    })
   },
 )
 
 Given(
   '{string} is tagged with the app {string}',
-  async (_world, _toolName: string, _appSlug: string) => {
-    const store = backend().communityToolsStore
-    if (!store) throw new Error('Community tools store not available')
-
-    // This would need to mutate the tool's tags
-    // For now, this should be configured in the fixture itself
-    throw new Error(
-      'This step should be configured in the magazine fixture, not dynamically',
-    )
+  async (_world, tool: string, app: string) => {
+    await givenOnServer(({ backendCfg }) => {
+      const resource = backendCfg.db.resources.find(
+        (r) => r.displayName === app,
+      )
+      if (!resource) throw new Error(`No app "${app}" in the catalog`)
+      const tools = backendCfg.communityTools
+      tools.tagWithApp(tools.slugOf(tool), resource.slug)
+    })
   },
 )
 
-Given('I pinned {string}', async (_world, toolName: string) => {
-  const store = backend().communityToolsStore
-  if (!store) throw new Error('Community tools store not available')
-
-  const tools = store.list()
-  const tool = tools.find((t) => t.name === toolName)
-  if (!tool) {
-    throw new Error(
-      `Tool "${toolName}" not found. Available: ${tools.map((t) => t.name).join(', ')}`,
-    )
-  }
-
-  // Need to set user first
-  const userId = 'test-user-id'
-  store.setPinned(tool.slug, userId)
+Given('I pinned {string}', async (_world, tool: string) => {
+  await givenOnServer(({ backendCfg }) => {
+    const tools = backendCfg.communityTools
+    tools.seedPin(tools.slugOf(tool))
+  })
 })
 
 Given(
   '{string} was added and is not reviewed',
-  async (_world, toolName: string) => {
-    const store = backend().communityToolsStore
-    if (!store) throw new Error('Community tools store not available')
-
-    // This should be configured in the magazine fixture
-    // The fixture tools already have reviewedAt: null by default
-    const tools = store.list()
-    const tool = tools.find((t) => t.name === toolName)
-    if (!tool) {
-      throw new Error(
-        `Tool "${toolName}" not found. Available: ${tools.map((t) => t.name).join(', ')}`,
-      )
-    }
-
-    if (tool.reviewed) {
-      throw new Error(
-        `Tool "${toolName}" is already reviewed. This step requires an unreviewed tool.`,
-      )
-    }
+  async (_world, tool: string) => {
+    await givenOnServer(({ backendCfg }) => {
+      const tools = backendCfg.communityTools
+      tools.seedUnreviewed({
+        name: tool,
+        url:
+          tools.pageTitled(tool) ??
+          `https://${tool.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pages.example.com/`,
+      })
+    })
   },
 )

@@ -1,4 +1,5 @@
 import type { MockBackendConfigurer } from './MockBackendConfigurer'
+import { MOCK_NOW } from './MockCommunityToolsStore'
 import type { BrowserStateCfg } from './BrowserStateCfg'
 import type { NetworkConfigurerCfg } from '../mock-network/NetworkConfigurerCfg'
 
@@ -338,90 +339,71 @@ function subResourcesMagazine(postConfigure?: Magazine): Magazine {
 // Community tools magazine
 // ---------------------------------------------------------------------------
 
+/** The page the add-a-tool scenarios paste: the capture browser reads its title. */
+export const QC_HEATMAP_URL = 'https://qc-heatmap-9f8e.pages.example.com/'
+
 function communityMagazine(postConfigure?: Magazine): Magazine {
   return (ctx) => {
     const { backendCfg } = ctx
-
-    const supportPortal = backendCfg.withApprovalMethod({
-      slug: 'it-support',
-      type: 'service',
-      displayName: 'Support Portal',
-      config: { url: 'https://support.example.com' },
-    })
+    const tools = backendCfg.communityTools
 
     backendCfg.withApp({
       slug: 'order-service',
       displayName: 'Order Service',
       description: 'Order management and tracking',
-      accessRequest: {
-        approvalMethodSlug: supportPortal.slug,
-        comments: 'Request access via support portal',
-      },
     })
 
-    backendCfg.withTag({
-      prefix: 'category',
-      displayName: 'Category',
-      description: 'Application category',
-      values: [
-        {
-          value: 'runbook',
-          displayName: 'Runbook',
-          description: 'Operational runbooks',
-        },
-        {
-          value: 'sandbox',
-          displayName: 'Sandbox',
-          description: 'Testing and experimentation',
-        },
-      ],
+    // A directory slug is the person's email: that is what makes the signed-in owner an owner.
+    const person = (firstName: string, lastName: string) => {
+      const email = `${firstName}.${lastName}@example.com`.toLowerCase()
+      return backendCfg.withPerson({ slug: email, email, firstName, lastName })
+    }
+    const dana = person('Dana', 'Lee')
+    const sam = person('Sam', 'Ortiz')
+    const robin = person('Robin', 'Park')
+
+    tools.enable({ captureHosts: ['example.com'] })
+    tools.withPage(QC_HEATMAP_URL, 'QC Heatmap')
+
+    tools.seed({
+      name: 'Ops Runbook',
+      url: 'https://ops-runbook-1a2b.pages.example.com/',
+      summary: 'What to do when a nightly job fails',
+      descriptionMd:
+        'Open the job that failed, then follow the steps for its error code.',
+      ownerSlugs: [dana.slug],
+      tags: [{ kind: 'topic', value: 'runbook' }],
+      screenshotId: 'ops-runbook-shot',
+      capturedAt: MOCK_NOW,
+      views30d: 412,
+      viewsAll: 1203,
+    })
+    tools.seed({
+      name: 'Kit Rules Playground',
+      url: 'https://kit-rules-sandbox-7c01.pages.example.com/',
+      summary: 'Try a kit rule change before you ship it',
+      descriptionMd:
+        'Paste a rule, pick a sample kit, and see what it decides.',
+      ownerSlugs: [sam.slug],
+      tags: [{ kind: 'topic', value: 'sandbox' }],
+      screenshotId: 'kit-rules-shot',
+      capturedAt: MOCK_NOW,
+      views30d: 288,
+      viewsAll: 288,
+    })
+    tools.seed({
+      name: 'Old Tracker',
+      url: 'https://old-tracker-3d4e.pages.example.com/',
+      summary: 'The issue list from before the move',
+      descriptionMd: 'Read-only. Search by the old issue number.',
+      ownerSlugs: [robin.slug],
+      screenshotId: 'old-tracker-shot',
+      capturedAt: MOCK_NOW,
+      views30d: 22,
+      viewsAll: 22,
     })
 
-    backendCfg.withCommunityTools({
-      enabled: true,
-      captureHosts: ['example.com'],
-      tools: [
-        {
-          slug: 'ops-runbook',
-          name: 'Ops Runbook',
-          url: 'https://ops-runbook-1a2b.pages.example.com/',
-          summary: 'Operational procedures and troubleshooting guides',
-          descriptionMd: 'Standard operating procedures for common issues',
-          ownerSlugs: ['dana.lee@test.com'],
-          tags: [{ kind: 'topic', value: 'runbook' }],
-          views30d: 412,
-          viewsAll: 1203,
-        },
-        {
-          slug: 'kit-rules-playground',
-          name: 'Kit Rules Playground',
-          url: 'https://kit-rules-sandbox-7c01.pages.example.com/',
-          summary: 'Test environment for kit configuration rules',
-          descriptionMd: 'Sandbox for testing and validating kit rules',
-          ownerSlugs: ['sam.ortiz@test.com'],
-          tags: [{ kind: 'topic', value: 'sandbox' }],
-          views30d: 288,
-          viewsAll: 288,
-        },
-        {
-          slug: 'old-tracker',
-          name: 'Old Tracker',
-          url: 'https://old-tracker.pages.example.com/',
-          summary: 'Legacy issue tracking system',
-          descriptionMd: 'Original issue tracker, still in use for some teams',
-          ownerSlugs: ['robin.park@test.com'],
-          tags: [],
-          views30d: 22,
-          viewsAll: 22,
-        },
-      ],
-      persons: [
-        { slug: 'dana.lee@test.com', firstName: 'Dana', lastName: 'Lee' },
-        { slug: 'sam.ortiz@test.com', firstName: 'Sam', lastName: 'Ortiz' },
-        { slug: 'robin.park@test.com', firstName: 'Robin', lastName: 'Park' },
-      ],
-    })
-
+    // The features sign in explicitly, so the catalog starts anonymous.
     backendCfg.withUser({ isAuthenticated: false })
 
     postConfigure?.(ctx)

@@ -1,9 +1,9 @@
 import type {
   AppApprovalMethod,
   GroupingTagDefinition,
+  Person,
   Resource,
 } from '@igstack/app-catalog-backend-core'
-import type { CommunityTag } from '@igstack/app-catalog-shared-core'
 import type { MockDb } from './MockDb'
 import type { MockUserContext, UserConfig } from './MockUserContext'
 import type { MockCommunityToolsStore } from './MockCommunityToolsStore'
@@ -23,7 +23,7 @@ export class MockBackendConfigurer {
   constructor(
     readonly db: MockDb,
     readonly userContext: MockUserContext,
-    readonly communityToolsStore?: MockCommunityToolsStore,
+    readonly communityTools: MockCommunityToolsStore,
   ) {}
 
   withApp(overrides?: Partial<Resource>): Resource {
@@ -95,47 +95,10 @@ export class MockBackendConfigurer {
     this.userContext.setUser(overrides)
   }
 
-  withCommunityTools(config: {
-    enabled: boolean
-    captureHosts?: string[]
-    tools?: {
-      slug: string
-      name: string
-      url: string
-      summary: string
-      descriptionMd: string
-      ownerSlugs: string[]
-      tags: CommunityTag[]
-      views30d?: number
-      viewsAll?: number
-      reviewedAt?: Date | null
-      failingSince?: Date | null
-    }[]
-    persons?: {
-      slug: string
-      firstName: string
-      lastName: string
-    }[]
-  }): void {
-    if (!this.communityToolsStore) {
-      throw new Error('Community tools store not available')
-    }
-
-    if (config.persons) {
-      for (const person of config.persons) {
-        this.communityToolsStore.withPerson(
-          person.slug,
-          person.firstName,
-          person.lastName,
-        )
-      }
-    }
-
-    if (config.tools) {
-      for (const tool of config.tools) {
-        this.communityToolsStore.withTool(tool)
-      }
-    }
+  /** A person-directory entry: the owners a community tool can name. */
+  withPerson(person: Person): Person {
+    this.db.persons.push(person)
+    return person
   }
 }
 

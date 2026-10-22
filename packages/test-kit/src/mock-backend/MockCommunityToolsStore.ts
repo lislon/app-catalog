@@ -1,59 +1,19 @@
+import { TRPCError } from '@trpc/server'
 import type {
   CommunityTag,
   CommunityTool,
-  PersonRef,
 } from '@igstack/app-catalog-shared-core'
 import {
   hostOf,
   isCaptureAllowed,
   lifecycleOf,
+  nextLifecycle,
 } from '@igstack/app-catalog-shared-core'
-import type { MockUserContext } from './MockUserContext'
+import type { MockFeedbackStore } from '../mock-network/MockFeedbackStore'
+import type { MockDb } from './MockDb'
+import type { MockUserContext, SessionUser } from './MockUserContext'
 
-interface DbTool {
-  id: string
-  slug: string
-  name: string
-  url: string
-  host: string
-  summary: string
-  descriptionMd: string
-  ownerSlugs: string[]
-  addedByUserId: string
-  addedByName: string
-  createdAt: Date
-  tags: CommunityTag[]
-  reviewedAt: Date | null
-  reviewedByName: string | null
-  failingSince: Date | null
-  archivedAt: Date | null
-  archivedBy: string | null
-  archivedReason: string | null
-  screenshotAssetId: string | null
-  faviconAssetId: string | null
-  capturedAt: Date | null
-}
-
-interface DbView {
-  toolId: string
-  actorHash: string
-  userId: string | null
-  day: Date
-  at: Date
-}
-
-interface DbPin {
-  userId: string
-  toolId: string
-  position: number
-}
-
-interface DbPerson {
-  slug: string
-  firstName: string
-  lastName: string
-}
-
+/** The input of `communityTools.add`; `edit` adds the slug. */
 export interface ToolInput {
   url: string
   name: string
@@ -71,190 +31,537 @@ export interface ToolPreview {
   captureAllowed: boolean
 }
 
+/** A tool row, the way the server's table holds it. */
+interface StoredTool {
+  id: string
+  slug: string
+  name: string
+  url: string
+  host: string
+  summary: string
+  descriptionMd: string
+  ownerSlugs: string[]
+  tags: CommunityTag[]
+  addedBy: { userId: string; name: string }
+  createdAt: Date
+  reviewedAt: Date | null
+  failingSince: Date | null
+  archivedAt: Date | null
+  archivedBy: string | null
+  archivedReason: string | null
+  screenshotId: string | null
+  faviconId: string | null
+  capturedAt: Date | null
+}
+
+/** Everything a scenario may preset on a tool; name and url are all it must give. */
+export type ToolSeed = Partial<Omit<StoredTool, 'id' | 'host'>> & {
+  name: string
+  url: string
+  views30d?: number
+  viewsAll?: number
+}
+
+interface View {
+  toolId: string
+  actorHash: string
+  userId: string | null
+  day: Date
+  at: Date
+}
+
+/** The clock every scenario runs on, so "N days" reads the same on any day. */
+export const MOCK_NOW = new Date('2026-10-21T12:00:00Z')
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/** The visitor cookie the real server would see from this browser. */
+const VISITOR_HASH = 'mock-visitor'
+
+const NO_SCHEME = 'The address must start with http:// or https://'
+
+const PIXEL_DATA_URL =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+
+function startOfDay(at: Date): Date {
+  const day = new Date(at)
+  day.setUTCHours(0, 0, 0, 0)
+  return day
+}
+
+function slugify(name: string): string {
+  return (
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'tool'
+  )
+}
+
+/**
+ * The `communityTools` router in memory: the same inputs, outputs and errors as
+ * `router.ts`, `service.ts` and `writeService.ts` in backend-core, on the shared-core
+ * rules the server uses. Writes leave the same review rows in the feedback store.
+ */
 export class MockCommunityToolsStore {
-  private tools: DbTool[] = []
-  private views: DbView[] = []
-  private pinsData: DbPin[] = []
-  private persons: DbPerson[] = []
-  private counter = 0
-  private now = new Date('2026-10-21T12:00:00Z')
+  private enabled = false
   private captureHosts: string[] = []
+  /** What the headless browser would read off a page, by address. Anything else fails to load. */
+  private pageTitles = new Map<string, string>()
+  private tools: StoredTool[] = []
+  private views: View[] = []
+  private pinsByUser = new Map<string, string[]>()
+  private counter = 0
+  private tick = 0
 
   constructor(
-    private userContext: MockUserContext,
-    captureHosts?: string[],
-  ) {
-    this.captureHosts = captureHosts ?? []
+    private readonly db: MockDb,
+    private readonly userContext: MockUserContext,
+    private readonly feedback: MockFeedbackStore,
+  ) {}
+
+  // -------------------------------------------------------------------------
+  // Scenario setup
+  // -------------------------------------------------------------------------
+
+  enable(opts: { captureHosts: string[] }): void {
+    this.enabled = true
+    this.captureHosts = opts.captureHosts
   }
 
-  withPerson(slug: string, firstName: string, lastName: string): void {
-    this.persons.push({ slug, firstName, lastName })
+  /** A page the capture browser can open, and the title it finds there. */
+  withPage(url: string, title: string): void {
+    this.pageTitles.set(url, title)
   }
 
-  withTool(input: {
-    slug: string
-    name: string
-    url: string
-    summary: string
-    descriptionMd: string
-    ownerSlugs: string[]
-    tags: CommunityTag[]
-    addedByUserId?: string
-    addedByName?: string
-    createdAt?: Date
-    views30d?: number
-    viewsAll?: number
-    reviewedAt?: Date | null
-    failingSince?: Date | null
-    archivedAt?: Date | null
-    archivedBy?: string | null
-  }): void {
-    this.counter += 1
-    const toolId = `tool-${this.counter}`
+  pageTitled(title: string): string | undefined {
+    return [...this.pageTitles].find(([, t]) => t === title)?.[0]
+  }
 
-    const tool: DbTool = {
-      id: toolId,
-      slug: input.slug,
-      name: input.name,
-      url: input.url,
-      host: hostOf(input.url) ?? input.url,
-      summary: input.summary,
-      descriptionMd: input.descriptionMd,
-      ownerSlugs: input.ownerSlugs,
-      addedByUserId: input.addedByUserId ?? 'system',
-      addedByName: input.addedByName ?? 'System',
-      createdAt: input.createdAt ?? this.now,
-      tags: input.tags,
-      reviewedAt: input.reviewedAt ?? null,
-      reviewedByName: null,
-      failingSince: input.failingSince ?? null,
-      archivedAt: input.archivedAt ?? null,
-      archivedBy: input.archivedBy ?? null,
-      archivedReason: null,
-      screenshotAssetId: null,
-      faviconAssetId: null,
-      capturedAt: null,
+  seed(seed: ToolSeed): string {
+    const { views30d = 0, viewsAll = views30d, ...fields } = seed
+    const host = hostOf(seed.url)
+    if (!host) throw new Error(`Seeded tool "${seed.name}": ${NO_SCHEME}`)
+    const tool = this.insert({ ...fields, host })
+    const today = startOfDay(MOCK_NOW)
+    for (let i = 0; i < viewsAll; i++) {
+      // The first views30d inside the 30-day window, the rest before it.
+      const daysAgo = i < views30d ? i % 30 : 30 + (i % 300)
+      const day = new Date(today.getTime() - daysAgo * DAY_MS)
+      this.views.push({
+        toolId: tool.id,
+        actorHash: `seed-${i}`,
+        userId: null,
+        day,
+        at: day,
+      })
     }
+    return tool.slug
+  }
 
-    this.tools.push(tool)
-
-    // Seed views if provided
-    if (input.viewsAll) {
-      for (let i = 0; i < input.viewsAll; i++) {
-        const dayOffset =
-          input.views30d && i < input.views30d
-            ? Math.floor(Math.random() * 29)
-            : Math.floor(Math.random() * 365)
-        const day = new Date(this.now)
-        day.setUTCDate(day.getUTCDate() - dayOffset)
-        day.setUTCHours(0, 0, 0, 0)
-
-        this.views.push({
-          toolId,
-          actorHash: `actor-${i}`,
-          userId: null,
-          day,
-          at: new Date(day.getTime() + Math.random() * 86400000),
-        })
-      }
+  /** Runs the daily check against a dead page, once a day for `days` days up to now. */
+  failDailyChecks(slug: string, days: number): void {
+    const tool = this.stored(slug)
+    for (let daysAgo = days; daysAgo >= 0; daysAgo--) {
+      const at = new Date(MOCK_NOW.getTime() - daysAgo * DAY_MS)
+      Object.assign(tool, nextLifecycle(tool, false, at))
     }
   }
 
-  setFailingSince(slug: string, days: number): void {
-    const tool = this.tools.find((t) => t.slug === slug)
-    if (tool) {
-      const failDate = new Date(this.now)
-      failDate.setUTCDate(failDate.getUTCDate() - days)
-      tool.failingSince = failDate
+  tagWithApp(slug: string, appSlug: string): void {
+    this.stored(slug).tags.push({ kind: 'app', value: appSlug })
+  }
+
+  /** A pin the signed-in visitor made earlier. */
+  seedPin(slug: string): void {
+    const user = this.userContext.getSessionUser()
+    if (!user)
+      throw new Error('A pin belongs to a signed-in user; sign in first')
+    this.pinTool(slug, user.id)
+  }
+
+  /** A tool published by someone else, still waiting for an admin. */
+  seedUnreviewed(seed: ToolSeed): void {
+    const existing = this.tools.find((t) => t.name === seed.name)
+    if (existing) {
+      existing.reviewedAt = null
+      return
     }
-  }
-
-  setPinned(slug: string, userId: string): void {
-    const tool = this.tools.find((t) => t.slug === slug)
-    if (!tool) return
-
-    const maxPin = this.pinsData
-      .filter((p) => p.userId === userId)
-      .reduce((max, p) => Math.max(max, p.position), -1)
-
-    this.pinsData.push({
-      userId,
-      toolId: tool.id,
-      position: maxPin + 1,
-    })
-  }
-
-  private requireAuth(): { userId: string; name: string; isAdmin: boolean } {
-    const user = this.userContext.getUser()
-    if (!user.isAuthenticated) {
-      throw new Error('UNAUTHORIZED')
-    }
-    return {
-      userId: 'test-user-id',
-      name: user.name,
-      isAdmin: user.isAdmin,
-    }
-  }
-
-  private requireAdmin(): { userId: string; name: string; isAdmin: true } {
-    const auth = this.requireAuth()
-    if (!auth.isAdmin) {
-      throw new Error('FORBIDDEN')
-    }
-    return { ...auth, isAdmin: true as const }
-  }
-
-  private computeCanEdit(
-    tool: DbTool,
-    userId: string,
-    isAdmin: boolean,
-  ): boolean {
-    if (isAdmin) return true
-    if (tool.addedByUserId === userId) return true
-
-    const session = this.userContext.getSessionResponse()
-    if (!session) return false
-
-    const userEmail = (session as any).user.email
-    return tool.ownerSlugs.some((slug) => slug === userEmail)
-  }
-
-  private toView(
-    tool: DbTool,
-    userId: string | null,
-    isAdmin: boolean,
-  ): CommunityTool {
-    const owners: PersonRef[] = tool.ownerSlugs.map((slug) => {
-      const person = this.persons.find((p) => p.slug === slug)
-      if (person) {
-        const name = `${person.firstName} ${person.lastName}`.trim()
-        return { slug, name: name || slug }
-      }
-      return { slug, name: slug }
-    })
-
-    const today = new Date(this.now)
-    today.setUTCHours(0, 0, 0, 0)
-    const thirtyDaysAgo = new Date(today)
-    thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 29)
-
-    const views30d = this.views.filter(
-      (v) => v.toolId === tool.id && v.day >= thirtyDaysAgo,
-    ).length
-    const viewsAll = this.views.filter((v) => v.toolId === tool.id).length
-
-    const lifecycle = lifecycleOf(
-      {
-        failingSince: tool.failingSince,
-        archivedAt: tool.archivedAt,
-        archivedBy: tool.archivedBy,
-        archivedReason: tool.archivedReason,
-      },
-      this.now,
+    const slug = this.seed({ ...seed, reviewedAt: null })
+    this.feedback.addReviewRow(
+      slug,
+      `New tool added: ${seed.name}`,
+      seed.addedBy?.name ?? 'A colleague',
+      null,
+      false,
     )
+  }
 
-    const canEdit = userId ? this.computeCanEdit(tool, userId, isAdmin) : false
+  slugOf(name: string): string {
+    const tool = this.tools.find((t) => t.name === name)
+    if (!tool) {
+      throw new Error(
+        `No community tool named "${name}". Available: ${this.tools.map((t) => t.name).join(', ')}`,
+      )
+    }
+    return tool.slug
+  }
 
+  /** The stored row, for a verifier: the client never sees review or archive details. */
+  inspect(name: string): Readonly<StoredTool> {
+    return this.stored(this.slugOf(name))
+  }
+
+  // -------------------------------------------------------------------------
+  // Procedures
+  // -------------------------------------------------------------------------
+
+  config(): { enabled: boolean } {
+    return { enabled: this.enabled }
+  }
+
+  list(): CommunityTool[] {
+    this.requireEnabled()
+    const user = this.userContext.getSessionUser()
+    return this.tools.map((tool) => this.toView(tool, user))
+  }
+
+  get(input: { slug: string }): CommunityTool {
+    this.requireEnabled()
+    const tool = this.tools.find((t) => t.slug === input.slug)
+    if (!tool) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'Tool not found' })
+    }
+    return this.toView(tool, this.userContext.getSessionUser())
+  }
+
+  recordView(input: { slug: string }): { views30d: number; viewsAll: number } {
+    this.requireEnabled()
+    const tool = this.tools.find((t) => t.slug === input.slug)
+    if (!tool) throw new Error('Tool not found')
+    const userId = this.userContext.getSessionUser()?.id ?? null
+    const day = startOfDay(MOCK_NOW)
+    // Distinct instants, so "most recent" has an order inside the frozen clock.
+    const at = new Date(MOCK_NOW.getTime() + ++this.tick)
+    const same = this.views.find(
+      (v) =>
+        v.toolId === tool.id &&
+        v.actorHash === VISITOR_HASH &&
+        v.day.getTime() === day.getTime(),
+    )
+    if (same) {
+      same.at = at
+      same.userId = userId
+    } else {
+      this.views.push({
+        toolId: tool.id,
+        actorHash: VISITOR_HASH,
+        userId,
+        day,
+        at,
+      })
+    }
+    return this.viewCounts(tool)
+  }
+
+  recent(): CommunityTool[] {
+    const user = this.requireUser()
+    const ids: string[] = []
+    for (const view of [...this.views]
+      .filter((v) => v.userId === user.id)
+      .sort((a, b) => b.at.getTime() - a.at.getTime())) {
+      if (!ids.includes(view.toolId)) ids.push(view.toolId)
+      if (ids.length === 5) break
+    }
+    return ids.map((id) =>
+      this.toView(this.tools.find((t) => t.id === id)!, user),
+    )
+  }
+
+  pins(): CommunityTool[] {
+    const user = this.requireUser()
+    return (this.pinsByUser.get(user.id) ?? []).map((slug) =>
+      this.toView(this.stored(slug), user),
+    )
+  }
+
+  pin(input: { slug: string }): void {
+    this.pinTool(input.slug, this.requireUser().id)
+  }
+
+  unpin(input: { slug: string }): void {
+    const user = this.requireUser()
+    if (!this.tools.some((t) => t.slug === input.slug)) {
+      throw new Error('Tool not found')
+    }
+    this.pinsByUser.set(
+      user.id,
+      (this.pinsByUser.get(user.id) ?? []).filter((s) => s !== input.slug),
+    )
+  }
+
+  /** Named pins first in the given order, then the rest as they were. */
+  reorderPins(input: { slugs: string[] }): void {
+    const user = this.requireUser()
+    const pinned = this.pinsByUser.get(user.id) ?? []
+    const named = input.slugs.filter((s) => pinned.includes(s))
+    this.pinsByUser.set(user.id, [
+      ...new Set([...named, ...pinned.filter((s) => !named.includes(s))]),
+    ])
+  }
+
+  preview(input: { url: string }): ToolPreview {
+    this.requireUser()
+    const host = this.requireHost(input.url)
+    const captureAllowed = isCaptureAllowed(input.url, this.captureHosts)
+    const duplicate = this.tools.find((t) => t.host === host)
+    const title = captureAllowed
+      ? (this.pageTitles.get(input.url) ?? null)
+      : null
+    return {
+      host,
+      title,
+      screenshotDataUrl: title === null ? null : PIXEL_DATA_URL,
+      duplicate: duplicate
+        ? { slug: duplicate.slug, name: duplicate.name }
+        : null,
+      captureAllowed,
+    }
+  }
+
+  add(input: ToolInput): CommunityTool {
+    const user = this.requireUser()
+    const host = this.requireHost(input.url)
+    const ownerSlugs = this.requireOwnersExist(input.ownerSlugs)
+    const tool = this.insert({
+      name: input.name.trim(),
+      url: input.url,
+      host,
+      summary: input.summary.trim(),
+      descriptionMd: input.descriptionMd,
+      ownerSlugs,
+      tags: input.tags,
+      addedBy: { userId: user.id, name: user.name },
+      reviewedAt: null,
+    })
+    this.feedback.addReviewRow(
+      tool.slug,
+      `New tool added: ${tool.name}`,
+      user.name,
+      null,
+    )
+    return this.toView(tool, user)
+  }
+
+  edit(input: ToolInput & { slug: string }): CommunityTool {
+    const user = this.requireUser()
+    const tool = this.requireTool(input.slug)
+    this.requireEditor(tool, user)
+    const host = this.requireHost(input.url)
+    const ownerSlugs = this.requireOwnersExist(input.ownerSlugs)
+    const name = input.name.trim()
+    const summary = input.summary.trim()
+
+    const sameSet = (a: string[], b: string[]) =>
+      a.length === b.length && a.every((x) => b.includes(x))
+    const tagKey = (t: CommunityTag) => `${t.kind}:${t.value}`
+    const changed = [
+      tool.name !== name && 'name',
+      tool.url !== input.url && 'url',
+      tool.summary !== summary && 'summary',
+      tool.descriptionMd !== input.descriptionMd && 'description',
+      !sameSet(tool.ownerSlugs, ownerSlugs) && 'owners',
+      !sameSet(tool.tags.map(tagKey), input.tags.map(tagKey)) && 'tags',
+    ].filter((f): f is string => !!f)
+
+    if (changed.length > 0) {
+      Object.assign(tool, {
+        name,
+        url: input.url,
+        host,
+        summary,
+        descriptionMd: input.descriptionMd,
+        ownerSlugs,
+        tags: input.tags,
+      })
+      this.feedback.addReviewRow(
+        tool.slug,
+        `Tool edited: ${changed.join(', ')}`,
+        user.name,
+        null,
+      )
+    }
+    return this.toView(tool, user)
+  }
+
+  archive(input: { slug: string; reason: string }): void {
+    const user = this.requireUser()
+    const tool = this.requireTool(input.slug)
+    this.requireEditor(tool, user)
+    const reason = input.reason.trim()
+    tool.archivedAt = MOCK_NOW
+    tool.archivedBy = user.name
+    tool.archivedReason = reason
+    // An owner's archive is news to the maintainer; an admin's is their own decision.
+    this.feedback.addReviewRow(
+      tool.slug,
+      `Tool archived: ${reason}`,
+      user.name,
+      user.isAdmin ? 'acknowledged' : null,
+    )
+  }
+
+  /** `adminProcedure`: sign-in, then admin, then the feature switch. */
+  approve(input: { slug: string }): void {
+    const user = this.requireSignedIn()
+    if (!user.isAdmin) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Admin access required',
+      })
+    }
+    this.requireEnabled()
+    const tool = this.requireTool(input.slug)
+    tool.reviewedAt = MOCK_NOW
+    this.feedback.applyPending(tool.slug, MOCK_NOW)
+    this.feedback.addReviewRow(tool.slug, 'Tool approved', user.name, 'applied')
+  }
+
+  // -------------------------------------------------------------------------
+  // Internals
+  // -------------------------------------------------------------------------
+
+  private insert(
+    fields: Omit<ToolSeed, 'views30d' | 'viewsAll'> & { host: string },
+  ): StoredTool {
+    this.counter += 1
+    const tool: StoredTool = {
+      summary: '',
+      descriptionMd: '',
+      ownerSlugs: [],
+      tags: [],
+      addedBy: { userId: 'seed-user-id', name: 'A colleague' },
+      createdAt: MOCK_NOW,
+      reviewedAt: MOCK_NOW,
+      failingSince: null,
+      archivedAt: null,
+      archivedBy: null,
+      archivedReason: null,
+      screenshotId: null,
+      faviconId: null,
+      capturedAt: null,
+      ...fields,
+      id: `tool-${this.counter}`,
+      slug: fields.slug ?? this.freeSlug(fields.name),
+    }
+    this.tools.push(tool)
+    return tool
+  }
+
+  private freeSlug(name: string): string {
+    const base = slugify(name)
+    for (let n = 1; ; n++) {
+      const slug = n === 1 ? base : `${base}-${n}`
+      if (!this.tools.some((t) => t.slug === slug)) return slug
+    }
+  }
+
+  private pinTool(slug: string, userId: string): void {
+    if (!this.tools.some((t) => t.slug === slug)) {
+      throw new Error('Tool not found')
+    }
+    const pinned = this.pinsByUser.get(userId) ?? []
+    // The server's (userId, toolId) key refuses a second pin with a database error.
+    if (pinned.includes(slug)) throw new Error('Unique constraint failed')
+    this.pinsByUser.set(userId, [...pinned, slug])
+  }
+
+  private stored(slug: string): StoredTool {
+    const tool = this.tools.find((t) => t.slug === slug)
+    if (!tool) throw new Error(`No community tool with slug "${slug}"`)
+    return tool
+  }
+
+  private requireEnabled(): void {
+    if (!this.enabled) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Community tools are disabled',
+      })
+    }
+  }
+
+  private requireSignedIn(): SessionUser {
+    const user = this.userContext.getSessionUser()
+    if (!user) {
+      throw new TRPCError({
+        code: 'UNAUTHORIZED',
+        message: 'You must be logged in to access this resource',
+      })
+    }
+    return user
+  }
+
+  /** `protectedProcedure`: sign-in first, then the feature switch. */
+  private requireUser(): SessionUser {
+    const user = this.requireSignedIn()
+    this.requireEnabled()
+    return user
+  }
+
+  private requireTool(slug: string): StoredTool {
+    const tool = this.tools.find((t) => t.slug === slug)
+    if (!tool) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'Tool not found' })
+    }
+    return tool
+  }
+
+  private requireHost(url: string): string {
+    const host = hostOf(url)
+    if (!host) throw new TRPCError({ code: 'BAD_REQUEST', message: NO_SCHEME })
+    return host
+  }
+
+  private requireOwnersExist(ownerSlugs: string[]): string[] {
+    const unique = [...new Set(ownerSlugs)]
+    if (!unique.every((slug) => this.db.persons.some((p) => p.slug === slug))) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'Every owner must be in the person directory',
+      })
+    }
+    return unique
+  }
+
+  private requireEditor(tool: StoredTool, user: SessionUser): void {
+    if (!this.canEdit(tool, user)) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Only an owner or an admin can change this tool',
+      })
+    }
+  }
+
+  private canEdit(tool: StoredTool, user: SessionUser | null): boolean {
+    if (!user) return false
+    return (
+      user.isAdmin ||
+      tool.addedBy.userId === user.id ||
+      tool.ownerSlugs.includes(user.email)
+    )
+  }
+
+  private viewCounts(tool: StoredTool): { views30d: number; viewsAll: number } {
+    const since = new Date(startOfDay(MOCK_NOW).getTime() - 29 * DAY_MS)
+    const mine = this.views.filter((v) => v.toolId === tool.id)
+    return {
+      views30d: mine.filter((v) => v.day >= since).length,
+      viewsAll: mine.length,
+    }
+  }
+
+  private toView(tool: StoredTool, user: SessionUser | null): CommunityTool {
     return {
       slug: tool.slug,
       name: tool.name,
@@ -262,331 +569,23 @@ export class MockCommunityToolsStore {
       host: tool.host,
       summary: tool.summary,
       descriptionMd: tool.descriptionMd,
-      owners,
-      addedBy: {
-        userId: tool.addedByUserId,
-        name: tool.addedByName,
-      },
+      owners: tool.ownerSlugs.map((slug) => {
+        const person = this.db.persons.find((p) => p.slug === slug)
+        const name = person
+          ? `${person.firstName} ${person.lastName}`.trim()
+          : ''
+        return { slug, name: name || slug }
+      }),
+      addedBy: tool.addedBy,
       createdAt: tool.createdAt.toISOString(),
       tags: tool.tags,
-      views30d,
-      viewsAll,
+      ...this.viewCounts(tool),
       reviewed: tool.reviewedAt !== null,
-      lifecycle,
-      screenshotId: tool.screenshotAssetId,
-      faviconId: tool.faviconAssetId,
+      lifecycle: lifecycleOf(tool, MOCK_NOW),
+      screenshotId: tool.screenshotId,
+      faviconId: tool.faviconId,
       capturedAt: tool.capturedAt?.toISOString() ?? null,
-      canEdit,
-    }
-  }
-
-  config(): { enabled: boolean } {
-    return { enabled: true }
-  }
-
-  list(): CommunityTool[] {
-    const user = this.userContext.getUser()
-    const userId = user.isAuthenticated ? 'test-user-id' : null
-    return this.tools.map((tool) => this.toView(tool, userId, user.isAdmin))
-  }
-
-  get(slug: string): CommunityTool | null {
-    const tool = this.tools.find((t) => t.slug === slug)
-    if (!tool) return null
-
-    const user = this.userContext.getUser()
-    const userId = user.isAuthenticated ? 'test-user-id' : null
-    return this.toView(tool, userId, user.isAdmin)
-  }
-
-  recordView(slug: string): { views30d: number; viewsAll: number } {
-    const tool = this.tools.find((t) => t.slug === slug)
-    if (!tool) throw new Error('Tool not found')
-
-    const day = new Date(this.now)
-    day.setUTCHours(0, 0, 0, 0)
-
-    const user = this.userContext.getUser()
-    const userId = user.isAuthenticated ? 'test-user-id' : null
-    const actorHash = 'test-actor-hash'
-
-    // Upsert: remove existing view for this actor+day, then add new
-    this.views = this.views.filter(
-      (v) =>
-        !(
-          v.toolId === tool.id &&
-          v.actorHash === actorHash &&
-          v.day.getTime() === day.getTime()
-        ),
-    )
-
-    this.views.push({
-      toolId: tool.id,
-      actorHash,
-      userId,
-      day,
-      at: this.now,
-    })
-
-    const thirtyDaysAgo = new Date(day)
-    thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 29)
-
-    const views30d = this.views.filter(
-      (v) => v.toolId === tool.id && v.day >= thirtyDaysAgo,
-    ).length
-    const viewsAll = this.views.filter((v) => v.toolId === tool.id).length
-
-    return { views30d, viewsAll }
-  }
-
-  recent(): CommunityTool[] {
-    const auth = this.requireAuth()
-
-    const recentViews = this.views
-      .filter((v) => v.userId === auth.userId)
-      .sort((a, b) => b.at.getTime() - a.at.getTime())
-
-    const seen = new Set<string>()
-    const toolIds: string[] = []
-    for (const view of recentViews) {
-      if (!seen.has(view.toolId)) {
-        seen.add(view.toolId)
-        toolIds.push(view.toolId)
-        if (toolIds.length === 5) break
-      }
-    }
-
-    return toolIds
-      .map((id) => this.tools.find((t) => t.id === id))
-      .filter((t): t is DbTool => t !== undefined)
-      .map((tool) => this.toView(tool, auth.userId, auth.isAdmin))
-  }
-
-  pins(): CommunityTool[] {
-    const auth = this.requireAuth()
-
-    const userPins = this.pinsData
-      .filter((p) => p.userId === auth.userId)
-      .sort((a, b) => a.position - b.position)
-
-    return userPins
-      .map((pin) => this.tools.find((t) => t.id === pin.toolId))
-      .filter((t): t is DbTool => t !== undefined)
-      .map((tool) => this.toView(tool, auth.userId, auth.isAdmin))
-  }
-
-  pin(slug: string): void {
-    const auth = this.requireAuth()
-    const tool = this.tools.find((t) => t.slug === slug)
-    if (!tool) throw new Error('Tool not found')
-
-    const maxPin = this.pinsData
-      .filter((p) => p.userId === auth.userId)
-      .reduce((max, p) => Math.max(max, p.position), -1)
-
-    this.pinsData.push({
-      userId: auth.userId,
-      toolId: tool.id,
-      position: maxPin + 1,
-    })
-  }
-
-  unpin(slug: string): void {
-    const auth = this.requireAuth()
-    const tool = this.tools.find((t) => t.slug === slug)
-    if (!tool) throw new Error('Tool not found')
-
-    this.pinsData = this.pinsData.filter(
-      (p) => !(p.userId === auth.userId && p.toolId === tool.id),
-    )
-  }
-
-  reorderPins(slugs: string[]): void {
-    const auth = this.requireAuth()
-
-    const userPins = this.pinsData.filter((p) => p.userId === auth.userId)
-    const slugToPin = new Map(
-      userPins
-        .map((p) => {
-          const tool = this.tools.find((t) => t.id === p.toolId)
-          return [tool?.slug, p]
-        })
-        .filter(([slug]) => slug !== undefined) as [string, DbPin][],
-    )
-
-    const namedPins = slugs
-      .map((slug) => slugToPin.get(slug))
-      .filter((p): p is DbPin => p !== undefined)
-    const unlistedPins = userPins.filter((p) => {
-      const tool = this.tools.find((t) => t.id === p.toolId)
-      return !tool || !slugs.includes(tool.slug)
-    })
-
-    const newOrder = [...namedPins, ...unlistedPins]
-    newOrder.forEach((pin, index) => {
-      pin.position = index
-    })
-  }
-
-  preview(url: string): ToolPreview {
-    this.requireAuth()
-
-    const host = hostOf(url)
-    if (!host) {
-      throw new Error(
-        'BAD_REQUEST: The address must start with http:// or https://',
-      )
-    }
-
-    const captureAllowed = isCaptureAllowed(url, this.captureHosts)
-
-    const duplicate =
-      this.tools
-        .filter((t) => t.host === host)
-        .map((t) => ({ slug: t.slug, name: t.name }))[0] ?? null
-
-    // Fixture stub for QC Heatmap
-    if (url === 'https://qc-heatmap-9f8e.pages.example.com/') {
-      return {
-        host,
-        title: 'QC Heatmap',
-        screenshotDataUrl: null,
-        duplicate,
-        captureAllowed,
-      }
-    }
-
-    return {
-      host,
-      title: null,
-      screenshotDataUrl: null,
-      duplicate,
-      captureAllowed,
-    }
-  }
-
-  add(input: ToolInput): CommunityTool {
-    const auth = this.requireAuth()
-
-    const host = hostOf(input.url)
-    if (!host) {
-      throw new Error(
-        'BAD_REQUEST: The address must start with http:// or https://',
-      )
-    }
-
-    // Check owners exist
-    for (const ownerSlug of input.ownerSlugs) {
-      if (!this.persons.find((p) => p.slug === ownerSlug)) {
-        throw new Error(
-          'BAD_REQUEST: Every owner must be in the person directory',
-        )
-      }
-    }
-
-    this.counter += 1
-    const slug = this.slugify(input.name)
-
-    const tool: DbTool = {
-      id: `tool-${this.counter}`,
-      slug,
-      name: input.name,
-      url: input.url,
-      host,
-      summary: input.summary,
-      descriptionMd: input.descriptionMd,
-      ownerSlugs: input.ownerSlugs,
-      addedByUserId: auth.userId,
-      addedByName: auth.name,
-      createdAt: this.now,
-      tags: input.tags,
-      reviewedAt: null,
-      reviewedByName: null,
-      failingSince: null,
-      archivedAt: null,
-      archivedBy: null,
-      archivedReason: null,
-      screenshotAssetId: null,
-      faviconAssetId: null,
-      capturedAt: null,
-    }
-
-    this.tools.push(tool)
-    return this.toView(tool, auth.userId, auth.isAdmin)
-  }
-
-  edit(input: ToolInput & { slug: string }): CommunityTool {
-    const auth = this.requireAuth()
-    const tool = this.tools.find((t) => t.slug === input.slug)
-    if (!tool) throw new Error('NOT_FOUND: Tool not found')
-
-    if (!this.computeCanEdit(tool, auth.userId, auth.isAdmin)) {
-      throw new Error(
-        'FORBIDDEN: Only an owner or an admin can change this tool',
-      )
-    }
-
-    const host = hostOf(input.url)
-    if (!host) {
-      throw new Error(
-        'BAD_REQUEST: The address must start with http:// or https://',
-      )
-    }
-
-    for (const ownerSlug of input.ownerSlugs) {
-      if (!this.persons.find((p) => p.slug === ownerSlug)) {
-        throw new Error(
-          'BAD_REQUEST: Every owner must be in the person directory',
-        )
-      }
-    }
-
-    tool.name = input.name
-    tool.url = input.url
-    tool.host = host
-    tool.summary = input.summary
-    tool.descriptionMd = input.descriptionMd
-    tool.ownerSlugs = input.ownerSlugs
-    tool.tags = input.tags
-
-    return this.toView(tool, auth.userId, auth.isAdmin)
-  }
-
-  archive(slug: string, reason: string): void {
-    const auth = this.requireAuth()
-    const tool = this.tools.find((t) => t.slug === slug)
-    if (!tool) throw new Error('NOT_FOUND: Tool not found')
-
-    if (!this.computeCanEdit(tool, auth.userId, auth.isAdmin)) {
-      throw new Error(
-        'FORBIDDEN: Only an owner or an admin can change this tool',
-      )
-    }
-
-    tool.archivedAt = this.now
-    tool.archivedBy = auth.name
-    tool.archivedReason = reason
-  }
-
-  approve(slug: string): void {
-    const auth = this.requireAdmin()
-    const tool = this.tools.find((t) => t.slug === slug)
-    if (!tool) throw new Error('NOT_FOUND: Tool not found')
-
-    tool.reviewedAt = this.now
-    tool.reviewedByName = auth.name
-  }
-
-  private slugify(name: string): string {
-    const base =
-      name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '') || 'tool'
-
-    for (let n = 1; ; n++) {
-      const slug = n === 1 ? base : `${base}-${n}`
-      if (!this.tools.find((t) => t.slug === slug)) return slug
+      canEdit: this.canEdit(tool, user),
     }
   }
 }
