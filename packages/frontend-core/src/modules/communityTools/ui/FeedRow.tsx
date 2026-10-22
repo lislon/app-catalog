@@ -175,11 +175,15 @@ export function FeedRow({
           </div>
         )}
         <div className="mt-1.5 flex min-w-0 items-center gap-1.5 text-[13px] font-semibold whitespace-nowrap text-foreground/75">
-          {tool.owners[0] && <PersonAvatar name={tool.owners[0].name} />}
-          <span data-testid="feed-row-owner">
-            {highlightTokens(owners, tokens)}
-          </span>
-          <span className="text-muted-foreground">·</span>
+          {tool.owners[0] && (
+            <>
+              <PersonAvatar name={tool.owners[0].name} />
+              <span data-testid="feed-row-owner">
+                {highlightTokens(owners, tokens)}
+              </span>
+              <span className="text-muted-foreground">·</span>
+            </>
+          )}
           <span className="truncate font-mono text-xs font-normal text-muted-foreground">
             {highlightTokens(tool.host, tokens)}
           </span>

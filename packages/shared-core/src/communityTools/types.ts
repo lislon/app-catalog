@@ -34,6 +34,15 @@ export interface CommunityTool {
   canEdit: boolean
 }
 
+/** A tool in the visitor's Recently opened, with when they last opened its card. */
+export interface RecentTool extends CommunityTool {
+  /** ISO time of the visitor's latest view. */
+  openedAt: string
+}
+
+/** How many tools Recently opened holds. */
+export const RECENT_TOOLS_LIMIT = 5
+
 export type FeedWindow = 'month' | 'all' | 'newest'
 
 export type MatchField =

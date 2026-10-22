@@ -58,6 +58,20 @@ Feature: Getting back to a tool a colleague built
     When I open Community tools
     Then Recently opened shows "Kit Rules Playground"
 
+  Scenario: Recently opened says when
+    Given I am signed in
+    And I opened "Kit Rules Playground" 2 hours ago
+    And I opened "Ops Runbook" 1 day ago
+    When I open Community tools
+    Then Recently opened shows "Kit Rules Playground" opened "2 h ago"
+    And Recently opened shows "Ops Runbook" opened "yesterday"
+
+  Scenario: Recently opened keeps the last five
+    Given I am signed in
+    And I opened 7 different tools
+    When I open Community tools
+    Then Recently opened lists "Opened Tool 7, Opened Tool 6, Opened Tool 5, Opened Tool 4, Opened Tool 3"
+
   Scenario: Searching makes room for the answer
     Given I am signed in
     And I pinned "Ops Runbook"

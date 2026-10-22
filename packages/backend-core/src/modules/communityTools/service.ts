@@ -1,7 +1,11 @@
 import type { User } from 'better-auth/types'
 import { getDbClient } from '../../db/client'
 import type { Actor } from '../visitor/visitorIdentity'
-import type { CommunityTool } from '@igstack/app-catalog-shared-core'
+import type {
+  CommunityTool,
+  RecentTool,
+} from '@igstack/app-catalog-shared-core'
+import { RECENT_TOOLS_LIMIT } from '@igstack/app-catalog-shared-core'
 import { toView } from './toView'
 
 export async function listTools(
@@ -153,25 +157,24 @@ export async function listRecent(
   user: User | null,
   isAdmin: boolean,
   now: Date,
-): Promise<CommunityTool[]> {
+): Promise<RecentTool[]> {
   const db = getDbClient()
 
-  // Get last 5 distinct tools viewed by this user
+  // The latest views first; enough rows to find RECENT_TOOLS_LIMIT distinct tools.
   const recentViews = await db.dbCommunityToolView.findMany({
     where: { userId },
     orderBy: { at: 'desc' },
-    take: 100, // Take more to get 5 distinct
+    take: 100,
     include: { tool: true },
   })
 
-  // Get 5 distinct tools
-  const seen = new Set<string>()
+  const openedAt = new Map<string, Date>()
   const distinctTools: (typeof recentViews)[0]['tool'][] = []
   for (const view of recentViews) {
-    if (!seen.has(view.toolId)) {
-      seen.add(view.toolId)
+    if (!openedAt.has(view.toolId)) {
+      openedAt.set(view.toolId, view.at)
       distinctTools.push(view.tool)
-      if (distinctTools.length === 5) break
+      if (distinctTools.length === RECENT_TOOLS_LIMIT) break
     }
   }
 
@@ -237,14 +240,22 @@ export async function listRecent(
   )
 
   return Promise.all(
-    distinctTools.map((tool) => {
+    distinctTools.map(async (tool) => {
       const toolWithRelations = {
         ...tool,
         owners: ownerMap.get(tool.id) || [],
         tags: tagMap.get(tool.id) || [],
       }
       const counts = viewCountMap.get(tool.id) || { views30d: 0, viewsAll: 0 }
-      return toView(toolWithRelations, personMap, counts, user, isAdmin, now)
+      const view = await toView(
+        toolWithRelations,
+        personMap,
+        counts,
+        user,
+        isAdmin,
+        now,
+      )
+      return { ...view, openedAt: openedAt.get(tool.id)!.toISOString() }
     }),
   )
 }

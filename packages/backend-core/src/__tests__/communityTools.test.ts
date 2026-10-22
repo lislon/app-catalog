@@ -113,6 +113,63 @@ describe('Community tools service', () => {
     })
   })
 
+  describe('recent', () => {
+    const tool = (id: string) => ({
+      id,
+      slug: id,
+      name: id,
+      url: `https://${id}.example.com`,
+      host: `${id}.example.com`,
+      summary: '',
+      descriptionMd: '',
+      addedByUserId: 'user-1',
+      addedByName: 'User One',
+      createdAt: new Date('2024-01-01'),
+      reviewedAt: new Date(),
+      reviewedByName: null,
+      screenshotAssetId: null,
+      faviconAssetId: null,
+      capturedAt: null,
+      failingSince: null,
+      archivedAt: null,
+      archivedBy: null,
+      archivedReason: null,
+    })
+
+    it('lists the 5 latest distinct tools with when each was last opened', async () => {
+      // Newest first, as `orderBy: { at: 'desc' }` returns them; tool-a twice.
+      const views = [
+        ['tool-a', '2024-01-15T11:00:00Z'],
+        ['tool-b', '2024-01-15T10:00:00Z'],
+        ['tool-a', '2024-01-14T09:00:00Z'],
+        ['tool-c', '2024-01-13T09:00:00Z'],
+        ['tool-d', '2024-01-12T09:00:00Z'],
+        ['tool-e', '2024-01-11T09:00:00Z'],
+        ['tool-f', '2024-01-10T09:00:00Z'],
+      ].map(([id, at]) => ({ toolId: id, at: new Date(at!), tool: tool(id!) }))
+      mockDb.dbCommunityToolView.findMany = vi.fn().mockResolvedValue(views)
+      mockDb.dbCommunityToolOwner.findMany = vi.fn().mockResolvedValue([])
+      mockDb.dbCommunityToolTag.findMany = vi.fn().mockResolvedValue([])
+      mockDb.dbPerson.findMany = vi.fn().mockResolvedValue([])
+      mockDb.dbCommunityToolView.count = vi.fn().mockResolvedValue(0)
+
+      const result = await service.listRecent(
+        'user-123',
+        null,
+        false,
+        new Date('2024-01-15T12:00:00Z'),
+      )
+
+      expect(result.map((t) => [t.slug, t.openedAt])).toEqual([
+        ['tool-a', '2024-01-15T11:00:00.000Z'],
+        ['tool-b', '2024-01-15T10:00:00.000Z'],
+        ['tool-c', '2024-01-13T09:00:00.000Z'],
+        ['tool-d', '2024-01-12T09:00:00.000Z'],
+        ['tool-e', '2024-01-11T09:00:00.000Z'],
+      ])
+    })
+  })
+
   describe('pins', () => {
     it('returns pins in position order', async () => {
       const userId = 'user-123'
