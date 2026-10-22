@@ -1,4 +1,5 @@
 import { useCallback } from 'react'
+import { AUTH_USER_STORAGE_KEY } from './AuthContext'
 
 interface LoginCredentials {
   email: string
@@ -62,8 +63,10 @@ export function useAuthActions() {
       // Still reload to clear UI state
     }
 
-    // Clear session and reload to update UI
-    window.location.href = '/'
+    // Stay on the current page: drop the optimistic user the provider hydrates
+    // from, so the reload renders signed out without flashing the old user.
+    localStorage.removeItem(AUTH_USER_STORAGE_KEY)
+    window.location.reload()
   }, [])
 
   const devLogin = useCallback(async () => {
