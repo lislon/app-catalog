@@ -79,6 +79,13 @@ Feature: Getting back to a tool a colleague built
     When I open Community tools
     Then tabbing through the row of "Ops Runbook" reaches "site, star, Like, Details"
 
+  Scenario: A row counts its comments, not its review lines
+    Given "Ops Runbook" has 2 comments
+    And "QC Heatmap" was added and is not reviewed
+    When I open Community tools
+    Then the row of "Ops Runbook" shows 2 comments
+    And the row of "QC Heatmap" shows no comments
+
   Scenario: The row's Details opens the card
     When I open Community tools
     And I choose Details on "Ops Runbook"
@@ -107,7 +114,7 @@ Feature: Getting back to a tool a colleague built
     Then the sort says "Sort by Most liked, descending"
     And the feed is headed "Most liked"
     And the feed reads "Old Tracker, Kit Rules Playground, Ops Runbook"
-    And the rows say no date
+    And the row of "Old Tracker" says "Added"
 
   Scenario: Popular goes by views this month
     When I open Community tools

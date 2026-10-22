@@ -34,6 +34,8 @@ export interface CommunityTool {
   createdAt: string
   /** When the site last changed, from its Last-Modified; null when never sent. */
   siteUpdatedAt: string | null
+  /** Visitors' comments; the review lines the system writes are not counted. */
+  comments: number
   likes: number
   likedByMe: boolean
   /**

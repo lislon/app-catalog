@@ -4,7 +4,7 @@ import { getDbClient } from '../../db/client'
 import type { Actor } from '../visitor/visitorIdentity'
 import type { CommunityTool } from '@igstack/app-catalog-shared-core'
 import type { CaptureDeps } from './healthJob'
-import { LIKES, toView } from './toView'
+import { COMMENTS, LIKES, toView } from './toView'
 
 export async function listTools(
   user: User | null,
@@ -19,6 +19,7 @@ export async function listTools(
       owners: true,
       namedOwners: true,
       likes: LIKES,
+      _count: COMMENTS,
       tags: true,
     },
   })
@@ -97,6 +98,7 @@ export async function getTool(
       owners: true,
       namedOwners: true,
       likes: LIKES,
+      _count: COMMENTS,
       tags: true,
     },
   })
@@ -200,6 +202,7 @@ export async function listPins(
           owners: true,
           namedOwners: true,
           likes: LIKES,
+          _count: COMMENTS,
           tags: true,
         },
       },
