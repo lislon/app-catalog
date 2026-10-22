@@ -853,6 +853,27 @@ When('I like {string}', async (_world, name: string) => {
   await userEvent.setup().click(like)
 })
 
+Then(
+  'the server counts {int} like(s) on {string}',
+  async (_world, count: number, name: string) => {
+    if (!current) throw new Error('No catalog opened — missing a Given step?')
+    const tools = current.backend.communityTools
+    await waitFor(() => {
+      expect(tools.get({ slug: tools.slugOf(name) }).likes).toBe(count)
+    })
+  },
+)
+
+Then('the caret is on the like of {string}', (_world, name: string) => {
+  expect(document.activeElement).toBe(rowLike(name))
+  const index = rowLike(name)
+    .closest('[data-index]')
+    ?.getAttribute('data-index')
+  expect(index).toBe(
+    String(communityList('community-feed').map(rowName).indexOf(name)),
+  )
+})
+
 async function expectLikes(name: string, count: number, mine: boolean) {
   await waitFor(() => {
     const like = rowLike(name)

@@ -23,7 +23,8 @@ export function LikeButton({
           type="button"
           data-testid="like-button"
           aria-pressed={likedByMe}
-          aria-label={`${likedByMe ? 'Unlike' : 'Like'} ${name}, ${likes} ${likes === 1 ? 'like' : 'likes'}`}
+          // One name; aria-pressed says whether it is liked.
+          aria-label={`Like ${name}`}
           onClick={(e) => {
             e.stopPropagation()
             onToggle()

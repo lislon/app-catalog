@@ -747,6 +747,17 @@ describe('like and unlike', () => {
     })
   })
 
+  it('counts a like that lost a race with the same like as liked', async () => {
+    db.dbCommunityTool.findUnique.mockResolvedValue({ id: 'tool-a' })
+    db.dbCommunityToolLike.upsert.mockRejectedValueOnce(
+      Object.assign(new Error('Unique constraint failed'), { code: 'P2002' }),
+    )
+    await expect(service.likeTool('tool-a', ann)).resolves.toBeUndefined()
+
+    db.dbCommunityToolLike.upsert.mockRejectedValueOnce(new Error('db down'))
+    await expect(service.likeTool('tool-a', ann)).rejects.toThrow('db down')
+  })
+
   it('unlikes only my own like, and an unliked tool stays unliked', async () => {
     db.dbCommunityTool.findUnique.mockResolvedValue({ id: 'tool-a' })
 

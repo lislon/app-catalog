@@ -139,6 +139,11 @@ Feature: Getting back to a tool a colleague built
     And the feed reads "Kit Rules Playground, Old Tracker, Ops Runbook"
     And the row of "Kit Rules Playground" says "Updated 3 days ago"
 
+  Scenario: An old link to the views this month opens Popular
+    When I open Community tools
+    And I go to "/community?window=month"
+    Then the sort says "Sort by Popular, descending"
+
   Scenario: An old link to the newest tools still opens Newest
     When I open Community tools
     And I go to "/community?window=newest"
@@ -158,6 +163,16 @@ Feature: Getting back to a tool a colleague built
     And pointing at the like of "Kit Rules Playground" says "Liked by you, Cy Dee, Bo Ray and Ann Lee"
     When I like "Kit Rules Playground"
     Then "Kit Rules Playground" has 3 likes, not liked by me
+
+  Scenario: Liking a row leaves it where it is, with the caret on it
+    Given I am signed in
+    When I open Community tools
+    Then the feed reads "Ops Runbook, Kit Rules Playground, Old Tracker"
+    When I like "Old Tracker"
+    Then "Old Tracker" has 1 like, liked by me
+    And the server counts 1 like on "Old Tracker"
+    And the feed reads "Ops Runbook, Kit Rules Playground, Old Tracker"
+    And the caret is on the like of "Old Tracker"
 
   Scenario: A visitor who has not signed in is asked to before liking
     When I open Community tools

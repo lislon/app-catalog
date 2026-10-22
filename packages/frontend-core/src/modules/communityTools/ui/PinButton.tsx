@@ -43,7 +43,8 @@ export function PinButton({
       data-testid="pin-button"
       aria-pressed={pinned}
       aria-busy={showBusy || undefined}
-      aria-label={pinned ? `Unpin ${name}` : `Pin ${name} to My tools`}
+      // One name; aria-pressed says whether it is pinned.
+      aria-label={`Pin ${name}`}
       onClick={(e) => {
         e.stopPropagation()
         onToggle()

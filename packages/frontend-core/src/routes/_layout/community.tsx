@@ -13,6 +13,13 @@ import { TopLevelProvidersForErrors } from '~/ui/layout/TopLevelProvidersForErro
 
 // Each defaults to absent, so a plain /community link stays plain. A value that
 // does not parse reads as absent rather than failing the route.
+/** The old window toggle: Newest kept its name; both view counts are Popular now. */
+const LEGACY_WINDOW: Record<string, 'popular' | 'newest' | undefined> = {
+  newest: 'newest',
+  month: 'popular',
+  all: 'popular',
+}
+
 const searchSchema = z
   .object({
     /** `<kind>:<value>`, e.g. `topic:sandbox` or `app:order-service`. */
@@ -26,8 +33,7 @@ const searchSchema = z
   })
   .transform(({ window, ...search }) => ({
     ...search,
-    sort:
-      search.sort ?? (window === 'newest' ? ('newest' as const) : undefined),
+    sort: search.sort ?? LEGACY_WINDOW[window ?? ''],
     window: undefined,
   }))
 

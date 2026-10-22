@@ -80,6 +80,7 @@ export function CommunityPage({
     reorder,
     like,
     unlike,
+    withMyLike,
   } = useCommunityTools()
   const { open: openSignIn } = useAuthModal()
   const navigate = useNavigate()
@@ -449,7 +450,7 @@ export function CommunityPage({
                     }
                   >
                     <FeedRow
-                      tool={item.tool}
+                      tool={withMyLike(item.tool)}
                       rank={searching ? undefined : row.index + 1}
                       sort={sort}
                       tokens={tokens}
@@ -461,7 +462,7 @@ export function CommunityPage({
                       pinned={pinnedSlugs.has(item.tool.slug)}
                       pinBusy={pinBusySlug === item.tool.slug}
                       onTogglePin={() => togglePin(item.tool)}
-                      onToggleLike={() => toggleLike(item.tool)}
+                      onToggleLike={() => toggleLike(withMyLike(item.tool))}
                     />
                   </div>
                 )

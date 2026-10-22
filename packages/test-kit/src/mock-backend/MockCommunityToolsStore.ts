@@ -23,7 +23,10 @@ export interface ToolInput {
   summary: string
   descriptionMd: string
   ownerSlugs: string[]
-  /** Owners outside the person directory, by name. */
+  /**
+   * Owners outside the person directory, by name. Left out of an edit, the
+   * tool keeps the ones it has.
+   */
   ownerNames?: string[]
   tags: CommunityTag[]
 }
@@ -449,7 +452,10 @@ export class MockCommunityToolsStore {
     const tool = this.requireTool(input.slug)
     this.requireEditor(tool, user)
     const host = this.requireHost(input.url)
-    const { ownerSlugs, ownerNames } = this.requireOwners(input)
+    const { ownerSlugs, ownerNames } = this.requireOwners(
+      input,
+      tool.ownerNames,
+    )
     const tags = this.requireTags(input.tags)
     const name = input.name.trim()
     const summary = input.summary.trim()
@@ -634,13 +640,18 @@ export class MockCommunityToolsStore {
   }
 
   /** The server's owner rules: 1 to 5 of either kind, people that exist. */
-  private requireOwners(input: ToolInput): {
+  private requireOwners(
+    input: ToolInput,
+    keptNames: string[] = [],
+  ): {
     ownerSlugs: string[]
     ownerNames: string[]
   } {
     const unique = [...new Set(input.ownerSlugs)]
     const ownerNames = [
-      ...new Set((input.ownerNames ?? []).map((n) => n.trim()).filter(Boolean)),
+      ...new Set(
+        (input.ownerNames ?? keptNames).map((n) => n.trim()).filter(Boolean),
+      ),
     ]
     const count = unique.length + ownerNames.length
     if (count < 1 || count > 5) {

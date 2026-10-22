@@ -1,6 +1,6 @@
 import type { CommunityTool } from '@igstack/app-catalog-shared-core'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useTRPC } from '~/api/infra/trpc'
 import { useAppCatalogContext } from '~/modules/appCatalog/context/AppCatalogContext'
 import { useAuth } from '~/modules/auth'
@@ -88,42 +88,45 @@ export function useCommunityTools() {
     }),
   )
 
-  // The thumb and its count change at once, in the feed and on the shelf; a
-  // failed save puts both back.
-  const listKey = trpc.communityTools.list.queryKey()
-  const optimisticLike = (liked: boolean) => ({
-    onMutate: async ({ slug }: { slug: string }) => {
-      const keys = [listKey, pinsKey]
-      await Promise.all(
-        keys.map((queryKey) => queryClient.cancelQueries({ queryKey })),
-      )
-      const previous = keys.map(
-        (key) => [key, queryClient.getQueryData<CommunityTool[]>(key)] as const,
-      )
-      for (const key of keys) {
-        queryClient.setQueryData<CommunityTool[]>(key, (old) =>
-          old?.map((t) => (t.slug === slug ? withLike(t, liked) : t)),
-        )
-      }
-      return { previous }
-    },
-    onError: (
-      _error: unknown,
-      _input: { slug: string },
-      context:
-        | { previous: (readonly [unknown, CommunityTool[] | undefined])[] }
-        | undefined,
-    ) => {
-      for (const [key, data] of context?.previous ?? []) {
-        queryClient.setQueryData(key as typeof listKey, data)
-      }
+  // My likes show at once, as an overlay on the tools as fetched. The feed
+  // ranks from the fetched tools, so a like changes its own count and never
+  // moves a row out from under the pointer. Settling marks the list stale
+  // without refetching it: it re-ranks on the next refocus or remount.
+  const [myLikes, setMyLikes] = useState<ReadonlyMap<string, boolean>>(
+    () => new Map(),
+  )
+  const setMyLike = (slug: string, liked: boolean | undefined) =>
+    setMyLikes((prev) => {
+      const next = new Map(prev)
+      if (liked === undefined) next.delete(slug)
+      else next.set(slug, liked)
+      return next
+    })
+  const likeOptions = (liked: boolean) => ({
+    onMutate: ({ slug }: { slug: string }) => setMyLike(slug, liked),
+    onError: (_error: unknown, { slug }: { slug: string }) =>
+      setMyLike(slug, undefined),
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: trpc.communityTools.list.queryKey(),
+        refetchType: 'none',
+      })
+      void refreshPins()
     },
   })
   const like = useMutation(
-    trpc.communityTools.like.mutationOptions(optimisticLike(true)),
+    trpc.communityTools.like.mutationOptions(likeOptions(true)),
   )
   const unlike = useMutation(
-    trpc.communityTools.unlike.mutationOptions(optimisticLike(false)),
+    trpc.communityTools.unlike.mutationOptions(likeOptions(false)),
+  )
+  /** The tool with my latest like or unlike, saved or still saving. */
+  const withMyLike = useCallback(
+    (tool: CommunityTool) => {
+      const mine = myLikes.get(tool.slug)
+      return mine === undefined ? tool : withLike(tool, mine)
+    },
+    [myLikes],
   )
 
   return {
@@ -138,5 +141,6 @@ export function useCommunityTools() {
     reorder,
     like,
     unlike,
+    withMyLike,
   }
 }

@@ -249,11 +249,11 @@ export function FeedRow({
             </span>
             <span
               data-testid="feed-row-views"
-              aria-label={`${tool.views30d} views this month`}
               className="inline-flex items-center gap-1 text-muted-foreground"
             >
               <Eye aria-hidden="true" className="size-[15px]" />
               {tool.views30d}
+              <span className="sr-only"> views this month</span>
             </span>
             {dated && (
               <>
@@ -274,7 +274,7 @@ export function FeedRow({
             data-testid="feed-row-address"
             className={cn(
               'flex h-full min-w-[150px] flex-1 items-center justify-end gap-1.5 px-4 font-mono text-[12.5px] text-muted-foreground opacity-0 transition-opacity',
-              'group-hover/row:text-foreground group-hover/row:opacity-100 group-has-[[data-site]:focus-visible]/row:opacity-100 group-has-[[data-details]:hover]/row:opacity-0',
+              'group-hover/row:text-foreground group-hover/row:opacity-100 group-has-[[data-site]:focus-visible]/row:opacity-100 group-has-[[data-details]:hover]/row:opacity-0 [@media(hover:none)]:opacity-100',
               selected && 'opacity-100',
             )}
           >
@@ -298,7 +298,8 @@ export function FeedRow({
             'focus-visible:rounded-r-[13px] focus-visible:!bg-primary/12 focus-visible:text-foreground focus-visible:outline-2 focus-visible:-outline-offset-[3px] focus-visible:outline-ring',
           )}
         >
-          <span className="flex flex-col items-center gap-1.5 opacity-0 transition-opacity group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100">
+          {/* Shown on hover or focus; always where nothing hovers. */}
+          <span className="flex flex-col items-center gap-1.5 opacity-0 transition-opacity group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100 [@media(hover:none)]:opacity-100">
             <PanelRight aria-hidden="true" className="size-[18px]" />
             <span>Details</span>
           </span>

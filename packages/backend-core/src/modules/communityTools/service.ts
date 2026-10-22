@@ -281,17 +281,31 @@ export async function pinTool(slug: string, userId: string): Promise<void> {
   })
 }
 
+/** Prisma's unique-constraint error. */
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    'code' in error &&
+    (error as { code: unknown }).code === 'P2002'
+  )
+}
+
 /** Liking twice is one like. */
 export async function likeTool(
   slug: string,
   user: { id: string; name: string },
 ): Promise<void> {
   const toolId = await requireToolId(slug)
-  await getDbClient().dbCommunityToolLike.upsert({
-    where: { toolId_userId: { toolId, userId: user.id } },
-    create: { toolId, userId: user.id, userName: user.name },
-    update: {},
-  })
+  try {
+    await getDbClient().dbCommunityToolLike.upsert({
+      where: { toolId_userId: { toolId, userId: user.id } },
+      create: { toolId, userId: user.id, userName: user.name },
+      update: {},
+    })
+  } catch (error) {
+    // Two likes at once both miss, and one insert loses the race: still liked.
+    if (!isUniqueViolation(error)) throw error
+  }
 }
 
 /** Unliking what was never liked changes nothing. */

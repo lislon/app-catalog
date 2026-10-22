@@ -1,6 +1,7 @@
 // @vitest-environment node
 import sharp from 'sharp'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { z } from 'zod'
 import type { User } from 'better-auth/types'
 import * as dbClient from '../db/client'
 import type { PrismaClient } from '../generated/prisma/client'
@@ -190,6 +191,43 @@ describe('Community tools write service', () => {
     db.dbPerson.findMany.mockResolvedValueOnce([])
     await add([], ['Kim Outside'])
     expect(db.dbCommunityTool.create).toHaveBeenCalled()
+  })
+
+  it('an edit without named owners keeps them; a list replaces them', async () => {
+    const named = {
+      ...dbTool,
+      namedOwners: [{ toolId: 'tool-1', name: 'Kim Outside' }],
+    }
+    db.dbCommunityTool.findUnique.mockResolvedValue(named)
+    const writer = { user: ann, isAdmin: false, actor: actorFor('user-1') }
+    const edited = (data: unknown) =>
+      (data as { data: { namedOwners: unknown; summary: string } }).data
+
+    await write.editTool(
+      write.toolInputSchema.extend({ slug: z.string() }).parse({
+        ...input,
+        ownerNames: undefined,
+        summary: 'New',
+        slug: 'my-tool',
+      }),
+      writer,
+      noCapture,
+      NOW,
+    )
+    expect(edited(db.dbCommunityTool.update.mock.calls[0]?.[0])).toMatchObject({
+      summary: 'New',
+      namedOwners: { deleteMany: {}, create: [{ name: 'Kim Outside' }] },
+    })
+
+    await write.editTool(
+      { ...input, ownerNames: [], slug: 'my-tool' },
+      writer,
+      noCapture,
+      NOW,
+    )
+    expect(edited(db.dbCommunityTool.update.mock.calls[1]?.[0])).toMatchObject({
+      namedOwners: { deleteMany: {}, create: [] },
+    })
   })
 
   it('add rejects non-http url', async () => {

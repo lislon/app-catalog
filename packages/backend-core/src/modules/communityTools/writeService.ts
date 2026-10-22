@@ -22,12 +22,15 @@ export const toolInputSchema = z.object({
   summary: z.string().trim().max(160),
   descriptionMd: z.string().max(5000),
   ownerSlugs: z.array(z.string()).max(5),
-  /** Owners outside the person directory, by name. */
+  /**
+   * Owners outside the person directory, by name. Left out of an edit, the
+   * tool keeps the ones it has; only a list replaces them.
+   */
   ownerNames: z
     .array(z.string().trim().min(1).max(80))
     .max(5)
-    .default([])
-    .transform((names) => Array.from(new Set(names))),
+    .transform((names) => Array.from(new Set(names)))
+    .optional(),
   // Topics are stored the way the next person will type them, each tag once;
   // the caps hold for what is stored.
   tags: z
@@ -107,9 +110,10 @@ async function requireEditor(
  * The owners as stored: directory people, who must exist, and names of people
  * outside it. One owner at least, of either kind, and five in all.
  */
-async function requireOwners(input: ToolInput) {
+async function requireOwners(input: ToolInput, keptNames: string[] = []) {
   const unique = Array.from(new Set(input.ownerSlugs))
-  const count = unique.length + input.ownerNames.length
+  const ownerNames = input.ownerNames ?? keptNames
+  const count = unique.length + ownerNames.length
   if (count < 1 || count > MAX_OWNERS) {
     throw new TRPCError({
       code: 'BAD_REQUEST',
@@ -126,7 +130,7 @@ async function requireOwners(input: ToolInput) {
       message: 'Every owner must be in the person directory',
     })
   }
-  return { ownerSlugs: unique, ownerNames: input.ownerNames }
+  return { ownerSlugs: unique, ownerNames }
 }
 
 function slugify(name: string): string {
@@ -284,7 +288,10 @@ export async function editTool(
   const tool = await requireTool(input.slug)
   await requireEditor(tool, writer)
   const host = requireHost(input.url)
-  const { ownerSlugs, ownerNames } = await requireOwners(input)
+  const { ownerSlugs, ownerNames } = await requireOwners(
+    input,
+    tool.namedOwners.map((o) => o.name),
+  )
 
   const sameSet = (a: string[], b: string[]) =>
     a.length === b.length && a.every((x) => b.includes(x))

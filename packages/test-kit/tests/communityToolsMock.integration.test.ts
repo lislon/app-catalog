@@ -342,6 +342,39 @@ describe('the "community" catalog mock', () => {
     ])
   })
 
+  it('keeps named owners through an edit that leaves them out', async () => {
+    await community(signedInAs('Robin Park', 'robin.park@example.com'))
+    const input = {
+      url: 'https://qc-heatmap-9f8e.pages.example.com/',
+      name: 'QC Heatmap',
+      summary: '',
+      descriptionMd: '',
+      tags: [],
+      ownerSlugs: ['robin.park@example.com'],
+    }
+    const added = await api.communityTools.add.mutate({
+      ...input,
+      ownerNames: ['Kim Outside'],
+    })
+
+    const kept = await api.communityTools.edit.mutate({
+      ...input,
+      slug: added.slug,
+      summary: 'Per-tile quality',
+    })
+    expect(kept.owners.map((o) => o.name)).toEqual([
+      'Robin Park',
+      'Kim Outside',
+    ])
+
+    const replaced = await api.communityTools.edit.mutate({
+      ...input,
+      slug: added.slug,
+      ownerNames: [],
+    })
+    expect(replaced.owners.map((o) => o.name)).toEqual(['Robin Park'])
+  })
+
   it("never lets a named owner edit, even one who shares a person's name", async () => {
     await community(({ backendCfg }) => {
       backendCfg.communityTools.seed({
