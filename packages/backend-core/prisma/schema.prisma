@@ -241,6 +241,10 @@ model DbFeedback {
   /// passing visitor can send.
   body String?
 
+  /// 'marker' for a row the system writes when a community tool changes: it has no
+  /// author to edit or withdraw it. Null for a visitor's own feedback.
+  kind String?
+
   attachments DbFeedbackAttachment[]
 
   /// Set on a later edit, so the UI can mark it edited. Null when never edited.

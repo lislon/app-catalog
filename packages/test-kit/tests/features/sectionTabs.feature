@@ -32,3 +32,8 @@ Feature: The header's section tabs
     Then the section tabs read:
       | Catalog       | Official company apps  |
       | Service Desks | Where to file a ticket |
+
+  Scenario: A typed-in Community tools address is not found when the feature is off
+    Given community tools are turned off
+    When I go to "/community"
+    Then the page is not found

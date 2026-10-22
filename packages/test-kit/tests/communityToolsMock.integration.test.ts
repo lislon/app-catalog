@@ -267,6 +267,98 @@ describe('the "community" catalog mock', () => {
     ).toContainEqual({ kind: 'app', value: 'order-service' })
   })
 
+  it('answers NOT_FOUND for an unknown pin, and pins a pinned tool once', async () => {
+    await community(({ backendCfg }) => {
+      backendCfg.withUser({ isAuthenticated: true })
+    })
+
+    expect(await codeOf(api.communityTools.pin.mutate({ slug: 'nope' }))).toBe(
+      'NOT_FOUND',
+    )
+    expect(
+      await codeOf(api.communityTools.unpin.mutate({ slug: 'nope' })),
+    ).toBe('NOT_FOUND')
+    await api.communityTools.pin.mutate({ slug: 'ops-runbook' })
+    await api.communityTools.pin.mutate({ slug: 'ops-runbook' })
+    expect((await api.communityTools.pins.query()).map((t) => t.slug)).toEqual([
+      'ops-runbook',
+    ])
+  })
+
+  it('an edit waits for review again, and a new host starts health over', async () => {
+    let store: Parameters<Magazine>[0]['backendCfg']['communityTools'] | null =
+      null
+    await community(({ backendCfg }) => {
+      store = backendCfg.communityTools
+      backendCfg.communityTools.failDailyChecks('old-tracker', 30)
+      backendCfg.withUser({
+        name: 'Robin Park',
+        email: 'robin.park@example.com',
+        isAuthenticated: true,
+      })
+    })
+    const before = await api.communityTools.get.query({ slug: 'old-tracker' })
+    expect(before.lifecycle).toMatchObject({ state: 'archived', by: 'auto' })
+
+    const after = await api.communityTools.edit.mutate({
+      slug: 'old-tracker',
+      url: 'https://moved-tracker.pages.example.com/',
+      name: before.name,
+      summary: before.summary,
+      descriptionMd: before.descriptionMd,
+      ownerSlugs: before.owners.map((o) => o.slug),
+      tags: before.tags,
+    })
+
+    expect(after).toMatchObject({
+      reviewed: false,
+      lifecycle: { state: 'active' },
+    })
+    expect(store!.inspect('Old Tracker')).toMatchObject({
+      failingSince: null,
+      lastCheckAt: null,
+    })
+  })
+
+  it("keeps a tool's review line out of its writer's hands", async () => {
+    await community(signedInAs('Robin Park', 'robin.park@example.com'))
+    await api.communityTools.add.mutate({
+      url: 'https://qc-heatmap-9f8e.pages.example.com/',
+      name: 'QC Heatmap',
+      summary: '',
+      descriptionMd: '',
+      ownerSlugs: ['robin.park@example.com'],
+      tags: [],
+    })
+
+    const [line] = (
+      await api.feedback.list.query({ communityToolSlug: 'qc-heatmap' })
+    ).items
+    expect(line).toMatchObject({ isSystem: true, isMine: false })
+    expect(await codeOf(api.feedback.dismiss.mutate({ id: line!.id }))).toBe(
+      'FORBIDDEN',
+    )
+    expect(await api.feedback.mine.query()).toEqual([])
+  })
+
+  it('refuses a preview while more than three captures wait', async () => {
+    const url = 'https://slow-tool-4b4b.pages.example.com/'
+    await community(({ backendCfg }) => {
+      backendCfg.communityTools.withPage(url, 'Slow Tool', 50)
+      backendCfg.withUser({ isAuthenticated: true })
+    })
+
+    const queued = Array.from({ length: 4 }, () =>
+      api.communityTools.preview.mutate({ url }),
+    )
+    // Let the four reach the mock before the fifth.
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(await codeOf(api.communityTools.preview.mutate({ url }))).toBe(
+      'TOO_MANY_REQUESTS',
+    )
+    await Promise.all(queued)
+  })
+
   it('answers NOT_FOUND for everything but config when the feature is off', async () => {
     await given(magazine.full())
 

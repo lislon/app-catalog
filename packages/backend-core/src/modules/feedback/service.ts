@@ -8,6 +8,9 @@ export const MAX_BODY_LENGTH = 1000
 export const MAX_SUBJECT_LENGTH = 120
 export const MAX_ATTACHMENTS = 3
 
+/** `kind` of a review row a community tool write leaves; see `isSystem`. */
+export const MARKER_KIND = 'marker'
+
 /** One piece of feedback as a client sees it. Never carries an author hash. */
 export interface FeedbackView {
   id: string
@@ -30,6 +33,8 @@ export interface FeedbackView {
   editedAt: string | null
   /** Whether this browser wrote it — what makes Edit and Dismiss appear. */
   isMine: boolean
+  /** A line the system wrote when a community tool changed: nobody can edit or withdraw it. */
+  isSystem: boolean
   /**
    * The absolute instant this browser's edit window closes, or null when it is not
    * theirs. Absolute rather than a remaining duration so a client with a skewed clock
@@ -45,6 +50,7 @@ type Row = {
   authorName: string | null
   body: string | null
   subject: string | null
+  kind: string | null
   status: 'applied' | 'acknowledged' | null
   reviewerReply: string | null
   reviewedAt: Date | null
@@ -55,7 +61,8 @@ type Row = {
 }
 
 function toView(row: Row, actor: Actor | null): FeedbackView {
-  const isMine = !!actor && row.authorHash === actor.hash
+  const isSystem = row.kind === MARKER_KIND
+  const isMine = !isSystem && !!actor && row.authorHash === actor.hash
   return {
     id: row.id,
     authorName: row.authorName ?? row.authorAlias,
@@ -70,6 +77,7 @@ function toView(row: Row, actor: Actor | null): FeedbackView {
     createdAt: row.createdAt.toISOString(),
     editedAt: row.editedAt?.toISOString() ?? null,
     isMine,
+    isSystem,
     canEditUntil: isMine
       ? new Date(row.createdAt.getTime() + EDIT_WINDOW_MS).toISOString()
       : null,
@@ -149,7 +157,7 @@ export async function listMyFeedback(
 ): Promise<FeedbackView[]> {
   if (!actor) return []
   const rows = await getDbClient().dbFeedback.findMany({
-    where: { authorHash: actor.hash },
+    where: { authorHash: actor.hash, kind: null },
     orderBy: [
       { status: { sort: 'asc', nulls: 'first' } },
       { createdAt: 'desc' },
@@ -306,7 +314,7 @@ export async function addFeedback(
 async function loadOwnForEdit(id: string, actor: Actor) {
   const row = await getDbClient().dbFeedback.findUnique({ where: { id } })
   if (!row) throw new FeedbackError('not-found', 'This no longer exists')
-  if (row.authorHash !== actor.hash) {
+  if (row.kind === MARKER_KIND || row.authorHash !== actor.hash) {
     throw new FeedbackError('not-author', 'Only the author can change this')
   }
   if (Date.now() > row.createdAt.getTime() + EDIT_WINDOW_MS) {
@@ -347,7 +355,7 @@ export async function dismissFeedback(
 ): Promise<{ id: string }> {
   const row = await getDbClient().dbFeedback.findUnique({ where: { id } })
   if (!row) throw new FeedbackError('not-found', 'This no longer exists')
-  if (row.authorHash !== actor.hash) {
+  if (row.kind === MARKER_KIND || row.authorHash !== actor.hash) {
     throw new FeedbackError('not-author', 'Only the author can withdraw this')
   }
   if (row.status !== null) {

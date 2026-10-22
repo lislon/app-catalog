@@ -50,6 +50,11 @@ export {
   type ToolPreview,
   type Writer,
 } from './modules/communityTools/writeService'
+export type { CommunityToolsOptions } from './middleware/types'
+export type {
+  CaptureResult,
+  ScreenshotCapturer,
+} from './modules/communityTools/capture'
 // The identity every surface shares — rows store `hash`, clients may hold `publicId`,
 // and `visitorFromSeed` is how a test or a dev session becomes a chosen visitor.
 export {

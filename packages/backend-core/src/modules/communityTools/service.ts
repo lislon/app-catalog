@@ -1,3 +1,4 @@
+import { TRPCError } from '@trpc/server'
 import type { User } from 'better-auth/types'
 import { getDbClient } from '../../db/client'
 import type { Actor } from '../visitor/visitorIdentity'
@@ -360,44 +361,38 @@ export async function listPins(
   )
 }
 
+async function requireToolId(slug: string): Promise<string> {
+  const tool = await getDbClient().dbCommunityTool.findUnique({
+    where: { slug },
+    select: { id: true },
+  })
+  if (!tool) {
+    throw new TRPCError({ code: 'NOT_FOUND', message: 'Tool not found' })
+  }
+  return tool.id
+}
+
+/** Pinning a pinned tool leaves it where it is. */
 export async function pinTool(slug: string, userId: string): Promise<void> {
   const db = getDbClient()
+  const toolId = await requireToolId(slug)
 
-  const tool = await db.dbCommunityTool.findUnique({ where: { slug } })
-  if (!tool) {
-    throw new Error('Tool not found')
-  }
-
-  // Get current max position
   const maxPin = await db.dbCommunityToolPin.findFirst({
     where: { userId },
     orderBy: { position: 'desc' },
   })
 
-  const nextPosition = maxPin ? maxPin.position + 1 : 0
-
-  await db.dbCommunityToolPin.create({
-    data: {
-      userId,
-      toolId: tool.id,
-      position: nextPosition,
-    },
+  await db.dbCommunityToolPin.upsert({
+    where: { userId_toolId: { userId, toolId } },
+    create: { userId, toolId, position: maxPin ? maxPin.position + 1 : 0 },
+    update: {},
   })
 }
 
 export async function unpinTool(slug: string, userId: string): Promise<void> {
-  const db = getDbClient()
-
-  const tool = await db.dbCommunityTool.findUnique({ where: { slug } })
-  if (!tool) {
-    throw new Error('Tool not found')
-  }
-
-  await db.dbCommunityToolPin.deleteMany({
-    where: {
-      userId,
-      toolId: tool.id,
-    },
+  const toolId = await requireToolId(slug)
+  await getDbClient().dbCommunityToolPin.deleteMany({
+    where: { userId, toolId },
   })
 }
 

@@ -15,6 +15,8 @@ export type CaptureResult =
  */
 export interface ScreenshotCapturer {
   capture: (url: string, allowedHosts: string[]) => Promise<CaptureResult>
+  /** Captures queued and not started yet; a capturer without a queue leaves it out. */
+  waiting?: () => number
 }
 
 /** The part of a playwright `Page` a capture uses, so it can be tested without a browser. */
@@ -204,12 +206,20 @@ export async function capturePage(
 /** Runs captures one at a time, so concurrent previews cannot start a browser each. */
 export function oneAtATime(
   capture: ScreenshotCapturer['capture'],
-): ScreenshotCapturer['capture'] {
+): Required<ScreenshotCapturer> {
   let queue: Promise<unknown> = Promise.resolve()
-  return (url, allowedHosts) => {
-    const run = queue.then(() => capture(url, allowedHosts))
-    queue = run.catch(() => undefined)
-    return run
+  let waiting = 0
+  return {
+    waiting: () => waiting,
+    capture: (url, allowedHosts) => {
+      waiting++
+      const run = queue.then(() => {
+        waiting--
+        return capture(url, allowedHosts)
+      })
+      queue = run.catch(() => undefined)
+      return run
+    },
   }
 }
 
@@ -224,57 +234,55 @@ export function createPlaywrightCapturer(): ScreenshotCapturer | null {
     return null
   }
 
-  return {
-    capture: oneAtATime(async (url, allowedHosts) => {
-      const { chromium } = await import('playwright-core')
-      // Launched per capture because the fence flags depend on the hosts; the queue
-      // keeps that to one browser at a time.
-      const browser = await chromium.launch({
-        executablePath:
-          process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
-        args: chromiumFenceArgs(allowedHosts),
+  return oneAtATime(async (url, allowedHosts) => {
+    const { chromium } = await import('playwright-core')
+    // Launched per capture because the fence flags depend on the hosts; the queue
+    // keeps that to one browser at a time.
+    const browser = await chromium.launch({
+      executablePath:
+        process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined,
+      args: chromiumFenceArgs(allowedHosts),
+    })
+    try {
+      // A service worker could answer requests the route never sees.
+      const context = await browser.newContext({
+        viewport: VIEWPORT,
+        serviceWorkers: 'block',
       })
-      try {
-        // A service worker could answer requests the route never sees.
-        const context = await browser.newContext({
-          viewport: VIEWPORT,
-          serviceWorkers: 'block',
-        })
-        // Second layer under the resolver fence: per-request and per-hop checks.
-        await context.route('**/*', (route) =>
-          fenceRoute(
-            {
-              url: route.request().url(),
-              abort: (code) => route.abort(code),
-              continue: () => route.continue(),
-              fetch: (hop, mode) =>
-                mode === 'get'
-                  ? context.request.get(hop, {
-                      maxRedirects: 0,
-                      timeout: HOP_TIMEOUT_MS,
-                    })
-                  : route.fetch({
-                      url: hop,
-                      maxRedirects: 0,
-                      timeout: HOP_TIMEOUT_MS,
-                    }),
-              fulfill: (response) => route.fulfill({ response }),
-            },
-            allowedHosts,
-          ),
-        )
-        // A screenshot needs no live socket, and `route` does not see them.
-        await context.routeWebSocket(/.*/, (ws) => ws.close())
-        const page = await context.newPage()
-        return await capturePage(page, url, allowedHosts)
-      } catch (error) {
-        return {
-          ok: false,
-          error: error instanceof Error ? error.message : String(error),
-        }
-      } finally {
-        await browser.close()
+      // Second layer under the resolver fence: per-request and per-hop checks.
+      await context.route('**/*', (route) =>
+        fenceRoute(
+          {
+            url: route.request().url(),
+            abort: (code) => route.abort(code),
+            continue: () => route.continue(),
+            fetch: (hop, mode) =>
+              mode === 'get'
+                ? context.request.get(hop, {
+                    maxRedirects: 0,
+                    timeout: HOP_TIMEOUT_MS,
+                  })
+                : route.fetch({
+                    url: hop,
+                    maxRedirects: 0,
+                    timeout: HOP_TIMEOUT_MS,
+                  }),
+            fulfill: (response) => route.fulfill({ response }),
+          },
+          allowedHosts,
+        ),
+      )
+      // A screenshot needs no live socket, and `route` does not see them.
+      await context.routeWebSocket(/.*/, (ws) => ws.close())
+      const page = await context.newPage()
+      return await capturePage(page, url, allowedHosts)
+    } catch (error) {
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
       }
-    }),
-  }
+    } finally {
+      await browser.close()
+    }
+  })
 }

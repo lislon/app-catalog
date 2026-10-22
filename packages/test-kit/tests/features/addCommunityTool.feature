@@ -65,6 +65,25 @@ Feature: Adding a tool nobody listed
       Then "QC Heatmap" is no longer marked new
       And 0 tools are awaiting review
 
+    Scenario: An admin approves an edit from the card
+      Given I am signed in as an admin
+      When I open the card of "Kit Rules Playground"
+      And I edit it
+      And I rename it to "Kit Rules Sandbox"
+      And I save the changes
+      Then the card shows "Kit Rules Sandbox"
+      When I approve it
+      Then "Kit Rules Sandbox" is no longer marked new
+      And 0 tools are awaiting review
+
+    Scenario: The line a publish leaves on the card is not mine to withdraw
+      When I choose to add a tool
+      And I paste "https://qc-heatmap-9f8e.pages.example.com/"
+      And I publish
+      And I open the card of "QC Heatmap"
+      Then the card's comments show "New tool added: QC Heatmap"
+      And the card's line "New tool added: QC Heatmap" cannot be edited or withdrawn
+
     Scenario: Only admins can approve
       Given "QC Heatmap" was added and is not reviewed
       When I open the card of "QC Heatmap"

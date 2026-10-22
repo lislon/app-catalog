@@ -50,6 +50,7 @@ const note = {
   reviewedAt: null as string | null,
   editedAt: null,
   isMine: false,
+  isSystem: false,
   canEditUntil: null as string | null,
   status: null as string | null,
   reviewerReply: null as string | null,

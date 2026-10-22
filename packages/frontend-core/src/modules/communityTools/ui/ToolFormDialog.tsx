@@ -1,3 +1,4 @@
+import type { ToolPreview } from '@igstack/app-catalog-backend-core'
 import type {
   CommunityTag,
   CommunityTool,
@@ -43,15 +44,6 @@ export const PRIMARY_BUTTON =
 
 const LABEL = 'text-[13px] font-bold'
 const HINT = 'text-[12.5px] text-muted-foreground'
-
-interface Preview {
-  host: string
-  title: string | null
-  screenshotDataUrl: string | null
-  duplicate: { slug: string; name: string } | null
-  officialApp: { slug: string; name: string } | null
-  captureAllowed: boolean
-}
 
 type Field = 'name' | 'owners' | 'tags'
 
@@ -144,7 +136,7 @@ export function ToolFormDialog({
   const [checked, setChecked] = useState(initial?.url ?? '')
   const [preview, setPreview] = useState<{
     url: string
-    data: Preview | null
+    data: ToolPreview | null
   } | null>(null)
   const [addAnywayFor, setAddAnywayFor] = useState<string | null>(null)
 
@@ -779,7 +771,7 @@ function ShotPreview({
   initial,
   validAddress,
 }: {
-  preview: Preview | null
+  preview: ToolPreview | null
   /** The tool being edited, while its address is unchanged. */
   initial?: CommunityTool
   validAddress: boolean

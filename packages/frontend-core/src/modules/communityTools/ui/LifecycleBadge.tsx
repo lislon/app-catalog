@@ -13,7 +13,7 @@ export function LifecycleBadge({ lifecycle }: { lifecycle: Lifecycle }) {
         className={`${PILL} border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300`}
       >
         <AlertTriangle aria-hidden="true" className="size-3" />
-        Not working · {lifecycle.days} days
+        Not working · {lifecycle.days} {lifecycle.days === 1 ? 'day' : 'days'}
       </span>
     )
   }

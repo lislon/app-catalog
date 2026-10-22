@@ -1,4 +1,5 @@
 import { TRPCError } from '@trpc/server'
+import type { ToolPreview } from '@igstack/app-catalog-backend-core'
 import type {
   CommunityTag,
   CommunityTool,
@@ -27,14 +28,7 @@ export interface ToolInput {
   tags: CommunityTag[]
 }
 
-export interface ToolPreview {
-  host: string
-  title: string | null
-  screenshotDataUrl: string | null
-  duplicate: { slug: string; name: string } | null
-  officialApp: { slug: string; name: string } | null
-  captureAllowed: boolean
-}
+export type { ToolPreview }
 
 /** A tool row, the way the server's table holds it. */
 interface StoredTool {
@@ -81,6 +75,9 @@ interface View {
 export const MOCK_NOW = new Date('2026-10-21T12:00:00Z')
 
 const DAY_MS = 24 * 60 * 60 * 1000
+
+/** The server's bound on captures waiting behind the running one. */
+const MAX_WAITING_CAPTURES = 3
 
 /** The visitor cookie the real server would see from this browser. */
 const VISITOR_HASH = 'mock-visitor'
@@ -234,7 +231,6 @@ export class MockCommunityToolsStore {
       `New tool added: ${seed.name}`,
       seed.addedBy?.name ?? 'A colleague',
       null,
-      false,
     )
   }
 
@@ -368,9 +364,7 @@ export class MockCommunityToolsStore {
 
   unpin(input: { slug: string }): void {
     const user = this.requireUser()
-    if (!this.tools.some((t) => t.slug === input.slug)) {
-      throw new Error('Tool not found')
-    }
+    this.requireTool(input.slug)
     this.pinsByUser.set(
       user.id,
       (this.pinsByUser.get(user.id) ?? []).filter((s) => s !== input.slug),
@@ -414,6 +408,18 @@ export class MockCommunityToolsStore {
 
   /** `preview` as the network answers it: after the page's reading time. */
   async previewWhenRead(input: { url: string }): Promise<ToolPreview> {
+    // The server queues captures one at a time and refuses a preview past three
+    // waiting; here every unanswered preview but one stands for a waiting capture.
+    const waiting = this.previewsAsked.length - this.previewsAnswered.length - 1
+    if (
+      isCaptureAllowed(input.url, this.captureHosts) &&
+      waiting >= MAX_WAITING_CAPTURES
+    ) {
+      throw new TRPCError({
+        code: 'TOO_MANY_REQUESTS',
+        message: 'Too many previews in progress; try again in a minute',
+      })
+    }
     this.previewsAsked.push(input.url)
     const ms = this.pageDelays.get(input.url) ?? 0
     if (ms) await new Promise((resolve) => setTimeout(resolve, ms))
@@ -475,7 +481,19 @@ export class MockCommunityToolsStore {
     ].filter((f): f is string => !!f)
 
     if (changed.length > 0) {
+      if (host !== tool.host) {
+        // A different site starts its health over, and is checked afresh.
+        tool.failingSince = null
+        tool.lastCheckAt = null
+        if (tool.archivedBy === 'auto') {
+          tool.archivedAt = null
+          tool.archivedBy = null
+          tool.archivedReason = null
+        }
+      }
       Object.assign(tool, {
+        // An edit waits for an admin's approval again.
+        reviewedAt: null,
         name,
         url: input.url,
         host,
@@ -568,14 +586,11 @@ export class MockCommunityToolsStore {
     }
   }
 
+  /** Pinning a pinned tool leaves it where it is. */
   private pinTool(slug: string, userId: string): void {
-    if (!this.tools.some((t) => t.slug === slug)) {
-      throw new Error('Tool not found')
-    }
+    this.requireTool(slug)
     const pinned = this.pinsByUser.get(userId) ?? []
-    // The server's (userId, toolId) key refuses a second pin with a database error.
-    if (pinned.includes(slug)) throw new Error('Unique constraint failed')
-    this.pinsByUser.set(userId, [...pinned, slug])
+    if (!pinned.includes(slug)) this.pinsByUser.set(userId, [...pinned, slug])
   }
 
   private stored(slug: string): StoredTool {

@@ -10,6 +10,7 @@ import {
 } from '@igstack/app-catalog-shared-core'
 import { getDbClient } from '../../db/client'
 import { resizeImage } from '../assets/assetUtils'
+import { MARKER_KIND } from '../feedback/service'
 import type { Actor } from '../visitor/visitorIdentity'
 import { checkTool } from './healthJob'
 import type { CaptureDeps } from './healthJob'
@@ -58,6 +59,8 @@ export interface ToolPreview {
 }
 
 const PREVIEW_WIDTH = 640
+/** Previews are someone waiting at the form; past this many queued, ask them to retry. */
+const MAX_WAITING_CAPTURES = 3
 
 function requireHost(url: string): string {
   const host = hostOf(url)
@@ -136,6 +139,7 @@ async function writeMarker(
   await getDbClient().dbFeedback.create({
     data: {
       communityToolId: toolId,
+      kind: MARKER_KIND,
       body,
       status,
       authorHash: writer.actor.hash,
@@ -176,6 +180,15 @@ export async function previewTool(
 ): Promise<ToolPreview> {
   const host = requireHost(url)
   const captureAllowed = isCaptureAllowed(url, deps.captureHosts)
+  if (
+    captureAllowed &&
+    (deps.capturer?.waiting?.() ?? 0) > MAX_WAITING_CAPTURES
+  ) {
+    throw new TRPCError({
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Too many previews in progress; try again in a minute',
+    })
+  }
 
   const duplicate = await getDbClient().dbCommunityTool.findFirst({
     where: { host },
@@ -270,9 +283,24 @@ export async function editTool(
   ].filter((f): f is string => !!f)
 
   if (changed.length > 0) {
+    // A different site has no health history yet, and a dead old site's
+    // automatic archive says nothing about the new one.
+    const newSite = host !== tool.host && {
+      failingSince: null,
+      lastCheckAt: null,
+      ...(tool.archivedBy === 'auto' && {
+        archivedAt: null,
+        archivedBy: null,
+        archivedReason: null,
+      }),
+    }
     const updated = await getDbClient().dbCommunityTool.update({
       where: { id: tool.id },
       data: {
+        // An edit is news to the maintainer, so the tool waits for approval again.
+        reviewedAt: null,
+        reviewedByName: null,
+        ...newSite,
         name: input.name,
         url: input.url,
         host,

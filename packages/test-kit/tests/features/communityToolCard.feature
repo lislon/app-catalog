@@ -33,6 +33,11 @@ Feature: Checking it is the right tool before going
     Then the card says "Not working · 3 days"
     And "Old Tracker" is ranked below every working tool
 
+  Scenario: One day not working reads as one day
+    Given "Old Tracker" has failed its daily check for 1 days
+    When I open the card of "Old Tracker"
+    Then the card's badge reads "Not working · 1 day"
+
   Scenario: An archived tool says who archived it and when
     Given "Old Tracker" was archived by "Dana Lee"
     When I open the card of "Old Tracker" from an old link

@@ -715,6 +715,11 @@
   font-style: italic;
   color: var(--muted-foreground);
 }
+/* A line the system wrote when a tool changed: context, not someone's note. */
+.comment__text.is-system {
+  font-size: 0.84375rem;
+  color: var(--muted-foreground);
+}
 .comment__reply {
   margin-top: 0.25rem;
   font-size: 0.84375rem;

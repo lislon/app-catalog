@@ -286,6 +286,7 @@ const pendingNote = {
   reviewedAt: null,
   editedAt: null,
   isMine: false,
+  isSystem: false,
   canEditUntil: null,
   status: null,
   reviewerReply: null,

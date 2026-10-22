@@ -192,7 +192,7 @@ describe('Community tools capture', () => {
       running--
       return { ok: false as const, error: 'x' }
     })
-    const capture = oneAtATime(slow)
+    const { capture } = oneAtATime(slow)
 
     await Promise.all([capture(URL_OK, HOSTS), capture(URL_OK, HOSTS)])
 
@@ -200,8 +200,27 @@ describe('Community tools capture', () => {
     expect(maxRunning).toBe(1)
   })
 
+  it('counts the captures queued behind the running one', async () => {
+    let release = () => {}
+    const queue = oneAtATime(
+      () =>
+        new Promise((resolve) => {
+          release = () => resolve({ ok: false, error: 'x' })
+        }),
+    )
+
+    const runs = [1, 2, 3].map(() => queue.capture(URL_OK, HOSTS))
+    await vi.waitFor(() => expect(queue.waiting()).toBe(2))
+    release()
+    await vi.waitFor(() => expect(queue.waiting()).toBe(1))
+    release()
+    await vi.waitFor(() => expect(queue.waiting()).toBe(0))
+    release()
+    await Promise.all(runs)
+  })
+
   it('keeps the queue moving after a capture throws', async () => {
-    const capture = oneAtATime(
+    const { capture } = oneAtATime(
       vi
         .fn()
         .mockRejectedValueOnce(new Error('launch failed'))

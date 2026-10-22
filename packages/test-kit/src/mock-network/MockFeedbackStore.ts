@@ -6,6 +6,7 @@
  * their own report land. A scenario that cannot observe its own write proves only
  * that the button does not throw.
  */
+import { TRPCError } from '@trpc/server'
 
 /** One item as the client sees it — the server's `FeedbackView`, which it must match. */
 export interface MockFeedbackItem {
@@ -22,6 +23,7 @@ export interface MockFeedbackItem {
   createdAt: string
   editedAt: string | null
   isMine: boolean
+  isSystem: boolean
   canEditUntil: string | null
 }
 
@@ -73,6 +75,7 @@ export class MockFeedbackStore {
       createdAt: now,
       editedAt: null,
       isMine: true,
+      isSystem: false,
       canEditUntil: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
       ...item,
     }
@@ -94,20 +97,24 @@ export class MockFeedbackStore {
     })
   }
 
-  /** The row a community tool write leaves in the maintainer's review list. */
+  /**
+   * The row a community tool write leaves in the maintainer's review list. A system
+   * line: nobody, its writer included, can edit or withdraw it.
+   */
   addReviewRow(
     communityToolSlug: string,
     body: string,
     authorName: string,
     status: 'applied' | 'acknowledged' | null,
-    byThisBrowser = true,
   ): void {
     this.push({
       communityToolSlug,
       body,
       authorName,
       status,
-      ...(byThisBrowser ? {} : { isMine: false, canEditUntil: null }),
+      isMine: false,
+      isSystem: true,
+      canEditUntil: null,
     })
   }
 
@@ -157,15 +164,28 @@ export class MockFeedbackStore {
   }
 
   dismiss(id: string): void {
+    this.requireAuthor(id)
     this.items = this.items.filter((item) => item.id !== id)
   }
 
   edit(id: string, body: string): void {
-    const item = this.items.find((entry) => entry.id === id)
+    const item = this.requireAuthor(id)
     if (item) {
       item.body = body
       item.editedAt = new Date().toISOString()
     }
+  }
+
+  /** The server's `not-author` refusal, for a system line or another browser's note. */
+  private requireAuthor(id: string): StoredItem | undefined {
+    const item = this.items.find((entry) => entry.id === id)
+    if (item && !item.isMine) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Only the author can change this',
+      })
+    }
+    return item
   }
 
   /**

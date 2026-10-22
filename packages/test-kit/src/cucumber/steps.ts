@@ -668,6 +668,17 @@ async function openCommunity(): Promise<void> {
 
 When('I open Community tools', openCommunity)
 
+When('I go to {string}', async (_world, path: string) => {
+  if (!current) throw new Error('No catalog opened — missing a Given step?')
+  await current.router.navigate({ href: path })
+})
+
+Then('the page is not found', async () => {
+  expect(
+    await screen.findByRole('heading', { name: '404 Not Found' }),
+  ).toBeTruthy()
+})
+
 Then('the caret is in the search', async () => {
   await waitFor(() => {
     expect(document.activeElement).toBe(
@@ -1195,6 +1206,14 @@ Then('the caret in the comment box is at {int}', (_world, position: number) => {
   expect([box.selectionStart, box.selectionEnd]).toEqual([position, position])
 })
 
+Then("the card's badge reads {string}", async (_world, text: string) => {
+  await waitFor(() => {
+    expect(within(toolCard()).getByTestId('lifecycle-badge').textContent).toBe(
+      text,
+    )
+  })
+})
+
 Then('the card says {string}', async (_world, text: string) => {
   await waitFor(() => {
     expect(
@@ -1220,6 +1239,20 @@ Then("the card's comments show {string}", async (_world, text: string) => {
     ).toEqual(expect.arrayContaining([expect.stringContaining(text)]))
   })
 })
+
+Then(
+  "the card's line {string} cannot be edited or withdrawn",
+  async (_world, text: string) => {
+    const line = await waitFor(() => {
+      const found = within(within(toolCard()).getByTestId('card-comments'))
+        .getAllByRole('listitem')
+        .find((li) => li.textContent.includes(text))
+      if (!found) throw new Error(`No comment line reads "${text}"`)
+      return found
+    })
+    expect(within(line).queryAllByRole('button')).toEqual([])
+  },
+)
 
 Then('no site opened', () => {
   expect(openSpy?.mock.calls ?? []).toEqual([])

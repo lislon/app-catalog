@@ -600,3 +600,48 @@ describe('Community tools service', () => {
     })
   })
 })
+
+describe('pin and unpin', () => {
+  const db = {
+    dbCommunityTool: { findUnique: vi.fn() },
+    dbCommunityToolPin: {
+      findFirst: vi.fn(),
+      upsert: vi.fn(),
+      deleteMany: vi.fn(),
+    },
+  }
+
+  beforeEach(() => {
+    vi.spyOn(dbClient, 'getDbClient').mockReturnValue(
+      db as unknown as PrismaClient,
+    )
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('answers NOT_FOUND for an unknown slug', async () => {
+    db.dbCommunityTool.findUnique.mockResolvedValue(null)
+
+    await expect(service.pinTool('nope', 'user-1')).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    })
+    await expect(service.unpinTool('nope', 'user-1')).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    })
+  })
+
+  it('leaves a pinned tool where it is when pinned again', async () => {
+    db.dbCommunityTool.findUnique.mockResolvedValue({ id: 'tool-a' })
+    db.dbCommunityToolPin.findFirst.mockResolvedValue({ position: 4 })
+
+    await service.pinTool('tool-a', 'user-1')
+
+    expect(db.dbCommunityToolPin.upsert).toHaveBeenCalledWith({
+      where: { userId_toolId: { userId: 'user-1', toolId: 'tool-a' } },
+      create: { userId: 'user-1', toolId: 'tool-a', position: 5 },
+      update: {},
+    })
+  })
+})

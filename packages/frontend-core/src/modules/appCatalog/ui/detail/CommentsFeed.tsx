@@ -234,7 +234,11 @@ export function CommentsFeed({
           {entries.map((entry) => (
             <li key={entry.key} className="comment">
               <Meta entry={entry} edited={!!entry.note?.editedAt} />
-              {entry.note ? (
+              {entry.note?.isSystem ? (
+                <p className="comment__text is-system" data-system-line="">
+                  {entry.text}
+                </p>
+              ) : entry.note ? (
                 noteBody(entry.note)
               ) : (
                 <p className="comment__text">{entry.text}</p>

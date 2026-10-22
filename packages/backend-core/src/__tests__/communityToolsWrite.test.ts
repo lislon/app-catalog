@@ -172,6 +172,7 @@ describe('Community tools write service', () => {
     expect(db.dbFeedback.create).toHaveBeenCalledWith({
       data: {
         communityToolId: 'tool-1',
+        kind: 'marker',
         body: 'New tool added: My Tool',
         status: null,
         authorHash: 'hash-user-1',
@@ -238,6 +239,94 @@ describe('Community tools write service', () => {
     expect(db.dbFeedback.create.mock.calls[0]?.[0].data.body).toBe(
       'Tool edited: summary',
     )
+  })
+
+  it('edit puts an approved tool back in the review queue', async () => {
+    db.dbCommunityTool.findUnique.mockResolvedValue({
+      ...dbTool,
+      reviewedAt: NOW,
+      reviewedByName: 'Ada Admin',
+    })
+
+    await write.editTool(
+      { slug: 'my-tool', ...input, summary: 'Does two things' },
+      { user: ann, isAdmin: false, actor: actorFor('user-1') },
+      noCapture,
+      NOW,
+    )
+
+    expect(db.dbCommunityTool.update.mock.calls[0]?.[0].data).toMatchObject({
+      reviewedAt: null,
+      reviewedByName: null,
+    })
+  })
+
+  it('edit to another host starts its health over and lifts an automatic archive', async () => {
+    db.dbCommunityTool.findUnique.mockResolvedValue({
+      ...dbTool,
+      lastCheckAt: NOW,
+      failingSince: NOW,
+      archivedAt: NOW,
+      archivedBy: 'auto',
+      archivedReason: 'Not working for 14 days',
+    })
+    const capture = vi.fn().mockResolvedValue({ ok: false, error: 'x' })
+
+    await write.editTool(
+      { slug: 'my-tool', ...input, url: 'https://moved.pages.example.com/' },
+      { user: ann, isAdmin: false, actor: actorFor('user-1') },
+      { captureHosts: ['pages.example.com'], capturer: { capture } },
+      NOW,
+    )
+
+    expect(db.dbCommunityTool.update.mock.calls[0]?.[0].data).toMatchObject({
+      host: 'moved.pages.example.com',
+      failingSince: null,
+      lastCheckAt: null,
+      archivedAt: null,
+      archivedBy: null,
+      archivedReason: null,
+    })
+    await vi.waitFor(() => expect(capture).toHaveBeenCalled())
+  })
+
+  it('edit on the same host keeps the health record and a person archive', async () => {
+    db.dbCommunityTool.findUnique.mockResolvedValue({
+      ...dbTool,
+      failingSince: NOW,
+      archivedAt: NOW,
+      archivedBy: 'Ann Owner',
+    })
+
+    await write.editTool(
+      {
+        slug: 'my-tool',
+        ...input,
+        url: 'https://my-tool.pages.example.com/v2',
+      },
+      { user: ann, isAdmin: false, actor: actorFor('user-1') },
+      noCapture,
+      NOW,
+    )
+
+    const data = db.dbCommunityTool.update.mock.calls[0]?.[0].data
+    expect(data).not.toHaveProperty('failingSince')
+    expect(data).not.toHaveProperty('archivedAt')
+  })
+
+  it('preview answers TOO_MANY_REQUESTS past three queued captures', async () => {
+    const capturer = {
+      capture: vi.fn(),
+      waiting: () => 4,
+    }
+
+    await expect(
+      write.previewTool('https://my-tool.pages.example.com/', {
+        captureHosts: ['pages.example.com'],
+        capturer,
+      }),
+    ).rejects.toMatchObject({ code: 'TOO_MANY_REQUESTS' })
+    expect(capturer.capture).not.toHaveBeenCalled()
   })
 
   it('archive sets archivedBy to the user name', async () => {

@@ -2,7 +2,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as dbClient from '../db/client'
 import type { PrismaClient } from '../generated/prisma/client'
-import { addFeedback, listFeedback } from '../modules/feedback/service'
+import {
+  addFeedback,
+  dismissFeedback,
+  editFeedback,
+  listFeedback,
+} from '../modules/feedback/service'
 
 const NOW = new Date('2026-10-21T12:00:00.000Z')
 const actor = {
@@ -20,6 +25,7 @@ function row(fields: Record<string, unknown> = {}) {
     authorName: null,
     body: 'hi',
     subject: null,
+    kind: null,
     status: null,
     reviewerReply: null,
     reviewedAt: null,
@@ -45,6 +51,9 @@ describe('Feedback service', () => {
         create: vi.fn().mockResolvedValue({ id: 'fb-1' }),
         findUniqueOrThrow: vi.fn(),
         findMany: vi.fn().mockResolvedValue([]),
+        findUnique: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
       },
       dbFeedbackAttachment: { updateMany: vi.fn() },
     }
@@ -108,5 +117,44 @@ describe('Feedback service', () => {
       communityToolId: 'tool-1',
     })
     expect(list.openCount).toBe(1)
+  })
+
+  describe("a community tool's review marker", () => {
+    const marker = row({ kind: 'marker', body: 'New tool added: My Tool' })
+
+    it('is a system line, not the publisher’s own note', async () => {
+      db.dbFeedback.findMany.mockResolvedValue([marker])
+
+      const { items } = await listFeedback(
+        { communityToolSlug: 'my-tool' },
+        actor,
+      )
+
+      expect(items[0]).toMatchObject({
+        isSystem: true,
+        isMine: false,
+        canEditUntil: null,
+      })
+    })
+
+    it('cannot be withdrawn by the publisher', async () => {
+      db.dbFeedback.findUnique.mockResolvedValue(marker)
+
+      await expect(dismissFeedback('fb-1', actor)).rejects.toMatchObject({
+        reason: 'not-author',
+      })
+      expect(db.dbFeedback.delete).not.toHaveBeenCalled()
+    })
+
+    it('cannot be edited by the publisher', async () => {
+      db.dbFeedback.findUnique.mockResolvedValue(marker)
+
+      await expect(
+        editFeedback('fb-1', 'rewritten', actor),
+      ).rejects.toMatchObject({
+        reason: 'not-author',
+      })
+      expect(db.dbFeedback.update).not.toHaveBeenCalled()
+    })
   })
 })
