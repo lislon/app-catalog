@@ -25,7 +25,8 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Given, Then, When } from 'quickpickle'
 import type { DataTable } from 'quickpickle'
-import { expect, vi } from 'vitest'
+import { afterEach, expect, vi } from 'vitest'
+import type { MockInstance } from 'vitest'
 import { given } from '../harness/given'
 import type { GivenResult } from '../harness/given'
 import { magazine } from '../mock-backend/magazines'
@@ -673,15 +674,23 @@ Then('the caret is in the search', async () => {
   })
 })
 
+// The tab the page asked for. Restored after every scenario, so no later test
+// inherits a window.open that does nothing.
+let openSpy: MockInstance<typeof window.open> | null = null
+afterEach(() => {
+  openSpy?.mockRestore()
+  openSpy = null
+})
+
 When('I press Enter', async () => {
-  vi.spyOn(window, 'open').mockImplementation(() => null)
-  vi.mocked(window.open).mockClear()
+  openSpy ??= vi.spyOn(window, 'open').mockImplementation(() => null)
+  openSpy.mockClear()
   const user = userEvent.setup()
   await user.keyboard('{Enter}')
 })
 
 Then('{string} opens in a new tab', (_world, url: string) => {
-  expect(vi.mocked(window.open)).toHaveBeenCalledWith(
+  expect(openSpy).toHaveBeenCalledWith(
     url,
     '_blank',
     expect.stringContaining('noopener'),
@@ -693,6 +702,18 @@ Then('the first result is {string}', async (_world, name: string) => {
     const first = communityList('community-results')[0]
     expect(first && rowName(first)).toBe(name)
   })
+})
+
+Then('it is the selected option', () => {
+  const listbox = screen.getByRole('listbox', { name: 'Search results' })
+  const selected = within(listbox).getByRole('option', { selected: true })
+  expect(selected).toBe(communityList('community-results')[0])
+  expect(listbox.getAttribute('aria-activedescendant')).toBe(selected.id)
+  expect(
+    screen
+      .getByLabelText('Search community tools')
+      .getAttribute('aria-activedescendant'),
+  ).toBe(selected.id)
 })
 
 Then('{string} is highlighted in its owner', (_world, word: string) => {

@@ -43,6 +43,13 @@ export interface CommunityPageProps {
   onWindowChange: (feedWindow: FeedWindow) => void
 }
 
+const RESULTS_ID = 'community-results-listbox'
+
+/** Stable per tool, so the active descendant survives re-renders and re-ranking. */
+function optionIdOf(slug: string): string {
+  return `community-option-${slug}`
+}
+
 function signInHere(open: (url: string) => void) {
   open(window.location.pathname + window.location.search)
 }
@@ -122,6 +129,9 @@ export function CommunityPage({
 
   const items = searching ? results : feed
   const selectedIndex = Math.min(selected, results.length - 1)
+  const selectedTool = results[selectedIndex]?.tool
+  const activeOptionId =
+    searching && selectedTool ? optionIdOf(selectedTool.slug) : undefined
 
   const pinnedSlugs = useMemo(
     () => new Set((pins.data ?? []).map((t) => t.slug)),
@@ -172,6 +182,20 @@ export function CommunityPage({
     if (pinnedSlugs.has(tool.slug)) unpinTool(tool.slug)
     else pinTool(tool.slug)
   }
+
+  // A failed save puts the tiles back (the pins refetch); say why they moved.
+  const reorderPins = (slugs: string[]) =>
+    reorder.mutate(
+      { slugs },
+      {
+        onError: () =>
+          showToast({
+            tone: 'error',
+            text: "Couldn't save the new order",
+            action: { label: 'Try again', run: () => reorderPins(slugs) },
+          }),
+      },
+    )
 
   const startAdd = () => {
     // Adding needs an identity; the add form itself comes with the add flow.
@@ -293,6 +317,8 @@ export function CommunityPage({
               setSelected(0)
             }}
             resultCount={results.length}
+            listboxId={searching && results.length > 0 ? RESULTS_ID : undefined}
+            activeDescendant={activeOptionId}
             onKey={onSearchKey}
           />
           <button
@@ -319,7 +345,7 @@ export function CommunityPage({
               pins={pins.data ?? []}
               isLoading={isAuthLoading || pins.isPending}
               onUnpin={(tool) => togglePin(tool)}
-              onReorder={(slugs) => reorder.mutate({ slugs })}
+              onReorder={reorderPins}
               onSignIn={
                 !isAuthLoading && !isAuthenticated
                   ? () => signInHere(openSignIn)
@@ -365,6 +391,10 @@ export function CommunityPage({
           ) : (
             <div
               ref={setListEl}
+              id={searching ? RESULTS_ID : undefined}
+              role={searching ? 'listbox' : undefined}
+              aria-label={searching ? 'Search results' : undefined}
+              aria-activedescendant={activeOptionId}
               className={hasLayout ? 'relative' : 'flex flex-col gap-2'}
               style={
                 hasLayout ? { height: virtualizer.getTotalSize() } : undefined
@@ -396,6 +426,9 @@ export function CommunityPage({
                       tokens={tokens}
                       matched={item.matched}
                       selected={searching && row.index === selectedIndex}
+                      optionId={
+                        searching ? optionIdOf(item.tool.slug) : undefined
+                      }
                       pinned={pinnedSlugs.has(item.tool.slug)}
                       appNames={appNames}
                       activeTag={tag}

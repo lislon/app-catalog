@@ -12,6 +12,7 @@ Feature: Getting back to a tool a colleague built
     Then the caret is in the search
     When I search for "dana runb"
     Then the first result is "Ops Runbook"
+    And it is the selected option
     And "Dana" is highlighted in its owner
     And "runb" is highlighted in its name
     When I press Enter

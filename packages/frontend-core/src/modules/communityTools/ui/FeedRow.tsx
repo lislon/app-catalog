@@ -76,6 +76,8 @@ export function PersonAvatar({ name }: { name: string }) {
   )
 }
 
+const ROW_TAGS = 2
+
 const FIELD_LABELS: Record<MatchField, string> = {
   name: 'name',
   summary: 'summary',
@@ -94,6 +96,8 @@ export interface FeedRowProps {
   /** Set while searching: which fields the query hit. */
   matched?: MatchField[]
   selected?: boolean
+  /** Set while searching: the row is an option of the results listbox. */
+  optionId?: string
   pinned: boolean
   appNames: Record<string, string>
   activeTag: string | undefined
@@ -113,6 +117,7 @@ export function FeedRow({
   tokens,
   matched,
   selected = false,
+  optionId,
   pinned,
   appNames,
   activeTag,
@@ -122,12 +127,22 @@ export function FeedRow({
   const archived = tool.lifecycle.state === 'archived'
   const owners = tool.owners.map((o) => o.name).join(', ')
   const opens = feedWindow === 'all' ? tool.viewsAll : tool.views30d
+  // Two chips fit beside the owner and host; the rest fold into "+N". The
+  // chosen tag always shows, so a filtered feed says why each row is in it.
+  const tags = [...tool.tags].sort(
+    (a, b) => Number(tagKey(b) === activeTag) - Number(tagKey(a) === activeTag),
+  )
+  const shownTags = tags.slice(0, ROW_TAGS)
+  const hiddenTags = tags.slice(ROW_TAGS)
 
   return (
     <div
       data-testid="feed-row"
       data-slug={tool.slug}
       data-selected={selected || undefined}
+      id={optionId}
+      role={optionId ? 'option' : undefined}
+      aria-selected={optionId ? selected : undefined}
       className={cn(
         'group relative flex items-center gap-4 rounded-[14px] border bg-card py-3 pr-3.5 pl-3 transition-[border-color,box-shadow]',
         selected
@@ -174,30 +189,53 @@ export function FeedRow({
             {highlightTokens(tool.summary, tokens)}
           </div>
         )}
-        <div className="mt-1.5 flex min-w-0 items-center gap-1.5 text-[13px] font-semibold whitespace-nowrap text-foreground/75">
-          {tool.owners[0] && (
-            <>
-              <PersonAvatar name={tool.owners[0].name} />
-              <span data-testid="feed-row-owner">
-                {highlightTokens(owners, tokens)}
-              </span>
-              <span className="text-muted-foreground">·</span>
-            </>
-          )}
-          <span className="truncate font-mono text-xs font-normal text-muted-foreground">
-            {highlightTokens(tool.host, tokens)}
+        {/* Who and where on one line; the tags join it while they fit and
+            wrap under it when the row is narrow. Nothing leaves the row. */}
+        <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 overflow-hidden text-[13px] font-semibold whitespace-nowrap text-foreground/75">
+          <span className="flex min-w-0 flex-1 basis-40 items-center gap-1.5">
+            {tool.owners[0] && (
+              <>
+                <PersonAvatar name={tool.owners[0].name} />
+                <span
+                  data-testid="feed-row-owner"
+                  className="max-w-[60%] shrink-0 truncate"
+                >
+                  {highlightTokens(owners, tokens)}
+                </span>
+                <span className="text-muted-foreground">·</span>
+              </>
+            )}
+            <span className="min-w-0 truncate font-mono text-xs font-normal text-muted-foreground">
+              {highlightTokens(tool.host, tokens)}
+            </span>
           </span>
-          {tool.tags.map((tag) => {
-            const key = tagKey(tag)
-            return (
-              <TagChip
-                key={key}
-                label={tagLabel(tag, appNames)}
-                active={key === activeTag}
-                onClick={() => onChooseTag(key === activeTag ? undefined : key)}
-              />
-            )
-          })}
+          {tool.tags.length > 0 && (
+            <span className="flex shrink-0 items-center gap-1.5">
+              {shownTags.map((tag) => {
+                const key = tagKey(tag)
+                return (
+                  <TagChip
+                    key={key}
+                    label={tagLabel(tag, appNames)}
+                    active={key === activeTag}
+                    onClick={() =>
+                      onChooseTag(key === activeTag ? undefined : key)
+                    }
+                  />
+                )
+              })}
+              {hiddenTags.length > 0 && (
+                <span
+                  title={hiddenTags
+                    .map((t) => tagLabel(t, appNames))
+                    .join(', ')}
+                  className="rounded-full border border-border px-2 text-xs leading-[22px] font-semibold text-muted-foreground"
+                >
+                  +{hiddenTags.length}
+                </span>
+              )}
+            </span>
+          )}
         </div>
         {matched && matched.length > 0 && (
           <div

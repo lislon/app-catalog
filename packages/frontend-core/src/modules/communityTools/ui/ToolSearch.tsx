@@ -24,11 +24,17 @@ export function ToolSearch({
   onChange,
   resultCount,
   onKey,
+  listboxId,
+  activeDescendant,
 }: {
   value: string
   onChange: (value: string) => void
   resultCount: number
   onKey: (e: React.KeyboardEvent<HTMLInputElement>) => void
+  /** The results listbox, while there are results to move through. */
+  listboxId?: string
+  /** The selected result's id: the option ↑↓ move and Enter opens. */
+  activeDescendant?: string
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const searching = value.trim() !== ''
@@ -62,6 +68,11 @@ export function ToolSearch({
         autoComplete="off"
         spellCheck={false}
         aria-label="Search community tools"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={listboxId !== undefined}
+        aria-controls={listboxId}
+        aria-activedescendant={activeDescendant}
         placeholder="Type anything you remember: a word, the author, part of the address"
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
