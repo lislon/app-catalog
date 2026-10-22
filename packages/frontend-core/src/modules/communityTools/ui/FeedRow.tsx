@@ -6,9 +6,9 @@ import type {
 import { Link } from '@tanstack/react-router'
 import {
   CornerDownLeft,
-  ExternalLink,
   Eye,
   Globe,
+  MessageSquare,
   PanelRight,
 } from 'lucide-react'
 import { cn } from '~/lib/utils'
@@ -96,7 +96,7 @@ export interface FeedRowProps {
   tool: CommunityTool
   /** Shown in the ranked feed; search results have no rank. */
   rank?: number
-  /** A date sort shows its date on the row. */
+  /** Recently updated shows when the site changed; every other sort, when it was added. */
   sort: FeedSort
   tokens: string[]
   /** Set while searching: which fields the query hit. */
@@ -124,8 +124,7 @@ const PANEL = 'w-[120px]'
  * One tool in the feed or the search results. Everything left of the end
  * panel (rank, picture, name, summary, meta) is one link that opens the site
  * in a new tab; the 120 px panel opens the card. The star sits in the meta
- * line as its own target, above that link. The bottom strip shows the address
- * the big click goes to, on hover or focus only.
+ * line as its own target, above that link.
  */
 export function FeedRow({
   tool,
@@ -144,12 +143,11 @@ export function FeedRow({
   const cell = optionId ? 'gridcell' : undefined
   const owners = tool.owners.map((o) => o.name).join(', ')
   const dated =
-    sort === 'newest'
+    sort !== 'updated'
       ? `Added ${timeAgo(tool.createdAt)}`
-      : sort === 'updated' && tool.siteUpdatedAt
+      : tool.siteUpdatedAt
         ? `Updated ${timeAgo(tool.siteUpdatedAt)}`
         : null
-  const address = tool.url.replace(/^https?:\/\//, '').replace(/\/$/, '')
 
   return (
     <div
@@ -220,9 +218,9 @@ export function FeedRow({
             </div>
           )}
         </div>
-        {/* Meta on the left, the address on the right, flush to the panel.
-            The address keeps 150 px; a long author list gives way first.
-            Clicks fall through to the row link, except on star and like. */}
+        {/* Meta on the left, the date on the right, flush to the panel. A
+            long author list gives way first. Clicks fall through to the row
+            link, except on star and like. */}
         <div
           className={cn(
             'pointer-events-none absolute right-[120px] bottom-0 z-[2] flex h-12 items-center gap-4',
@@ -255,32 +253,27 @@ export function FeedRow({
               {tool.views30d}
               <span className="sr-only"> views this month</span>
             </span>
-            {dated && (
-              <>
-                <span aria-hidden="true" className="text-muted-foreground">
-                  ·
+            {tool.comments > 0 && (
+              <span
+                data-testid="feed-row-comments"
+                className="inline-flex items-center gap-1 text-muted-foreground"
+              >
+                <MessageSquare aria-hidden="true" className="size-[15px]" />
+                {tool.comments}
+                <span className="sr-only">
+                  {tool.comments === 1 ? ' comment' : ' comments'}
                 </span>
-                <span
-                  data-testid="feed-row-date"
-                  className="text-muted-foreground"
-                >
-                  {dated}
-                </span>
-              </>
+              </span>
             )}
           </div>
-          <div
-            aria-hidden="true"
-            data-testid="feed-row-address"
-            className={cn(
-              'flex h-full min-w-[150px] flex-1 items-center justify-end gap-1.5 px-4 font-mono text-[12.5px] text-muted-foreground opacity-0 transition-opacity',
-              'group-hover/row:text-foreground group-hover/row:opacity-100 group-has-[[data-site]:focus-visible]/row:opacity-100 group-has-[[data-details]:hover]/row:opacity-0 [@media(hover:none)]:opacity-100',
-              selected && 'opacity-100',
-            )}
-          >
-            <span className="min-w-0 truncate">{address}</span>
-            <ExternalLink aria-hidden="true" className="size-3.5 shrink-0" />
-          </div>
+          {dated && (
+            <span
+              data-testid="feed-row-date"
+              className="ml-auto shrink-0 pr-4 text-[13px] font-semibold whitespace-nowrap text-muted-foreground"
+            >
+              {dated}
+            </span>
+          )}
         </div>
       </div>
       <div role={cell} className="flex self-stretch">

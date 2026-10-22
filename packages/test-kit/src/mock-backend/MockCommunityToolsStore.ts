@@ -346,6 +346,13 @@ export class MockCommunityToolsStore {
     }
   }
 
+  /** Visitors left this many comments on it. */
+  commentedOn(slug: string, count: number): void {
+    for (let i = 1; i <= count; i++) {
+      this.feedback.add({ communityToolSlug: slug, body: `Comment ${i}` })
+    }
+  }
+
   pin(input: { slug: string }): void {
     this.pinTool(input.slug, this.requireUser().id)
   }
@@ -740,6 +747,9 @@ export class MockCommunityToolsStore {
       faviconId: tool.faviconId,
       capturedAt: tool.capturedAt?.toISOString() ?? null,
       siteUpdatedAt: tool.siteUpdatedAt?.toISOString() ?? null,
+      comments: this.feedback
+        .listFor({ communityToolSlug: tool.slug })
+        .items.filter((i) => !i.isSystem).length,
       likes: tool.likes.length,
       likedByMe: !!user && tool.likes.some((l) => l.userId === user.id),
       likedBy: tool.likes

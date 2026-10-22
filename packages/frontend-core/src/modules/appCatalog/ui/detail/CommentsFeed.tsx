@@ -112,7 +112,17 @@ export function CommentsFeed({
     }),
   )
   const dismiss = useMutation(
-    trpc.feedback.dismiss.mutationOptions({ onSuccess: () => void refresh() }),
+    trpc.feedback.dismiss.mutationOptions({
+      onSuccess: () => {
+        void refresh()
+        // A tool's row counts its comments.
+        if ('communityToolSlug' in target) {
+          void queryClient.invalidateQueries({
+            queryKey: trpc.communityTools.pathKey(),
+          })
+        }
+      },
+    }),
   )
   const saveEdit = (id: string) => {
     const body = editDraft.trim()

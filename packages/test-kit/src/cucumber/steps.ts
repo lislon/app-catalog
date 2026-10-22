@@ -1032,8 +1032,33 @@ Then(
   },
 )
 
-Then('the rows say no date', () => {
-  expect(screen.queryAllByTestId('feed-row-date')).toEqual([])
+Given(
+  '{string} has {int} comments',
+  async (_world, name: string, count: number) => {
+    await givenOnServer(({ backendCfg }) => {
+      const tools = backendCfg.communityTools
+      tools.commentedOn(tools.slugOf(name), count)
+    })
+  },
+)
+
+Then(
+  'the row of {string} shows {int} comment(s)',
+  async (_world, name: string, count: number) => {
+    await waitFor(() => {
+      expect(
+        within(rowNamed('community-feed', name)).getByTestId(
+          'feed-row-comments',
+        ).textContent,
+      ).toBe(`${count} ${count === 1 ? 'comment' : 'comments'}`)
+    })
+  },
+)
+
+Then('the row of {string} shows no comments', (_world, name: string) => {
+  expect(
+    within(rowNamed('community-feed', name)).queryByTestId('feed-row-comments'),
+  ).toBeNull()
 })
 
 Then('the feed lists {string}', async (_world, name: string) => {

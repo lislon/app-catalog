@@ -160,6 +160,12 @@ export function CommunityInput({
         void queryClient.invalidateQueries({
           queryKey: trpc.feedback.list.queryKey(target),
         })
+        // A tool's row counts its comments.
+        if ('communityToolSlug' in target) {
+          void queryClient.invalidateQueries({
+            queryKey: trpc.communityTools.pathKey(),
+          })
+        }
       },
     }),
   )

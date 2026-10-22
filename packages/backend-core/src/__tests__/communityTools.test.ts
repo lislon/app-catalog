@@ -177,6 +177,7 @@ describe('Community tools service', () => {
             owners: [],
             namedOwners: [],
             likes: [] as { userId: string; userName: string }[],
+            _count: { feedback: 0 },
             tags: [],
           },
         },
@@ -206,6 +207,7 @@ describe('Community tools service', () => {
             owners: [],
             namedOwners: [],
             likes: [] as { userId: string; userName: string }[],
+            _count: { feedback: 0 },
             tags: [],
           },
         },
@@ -235,6 +237,7 @@ describe('Community tools service', () => {
             owners: [],
             namedOwners: [],
             likes: [] as { userId: string; userName: string }[],
+            _count: { feedback: 0 },
             tags: [],
           },
         },
@@ -411,6 +414,7 @@ describe('Community tools service', () => {
           owners: [],
           namedOwners: [],
           likes: [] as { userId: string; userName: string }[],
+          _count: { feedback: 0 },
           tags: [],
         },
         {
@@ -436,6 +440,7 @@ describe('Community tools service', () => {
           owners: [],
           namedOwners: [],
           likes: [] as { userId: string; userName: string }[],
+          _count: { feedback: 0 },
           tags: [],
         },
       ])
@@ -488,6 +493,7 @@ describe('Community tools service', () => {
         owners: [],
         namedOwners: [],
         likes: [] as { userId: string; userName: string }[],
+        _count: { feedback: 0 },
         tags: [],
         ...over,
       }) as Parameters<typeof toView>[0]
@@ -540,6 +546,19 @@ describe('Community tools service', () => {
         CAPTURES,
       )
       expect(anonymous.likedByMe).toBe(false)
+    })
+
+    it('counts the comments the query counted', async () => {
+      const view = await toView(
+        row({ _count: { feedback: 3 } }),
+        new Map(),
+        { views30d: 0, viewsAll: 0 },
+        null,
+        false,
+        new Date('2024-01-15T12:00:00Z'),
+        CAPTURES,
+      )
+      expect(view.comments).toBe(3)
     })
 
     it('lists an owner outside the directory by name, with no slug', async () => {

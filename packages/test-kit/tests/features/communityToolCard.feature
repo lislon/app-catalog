@@ -96,6 +96,14 @@ Feature: Checking it is the right tool before going
     Then the card's comments show "Works on the night shift too"
     And no site opened
 
+  Scenario: A comment I send counts on the tool's row
+    When I open the card of "Ops Runbook"
+    And I type "Works on the night shift too" in the comment box
+    And I press Enter
+    Then the card's comments show "Works on the night shift too"
+    When I close the card
+    Then the row of "Ops Runbook" shows 1 comment
+
   Rule: The screenshot box holds its place
 
   Scenario: A tool still capturing shows the placeholder

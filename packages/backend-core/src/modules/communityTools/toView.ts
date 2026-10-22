@@ -15,6 +15,11 @@ export const LIKES = {
   select: { userId: true, userName: true },
 } as const satisfies Prisma.DbCommunityTool$likesArgs
 
+/** Visitors' comments, counted in the same query: a review line the system writes has a `kind`. */
+export const COMMENTS = {
+  select: { feedback: { where: { kind: null } } },
+} as const satisfies Prisma.DbCommunityToolCountOutputTypeDefaultArgs
+
 /** How many likers a view names; the rest are a count. */
 const LIKED_BY_NAMES = 8
 
@@ -24,6 +29,7 @@ type DbToolWithRelations = Prisma.DbCommunityToolGetPayload<{
     namedOwners: true
     tags: true
     likes: typeof LIKES
+    _count: typeof COMMENTS
   }
 }>
 
@@ -89,6 +95,7 @@ export async function toView(
       name: tool.addedByName,
     },
     createdAt: tool.createdAt.toISOString(),
+    comments: tool._count.feedback,
     // ponytail: every like row is read per view; a counted column if likes run to thousands.
     likes: tool.likes.length,
     likedByMe: !!user && tool.likes.some((l) => l.userId === user.id),
