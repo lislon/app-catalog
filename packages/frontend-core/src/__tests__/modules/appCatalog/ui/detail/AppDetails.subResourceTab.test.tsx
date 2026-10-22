@@ -56,6 +56,9 @@ vi.mock('~/modules/appCatalog/context/AppCatalogContext', () => ({
 vi.mock('~/modules/appCatalog/hooks/useAppClickHistory', () => ({
   useAppClickHistory: vi.fn(() => ({ recordClick: vi.fn() })),
 }))
+vi.mock('~/modules/appCatalog/ui/detail/useCommunityToolCount', () => ({
+  useCommunityToolCount: vi.fn(() => 0),
+}))
 vi.mock('~/modules/appCatalog/hooks/useUpdateApp', () => ({
   useUpdateApp: vi.fn(() => ({ mutate: vi.fn() })),
 }))

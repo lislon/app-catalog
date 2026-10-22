@@ -1,7 +1,17 @@
 export interface UserConfig {
   name: string
+  /** Defaults to one made from the name. A person-directory slug is an email, so owning a tool means matching it. */
+  email?: string
   isAdmin: boolean
   isAuthenticated: boolean
+}
+
+/** The signed-in user as the server's tRPC context holds it. */
+export interface SessionUser {
+  id: string
+  email: string
+  name: string
+  isAdmin: boolean
 }
 
 const defaultUser: UserConfig = {
@@ -21,17 +31,27 @@ export class MockUserContext {
     return this.user
   }
 
-  getSessionResponse(): object | null {
+  getSessionUser(): SessionUser | null {
     if (!this.user.isAuthenticated) {
       return null
     }
     return {
-      user: {
-        id: 'test-user-id',
-        email: `${this.user.name.toLowerCase().replace(/\s/g, '.')}@test.com`,
-        name: this.user.name,
-        isAdmin: this.user.isAdmin,
-      },
+      id: 'test-user-id',
+      email:
+        this.user.email ??
+        `${this.user.name.toLowerCase().replace(/\s/g, '.')}@test.com`,
+      name: this.user.name,
+      isAdmin: this.user.isAdmin,
+    }
+  }
+
+  getSessionResponse(): object | null {
+    const user = this.getSessionUser()
+    if (!user) {
+      return null
+    }
+    return {
+      user,
       session: {
         id: 'test-session-id',
         userId: 'test-user-id',

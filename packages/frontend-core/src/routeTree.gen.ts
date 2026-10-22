@@ -11,11 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
+import { Route as LayoutCommunityRouteImport } from './routes/_layout/community'
 import { Route as LayoutLoginRouteImport } from './routes/_layout/login'
 import { Route as LayoutMcpRouteImport } from './routes/_layout/mcp'
 import { Route as LayoutServiceDesksRouteImport } from './routes/_layout/service-desks'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as LayoutAppSlugRouteImport } from './routes/_layout/app.$slug'
+import { Route as LayoutCommunitySlugRouteImport } from './routes/_layout/community.$slug'
 import { Route as LayoutCatalogAppsIndexRouteImport } from './routes/_layout/catalog.apps.index'
 import { Route as LayoutAppSlugSubSubSlugRouteImport } from './routes/_layout/app.$slug_.sub.$subSlug'
 
@@ -26,6 +28,11 @@ const LayoutRoute = LayoutRouteImport.update({
 const LayoutIndexRoute = LayoutIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutCommunityRoute = LayoutCommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutLoginRoute = LayoutLoginRouteImport.update({
@@ -53,6 +60,11 @@ const LayoutAppSlugRoute = LayoutAppSlugRouteImport.update({
   path: '/app/$slug',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutCommunitySlugRoute = LayoutCommunitySlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => LayoutCommunityRoute,
+} as any)
 const LayoutCatalogAppsIndexRoute = LayoutCatalogAppsIndexRouteImport.update({
   id: '/catalog/apps/',
   path: '/catalog/apps/',
@@ -66,33 +78,39 @@ const LayoutAppSlugSubSubSlugRoute = LayoutAppSlugSubSubSlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
+  '/community': typeof LayoutCommunityRouteWithChildren
   '/login': typeof LayoutLoginRoute
   '/mcp': typeof LayoutMcpRoute
   '/service-desks': typeof LayoutServiceDesksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/app/$slug': typeof LayoutAppSlugRoute
+  '/community/$slug': typeof LayoutCommunitySlugRoute
   '/catalog/apps/': typeof LayoutCatalogAppsIndexRoute
   '/app/$slug/sub/$subSlug': typeof LayoutAppSlugSubSubSlugRoute
 }
 export interface FileRoutesByTo {
+  '/community': typeof LayoutCommunityRouteWithChildren
   '/login': typeof LayoutLoginRoute
   '/mcp': typeof LayoutMcpRoute
   '/service-desks': typeof LayoutServiceDesksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/': typeof LayoutIndexRoute
   '/app/$slug': typeof LayoutAppSlugRoute
+  '/community/$slug': typeof LayoutCommunitySlugRoute
   '/catalog/apps': typeof LayoutCatalogAppsIndexRoute
   '/app/$slug/sub/$subSlug': typeof LayoutAppSlugSubSubSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_layout': typeof LayoutRouteWithChildren
+  '/_layout/community': typeof LayoutCommunityRouteWithChildren
   '/_layout/login': typeof LayoutLoginRoute
   '/_layout/mcp': typeof LayoutMcpRoute
   '/_layout/service-desks': typeof LayoutServiceDesksRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/app/$slug': typeof LayoutAppSlugRoute
+  '/_layout/community/$slug': typeof LayoutCommunitySlugRoute
   '/_layout/catalog/apps/': typeof LayoutCatalogAppsIndexRoute
   '/_layout/app/$slug_/sub/$subSlug': typeof LayoutAppSlugSubSubSlugRoute
 }
@@ -100,32 +118,38 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/community'
     | '/login'
     | '/mcp'
     | '/service-desks'
     | '/auth/callback'
     | '/app/$slug'
+    | '/community/$slug'
     | '/catalog/apps/'
     | '/app/$slug/sub/$subSlug'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/community'
     | '/login'
     | '/mcp'
     | '/service-desks'
     | '/auth/callback'
     | '/'
     | '/app/$slug'
+    | '/community/$slug'
     | '/catalog/apps'
     | '/app/$slug/sub/$subSlug'
   id:
     | '__root__'
     | '/_layout'
+    | '/_layout/community'
     | '/_layout/login'
     | '/_layout/mcp'
     | '/_layout/service-desks'
     | '/auth/callback'
     | '/_layout/'
     | '/_layout/app/$slug'
+    | '/_layout/community/$slug'
     | '/_layout/catalog/apps/'
     | '/_layout/app/$slug_/sub/$subSlug'
   fileRoutesById: FileRoutesById
@@ -149,6 +173,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof LayoutIndexRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/community': {
+      id: '/_layout/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof LayoutCommunityRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/login': {
@@ -186,6 +217,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAppSlugRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/community/$slug': {
+      id: '/_layout/community/$slug'
+      path: '/$slug'
+      fullPath: '/community/$slug'
+      preLoaderRoute: typeof LayoutCommunitySlugRouteImport
+      parentRoute: typeof LayoutCommunityRoute
+    }
     '/_layout/catalog/apps/': {
       id: '/_layout/catalog/apps/'
       path: '/catalog/apps'
@@ -203,7 +241,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface LayoutCommunityRouteChildren {
+  LayoutCommunitySlugRoute: typeof LayoutCommunitySlugRoute
+}
+
+const LayoutCommunityRouteChildren: LayoutCommunityRouteChildren = {
+  LayoutCommunitySlugRoute: LayoutCommunitySlugRoute,
+}
+
+const LayoutCommunityRouteWithChildren = LayoutCommunityRoute._addFileChildren(
+  LayoutCommunityRouteChildren,
+)
+
 interface LayoutRouteChildren {
+  LayoutCommunityRoute: typeof LayoutCommunityRouteWithChildren
   LayoutLoginRoute: typeof LayoutLoginRoute
   LayoutMcpRoute: typeof LayoutMcpRoute
   LayoutServiceDesksRoute: typeof LayoutServiceDesksRoute
@@ -214,6 +265,7 @@ interface LayoutRouteChildren {
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
+  LayoutCommunityRoute: LayoutCommunityRouteWithChildren,
   LayoutLoginRoute: LayoutLoginRoute,
   LayoutMcpRoute: LayoutMcpRoute,
   LayoutServiceDesksRoute: LayoutServiceDesksRoute,

@@ -23,6 +23,7 @@ export interface CommentEntry {
 const FEEDBACK_ORIGIN = 'feedback:'
 
 function noteBadge(note: Note, linked: Claim[]): CommentBadge {
+  if (note.isSystem) return null
   if (note.status === null) return 'pending'
   if (linked.some((c) => c.status === 'review')) return 'pending'
   if (note.status === 'acknowledged') return null

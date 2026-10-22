@@ -3,7 +3,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import type { TRPCClient } from '@trpc/client'
 import { AppCatalogProvider } from '~/modules/appCatalog/context/AppCatalogContext'
 import { AppCatalogFiltersProvider } from '~/modules/appCatalog/ui/context/AppCatalogFiltersContext'
-import { ViewToggle } from '~/modules/appCatalog/ui/components/ViewToggle'
+import { SectionTabs } from '~/modules/appCatalog/ui/components/SectionTabs'
 import { MainLayout } from '~/ui/layout/MainLayout'
 import { TopLevelProviders } from '~/ui/layout/TopLevelProviders'
 
@@ -24,7 +24,7 @@ export function AppCatalogLayout({
     <TopLevelProviders queryClient={queryClient} trpcClient={trpcClient}>
       <AppCatalogProvider>
         <AppCatalogFiltersProvider>
-          <MainLayout headerMiddle={headerMiddle ?? <ViewToggle />}>
+          <MainLayout headerMiddle={headerMiddle ?? <SectionTabs />}>
             {/* <Breadcrumb className="pb-4">*/}
             {/*  <BreadcrumbList>*/}
             {/*    <BreadcrumbItem>*/}

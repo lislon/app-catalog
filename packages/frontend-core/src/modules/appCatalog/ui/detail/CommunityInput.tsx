@@ -6,12 +6,13 @@ import { cn } from '~/lib/utils'
 import { Button } from '~/ui/button'
 import {
   attachmentUrl,
+  draftSlugOf,
   readAttachments,
   readDraft,
   writeAttachments,
   writeDraft,
 } from './communityDraft'
-import type { PendingImage } from './communityDraft'
+import type { CommentTarget, PendingImage } from './communityDraft'
 import { formatCommunityError } from './communityError'
 
 const MAX_HEIGHT = 200
@@ -71,20 +72,21 @@ async function upload(files: File[]): Promise<string[] | string> {
  * paperclip, paste or drop, and a screenshot alone is a valid note.
  */
 export function CommunityInput({
-  appSlug,
+  target,
   appName,
   ref,
 }: {
-  appSlug: string
+  target: CommentTarget
   appName: string
   ref?: React.Ref<CommunityInputHandle>
 }) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
+  const draftSlug = draftSlugOf(target)
   // Seeded from storage so a draft survives the tab panel unmounting under it.
-  const [text, setText] = React.useState(() => readDraft(appSlug))
+  const [text, setText] = React.useState(() => readDraft(draftSlug))
   const [images, setImages] = React.useState<PendingImage[]>(() =>
-    readAttachments(appSlug),
+    readAttachments(draftSlug),
   )
   const [sent, setSent] = React.useState(false)
   // Counts successful sends, so a click on Send hands focus back every time.
@@ -121,8 +123,11 @@ export function CommunityInput({
     return () => mq.removeEventListener('change', handler)
   }, [])
 
-  React.useEffect(() => writeDraft(appSlug, text), [appSlug, text])
-  React.useEffect(() => writeAttachments(appSlug, images), [appSlug, images])
+  React.useEffect(() => writeDraft(draftSlug, text), [draftSlug, text])
+  React.useEffect(
+    () => writeAttachments(draftSlug, images),
+    [draftSlug, images],
+  )
 
   // The class goes on the form, whose className React never rewrites, and
   // is removed and re-added with a reflow between so a second call restarts
@@ -153,7 +158,7 @@ export function CommunityInput({
         setSent(true)
         setSends((n) => n + 1)
         void queryClient.invalidateQueries({
-          queryKey: trpc.feedback.list.queryKey({ resourceSlug: appSlug }),
+          queryKey: trpc.feedback.list.queryKey(target),
         })
       },
     }),
@@ -227,7 +232,7 @@ export function CommunityInput({
     // Merge into both state and persisted draft so unmount restores it.
     setImages((current) => {
       const updated = [...current, ...newImages].slice(0, MAX_ATTACHMENTS)
-      writeAttachments(appSlug, updated)
+      writeAttachments(draftSlug, updated)
       return updated
     })
     if (files.length > room)
@@ -242,7 +247,7 @@ export function CommunityInput({
     if (!canSend || add.isPending || uploading) return
     const body = text.trim()
     add.mutate({
-      resourceSlug: appSlug,
+      ...target,
       ...(body ? { body } : {}),
       ...(images.length > 0 ? { attachmentIds: images.map((i) => i.id) } : {}),
     })

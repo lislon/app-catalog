@@ -2,7 +2,7 @@ import type {
   Resource,
   SourceReference,
 } from '@igstack/app-catalog-backend-core'
-import { useSearch } from '@tanstack/react-router'
+import { Link, useSearch } from '@tanstack/react-router'
 import { ExternalLink, Plus, Trash2 } from 'lucide-react'
 import React from 'react'
 import { useHotkeys } from 'react-hotkeys-hook'
@@ -32,6 +32,7 @@ import {
 import { CommunitySection } from './CommunitySection'
 import type { CommunitySectionHandle } from './CommunitySection'
 import { usePendingCount } from './usePendingCount'
+import { useCommunityToolCount } from './useCommunityToolCount'
 import { displayUrl } from '~/modules/appCatalog/utils/displayUrl'
 import { accessTabLabel } from '~/modules/appCatalog/utils/accessTabLabel'
 import { AppDoor } from './AppDoor'
@@ -151,6 +152,7 @@ export function AppDetails({
   const { state: filterState } = useAppCatalogFilters()
   // Agrees with the Pending badges in the feed: composed by the same rules.
   const behindCount = usePendingCount(app.slug, app.claims)
+  const communityCount = useCommunityToolCount(app.slug)
 
   // "Last checked 10 hours ago · added 7 months ago" under the sources.
   const lastChecked = app.freshness?.lastCheckedAt
@@ -458,7 +460,7 @@ export function AppDetails({
         <div className="behind-panel">
           <CommunitySection
             ref={knowMoreRef}
-            appSlug={app.slug}
+            target={{ resourceSlug: app.slug }}
             appName={app.displayName}
             claims={app.claims}
           />
@@ -676,6 +678,19 @@ export function AppDetails({
       {app.nicknames && app.nicknames.length > 0 && (
         <p className="mt-2.5 text-xs text-muted-foreground">
           Also known as {app.nicknames.join(', ')}
+        </p>
+      )}
+
+      {communityCount > 0 && (
+        <p className="mt-2.5 text-xs">
+          <Link
+            to="/community"
+            search={{ tag: `app:${app.slug}` }}
+            data-testid="app-community-tools"
+            className="text-muted-foreground hover:text-primary hover:underline"
+          >
+            Community tools for {app.displayName} · {communityCount}
+          </Link>
         </p>
       )}
 

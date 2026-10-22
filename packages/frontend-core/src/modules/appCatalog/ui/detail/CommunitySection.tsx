@@ -3,6 +3,7 @@ import React from 'react'
 import { CommentsFeed } from './CommentsFeed'
 import { CommentsHelp } from './CommentsHelp'
 import { CommunityInput } from './CommunityInput'
+import type { CommentTarget } from './communityDraft'
 import type { CommunityInputHandle } from './CommunityInput'
 
 export type CommunitySectionHandle = CommunityInputHandle
@@ -15,12 +16,13 @@ const NO_CLAIMS: Claim[] = []
  * as one feed.
  */
 export function CommunitySection({
-  appSlug,
+  target,
   appName,
   claims = NO_CLAIMS,
   ref,
 }: {
-  appSlug: string
+  target: CommentTarget
+  /** The entry's or the tool's name, for the input's label. */
   appName: string
   claims?: Claim[]
   ref?: React.Ref<CommunitySectionHandle>
@@ -28,14 +30,17 @@ export function CommunitySection({
   const headingId = React.useId()
   return (
     <section className="behind-group">
-      <CommunityInput ref={ref} appSlug={appSlug} appName={appName} />
+      <CommunityInput ref={ref} target={target} appName={appName} />
       <div className="comments-head">
         <h2 id={headingId} className="behind-group__title">
           Comments
         </h2>
-        <CommentsHelp appSlug={appSlug} appName={appName} />
+        <CommentsHelp
+          appSlug={'resourceSlug' in target ? target.resourceSlug : undefined}
+          appName={appName}
+        />
       </div>
-      <CommentsFeed appSlug={appSlug} claims={claims} labelledBy={headingId} />
+      <CommentsFeed target={target} claims={claims} labelledBy={headingId} />
     </section>
   )
 }

@@ -9,6 +9,8 @@ import type { Resource } from '../types/common/appCatalogTypes'
 import type { BetterAuth } from '../modules/auth/auth'
 import { createAuthRouter } from '../modules/auth/authRouter.js'
 import { createFeedbackRouter } from '../modules/feedback/feedbackRouter'
+import { createCommunityToolsRouter } from '../modules/communityTools/router'
+import type { CommunityToolsOptions } from '../middleware/types'
 import { publicProcedure, router, t } from './trpcSetup'
 import { z } from 'zod'
 
@@ -35,7 +37,10 @@ const updateAppInputSchema = z.object({
  */
 export function createTrpcRouter(
   auth?: BetterAuth,
-  options?: { devLoginEnabled?: boolean },
+  options?: {
+    devLoginEnabled?: boolean
+    communityTools?: CommunityToolsOptions
+  },
 ) {
   return router({
     appCatalog: router({
@@ -68,6 +73,8 @@ export function createTrpcRouter(
     }),
 
     feedback: createFeedbackRouter(),
+
+    communityTools: createCommunityToolsRouter(options?.communityTools),
 
     // Auth routes (requires auth instance)
     auth: createAuthRouter(t, auth, options),

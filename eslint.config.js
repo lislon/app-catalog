@@ -118,8 +118,8 @@ export const reactConfigs = /** @type {import('eslint').Linter.Config[]} */ ([
       'react-hooks/refs': 'error',
       'react-hooks/preserve-manual-memoization': 'error',
       // Reports a component the compiler must skip because a library hands back
-      // values it cannot memoize safely. Three known sites (TanStack Table twice,
-      // TanStack Virtual once) carry a local suppression naming the library, which is what keeps this rule useful
+      // values it cannot memoize safely. Four known sites (TanStack Table twice,
+      // TanStack Virtual twice) carry a local suppression naming the library, which is what keeps this rule useful
       // for the next such library instead of switching it off wholesale. Raised from
       // the `warn` that `recommended` ships, so a new one fails rather than scrolls
       // past: the whole point is being told about it.

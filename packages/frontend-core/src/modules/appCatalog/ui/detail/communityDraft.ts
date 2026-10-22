@@ -78,3 +78,19 @@ export function writeAttachments(slug: string, images: PendingImage[]): void {
 export function attachmentUrl(id: string): string {
   return `/api/feedback-attachments/${id}`
 }
+
+/** What a comment is about: an official catalog entry, or a community tool. */
+export type CommentTarget =
+  | { resourceSlug: string }
+  | { communityToolSlug: string }
+
+/**
+ * The draft's storage slug. An entry keeps its bare slug, so drafts written
+ * before tools had comments still load; a tool's is prefixed, so a tool and an
+ * entry that share a slug never share a draft.
+ */
+export function draftSlugOf(target: CommentTarget): string {
+  return 'resourceSlug' in target
+    ? target.resourceSlug
+    : `tool:${target.communityToolSlug}`
+}

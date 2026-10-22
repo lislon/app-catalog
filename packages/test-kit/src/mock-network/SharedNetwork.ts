@@ -38,9 +38,7 @@ export const SharedNetwork = {
   feedbackList(store: MockFeedbackStore): NetworkInterceptor {
     return {
       scopeKey: ['feedback-list'],
-      handler: trpcMsw.feedback.list.query(({ input }) =>
-        store.listFor(input.resourceSlug),
-      ),
+      handler: trpcMsw.feedback.list.query(({ input }) => store.listFor(input)),
     }
   },
 
@@ -185,5 +183,84 @@ export const SharedNetwork = {
         })
       }),
     }
+  },
+
+  /**
+   * Every `communityTools.*` procedure, answered by the in-memory store. Each one
+   * only forwards: the store owns the rules and throws the server's errors.
+   */
+  communityTools(service: MockService): NetworkInterceptor[] {
+    const store = service.communityTools
+    const ct = trpcMsw.communityTools
+    return [
+      {
+        scopeKey: ['community-tools-config'],
+        handler: ct.config.query(() => store.config()),
+      },
+      {
+        scopeKey: ['community-tools-list'],
+        handler: ct.list.query(() => store.list()),
+      },
+      {
+        scopeKey: ['community-tools-count-by-app'],
+        handler: ct.countByApp.query(() => store.countByApp()),
+      },
+      {
+        scopeKey: ['community-tools-get'],
+        handler: ct.get.query(({ input }) => store.get(input)),
+      },
+      {
+        scopeKey: ['community-tools-record-view'],
+        handler: ct.recordView.mutation(({ input }) => store.recordView(input)),
+      },
+      {
+        scopeKey: ['community-tools-pins'],
+        handler: ct.pins.query(() => store.pins()),
+      },
+      {
+        scopeKey: ['community-tools-pin'],
+        handler: ct.pin.mutation(({ input }) => store.pin(input)),
+      },
+      {
+        scopeKey: ['community-tools-unpin'],
+        handler: ct.unpin.mutation(({ input }) => store.unpin(input)),
+      },
+      {
+        scopeKey: ['community-tools-like'],
+        handler: ct.like.mutation(({ input }) => store.like(input)),
+      },
+      {
+        scopeKey: ['community-tools-unlike'],
+        handler: ct.unlike.mutation(({ input }) => store.unlike(input)),
+      },
+      {
+        scopeKey: ['community-tools-reorder-pins'],
+        handler: ct.reorderPins.mutation(({ input }) =>
+          store.reorderPins(input),
+        ),
+      },
+      {
+        scopeKey: ['community-tools-preview'],
+        handler: ct.preview.mutation(({ input }) =>
+          store.previewWhenRead(input),
+        ),
+      },
+      {
+        scopeKey: ['community-tools-add'],
+        handler: ct.add.mutation(({ input }) => store.add(input)),
+      },
+      {
+        scopeKey: ['community-tools-edit'],
+        handler: ct.edit.mutation(({ input }) => store.edit(input)),
+      },
+      {
+        scopeKey: ['community-tools-archive'],
+        handler: ct.archive.mutation(({ input }) => store.archive(input)),
+      },
+      {
+        scopeKey: ['community-tools-approve'],
+        handler: ct.approve.mutation(({ input }) => store.approve(input)),
+      },
+    ]
   },
 }

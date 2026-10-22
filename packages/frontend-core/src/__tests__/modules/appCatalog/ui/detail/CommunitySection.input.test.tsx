@@ -85,7 +85,12 @@ afterEach(() => {
 })
 
 const mount = () =>
-  render(<CommunitySection appSlug="team-board" appName="Team Board" />)
+  render(
+    <CommunitySection
+      target={{ resourceSlug: 'team-board' }}
+      appName="Team Board"
+    />,
+  )
 const field = () =>
   screen.getByRole('textbox', { name: 'Know more about Team Board?' })
 const send = () => screen.getByText('Send')
@@ -349,7 +354,12 @@ describe('CommunitySection — screenshots', () => {
     await userEvent.type(field(), 'about this one')
     first.unmount()
 
-    render(<CommunitySection appSlug="other-app" appName="Other" />)
+    render(
+      <CommunitySection
+        target={{ resourceSlug: 'other-app' }}
+        appName="Other"
+      />,
+    )
     expect(
       screen.getByRole('textbox', { name: 'Know more about Other?' }),
     ).toHaveValue('')

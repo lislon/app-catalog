@@ -13,6 +13,8 @@ import { createAcTrpcContext } from '../server/acTrpcContext'
 import { createAuth } from '../modules/auth/auth'
 import { createMockUserFromDevConfig } from '../modules/auth/devMockUserUtils'
 import { resolveActor } from '../modules/visitor/visitorIdentity'
+import { createPlaywrightCapturer } from '../modules/communityTools/capture'
+import { startHealthJob } from '../modules/communityTools/healthJob'
 
 export async function createAcMiddleware(
   options: AcMiddlewareOptions,
@@ -29,10 +31,27 @@ export async function createAcMiddleware(
   // Create auth instance
   const auth = createAuth(options.auth.betterAuthOptions)
 
+  // Resolve the default capturer once, so the router and the health job share it
+  const communityTools = options.communityTools && {
+    ...options.communityTools,
+    capturer:
+      options.communityTools.capturer === undefined
+        ? createPlaywrightCapturer()
+        : options.communityTools.capturer,
+  }
+
   // Create tRPC router
   const trpcRouter = createTrpcRouter(auth, {
     devLoginEnabled: !!options.auth.devMockUser,
+    communityTools,
   })
+
+  const stopHealthJob = communityTools?.enabled
+    ? startHealthJob({
+        captureHosts: communityTools.captureHosts ?? [],
+        capturer: communityTools.capturer,
+      })
+    : undefined
 
   // Normalize backend provider to async factory function
   const resolveBackend = createBackendResolver(options.backend)
@@ -140,6 +159,7 @@ export async function createAcMiddleware(
       if (options.hooks?.onDatabaseDisconnecting) {
         await options.hooks.onDatabaseDisconnecting()
       }
+      stopHealthJob?.()
       await dbManager.disconnect()
     },
 

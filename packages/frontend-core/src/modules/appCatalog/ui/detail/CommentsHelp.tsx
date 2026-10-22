@@ -11,7 +11,8 @@ export function CommentsHelp({
   appSlug,
   appName,
 }: {
-  appSlug: string
+  /** Set for an official entry; a deployment's note speaks to entries only. */
+  appSlug?: string
   appName: string
 }) {
   const [open, setOpen] = React.useState(false)
@@ -88,8 +89,10 @@ export function CommentsHelp({
           <li>Attach a screenshot — paste it, drop it or use the paperclip.</li>
         </ul>
         <p className="comments-help__note">
-          <ResourceDetailFeedbackNote appSlug={appSlug} appName={appName} />
-          {!hasPluginNote && (
+          {appSlug && (
+            <ResourceDetailFeedbackNote appSlug={appSlug} appName={appName} />
+          )}
+          {!(appSlug && hasPluginNote) && (
             <>
               Every note is reviewed. Facts that check out update the card and
               are marked Used as source.

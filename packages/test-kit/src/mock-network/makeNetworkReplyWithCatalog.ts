@@ -1,5 +1,4 @@
 import type { MockService } from '../mock-backend/MockService'
-import { MockFeedbackStore } from './MockFeedbackStore'
 import { NetworkCatalog } from './NetworkCatalog'
 import { SharedNetwork } from './SharedNetwork'
 
@@ -8,7 +7,7 @@ export function makeNetworkReplyWithCatalog(
 ): NetworkCatalog {
   const catalog = new NetworkCatalog()
   // One store behind every feedback route, so reading reflects writing.
-  const feedback = new MockFeedbackStore()
+  const feedback = service.feedback
 
   catalog.add(SharedNetwork.appCatalogQuery(service))
   catalog.add(SharedNetwork.feedbackList(feedback))
@@ -24,6 +23,9 @@ export function makeNetworkReplyWithCatalog(
   catalog.add(SharedNetwork.authDevLogout())
   catalog.add(SharedNetwork.screenshotBinary())
   catalog.add(SharedNetwork.iconBinary())
+  for (const interceptor of SharedNetwork.communityTools(service)) {
+    catalog.add(interceptor)
+  }
 
   return catalog
 }

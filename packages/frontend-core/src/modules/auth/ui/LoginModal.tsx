@@ -14,7 +14,7 @@ import { LoginPage } from './LoginPage'
  * Can be opened from anywhere using useAuthModal hook
  */
 export function LoginModal() {
-  const { isOpen, close } = useAuthModal()
+  const { isOpen, close, redirectUrl } = useAuthModal()
 
   return (
     <Dialog
@@ -25,7 +25,12 @@ export function LoginModal() {
         }
       }}
     >
-      <DialogContent className="w-full max-w-md">
+      <DialogContent
+        className="w-full max-w-md"
+        data-testid="login-modal"
+        // Where the provider returns the visitor; readable in tests and devtools.
+        data-return-to={redirectUrl}
+      >
         <DialogHeader>
           <DialogTitle>Sign In</DialogTitle>
           <DialogDescription>

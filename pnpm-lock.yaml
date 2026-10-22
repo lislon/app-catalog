@@ -46,8 +46,8 @@ catalogs:
       specifier: 1.167.2
       version: 1.167.2
     '@tanstack/react-virtual':
-      specifier: 3.13.13
-      version: 3.13.13
+      specifier: 3.14.21
+      version: 3.14.21
     '@tanstack/router-devtools':
       specifier: 1.167.2
       version: 1.167.2
@@ -597,6 +597,9 @@ importers:
       esbuild:
         specifier: 'catalog:'
         version: 0.25.12
+      playwright-core:
+        specifier: ^1.59.0
+        version: 1.59.0
       prisma:
         specifier: 'catalog:'
         version: 7.4.2(@types/react@19.2.9)(react-dom@19.1.2(react@19.1.2))(react@19.1.2)(typescript@5.9.3)
@@ -732,7 +735,7 @@ importers:
         version: 8.21.3(react-dom@19.1.2(react@19.1.2))(react@19.1.2)
       '@tanstack/react-virtual':
         specifier: 'catalog:'
-        version: 3.13.13(react-dom@19.1.2(react@19.1.2))(react@19.1.2)
+        version: 3.14.21(react-dom@19.1.2(react@19.1.2))(react@19.1.2)
       '@tanstack/router-plugin':
         specifier: 'catalog:'
         version: 1.168.42(@tanstack/react-router@1.170.41(react-dom@19.1.2(react@19.1.2))(react@19.1.2))(esbuild@0.27.2)(rollup@4.54.0)(vite@6.4.1(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.2)(sass-embedded@1.97.1)(sass@1.97.1)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.1))
@@ -1009,6 +1012,9 @@ importers:
       '@trpc/client':
         specifier: 'catalog:'
         version: 11.8.1(@trpc/server@11.8.1(typescript@5.9.3))(typescript@5.9.3)
+      '@trpc/server':
+        specifier: 'catalog:'
+        version: 11.8.1(typescript@5.9.3)
       fake-indexeddb:
         specifier: ^6.2.4
         version: 6.2.5
@@ -1037,6 +1043,9 @@ importers:
       '@igstack/app-catalog-frontend-core':
         specifier: workspace:*
         version: link:../frontend-core
+      '@igstack/app-catalog-shared-core':
+        specifier: workspace:*
+        version: link:../shared-core
       '@tanstack/vite-config':
         specifier: 'catalog:'
         version: 0.4.3(@types/node@24.10.4)(rollup@4.54.0)(typescript@5.9.3)(vite@6.4.1(@types/node@24.10.4)(jiti@2.7.0)(lightningcss@1.30.2)(sass-embedded@1.97.1)(sass@1.97.1)(terser@5.51.2)(tsx@4.21.0)(yaml@2.9.1))
@@ -4724,8 +4733,8 @@ packages:
       react: '>=16.8'
       react-dom: '>=16.8'
 
-  '@tanstack/react-virtual@3.13.13':
-    resolution: {integrity: sha512-4o6oPMDvQv+9gMi8rE6gWmsOjtUZUYIJHv7EB+GblyYdi8U6OqLl8rhHWIUZSL1dUU2dPwTdTgybCKf9EjIrQg==}
+  '@tanstack/react-virtual@3.14.21':
+    resolution: {integrity: sha512-wWE/ZJDNNDp18JHWy7n5PQooqerHePVkEEu6Op0twKQ2InF9DPhYMQptQY0syDEviMd3/r8D0OUvKJibDGm9HQ==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -4814,8 +4823,8 @@ packages:
     resolution: {integrity: sha512-ldZXEhOBb8Is7xLs01fR3YEc3DERiz5silj8tnGkFZytt1abEvl/GhUmCE0PMLaMPTa3Jk4HbKmRlHmu+gCftg==}
     engines: {node: '>=12'}
 
-  '@tanstack/virtual-core@3.13.13':
-    resolution: {integrity: sha512-uQFoSdKKf5S8k51W5t7b2qpfkyIbdHMzAn+AMQvHPxKUPeo1SsGaA4JRISQT87jm28b7z8OEqPcg1IOZagQHcA==}
+  '@tanstack/virtual-core@3.19.6':
+    resolution: {integrity: sha512-CsTW892z23gy7IyxYTTorVu1uZWB+0N349rSMgKz4rFLPpLza7F7TpcCKeI5iUAwYQCt8QUlOU67J+KXCxtpGw==}
 
   '@tanstack/virtual-file-routes@1.162.0':
     resolution: {integrity: sha512-uhOeFyxLcU41HzvrxsGpiWdcMbScY1EDgbZ5K7DVRMYInbLYWAC0EA/kx9wXAoSM8q82bUG2hRl8+EAjE6XAbA==}
@@ -14882,9 +14891,9 @@ snapshots:
       react: 19.1.2
       react-dom: 19.1.2(react@19.1.2)
 
-  '@tanstack/react-virtual@3.13.13(react-dom@19.1.2(react@19.1.2))(react@19.1.2)':
+  '@tanstack/react-virtual@3.14.21(react-dom@19.1.2(react@19.1.2))(react@19.1.2)':
     dependencies:
-      '@tanstack/virtual-core': 3.13.13
+      '@tanstack/virtual-core': 3.19.6
       react: 19.1.2
       react-dom: 19.1.2(react@19.1.2)
 
@@ -15014,7 +15023,7 @@ snapshots:
 
   '@tanstack/table-core@8.21.3': {}
 
-  '@tanstack/virtual-core@3.13.13': {}
+  '@tanstack/virtual-core@3.19.6': {}
 
   '@tanstack/virtual-file-routes@1.162.0': {}
 

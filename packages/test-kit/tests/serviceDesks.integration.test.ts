@@ -5,7 +5,7 @@ import '@testing-library/jest-dom/vitest'
 
 import { given, magazine } from '@igstack/app-catalog-test-kit'
 
-// #9: a header toggle (Apps | Service Desks) + a /service-desks route showing a
+// #9: a header tab (Catalog | Service Desks) + a /service-desks route showing a
 // searchable table of all type:'service' approval methods with open links.
 // magazine.full() seeds two service desks (Support Portal, Ops Portal) and
 // two custom methods (Manager Approval, Self-Service) which must NOT appear.
@@ -103,16 +103,16 @@ describe('Service Desks view (#9)', () => {
     })
   })
 
-  it('toggles between Apps and Service Desks from the header', async () => {
+  it('toggles between Catalog and Service Desks from the header', async () => {
     const { router } = await given(magazine.full(), { initialRoute: '/' })
 
-    // Apps view first — the catalog search box is present.
+    // Catalog view first — the catalog search box is present.
     await waitFor(() =>
       expect(screen.getByLabelText('Search apps')).toBeInTheDocument(),
     )
 
     const user = userEvent.setup()
-    await user.click(screen.getByRole('link', { name: 'Service Desks' }))
+    await user.click(screen.getByRole('link', { name: /^Service Desks/ }))
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/service-desks')
@@ -120,7 +120,7 @@ describe('Service Desks view (#9)', () => {
     expect(screen.getByLabelText('Search service desks')).toBeInTheDocument()
   })
 
-  it('autofocuses the search input when the view loads (parity with Apps)', async () => {
+  it('autofocuses the search input when the view loads (parity with Catalog)', async () => {
     await given(magazine.full(), {
       initialRoute: '/service-desks',
     })
@@ -130,28 +130,28 @@ describe('Service Desks view (#9)', () => {
   })
 })
 
-// #23: the header "Apps" tab must stay active while viewing an app-detail route
-// (/app/<slug>) — the detail panel is part of the Apps view. Previously the Apps
+// #23: the header "Catalog" tab must stay active while viewing an app-detail route
+// (/app/<slug>) — the detail panel is part of the Catalog view. Previously the Catalog
 // link was active only on the exact "/" route, so /app/taskflow highlighted
 // neither tab.
-describe('ViewToggle active tab (#23)', () => {
-  const appsTab = () => screen.getByRole('link', { name: 'Apps' })
-  const deskTab = () => screen.getByRole('link', { name: 'Service Desks' })
+describe('Section tab active state (#23)', () => {
+  const catalogTab = () => screen.getByRole('link', { name: /^Catalog/ })
+  const deskTab = () => screen.getByRole('link', { name: /^Service Desks/ })
 
-  it('activates the Apps tab on an app-detail route (/app/$slug)', async () => {
+  it('activates the Catalog tab on an app-detail route (/app/$slug)', async () => {
     await given(magazine.full(), { initialRoute: '/app/taskflow' })
 
     await waitFor(() =>
-      expect(appsTab()).toHaveAttribute('aria-current', 'page'),
+      expect(catalogTab()).toHaveAttribute('aria-current', 'page'),
     )
     expect(deskTab()).not.toHaveAttribute('aria-current')
   })
 
-  it('activates the Apps tab on the root route', async () => {
+  it('activates the Catalog tab on the root route', async () => {
     await given(magazine.full(), { initialRoute: '/' })
 
     await waitFor(() =>
-      expect(appsTab()).toHaveAttribute('aria-current', 'page'),
+      expect(catalogTab()).toHaveAttribute('aria-current', 'page'),
     )
     expect(deskTab()).not.toHaveAttribute('aria-current')
   })
@@ -162,6 +162,6 @@ describe('ViewToggle active tab (#23)', () => {
     await waitFor(() =>
       expect(deskTab()).toHaveAttribute('aria-current', 'page'),
     )
-    expect(appsTab()).not.toHaveAttribute('aria-current')
+    expect(catalogTab()).not.toHaveAttribute('aria-current')
   })
 })

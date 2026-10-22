@@ -218,6 +218,10 @@ model DbFeedback {
   resourceId String?
   resource   DbResource? @relation(fields: [resourceId], references: [id], onDelete: Cascade)
 
+  /// Feedback about a community tool rather than a catalog resource.
+  communityToolId String?
+  communityTool   DbCommunityTool? @relation(fields: [communityToolId], references: [id], onDelete: Cascade)
+
   /// What the visitor was looking for when nothing matched. Set only when resourceId is
   /// null — it is the whole substance of a new-app ask, and the thing we research.
   subject String?
@@ -228,9 +232,18 @@ model DbFeedback {
   /// widening the wordlist later cannot rename everybody's history.
   authorAlias String
 
+  /// Optional: authenticated user id when feedback is submitted by a logged-in user.
+  authorUserId String?
+  /// Optional: authenticated user's name when feedback is submitted by a logged-in user.
+  authorName String?
+
   /// Optional: a bare flag with no words is a valid signal, and the cheapest one a
   /// passing visitor can send.
   body String?
+
+  /// 'marker' for a row the system writes when a community tool changes: it has no
+  /// author to edit or withdraw it. Null for a visitor's own feedback.
+  kind String?
 
   attachments DbFeedbackAttachment[]
 
@@ -248,6 +261,7 @@ model DbFeedback {
   updatedAt DateTime @updatedAt
 
   @@index([resourceId, createdAt])
+  @@index([communityToolId, createdAt])
   @@index([authorHash])
   /// Drives the unreviewed counts on both surfaces: open items, newest first.
   @@index([status, createdAt])
@@ -351,4 +365,151 @@ model SourceReference {
   changeHistory       Json?
 
   @@unique([resourceId, url])
+}
+
+// ========== Community Tools Models ==========
+
+enum CommunityTagKind {
+  app
+  topic
+}
+
+/// A community-contributed tool or resource shared by catalog users.
+model DbCommunityTool {
+  id String @id @default(cuid())
+
+  slug String @unique
+  name String
+  url  String
+  /// Lowercase hostname extracted from url for fast host-based queries.
+  host String
+
+  summary       String
+  descriptionMd String
+
+  addedByUserId String
+  addedByName   String
+
+  /// Person slugs who maintain this tool.
+  owners DbCommunityToolOwner[]
+
+  /// Owners who are not in the person directory, by name only.
+  namedOwners DbCommunityToolNamedOwner[]
+
+  /// Categorization tags (app associations and topic labels).
+  tags DbCommunityToolTag[]
+
+  /// View tracking for ranking.
+  views DbCommunityToolView[]
+
+  /// User pins for personalized ordering.
+  pins DbCommunityToolPin[]
+
+  /// One per person who liked it.
+  likes DbCommunityToolLike[]
+
+  /// Feedback comments about this tool.
+  feedback DbFeedback[]
+
+  /// When a maintainer last reviewed this entry.
+  reviewedAt     DateTime?
+  reviewedByName String?
+
+  /// Last automated check for availability.
+  lastCheckAt DateTime?
+
+  /// When the tool first started failing checks (null when healthy).
+  failingSince DateTime?
+
+  /// When archived (null when active).
+  archivedAt     DateTime?
+  archivedReason String?
+  /// 'auto' for automated archival after prolonged failure, or user name for manual archival.
+  archivedBy     String?
+
+  /// Asset references for screenshots and favicon.
+  screenshotAssetId String?
+  faviconAssetId    String?
+  /// When screenshots were last captured.
+  capturedAt        DateTime?
+  /// When the site itself last changed: its page's Last-Modified, at the last visit that sent one.
+  siteUpdatedAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([host])
+  @@index([createdAt])
+}
+
+/// Many-to-many join between community tools and their owners.
+model DbCommunityToolOwner {
+  toolId     String
+  tool       DbCommunityTool @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  personSlug String
+
+  @@id([toolId, personSlug])
+}
+
+/// A signed-in person liked the tool; their name is kept for "Liked by".
+model DbCommunityToolLike {
+  toolId    String
+  tool      DbCommunityTool @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  userId    String
+  userName  String
+  createdAt DateTime        @default(now())
+
+  @@id([toolId, userId])
+}
+
+/// An owner outside the person directory: shown by name, never an editor.
+model DbCommunityToolNamedOwner {
+  toolId String
+  tool   DbCommunityTool @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  name   String
+
+  @@id([toolId, name])
+}
+
+/// Tags attached to community tools (app associations and topics).
+model DbCommunityToolTag {
+  toolId String
+  tool   DbCommunityTool @relation(fields: [toolId], references: [id], onDelete: Cascade)
+
+  kind  CommunityTagKind
+  value String
+
+  @@id([toolId, kind, value])
+  @@index([kind, value])
+}
+
+/// View tracking for community tools (one row per viewer per tool per day).
+model DbCommunityToolView {
+  toolId String
+  tool   DbCommunityTool @relation(fields: [toolId], references: [id], onDelete: Cascade)
+
+  /// Hash of actor id for anonymous view tracking.
+  actorHash String
+  /// Optional user id for authenticated views.
+  userId    String?
+
+  /// Day this view occurred (UTC date, time truncated).
+  day DateTime @db.Date
+  /// Exact timestamp of the view.
+  at  DateTime @default(now())
+
+  @@id([toolId, actorHash, day])
+  @@index([userId, at])
+}
+
+/// User-specific tool pins for personalized ordering.
+model DbCommunityToolPin {
+  userId String
+  toolId String
+  tool   DbCommunityTool @relation(fields: [toolId], references: [id], onDelete: Cascade)
+
+  /// Position in the user's pinned list (lower = higher in list).
+  position Int
+
+  @@id([userId, toolId])
 }

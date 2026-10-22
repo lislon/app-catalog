@@ -52,7 +52,10 @@ function mount(plugins: AcPlugin[] | undefined) {
   return render(
     <ExtensionsContext value={plugins}>
       <Card onClose={onCardClose}>
-        <CommunitySection appSlug="test-app" appName="Test App" />
+        <CommunitySection
+          target={{ resourceSlug: 'test-app' }}
+          appName="Test App"
+        />
       </Card>
     </ExtensionsContext>,
   )

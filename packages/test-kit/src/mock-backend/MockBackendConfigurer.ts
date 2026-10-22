@@ -1,10 +1,12 @@
 import type {
   AppApprovalMethod,
   GroupingTagDefinition,
+  Person,
   Resource,
 } from '@igstack/app-catalog-backend-core'
 import type { MockDb } from './MockDb'
 import type { MockUserContext, UserConfig } from './MockUserContext'
+import type { MockCommunityToolsStore } from './MockCommunityToolsStore'
 
 let counter = 0
 
@@ -21,6 +23,7 @@ export class MockBackendConfigurer {
   constructor(
     readonly db: MockDb,
     readonly userContext: MockUserContext,
+    readonly communityTools: MockCommunityToolsStore,
   ) {}
 
   withApp(overrides?: Partial<Resource>): Resource {
@@ -90,6 +93,12 @@ export class MockBackendConfigurer {
 
   withUser(overrides: Partial<UserConfig>): void {
     this.userContext.setUser(overrides)
+  }
+
+  /** A person-directory entry: the owners a community tool can name. */
+  withPerson(person: Person): Person {
+    this.db.persons.push(person)
+    return person
   }
 }
 

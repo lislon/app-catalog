@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogTitle } from '~/ui/dialog'
 import { VisuallyHidden } from '~/ui/visually-hidden'
 
 export interface ScreenshotGalleryProps {
-  app: Resource
+  /** Names the images; an entry, or anything else with a display name. */
+  app: Pick<Resource, 'displayName' | 'abbreviation'>
   screenshotIds: string[]
   initialIndex?: number
   open: boolean

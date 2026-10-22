@@ -50,6 +50,7 @@ const note = {
   reviewedAt: null as string | null,
   editedAt: null,
   isMine: false,
+  isSystem: false,
   canEditUntil: null as string | null,
   status: null as string | null,
   reviewerReply: null as string | null,
@@ -58,7 +59,7 @@ const note = {
 function mount(claims: Claim[] = []) {
   render(
     <CommunitySection
-      appSlug="example-app"
+      target={{ resourceSlug: 'example-app' }}
       appName="Example App"
       claims={claims}
     />,
@@ -190,7 +191,10 @@ describe('CommunitySection — the Comments feed', () => {
   it('offers Dismiss on your own open note, and not once it is answered', () => {
     state.items = [{ ...note, isMine: true }]
     const { unmount } = render(
-      <CommunitySection appSlug="example-app" appName="Example App" />,
+      <CommunitySection
+        target={{ resourceSlug: 'example-app' }}
+        appName="Example App"
+      />,
     )
     expect(screen.getByRole('button', { name: 'Dismiss' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull()
@@ -262,7 +266,10 @@ describe('CommunitySection — the Comments feed', () => {
       isPending: true,
     } as never)
     const { unmount } = render(
-      <CommunitySection appSlug="example-app" appName="Example App" />,
+      <CommunitySection
+        target={{ resourceSlug: 'example-app' }}
+        appName="Example App"
+      />,
     )
     expect(screen.getByText('Loading comments…')).toBeInTheDocument()
     unmount()

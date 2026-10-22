@@ -2,6 +2,7 @@ import type {
   AppApprovalMethod,
   AppCatalogData,
   GroupingTagDefinition,
+  Person,
   Resource,
 } from '@igstack/app-catalog-backend-core'
 
@@ -9,6 +10,7 @@ export class MockDb {
   resources: Resource[] = []
   tagsDefinitions: GroupingTagDefinition[] = []
   approvalMethods: AppApprovalMethod[] = []
+  persons: Person[] = []
 
   upsertResource(resource: Resource): void {
     this.resources = [
@@ -59,7 +61,7 @@ export class MockDb {
       resources: this.resources,
       tagsDefinitions: this.tagsDefinitions,
       approvalMethods: this.approvalMethods,
-      persons: [],
+      persons: this.persons,
       groups: [],
     }
   }

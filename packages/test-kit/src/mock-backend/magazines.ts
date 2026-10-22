@@ -1,6 +1,9 @@
 import type { MockBackendConfigurer } from './MockBackendConfigurer'
+import { MOCK_NOW } from './MockCommunityToolsStore'
 import type { BrowserStateCfg } from './BrowserStateCfg'
 import type { NetworkConfigurerCfg } from '../mock-network/NetworkConfigurerCfg'
+
+const DAY_MS = 24 * 60 * 60 * 1000
 
 // ---------------------------------------------------------------------------
 // Core types
@@ -335,6 +338,85 @@ function subResourcesMagazine(postConfigure?: Magazine): Magazine {
 }
 
 // ---------------------------------------------------------------------------
+// Community tools magazine
+// ---------------------------------------------------------------------------
+
+/** The page the add-a-tool scenarios paste: the capture browser reads its title. */
+export const QC_HEATMAP_URL = 'https://qc-heatmap-9f8e.pages.example.com/'
+
+function communityMagazine(postConfigure?: Magazine): Magazine {
+  return (ctx) => {
+    const { backendCfg } = ctx
+    const tools = backendCfg.communityTools
+
+    backendCfg.withApp({
+      slug: 'order-service',
+      displayName: 'Order Service',
+      description: 'Order management and tracking',
+      appUrl: 'https://orders.pages.example.com/',
+    })
+
+    // A directory slug is the person's email: that is what makes the signed-in owner an owner.
+    const person = (firstName: string, lastName: string) => {
+      const email = `${firstName}.${lastName}@example.com`.toLowerCase()
+      return backendCfg.withPerson({ slug: email, email, firstName, lastName })
+    }
+    const dana = person('Dana', 'Lee')
+    const sam = person('Sam', 'Ortiz')
+    const robin = person('Robin', 'Park')
+
+    tools.enable({ captureHosts: ['example.com'] })
+    tools.withPage(QC_HEATMAP_URL, 'QC Heatmap')
+
+    tools.seed({
+      name: 'Ops Runbook',
+      url: 'https://ops-runbook-1a2b.pages.example.com/',
+      summary: 'What to do when a nightly job fails',
+      descriptionMd:
+        'Open the job that failed, then follow the steps for its error code.',
+      ownerSlugs: [dana.slug],
+      tags: [{ kind: 'topic', value: 'runbook' }],
+      screenshotId: 'ops-runbook-shot',
+      capturedAt: MOCK_NOW,
+      createdAt: new Date(MOCK_NOW.getTime() - 200 * DAY_MS),
+      views30d: 412,
+      viewsAll: 1203,
+    })
+    tools.seed({
+      name: 'Kit Rules Playground',
+      url: 'https://kit-rules-sandbox-7c01.pages.example.com/',
+      summary: 'Try a kit rule change before you ship it',
+      descriptionMd:
+        'Paste a rule, pick a sample kit, and see what it decides.',
+      ownerSlugs: [sam.slug],
+      tags: [{ kind: 'topic', value: 'sandbox' }],
+      screenshotId: 'kit-rules-shot',
+      capturedAt: MOCK_NOW,
+      createdAt: new Date(MOCK_NOW.getTime() - 40 * DAY_MS),
+      views30d: 288,
+      viewsAll: 288,
+    })
+    tools.seed({
+      name: 'Old Tracker',
+      url: 'https://old-tracker-3d4e.pages.example.com/',
+      summary: 'The issue list from before the move',
+      descriptionMd: 'Read-only. Search by the old issue number.',
+      ownerSlugs: [robin.slug],
+      screenshotId: 'old-tracker-shot',
+      capturedAt: MOCK_NOW,
+      createdAt: new Date(MOCK_NOW.getTime() - 400 * DAY_MS),
+      views30d: 22,
+      viewsAll: 22,
+    })
+
+    // The features sign in explicitly, so the catalog starts anonymous.
+    backendCfg.withUser({ isAuthenticated: false })
+
+    postConfigure?.(ctx)
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Magazine entries
 // ---------------------------------------------------------------------------
 
@@ -358,6 +440,9 @@ export const magazine = {
   /** 1 parent with 47 sub-resources + 1 unrelated app — accepts optional post-configurer */
   subResources: (postConfigure?: Magazine) =>
     subResourcesMagazine(postConfigure),
+
+  /** Community tools catalog with 3 tools, 3 persons, and 1 official app — accepts optional post-configurer */
+  community: (postConfigure?: Magazine) => communityMagazine(postConfigure),
 
   /** Inline custom configurer — pass-through for ad-hoc tests */
   custom: (fn: Magazine): Magazine => fn,
