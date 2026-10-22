@@ -12,6 +12,7 @@ import { computeCanEdit } from './service'
 type DbToolWithRelations = Prisma.DbCommunityToolGetPayload<{
   include: {
     owners: true
+    namedOwners: true
     tags: true
   }
 }>
@@ -33,6 +34,8 @@ export async function toView(
     }
     return { slug: o.personSlug, name: o.personSlug }
   })
+  // Outside the directory: a name to ask for, never an editor.
+  for (const o of tool.namedOwners) owners.push({ slug: null, name: o.name })
 
   const tags: CommunityTag[] = tool.tags.map((t) => ({
     kind: t.kind,

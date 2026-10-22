@@ -393,6 +393,9 @@ model DbCommunityTool {
   /// Person slugs who maintain this tool.
   owners DbCommunityToolOwner[]
 
+  /// Owners who are not in the person directory, by name only.
+  namedOwners DbCommunityToolNamedOwner[]
+
   /// Categorization tags (app associations and topic labels).
   tags DbCommunityToolTag[]
 
@@ -441,6 +444,15 @@ model DbCommunityToolOwner {
   personSlug String
 
   @@id([toolId, personSlug])
+}
+
+/// An owner outside the person directory: shown by name, never an editor.
+model DbCommunityToolNamedOwner {
+  toolId String
+  tool   DbCommunityTool @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  name   String
+
+  @@id([toolId, name])
 }
 
 /// Tags attached to community tools (app associations and topics).

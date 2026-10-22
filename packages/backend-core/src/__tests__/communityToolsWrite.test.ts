@@ -53,6 +53,7 @@ const dbTool = {
   faviconAssetId: null,
   capturedAt: null,
   owners: [{ toolId: 'tool-1', personSlug: 'ann@example.com' }],
+  namedOwners: [] as { toolId: string; name: string }[],
   tags: [],
 }
 
@@ -62,6 +63,7 @@ const input = {
   summary: 'Does a thing',
   descriptionMd: 'Longer words',
   ownerSlugs: ['ann@example.com'],
+  ownerNames: [] as string[],
   tags: [],
 }
 
@@ -142,6 +144,50 @@ describe('Community tools write service', () => {
         }),
       }),
     )
+  })
+
+  it('add stores an owner outside the directory by name', async () => {
+    db.dbCommunityTool.findUnique
+      .mockResolvedValueOnce(null) // the slug is free
+      .mockResolvedValue(dbTool)
+    await write.addTool(
+      write.toolInputSchema.parse({
+        ...input,
+        ownerNames: [' Kim Outside ', 'Kim Outside'],
+      }),
+      { user: ann, isAdmin: false, actor: actorFor('user-1') },
+      noCapture,
+      NOW,
+    )
+    expect(db.dbCommunityTool.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          owners: { create: [{ personSlug: 'ann@example.com' }] },
+          namedOwners: { create: [{ name: 'Kim Outside' }] },
+        }),
+      }),
+    )
+  })
+
+  it('add takes named owners alone, but one owner at least and five in all', async () => {
+    const writer = { user: ann, isAdmin: false, actor: actorFor('user-1') }
+    db.dbCommunityTool.findUnique.mockResolvedValue(dbTool)
+    const add = (ownerSlugs: string[], ownerNames: string[]) =>
+      write.addTool(
+        { ...input, ownerSlugs, ownerNames },
+        writer,
+        noCapture,
+        NOW,
+      )
+    await expect(add([], [])).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+    await expect(
+      add(['ann@example.com'], ['A', 'B', 'C', 'D', 'E']),
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST' })
+    expect(db.dbCommunityTool.create).not.toHaveBeenCalled()
+    db.dbCommunityTool.findUnique.mockResolvedValueOnce(null)
+    db.dbPerson.findMany.mockResolvedValueOnce([])
+    await add([], ['Kim Outside'])
+    expect(db.dbCommunityTool.create).toHaveBeenCalled()
   })
 
   it('add rejects non-http url', async () => {

@@ -1478,6 +1478,22 @@ When('I add {string} as owner', async (_world, name: string) => {
   await waitFor(() => expect(chipsOf(/^Owners/)).toContain(name))
 })
 
+When(
+  'I add {string}, who is not in the people list, as owner',
+  async (_world, name: string) => {
+    const user = userEvent.setup()
+    await user.click(await waitFor(() => formField(/^Owners/)))
+    await user.keyboard(name)
+    const option = await within(toolForm()).findByRole('option', {
+      // The typed part is highlighted, which spaces it in the name.
+      name: new RegExp(`^Add “\\s*${name}\\s*”`),
+    })
+    expect(option.textContent).toContain('Not in the people list')
+    await user.click(option)
+    await waitFor(() => expect(chipsOf(/^Owners/)).toContain(name))
+  },
+)
+
 Then('the owners are {string}', async (_world, names: string) => {
   await waitFor(() => {
     expect(chipsOf(/^Owners/).join(', ')).toBe(names)

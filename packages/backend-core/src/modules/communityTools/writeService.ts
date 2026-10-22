@@ -21,7 +21,13 @@ export const toolInputSchema = z.object({
   name: z.string().trim().min(1).max(80),
   summary: z.string().trim().max(160),
   descriptionMd: z.string().max(5000),
-  ownerSlugs: z.array(z.string()).min(1).max(5),
+  ownerSlugs: z.array(z.string()).max(5),
+  /** Owners outside the person directory, by name. */
+  ownerNames: z
+    .array(z.string().trim().min(1).max(80))
+    .max(5)
+    .default([])
+    .transform((names) => Array.from(new Set(names))),
   // Topics are stored the way the next person will type them, each tag once;
   // the caps hold for what is stored.
   tags: z
@@ -38,8 +44,9 @@ export const toolInputSchema = z.object({
         .max(8),
     ),
 })
-
 export type ToolInput = z.output<typeof toolInputSchema>
+
+const MAX_OWNERS = 5
 
 /** The signed-in person making the change. */
 export interface Writer {
@@ -76,7 +83,7 @@ function requireHost(url: string): string {
 async function requireTool(slug: string) {
   const tool = await getDbClient().dbCommunityTool.findUnique({
     where: { slug },
-    include: { owners: true, tags: true },
+    include: { owners: true, namedOwners: true, tags: true },
   })
   if (!tool) {
     throw new TRPCError({ code: 'NOT_FOUND', message: 'Tool not found' })
@@ -96,8 +103,19 @@ async function requireEditor(
   }
 }
 
-async function requireOwnersExist(ownerSlugs: string[]) {
-  const unique = Array.from(new Set(ownerSlugs))
+/**
+ * The owners as stored: directory people, who must exist, and names of people
+ * outside it. One owner at least, of either kind, and five in all.
+ */
+async function requireOwners(input: ToolInput) {
+  const unique = Array.from(new Set(input.ownerSlugs))
+  const count = unique.length + input.ownerNames.length
+  if (count < 1 || count > MAX_OWNERS) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `A tool has 1 to ${MAX_OWNERS} owners`,
+    })
+  }
   const found = await getDbClient().dbPerson.findMany({
     where: { slug: { in: unique } },
     select: { slug: true },
@@ -108,7 +126,7 @@ async function requireOwnersExist(ownerSlugs: string[]) {
       message: 'Every owner must be in the person directory',
     })
   }
-  return unique
+  return { ownerSlugs: unique, ownerNames: input.ownerNames }
 }
 
 function slugify(name: string): string {
@@ -233,7 +251,7 @@ export async function addTool(
   now: Date,
 ): Promise<CommunityTool> {
   const host = requireHost(input.url)
-  const ownerSlugs = await requireOwnersExist(input.ownerSlugs)
+  const { ownerSlugs, ownerNames } = await requireOwners(input)
   const slug = await freeSlug(input.name)
 
   const created = await getDbClient().dbCommunityTool.create({
@@ -247,6 +265,7 @@ export async function addTool(
       addedByUserId: writer.user.id,
       addedByName: writer.user.name,
       owners: { create: ownerSlugs.map((personSlug) => ({ personSlug })) },
+      namedOwners: { create: ownerNames.map((name) => ({ name })) },
       tags: { create: input.tags },
     },
   })
@@ -265,7 +284,7 @@ export async function editTool(
   const tool = await requireTool(input.slug)
   await requireEditor(tool, writer)
   const host = requireHost(input.url)
-  const ownerSlugs = await requireOwnersExist(input.ownerSlugs)
+  const { ownerSlugs, ownerNames } = await requireOwners(input)
 
   const sameSet = (a: string[], b: string[]) =>
     a.length === b.length && a.every((x) => b.includes(x))
@@ -275,9 +294,15 @@ export async function editTool(
     tool.url !== input.url && 'url',
     tool.summary !== input.summary && 'summary',
     tool.descriptionMd !== input.descriptionMd && 'description',
-    !sameSet(
-      tool.owners.map((o) => o.personSlug),
-      ownerSlugs,
+    !(
+      sameSet(
+        tool.owners.map((o) => o.personSlug),
+        ownerSlugs,
+      ) &&
+      sameSet(
+        tool.namedOwners.map((o) => o.name),
+        ownerNames,
+      )
     ) && 'owners',
     !sameSet(tool.tags.map(tagKey), input.tags.map(tagKey)) && 'tags',
   ].filter((f): f is string => !!f)
@@ -309,6 +334,10 @@ export async function editTool(
         owners: {
           deleteMany: {},
           create: ownerSlugs.map((personSlug) => ({ personSlug })),
+        },
+        namedOwners: {
+          deleteMany: {},
+          create: ownerNames.map((name) => ({ name })),
         },
         tags: { deleteMany: {}, create: input.tags },
       },

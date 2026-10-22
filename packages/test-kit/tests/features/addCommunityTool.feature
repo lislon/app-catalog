@@ -44,6 +44,16 @@ Feature: Adding a tool nobody listed
       And I paste "https://qc-heatmap-9f8e.pages.example.com/"
       Then the owners are "Robin Park"
 
+    Scenario: An owner who is not in the people list
+      When I choose to add a tool
+      And I paste "https://qc-heatmap-9f8e.pages.example.com/"
+      And I add "Kim Outside", who is not in the people list, as owner
+      Then the owners are "Robin Park, Kim Outside"
+      When I publish
+      Then I am told it is live now
+      When I open the card of "QC Heatmap"
+      Then the card shows "Kim Outside" as owner
+
     Scenario: The description can be read before it is published
       When I choose to add a tool
       And I paste "https://qc-heatmap-9f8e.pages.example.com/"

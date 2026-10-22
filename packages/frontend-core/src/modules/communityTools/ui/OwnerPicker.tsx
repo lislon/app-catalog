@@ -1,4 +1,5 @@
 import type { Person } from '@igstack/app-catalog-backend-core'
+import type { PersonRef } from '@igstack/app-catalog-shared-core'
 import { Search, X } from 'lucide-react'
 import { useId, useState } from 'react'
 import { cn } from '~/lib/utils'
@@ -218,8 +219,18 @@ export function personName(person: Person): string {
 
 const MAX_OWNERS = 5
 const MAX_SUGGESTIONS = 6
+const OWNER_NAME_MAX = 80
+/** The option that adds the typed text as an owner outside the directory. */
+const NAMED = 'named:'
 
-/** Owners from the person directory: search by name or email, chips, remove. */
+function ownerKey(owner: PersonRef): string {
+  return owner.slug ?? `${NAMED}${owner.name}`
+}
+
+/**
+ * Owners from the person directory, searched by name or email, and people it
+ * does not know, by name: chips, remove.
+ */
 export function OwnerPicker({
   id,
   persons,
@@ -231,28 +242,25 @@ export function OwnerPicker({
 }: {
   id: string
   persons: Person[]
-  /** Person slugs, in the order they were added. */
-  value: string[]
-  onChange: (slugs: string[]) => void
+  /** In the order they were added; `slug` is null outside the directory. */
+  value: PersonRef[]
+  onChange: (owners: PersonRef[]) => void
   invalid?: boolean
   describedBy?: string
   disabled?: boolean
 }) {
-  const nameOf = (slug: string) => {
-    const person = persons.find((p) => p.slug === slug)
-    return person ? personName(person) : slug
-  }
   const full = value.length >= MAX_OWNERS
+  const taken = new Set(value.map(ownerKey))
 
   return (
     <SuggestInput
       id={id}
-      chips={value.map((slug) => ({
-        key: slug,
-        label: nameOf(slug),
-        icon: <PersonAvatar name={nameOf(slug)} />,
+      chips={value.map((owner) => ({
+        key: ownerKey(owner),
+        label: owner.name,
+        icon: <PersonAvatar name={owner.name} />,
       }))}
-      onRemove={(slug) => onChange(value.filter((s) => s !== slug))}
+      onRemove={(key) => onChange(value.filter((o) => ownerKey(o) !== key))}
       placeholder={full ? 'Five owners at most' : 'Add a person'}
       disabled={disabled}
       atLimit={full}
@@ -260,8 +268,8 @@ export function OwnerPicker({
       describedBy={describedBy}
       suggest={(query) => {
         const words = query.toLowerCase().split(/\s+/)
-        return persons
-          .filter((p) => !value.includes(p.slug))
+        const people = persons
+          .filter((p) => !taken.has(p.slug))
           .filter((p) => {
             const text = `${personName(p)} ${p.email ?? p.slug}`.toLowerCase()
             return words.every((w) => text.includes(w))
@@ -273,8 +281,31 @@ export function OwnerPicker({
             sub: p.email ?? p.slug,
             icon: <PersonAvatar name={personName(p)} />,
           }))
+        // Someone the directory does not know is still someone to ask.
+        const name = query.trim().slice(0, OWNER_NAME_MAX)
+        const known = people.some(
+          (p) => p.label.toLowerCase() === name.toLowerCase(),
+        )
+        if (known || taken.has(`${NAMED}${name}`)) return people
+        return [
+          ...people,
+          {
+            key: `${NAMED}${name}`,
+            label: `Add “${name}”`,
+            sub: 'Not in the people list',
+            icon: <PersonAvatar name={name} />,
+          },
+        ]
       }}
-      onPick={(slug) => onChange([...value, slug])}
+      onPick={(key) => {
+        if (key.startsWith(NAMED)) {
+          onChange([...value, { slug: null, name: key.slice(NAMED.length) }])
+          return
+        }
+        const person = persons.find((p) => p.slug === key)
+        if (person)
+          onChange([...value, { slug: key, name: personName(person) }])
+      }}
     />
   )
 }

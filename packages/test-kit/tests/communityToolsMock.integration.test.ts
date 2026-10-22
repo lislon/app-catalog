@@ -285,6 +285,45 @@ describe('the "community" catalog mock', () => {
     ])
   })
 
+  it('takes owners outside the directory by name, 1 to 5 owners in all', async () => {
+    await community(signedInAs('Robin Park', 'robin.park@example.com'))
+    const input = {
+      url: 'https://qc-heatmap-9f8e.pages.example.com/',
+      name: 'QC Heatmap',
+      summary: '',
+      descriptionMd: '',
+      tags: [],
+    }
+    const add = (ownerSlugs: string[], ownerNames: string[]) =>
+      api.communityTools.add.mutate({ ...input, ownerSlugs, ownerNames })
+
+    expect(await codeOf(add([], []))).toBe('BAD_REQUEST')
+    expect(
+      await codeOf(add(['robin.park@example.com'], ['A', 'B', 'C', 'D', 'E'])),
+    ).toBe('BAD_REQUEST')
+    expect((await add([], ['Kim Outside'])).owners).toEqual([
+      { slug: null, name: 'Kim Outside' },
+    ])
+  })
+
+  it("never lets a named owner edit, even one who shares a person's name", async () => {
+    await community(({ backendCfg }) => {
+      backendCfg.communityTools.seed({
+        name: 'Named Only',
+        url: 'https://named-only.pages.example.com/',
+        ownerNames: ['Dana Lee'],
+      })
+      backendCfg.withUser({
+        name: 'Dana Lee',
+        email: 'dana.lee@example.com',
+        isAuthenticated: true,
+      })
+    })
+    const tool = await api.communityTools.get.query({ slug: 'named-only' })
+    expect(tool.owners).toEqual([{ slug: null, name: 'Dana Lee' }])
+    expect(tool.canEdit).toBe(false)
+  })
+
   it('an edit waits for review again, and a new host starts health over', async () => {
     let store: Parameters<Magazine>[0]['backendCfg']['communityTools'] | null =
       null
@@ -306,7 +345,7 @@ describe('the "community" catalog mock', () => {
       name: before.name,
       summary: before.summary,
       descriptionMd: before.descriptionMd,
-      ownerSlugs: before.owners.map((o) => o.slug),
+      ownerSlugs: before.owners.flatMap((o) => (o.slug ? [o.slug] : [])),
       tags: before.tags,
     })
 

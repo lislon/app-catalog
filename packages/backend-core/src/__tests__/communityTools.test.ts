@@ -45,6 +45,9 @@ describe('Community tools service', () => {
     dbCommunityToolOwner: {
       findMany: vi.fn(),
     },
+    dbCommunityToolNamedOwner: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
     dbCommunityToolTag: {
       findMany: vi.fn(),
     },
@@ -178,6 +181,7 @@ describe('Community tools service', () => {
       mockDb.dbCommunityToolView.findMany = vi.fn().mockResolvedValue(views)
       mockDb.dbCommunityToolOwner.findMany = vi.fn().mockResolvedValue([])
       mockDb.dbCommunityToolTag.findMany = vi.fn().mockResolvedValue([])
+      mockDb.dbCommunityToolNamedOwner.findMany = vi.fn().mockResolvedValue([])
       mockDb.dbPerson.findMany = vi.fn().mockResolvedValue([])
       mockDb.dbCommunityToolView.count = vi.fn().mockResolvedValue(0)
 
@@ -228,6 +232,7 @@ describe('Community tools service', () => {
             archivedBy: null,
             archivedReason: null,
             owners: [],
+            namedOwners: [],
             tags: [],
           },
         },
@@ -254,6 +259,7 @@ describe('Community tools service', () => {
             archivedBy: null,
             archivedReason: null,
             owners: [],
+            namedOwners: [],
             tags: [],
           },
         },
@@ -280,6 +286,7 @@ describe('Community tools service', () => {
             archivedBy: null,
             archivedReason: null,
             owners: [],
+            namedOwners: [],
             tags: [],
           },
         },
@@ -453,6 +460,7 @@ describe('Community tools service', () => {
           archivedBy: null,
           archivedReason: null,
           owners: [],
+          namedOwners: [],
           tags: [],
         },
         {
@@ -475,6 +483,7 @@ describe('Community tools service', () => {
           archivedBy: null,
           archivedReason: null,
           owners: [],
+          namedOwners: [],
           tags: [],
         },
       ])
@@ -524,6 +533,7 @@ describe('Community tools service', () => {
         faviconAssetId: null,
         capturedAt: null,
         owners: [],
+        namedOwners: [],
         tags: [],
         ...over,
       }) as Parameters<typeof toView>[0]
@@ -542,6 +552,25 @@ describe('Community tools service', () => {
           capture,
         )
       ).capturePending
+
+    it('lists an owner outside the directory by name, with no slug', async () => {
+      const view = await toView(
+        row({
+          owners: [{ toolId: 'tool-1', personSlug: 'dana@example.com' }],
+          namedOwners: [{ toolId: 'tool-1', name: 'Kim Outside' }],
+        }),
+        new Map(),
+        { views30d: 0, viewsAll: 0 },
+        null,
+        false,
+        new Date('2024-01-15T12:00:00Z'),
+        CAPTURES,
+      )
+      expect(view.owners).toEqual([
+        { slug: 'dana@example.com', name: 'dana@example.com' },
+        { slug: null, name: 'Kim Outside' },
+      ])
+    })
 
     it('is pending for a new tool on an allowed host with a capturer', async () => {
       expect(await pending({})).toBe(true)

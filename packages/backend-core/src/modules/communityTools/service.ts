@@ -21,6 +21,7 @@ export async function listTools(
   const tools = await db.dbCommunityTool.findMany({
     include: {
       owners: true,
+      namedOwners: true,
       tags: true,
     },
   })
@@ -97,6 +98,7 @@ export async function getTool(
     where: { slug },
     include: {
       owners: true,
+      namedOwners: true,
       tags: true,
     },
   })
@@ -216,8 +218,11 @@ export async function listRecent(
     where: { toolId: { in: toolIds } },
   })
 
-  const [tags, persons] = await Promise.all([
+  const [tags, namedOwners, persons] = await Promise.all([
     db.dbCommunityToolTag.findMany({
+      where: { toolId: { in: toolIds } },
+    }),
+    db.dbCommunityToolNamedOwner.findMany({
       where: { toolId: { in: toolIds } },
     }),
     db.dbPerson.findMany({
@@ -275,6 +280,7 @@ export async function listRecent(
       const toolWithRelations = {
         ...tool,
         owners: ownerMap.get(tool.id) || [],
+        namedOwners: namedOwners.filter((o) => o.toolId === tool.id),
         tags: tagMap.get(tool.id) || [],
       }
       const counts = viewCountMap.get(tool.id) || { views30d: 0, viewsAll: 0 }
@@ -308,6 +314,7 @@ export async function listPins(
       tool: {
         include: {
           owners: true,
+          namedOwners: true,
           tags: true,
         },
       },

@@ -2,6 +2,7 @@ import type { ToolPreview } from '@igstack/app-catalog-backend-core'
 import type {
   CommunityTag,
   CommunityTool,
+  PersonRef,
 } from '@igstack/app-catalog-shared-core'
 import { TAG_VALUE_MAX, hostOf } from '@igstack/app-catalog-shared-core'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -26,7 +27,7 @@ import { useDismissable } from '~/modules/dismiss/DismissStack'
 import { Dialog, DialogContent, DialogTitle } from '~/ui/dialog'
 import { formatCardDate } from './CardScreenshot'
 import { screenshotUrl } from './FeedRow'
-import { FIELD_BAD, FIELD_BOX, OwnerPicker } from './OwnerPicker'
+import { FIELD_BAD, FIELD_BOX, OwnerPicker, personName } from './OwnerPicker'
 import { TagPicker } from './TagPicker'
 
 /** How long the address must sit still before the site is read. */
@@ -115,8 +116,8 @@ export function ToolFormDialog({
   const [descriptionMd, setDescriptionMd] = useState(
     initial?.descriptionMd ?? '',
   )
-  const [ownerSlugs, setOwnerSlugs] = useState<string[]>(() => {
-    if (initial) return initial.owners.map((o) => o.slug)
+  const [owners, setOwners] = useState<PersonRef[]>(() => {
+    if (initial) return initial.owners
     // The person adding it is the first owner, when the directory knows them.
     const email = user?.email?.toLowerCase()
     const me = email
@@ -125,7 +126,7 @@ export function ToolFormDialog({
             p.email?.toLowerCase() === email || p.slug.toLowerCase() === email,
         )
       : undefined
-    return me ? [me.slug] : []
+    return me ? [{ slug: me.slug, name: personName(me) }] : []
   })
   const [tags, setTags] = useState<CommunityTag[]>(initial?.tags ?? [])
   const [tab, setTab] = useState<'write' | 'preview'>('write')
@@ -214,7 +215,7 @@ export function ToolFormDialog({
     if (busy || !validAddress) return
     const found: Partial<Record<Field, string>> = {}
     if (!name.trim()) found.name = 'Give it the name colleagues call it.'
-    if (ownerSlugs.length === 0) {
+    if (owners.length === 0) {
       found.owners = 'Add at least one person to ask about it.'
     }
     setErrors(found)
@@ -228,7 +229,8 @@ export function ToolFormDialog({
       name: name.trim(),
       summary: summary.trim(),
       descriptionMd,
-      ownerSlugs,
+      ownerSlugs: owners.flatMap((o) => (o.slug ? [o.slug] : [])),
+      ownerNames: owners.flatMap((o) => (o.slug ? [] : [o.name])),
       tags,
     }
     if (mode === 'add') {
@@ -489,7 +491,7 @@ export function ToolFormDialog({
                       <OwnerPicker
                         id={ids.owners}
                         persons={persons}
-                        value={ownerSlugs}
+                        value={owners}
                         disabled={busy}
                         invalid={!!errors.owners}
                         describedBy={
@@ -497,8 +499,8 @@ export function ToolFormDialog({
                             ? errorId(ids.owners)
                             : `${ids.owners}-hint`
                         }
-                        onChange={(slugs) => {
-                          setOwnerSlugs(slugs)
+                        onChange={(next) => {
+                          setOwners(next)
                           setErrors((prev) => ({ ...prev, owners: undefined }))
                         }}
                       />

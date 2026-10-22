@@ -25,6 +25,8 @@ export interface ToolInput {
   summary: string
   descriptionMd: string
   ownerSlugs: string[]
+  /** Owners outside the person directory, by name. */
+  ownerNames?: string[]
   tags: CommunityTag[]
 }
 
@@ -40,6 +42,7 @@ interface StoredTool {
   summary: string
   descriptionMd: string
   ownerSlugs: string[]
+  ownerNames: string[]
   tags: CommunityTag[]
   addedBy: { userId: string; name: string }
   createdAt: Date
@@ -433,7 +436,7 @@ export class MockCommunityToolsStore {
   add(input: ToolInput): CommunityTool {
     const user = this.requireUser()
     const host = this.requireHost(input.url)
-    const ownerSlugs = this.requireOwnersExist(input.ownerSlugs)
+    const { ownerSlugs, ownerNames } = this.requireOwners(input)
     const tags = this.requireTags(input.tags)
     const tool = this.insert({
       name: input.name.trim(),
@@ -442,6 +445,7 @@ export class MockCommunityToolsStore {
       summary: input.summary.trim(),
       descriptionMd: input.descriptionMd,
       ownerSlugs,
+      ownerNames,
       tags,
       addedBy: { userId: user.id, name: user.name },
       // After every seeded tool, so Newest has an order inside the frozen clock.
@@ -463,7 +467,7 @@ export class MockCommunityToolsStore {
     const tool = this.requireTool(input.slug)
     this.requireEditor(tool, user)
     const host = this.requireHost(input.url)
-    const ownerSlugs = this.requireOwnersExist(input.ownerSlugs)
+    const { ownerSlugs, ownerNames } = this.requireOwners(input)
     const tags = this.requireTags(input.tags)
     const name = input.name.trim()
     const summary = input.summary.trim()
@@ -476,7 +480,10 @@ export class MockCommunityToolsStore {
       tool.url !== input.url && 'url',
       tool.summary !== summary && 'summary',
       tool.descriptionMd !== input.descriptionMd && 'description',
-      !sameSet(tool.ownerSlugs, ownerSlugs) && 'owners',
+      !(
+        sameSet(tool.ownerSlugs, ownerSlugs) &&
+        sameSet(tool.ownerNames, ownerNames)
+      ) && 'owners',
       !sameSet(tool.tags.map(tagKey), tags.map(tagKey)) && 'tags',
     ].filter((f): f is string => !!f)
 
@@ -500,6 +507,7 @@ export class MockCommunityToolsStore {
         summary,
         descriptionMd: input.descriptionMd,
         ownerSlugs,
+        ownerNames,
         tags,
       })
       this.feedback.addReviewRow(
@@ -557,6 +565,7 @@ export class MockCommunityToolsStore {
       summary: '',
       descriptionMd: '',
       ownerSlugs: [],
+      ownerNames: [],
       tags: [],
       addedBy: { userId: 'seed-user-id', name: 'A colleague' },
       createdAt: MOCK_NOW,
@@ -640,15 +649,29 @@ export class MockCommunityToolsStore {
     return host
   }
 
-  private requireOwnersExist(ownerSlugs: string[]): string[] {
-    const unique = [...new Set(ownerSlugs)]
+  /** The server's owner rules: 1 to 5 of either kind, people that exist. */
+  private requireOwners(input: ToolInput): {
+    ownerSlugs: string[]
+    ownerNames: string[]
+  } {
+    const unique = [...new Set(input.ownerSlugs)]
+    const ownerNames = [
+      ...new Set((input.ownerNames ?? []).map((n) => n.trim()).filter(Boolean)),
+    ]
+    const count = unique.length + ownerNames.length
+    if (count < 1 || count > 5) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'A tool has 1 to 5 owners',
+      })
+    }
     if (!unique.every((slug) => this.db.persons.some((p) => p.slug === slug))) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'Every owner must be in the person directory',
       })
     }
-    return unique
+    return { ownerSlugs: unique, ownerNames }
   }
 
   /** The input schema's tag rules, which the msw layer does not run. */
@@ -701,13 +724,17 @@ export class MockCommunityToolsStore {
       host: tool.host,
       summary: tool.summary,
       descriptionMd: tool.descriptionMd,
-      owners: tool.ownerSlugs.map((slug) => {
-        const person = this.db.persons.find((p) => p.slug === slug)
-        const name = person
-          ? `${person.firstName} ${person.lastName}`.trim()
-          : ''
-        return { slug, name: name || slug }
-      }),
+      owners: [
+        ...tool.ownerSlugs.map((slug) => {
+          const person = this.db.persons.find((p) => p.slug === slug)
+          const name = person
+            ? `${person.firstName} ${person.lastName}`.trim()
+            : ''
+          return { slug, name: name || slug }
+        }),
+        // Outside the directory: a name to ask for, never an editor.
+        ...tool.ownerNames.map((name) => ({ slug: null, name })),
+      ],
       addedBy: tool.addedBy,
       createdAt: tool.createdAt.toISOString(),
       tags: tool.tags,

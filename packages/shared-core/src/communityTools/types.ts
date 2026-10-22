@@ -1,5 +1,6 @@
 export interface PersonRef {
-  slug: string
+  /** Null for an owner outside the person directory, known by name only. */
+  slug: string | null
   name: string
 }
 

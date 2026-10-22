@@ -313,7 +313,7 @@ export function ToolCard({
                     <span className={LABEL}>Owners</span>
                     {tool.owners.map((owner) => (
                       <span
-                        key={owner.slug}
+                        key={owner.slug ?? `named:${owner.name}`}
                         className="inline-flex items-center gap-1.5 text-foreground"
                       >
                         <PersonAvatar name={owner.name} />
