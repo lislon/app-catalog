@@ -933,16 +933,11 @@ Then(
   'every listed tool carries the tag {string}',
   async (_world, label: string) => {
     await waitFor(() => {
-      const rows = communityList('community-feed')
-      expect(rows.length).toBeGreaterThan(0)
-      for (const row of rows) {
-        expect(
-          within(row)
-            .getAllByTestId('tool-tag')
-            .map((c) => c.textContent),
-        ).toContain(label)
-      }
-      expect(rows.length).toBeLessThan(liveToolNames().length)
+      // Rows show no tags; the server says what each listed tool carries.
+      const names = communityList('community-feed').map(rowName)
+      expect(names.length).toBeGreaterThan(0)
+      expect(namesTagged(label)).toEqual(expect.arrayContaining(names))
+      expect(names.length).toBeLessThan(liveToolNames().length)
     })
   },
 )

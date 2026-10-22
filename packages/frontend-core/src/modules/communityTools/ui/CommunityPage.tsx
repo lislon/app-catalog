@@ -434,10 +434,7 @@ export function CommunityPage({
                       }
                       pinned={pinnedSlugs.has(item.tool.slug)}
                       pinBusy={pinBusySlug === item.tool.slug}
-                      appNames={appNames}
-                      activeTag={tag}
                       onTogglePin={() => togglePin(item.tool)}
-                      onChooseTag={onTagChange}
                     />
                   </div>
                 )

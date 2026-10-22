@@ -9,7 +9,6 @@ import { cn } from '~/lib/utils'
 import { highlightTokens } from '~/util/highlightMatches'
 import { LifecycleBadge, UnreviewedBadge } from './LifecycleBadge'
 import { PinButton } from './PinButton'
-import { TagChip, tagKey, tagLabel } from './TagRow'
 
 export function screenshotUrl(id: string, size: number): string {
   return `/api/screenshots/${id}?size=${size}`
@@ -76,8 +75,6 @@ export function PersonAvatar({ name }: { name: string }) {
   )
 }
 
-const ROW_TAGS = 2
-
 const FIELD_LABELS: Record<MatchField, string> = {
   name: 'name',
   summary: 'summary',
@@ -104,10 +101,7 @@ export interface FeedRowProps {
   pinned: boolean
   /** Its pin is being saved. */
   pinBusy?: boolean
-  appNames: Record<string, string>
-  activeTag: string | undefined
   onTogglePin: () => void
-  onChooseTag: (tag: string | undefined) => void
 }
 
 /** The feed row's thumbnail: big enough to read the page title in its top left. */
@@ -128,22 +122,12 @@ export function FeedRow({
   optionId,
   pinned,
   pinBusy,
-  appNames,
-  activeTag,
   onTogglePin,
-  onChooseTag,
 }: FeedRowProps) {
   const archived = tool.lifecycle.state === 'archived'
   const cell = optionId ? 'gridcell' : undefined
   const owners = tool.owners.map((o) => o.name).join(', ')
   const opens = feedWindow === 'all' ? tool.viewsAll : tool.views30d
-  // Two chips fit beside the owner; the rest fold into "+N". The
-  // chosen tag always shows, so a filtered feed says why each row is in it.
-  const tags = [...tool.tags].sort(
-    (a, b) => Number(tagKey(b) === activeTag) - Number(tagKey(a) === activeTag),
-  )
-  const shownTags = tags.slice(0, ROW_TAGS)
-  const hiddenTags = tags.slice(ROW_TAGS)
 
   return (
     <div
@@ -202,8 +186,8 @@ export function FeedRow({
               {highlightTokens(tool.summary, tokens)}
             </div>
           )}
-          {/* The author, then the tags while they fit; they wrap under it
-            when the row is narrow. Nothing leaves the row. */}
+          {/* Tags are on the card and in the tag row above the feed; here
+            they wrapped unevenly. A tag search still says it matched one. */}
           <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 overflow-hidden text-[13px] font-semibold whitespace-nowrap text-foreground/75">
             <span className="flex min-w-0 flex-1 basis-40 items-center gap-1.5">
               {tool.owners[0] && <PersonAvatar name={tool.owners[0].name} />}
@@ -211,33 +195,6 @@ export function FeedRow({
                 {highlightTokens(owners, tokens)}
               </span>
             </span>
-            {tool.tags.length > 0 && (
-              <span className="flex shrink-0 items-center gap-1.5">
-                {shownTags.map((tag) => {
-                  const key = tagKey(tag)
-                  return (
-                    <TagChip
-                      key={key}
-                      label={tagLabel(tag, appNames)}
-                      active={key === activeTag}
-                      onClick={() =>
-                        onChooseTag(key === activeTag ? undefined : key)
-                      }
-                    />
-                  )
-                })}
-                {hiddenTags.length > 0 && (
-                  <span
-                    title={hiddenTags
-                      .map((t) => tagLabel(t, appNames))
-                      .join(', ')}
-                    className="rounded-full border border-border px-2 text-xs leading-[22px] font-semibold text-muted-foreground"
-                  >
-                    +{hiddenTags.length}
-                  </span>
-                )}
-              </span>
-            )}
           </div>
           {matched && matched.length > 0 && (
             <div
