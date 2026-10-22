@@ -26,6 +26,7 @@ import { Skeleton } from '~/ui/skeleton'
 import { CardScreenshot, formatCardDate } from './CardScreenshot'
 import { CardTitleBlock } from './CardTitleBlock'
 import { PersonAvatar } from './FeedRow'
+import { openSite } from '../siteOpen'
 import { exactDate, timeAgo } from '../timeAgo'
 import { useTimeUp } from '../useTimeUp'
 import { PinButton } from './PinButton'
@@ -185,7 +186,7 @@ export function ToolCard({
       // that opens the site.
       if (target.closest('a, button')) return
       e.preventDefault()
-      window.location.assign(tool.url)
+      openSite(tool)
     }
   }
 

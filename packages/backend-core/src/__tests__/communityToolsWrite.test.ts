@@ -50,6 +50,7 @@ const dbTool = {
   archivedAt: null,
   archivedReason: null,
   archivedBy: null,
+  unreachableSince: null,
   screenshotAssetId: null,
   faviconAssetId: null,
   capturedAt: null,
@@ -87,7 +88,7 @@ describe('Community tools write service', () => {
       dbCommunityToolOwner: {
         findMany: vi.fn().mockResolvedValue(dbTool.owners),
       },
-      dbCommunityToolView: { count: vi.fn().mockResolvedValue(0) },
+      dbCommunityToolOpen: { count: vi.fn().mockResolvedValue(0) },
       dbPerson: {
         findMany: vi
           .fn()
@@ -355,6 +356,7 @@ describe('Community tools write service', () => {
       failingSince: NOW,
       archivedAt: NOW,
       archivedBy: 'auto',
+      unreachableSince: null,
       archivedReason: 'Not working for 14 days',
     })
     const capture = vi.fn().mockResolvedValue({ ok: false, error: 'x' })
@@ -372,6 +374,7 @@ describe('Community tools write service', () => {
       lastCheckAt: null,
       archivedAt: null,
       archivedBy: null,
+      unreachableSince: null,
       archivedReason: null,
     })
     await vi.waitFor(() => expect(capture).toHaveBeenCalled())
@@ -383,6 +386,7 @@ describe('Community tools write service', () => {
       failingSince: NOW,
       archivedAt: NOW,
       archivedBy: 'Ann Owner',
+      unreachableSince: null,
     })
 
     await write.editTool(

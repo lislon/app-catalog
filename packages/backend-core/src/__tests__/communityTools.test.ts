@@ -30,10 +30,9 @@ describe('Community tools service', () => {
       findMany: vi.fn(),
       findUnique: vi.fn(),
     },
-    dbCommunityToolView: {
-      upsert: vi.fn(),
+    dbCommunityToolOpen: {
+      create: vi.fn(),
       count: vi.fn(),
-      findMany: vi.fn(),
     },
     dbCommunityToolPin: {
       findMany: vi.fn(),
@@ -87,61 +86,99 @@ describe('Community tools service', () => {
     })
   })
 
-  describe('recordView', () => {
-    it('counts view twice same day once', async () => {
-      const actor = {
-        hash: 'test-hash',
-        publicId: 'test-public',
-        alias: 'Test User',
-        kind: 'visitor' as const,
-      }
+  describe('recordOpen', () => {
+    const actor = {
+      hash: 'test-hash',
+      publicId: 'test-public',
+      alias: 'Test User',
+      kind: 'visitor' as const,
+    }
 
+    /** The open table in memory: what was written is what is counted. */
+    function opensTable() {
+      const rows: { toolId: string; actorHash: string; at: Date }[] = []
+      type Where = {
+        toolId: string
+        actorHash?: string
+        at?: { gte?: Date; gt?: Date }
+      }
+      const matches = (r: (typeof rows)[number], w: Where) =>
+        r.toolId === w.toolId &&
+        (w.actorHash === undefined || r.actorHash === w.actorHash) &&
+        (!w.at?.gte || r.at >= w.at.gte) &&
+        (!w.at?.gt || r.at > w.at.gt)
+      mockDb.dbCommunityToolOpen.create = vi.fn(
+        ({ data }: { data: (typeof rows)[number] }) => {
+          rows.push(data)
+          return Promise.resolve(data)
+        },
+      ) as never
+      mockDb.dbCommunityToolOpen.count = vi.fn(({ where }: { where: Where }) =>
+        Promise.resolve(rows.filter((r) => matches(r, where)).length),
+      ) as never
+      return rows
+    }
+
+    beforeEach(() => {
       mockDb.dbCommunityTool.findUnique = vi
         .fn()
         .mockResolvedValue({ id: 'tool-1' })
-      mockDb.dbCommunityToolView.upsert = vi.fn().mockResolvedValue({})
+    })
 
-      // Mock count to return different values for each call
-      let countCallIndex = 0
-      mockDb.dbCommunityToolView.count = vi.fn().mockImplementation(() => {
-        const results = [1, 5, 1, 5] // views30d, viewsAll for each recordView call
-        return Promise.resolve(results[countCallIndex++])
-      })
+    it('counts every open, two on the same day as two', async () => {
+      const rows = opensTable()
+      const at = new Date('2024-01-15T10:00:00Z')
 
-      // First view
-      const result1 = await service.recordView(
+      await service.recordOpen('test-slug', 'card', actor, null, at)
+      const second = await service.recordOpen(
         'test-slug',
+        'site',
         actor,
         null,
-        new Date('2024-01-15'),
+        new Date(at.getTime() + 5 * 60_000),
       )
 
-      // Second view same day
-      const result2 = await service.recordView(
+      expect(second).toEqual({ views30d: 2, viewsAll: 2 })
+      expect(rows.map((r) => (r as unknown as { kind: string }).kind)).toEqual([
+        'card',
+        'site',
+      ])
+    })
+
+    it('counts the last 30 days in views30d, every open in viewsAll', async () => {
+      const rows = opensTable()
+      rows.push({
+        toolId: 'tool-1',
+        actorHash: 'someone',
+        at: new Date('2023-12-01T00:00:00Z'),
+      })
+
+      const counts = await service.recordOpen(
         'test-slug',
+        'card',
         actor,
         null,
-        new Date('2024-01-15'),
+        new Date('2024-01-15T10:00:00Z'),
       )
 
-      // Both calls should upsert the same row (same day)
-      expect(mockDb.dbCommunityToolView.upsert).toHaveBeenCalledTimes(2)
-      const calls = vi.mocked(mockDb.dbCommunityToolView.upsert).mock.calls
-      const call1 = calls[0]?.[0]
-      const call2 = calls[1]?.[0]
+      expect(counts).toEqual({ views30d: 1, viewsAll: 2 })
+    })
 
-      // Same composite key (toolId, actorHash, day)
-      expect(call1?.where).toEqual({
-        toolId_actorHash_day: {
-          toolId: 'tool-1',
-          actorHash: 'test-hash',
-          day: new Date('2024-01-15T00:00:00.000Z'),
-        },
-      })
-      expect(call2?.where).toEqual(call1?.where)
+    it('ignores a visitor opening one tool more than 30 times a minute', async () => {
+      opensTable()
+      const at = new Date('2024-01-15T10:00:00Z')
+      let counts = { views30d: 0, viewsAll: 0 }
+      for (let i = 0; i < 35; i++) {
+        counts = await service.recordOpen(
+          'test-slug',
+          'site',
+          actor,
+          null,
+          new Date(at.getTime() + i * 1000),
+        )
+      }
 
-      expect(result1).toEqual({ views30d: 1, viewsAll: 5 })
-      expect(result2).toEqual({ views30d: 1, viewsAll: 5 })
+      expect(counts.viewsAll).toBe(30)
     })
   })
 
@@ -173,6 +210,7 @@ describe('Community tools service', () => {
             failingSince: null,
             archivedAt: null,
             archivedBy: null,
+            unreachableSince: null,
             archivedReason: null,
             owners: [],
             namedOwners: [],
@@ -203,6 +241,7 @@ describe('Community tools service', () => {
             failingSince: null,
             archivedAt: null,
             archivedBy: null,
+            unreachableSince: null,
             archivedReason: null,
             owners: [],
             namedOwners: [],
@@ -233,6 +272,7 @@ describe('Community tools service', () => {
             failingSince: null,
             archivedAt: null,
             archivedBy: null,
+            unreachableSince: null,
             archivedReason: null,
             owners: [],
             namedOwners: [],
@@ -244,7 +284,7 @@ describe('Community tools service', () => {
       ])
 
       mockDb.dbPerson.findMany = vi.fn().mockResolvedValue([])
-      mockDb.dbCommunityToolView.count = vi.fn().mockResolvedValue(0)
+      mockDb.dbCommunityToolOpen.count = vi.fn().mockResolvedValue(0)
 
       const now = new Date('2024-01-15T12:00:00Z')
       const result = await service.listPins(
@@ -410,6 +450,7 @@ describe('Community tools service', () => {
           failingSince: null,
           archivedAt: null,
           archivedBy: null,
+          unreachableSince: null,
           archivedReason: null,
           owners: [],
           namedOwners: [],
@@ -436,6 +477,7 @@ describe('Community tools service', () => {
           failingSince: new Date('2024-01-10T00:00:00Z'),
           archivedAt: null,
           archivedBy: null,
+          unreachableSince: null,
           archivedReason: null,
           owners: [],
           namedOwners: [],
@@ -446,7 +488,7 @@ describe('Community tools service', () => {
       ])
 
       mockDb.dbPerson.findMany = vi.fn().mockResolvedValue([])
-      mockDb.dbCommunityToolView.count = vi.fn().mockResolvedValue(0)
+      mockDb.dbCommunityToolOpen.count = vi.fn().mockResolvedValue(0)
 
       const result = await service.listTools(null, false, now, NO_CAPTURE)
 
@@ -486,6 +528,7 @@ describe('Community tools service', () => {
         archivedAt: null,
         archivedReason: null,
         archivedBy: null,
+        unreachableSince: null,
         screenshotAssetId: null,
         faviconAssetId: null,
         capturedAt: null,
@@ -612,6 +655,7 @@ describe('Community tools service', () => {
             failingSince: null,
             archivedAt: null,
             archivedBy: null,
+            unreachableSince: null,
           },
           { ...CAPTURES, capturer: launchFails },
           now,
@@ -655,6 +699,7 @@ describe('Community tools service', () => {
             failingSince: null,
             archivedAt: null,
             archivedBy: null,
+            unreachableSince: null,
           },
           { ...CAPTURES, capturer: { capture } },
           new Date('2024-01-15T12:00:00Z'),

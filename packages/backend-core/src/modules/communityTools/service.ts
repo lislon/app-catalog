@@ -34,28 +34,10 @@ export async function listTools(
   })
   const personMap = new Map(persons.map((p) => [p.slug, p]))
 
-  // Get view counts for all tools
-  const today = new Date(now)
-  today.setUTCHours(0, 0, 0, 0)
-  const thirtyDaysAgo = new Date(today)
-  thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 29)
-
-  const viewCounts = await Promise.all(
-    toolIds.map(async (toolId) => {
-      const [views30d, viewsAll] = await Promise.all([
-        db.dbCommunityToolView.count({
-          where: { toolId, day: { gte: thirtyDaysAgo } },
-        }),
-        db.dbCommunityToolView.count({ where: { toolId } }),
-      ])
-      return { toolId, views30d, viewsAll }
-    }),
-  )
   const viewCountMap = new Map(
-    viewCounts.map((v) => [
-      v.toolId,
-      { views30d: v.views30d, viewsAll: v.viewsAll },
-    ]),
+    await Promise.all(
+      toolIds.map(async (id) => [id, await openCounts(id, now)] as const),
+    ),
   )
 
   return Promise.all(
@@ -111,22 +93,10 @@ export async function getTool(
   })
   const personMap = new Map(persons.map((p) => [p.slug, p]))
 
-  const today = new Date(now)
-  today.setUTCHours(0, 0, 0, 0)
-  const thirtyDaysAgo = new Date(today)
-  thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 29)
-
-  const [views30d, viewsAll] = await Promise.all([
-    db.dbCommunityToolView.count({
-      where: { toolId: tool.id, day: { gte: thirtyDaysAgo } },
-    }),
-    db.dbCommunityToolView.count({ where: { toolId: tool.id } }),
-  ])
-
   return toView(
     tool,
     personMap,
-    { views30d, viewsAll },
+    await openCounts(tool.id, now),
     user,
     isAdmin,
     now,
@@ -134,54 +104,58 @@ export async function getTool(
   )
 }
 
-export async function recordView(
+/** Opens since the first of the last 30 UTC days, and ever. */
+async function openCounts(
+  toolId: string,
+  now: Date,
+): Promise<{ views30d: number; viewsAll: number }> {
+  const db = getDbClient()
+  const since = new Date(now)
+  since.setUTCHours(0, 0, 0, 0)
+  since.setUTCDate(since.getUTCDate() - 29)
+  const [views30d, viewsAll] = await Promise.all([
+    db.dbCommunityToolOpen.count({ where: { toolId, at: { gte: since } } }),
+    db.dbCommunityToolOpen.count({ where: { toolId } }),
+  ])
+  return { views30d, viewsAll }
+}
+
+/** More opens than this by one visitor of one tool in a minute are ignored. */
+const OPENS_PER_MINUTE = 30
+
+/**
+ * Counts one card open or click through to the site: every one counts, short
+ * of a visitor opening the same tool more than OPENS_PER_MINUTE times a minute.
+ */
+export async function recordOpen(
   slug: string,
+  kind: 'card' | 'site',
   actor: Actor,
   user: User | null,
   now: Date,
 ): Promise<{ views30d: number; viewsAll: number }> {
   const db = getDbClient()
+  const toolId = await requireToolId(slug)
 
-  const tool = await db.dbCommunityTool.findUnique({ where: { slug } })
-  if (!tool) {
-    throw new Error('Tool not found')
-  }
-
-  const day = new Date(now)
-  day.setUTCHours(0, 0, 0, 0)
-
-  await db.dbCommunityToolView.upsert({
+  const recent = await db.dbCommunityToolOpen.count({
     where: {
-      toolId_actorHash_day: {
-        toolId: tool.id,
-        actorHash: actor.hash,
-        day,
-      },
-    },
-    create: {
-      toolId: tool.id,
+      toolId,
       actorHash: actor.hash,
-      userId: user?.id ?? null,
-      day,
-      at: now,
-    },
-    update: {
-      at: now,
-      userId: user?.id ?? null,
+      at: { gt: new Date(now.getTime() - 60_000) },
     },
   })
-
-  const thirtyDaysAgo = new Date(day)
-  thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 29)
-
-  const [views30d, viewsAll] = await Promise.all([
-    db.dbCommunityToolView.count({
-      where: { toolId: tool.id, day: { gte: thirtyDaysAgo } },
-    }),
-    db.dbCommunityToolView.count({ where: { toolId: tool.id } }),
-  ])
-
-  return { views30d, viewsAll }
+  if (recent < OPENS_PER_MINUTE) {
+    await db.dbCommunityToolOpen.create({
+      data: {
+        toolId,
+        kind,
+        actorHash: actor.hash,
+        userId: user?.id ?? null,
+        at: now,
+      },
+    })
+  }
+  return openCounts(toolId, now)
 }
 
 export async function listPins(
@@ -218,27 +192,10 @@ export async function listPins(
   })
   const personMap = new Map(persons.map((p) => [p.slug, p]))
 
-  const today = new Date(now)
-  today.setUTCHours(0, 0, 0, 0)
-  const thirtyDaysAgo = new Date(today)
-  thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 29)
-
-  const viewCounts = await Promise.all(
-    toolIds.map(async (toolId) => {
-      const [views30d, viewsAll] = await Promise.all([
-        db.dbCommunityToolView.count({
-          where: { toolId, day: { gte: thirtyDaysAgo } },
-        }),
-        db.dbCommunityToolView.count({ where: { toolId } }),
-      ])
-      return { toolId, views30d, viewsAll }
-    }),
-  )
   const viewCountMap = new Map(
-    viewCounts.map((v) => [
-      v.toolId,
-      { views30d: v.views30d, viewsAll: v.viewsAll },
-    ]),
+    await Promise.all(
+      toolIds.map(async (id) => [id, await openCounts(id, now)] as const),
+    ),
   )
 
   return Promise.all(

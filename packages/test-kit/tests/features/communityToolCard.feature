@@ -24,6 +24,12 @@ Feature: Checking it is the right tool before going
     When I open the card of "Ops Runbook"
     Then the card says the site was updated "3 days ago"
 
+  Scenario: A site the server gets no answer from is not called broken
+    Given the server's checks of "Ops Runbook" get no answer
+    When I open the card of "Ops Runbook"
+    Then the card says the server can't reach the site
+    And the card does not say "Not working"
+
   Scenario: A site with no known update date shows none
     When I open the card of "Ops Runbook"
     Then the card does not say when the site was updated

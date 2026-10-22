@@ -51,6 +51,8 @@ interface StoredTool {
   /** The last daily visit, failed or not; null until the first one ran. */
   lastCheckAt: Date | null
   failingSince: Date | null
+  /** Since when the server's checks get no answer from the site. */
+  unreachableSince: Date | null
   archivedAt: Date | null
   archivedBy: string | null
   archivedReason: string | null
@@ -190,9 +192,16 @@ export class MockCommunityToolsStore {
     const tool = this.stored(slug)
     for (let daysAgo = days; daysAgo >= 0; daysAgo--) {
       const at = new Date(MOCK_NOW.getTime() - daysAgo * DAY_MS)
-      Object.assign(tool, nextLifecycle(tool, false, at))
+      Object.assign(tool, nextLifecycle(tool, 'failed', at))
       tool.lastCheckAt = at
     }
+  }
+
+  /** The server's checks of the site time out: no answer, which proves nothing. */
+  unreachableFromServer(slug: string): void {
+    const tool = this.stored(slug)
+    Object.assign(tool, nextLifecycle(tool, 'unreachable', MOCK_NOW))
+    tool.lastCheckAt = MOCK_NOW
   }
 
   /** An owner or a maintainer archived the tool. */
@@ -298,18 +307,19 @@ export class MockCommunityToolsStore {
     this.requireEnabled()
     const tool = this.tools.find((t) => t.slug === input.slug)
     if (!tool) throw new Error('Tool not found')
-    const day = startOfDay(MOCK_NOW)
-    // One view per visitor per day, as on the server.
-    const same = this.views.some(
-      (v) =>
-        v.toolId === tool.id &&
-        v.actorHash === VISITOR_HASH &&
-        v.day.getTime() === day.getTime(),
-    )
-    if (!same) {
-      this.views.push({ toolId: tool.id, actorHash: VISITOR_HASH, day })
-    }
+    // Every open counts, as on the server.
+    this.views.push({
+      toolId: tool.id,
+      actorHash: VISITOR_HASH,
+      day: startOfDay(MOCK_NOW),
+    })
     return this.viewCounts(tool)
+  }
+
+  /** A click through to the site counts like a card open. */
+  recordSiteOpen(input: { slug: string }): { ok: true } {
+    this.recordView(input)
+    return { ok: true }
   }
 
   /** A visit read the site's Last-Modified as `at`. */
@@ -486,6 +496,7 @@ export class MockCommunityToolsStore {
       if (host !== tool.host) {
         // A different site starts its health over, and is checked afresh.
         tool.failingSince = null
+        tool.unreachableSince = null
         tool.lastCheckAt = null
         if (tool.archivedBy === 'auto') {
           tool.archivedAt = null
@@ -568,6 +579,7 @@ export class MockCommunityToolsStore {
       // A seeded tool has been around: its first visit is behind it.
       lastCheckAt: MOCK_NOW,
       failingSince: null,
+      unreachableSince: null,
       archivedAt: null,
       archivedBy: null,
       archivedReason: null,
@@ -761,6 +773,7 @@ export class MockCommunityToolsStore {
         !tool.screenshotId &&
         !tool.lastCheckAt &&
         isCaptureAllowed(tool.url, this.captureHosts),
+      serverUnreachable: tool.unreachableSince !== null,
       canEdit: this.canEdit(tool, user),
     }
   }

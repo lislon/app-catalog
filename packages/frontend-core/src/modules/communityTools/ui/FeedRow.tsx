@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { cn } from '~/lib/utils'
 import { highlightTokens } from '~/util/highlightMatches'
+import { recordSiteOpen } from '../siteOpen'
 import { exactDate, timeAgo } from '../timeAgo'
 import { LifecycleBadge, UnreviewedBadge } from './LifecycleBadge'
 import { LikeButton } from './LikeButton'
@@ -185,6 +186,7 @@ export function FeedRow({
           <div className="flex items-center gap-2.5 text-[15.5px] font-extrabold">
             <a
               href={tool.url}
+              onClick={() => recordSiteOpen(tool.slug)}
               data-site
               data-testid="feed-row-name"
               aria-label={`${tool.name}, opens ${tool.host}`}

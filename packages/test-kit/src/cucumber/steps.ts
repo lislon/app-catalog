@@ -806,6 +806,40 @@ Then(
   },
 )
 
+/** The tool's opens on the server before the scenario clicked through. */
+let siteOpensBefore: number | null = null
+
+When(
+  'I click through to the site of {string} {int} times',
+  async (_world, name: string, times: number) => {
+    if (!current) throw new Error('No catalog opened — missing a Given step?')
+    const tools = current.backend.communityTools
+    siteOpensBefore = tools.get({ slug: tools.slugOf(name) }).viewsAll
+    const row = await waitFor(() => rowNamed('community-feed', name))
+    const link = within(row).getByTestId('feed-row-name')
+    // jsdom cannot leave the page; the click is what counts.
+    link.addEventListener('click', (e) => e.preventDefault())
+    const user = userEvent.setup()
+    for (let i = 0; i < times; i++) await user.click(link)
+  },
+)
+
+Then(
+  'the server counts {int} more opens of {string}',
+  async (_world, more: number, name: string) => {
+    if (!current || siteOpensBefore === null) {
+      throw new Error('No click through to the site yet')
+    }
+    const tools = current.backend.communityTools
+    const before = siteOpensBefore
+    await waitFor(() => {
+      expect(tools.get({ slug: tools.slugOf(name) }).viewsAll).toBe(
+        before + more,
+      )
+    })
+  },
+)
+
 When('I choose Details on {string}', async (_world, name: string) => {
   const row = await waitFor(() => rowNamed('community-feed', name))
   await userEvent
@@ -1411,6 +1445,33 @@ Then(
     expect(updated.getAttribute('title')).toMatch(EXACT_TIME)
   },
 )
+
+Given(
+  "the server's checks of {string} get no answer",
+  async (_world, name: string) => {
+    await givenOnServer(({ backendCfg }) => {
+      const tools = backendCfg.communityTools
+      tools.unreachableFromServer(tools.slugOf(name))
+    })
+  },
+)
+
+Then("the card says the server can't reach the site", async () => {
+  await waitFor(() => {
+    expect(
+      within(toolCard()).getByTestId('card-server-unreachable').textContent,
+    ).toBe(
+      "Screenshot unavailable: the catalog's server can't reach this site.",
+    )
+  })
+})
+
+Then('the card does not say {string}', async (_world, text: string) => {
+  await waitFor(() => within(toolCard()).getByTestId('card-title-block'))
+  expect(
+    within(toolCard()).getByTestId('card-title-block').textContent,
+  ).not.toContain(text)
+})
 
 Then('the card does not say when the site was updated', async () => {
   await waitFor(() => within(toolCard()).getByTestId('card-views'))

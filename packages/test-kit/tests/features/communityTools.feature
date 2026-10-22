@@ -75,6 +75,11 @@ Feature: Getting back to a tool a colleague built
     When I open Community tools
     Then the row of "Ops Runbook" opens its site in this tab
 
+  Scenario: Every click through to the site counts
+    When I open Community tools
+    And I click through to the site of "Ops Runbook" 2 times
+    Then the server counts 2 more opens of "Ops Runbook"
+
   Scenario: A row is three stops for the keyboard
     When I open Community tools
     Then tabbing through the row of "Ops Runbook" reaches "site, star, Like, Details"

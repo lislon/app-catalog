@@ -219,9 +219,33 @@ interface LifecycleFields {
   failingSince: Date | null
   archivedAt: Date | null
   archivedBy: string | null
+  unreachableSince: Date | null
 }
 
+/**
+ * What a check found. `failed` is definitive: an HTTP error status, or a name
+ * that does not resolve. `unreachable` is no answer at all (a timeout, a
+ * refused connection), which may be the server's network, not the site.
+ */
+export type CheckOutcome = 'ok' | 'failed' | 'unreachable'
+
 export function nextLifecycle(
+  t: LifecycleFields,
+  outcome: CheckOutcome,
+  now: Date,
+): Partial<LifecycleFields & { archivedReason?: string }> {
+  // No answer proves nothing: the failing streak and the archive stay as they
+  // are, and nothing is archived on it.
+  if (outcome === 'unreachable') {
+    return t.unreachableSince ? {} : { unreachableSince: now }
+  }
+  return {
+    ...(t.unreachableSince && { unreachableSince: null }),
+    ...definitiveLifecycle(t, outcome === 'ok', now),
+  }
+}
+
+function definitiveLifecycle(
   t: LifecycleFields,
   ok: boolean,
   now: Date,
@@ -284,7 +308,8 @@ export function lifecycleOf(
     }
   }
 
-  if (t.failingSince) {
+  // Unreachable from the server is not "not working": users may still reach it.
+  if (t.failingSince && !t.unreachableSince) {
     // Whole days since the streak began; a streak started today is day 1.
     const daysFailing = Math.max(
       1,

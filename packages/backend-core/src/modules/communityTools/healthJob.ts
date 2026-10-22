@@ -28,6 +28,7 @@ interface CheckableTool {
   failingSince: Date | null
   archivedAt: Date | null
   archivedBy: string | null
+  unreachableSince: Date | null
 }
 
 /** Stores the screenshot and, when it decodes, the favicon as assets. */
@@ -97,7 +98,11 @@ export async function checkTool(
     where: { id: tool.id },
     data: {
       lastCheckAt: now,
-      ...nextLifecycle(tool, result.ok, now),
+      ...nextLifecycle(
+        tool,
+        result.ok ? 'ok' : result.unreachable ? 'unreachable' : 'failed',
+        now,
+      ),
       ...(result.ok && (await storeCapture(tool.slug, result, now))),
       // A visit without the header leaves the date it last had.
       ...(result.ok &&
@@ -143,6 +148,7 @@ export async function runHealthCheckOnce(
           failingSince: true,
           archivedAt: true,
           archivedBy: true,
+          unreachableSince: true,
         },
       })
       const due = tools.filter(

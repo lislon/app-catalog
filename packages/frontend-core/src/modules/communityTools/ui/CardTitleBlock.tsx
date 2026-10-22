@@ -1,6 +1,7 @@
 import type { CommunityTool } from '@igstack/app-catalog-shared-core'
 import { Globe } from 'lucide-react'
 import { cn } from '~/lib/utils'
+import { recordSiteOpen } from '../siteOpen'
 import { screenshotUrl } from './FeedRow'
 import { LifecycleBadge, UnreviewedBadge } from './LifecycleBadge'
 
@@ -13,6 +14,7 @@ export function CardTitleBlock({ tool }: { tool: CommunityTool }) {
   return (
     <a
       href={tool.url}
+      onClick={() => recordSiteOpen(tool.slug)}
       data-testid="card-title-block"
       className={cn(
         'group/door inline-flex min-w-0 items-center gap-[15px] rounded-[14px] border border-border bg-primary/[0.025] px-[17px] py-[11px] transition-colors',

@@ -2,6 +2,7 @@ import type { CommunityTool } from '@igstack/app-catalog-shared-core'
 import { GripVertical } from 'lucide-react'
 import { cn } from '~/lib/utils'
 import { PersonAvatar, ToolThumb } from './FeedRow'
+import { recordSiteOpen } from '../siteOpen'
 import { PinButton } from './PinButton'
 
 /**
@@ -35,6 +36,7 @@ export function ShelfTile({
     >
       <a
         href={tool.url}
+        onClick={() => recordSiteOpen(tool.slug)}
         aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
         onKeyDown={(e) => {
           if (!e.altKey) return
