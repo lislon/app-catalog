@@ -22,12 +22,16 @@ export interface SuggestOption {
   label: string
   sub?: string
   icon?: React.ReactNode
+  /** The typed text is exactly this option, so Enter takes it unasked. */
+  exact?: boolean
 }
 
 /**
  * Chips with a text box that suggests what to add. ↑↓ move through the
  * suggestions, Enter adds one (or hands the typed text to `onEnterText`),
  * Backspace in an empty box takes the last chip off, Esc closes the list.
+ * With `textFirst`, nothing is highlighted until an arrow moves onto a
+ * suggestion: Enter adds the typed text, or the option it exactly names.
  */
 export function SuggestInput({
   id,
@@ -41,6 +45,7 @@ export function SuggestInput({
   describedBy,
   disabled,
   atLimit,
+  textFirst = false,
 }: {
   id: string
   chips: SuggestChip[]
@@ -56,20 +61,25 @@ export function SuggestInput({
   disabled?: boolean
   /** Nothing more can be added; chips can still come off. */
   atLimit?: boolean
+  textFirst?: boolean
 }) {
   const listId = useId()
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
   const [open, setOpen] = useState(false)
+  // An arrow moved the highlight since the text last changed.
+  const [moved, setMoved] = useState(false)
   const options = query.trim() ? suggest(query.trim()) : []
   const shown = open && options.length > 0
-  const activeIndex = Math.min(active, options.length - 1)
+  const activeIndex =
+    textFirst && !moved ? -1 : Math.min(active, options.length - 1)
   const optionId = (i: number) => `${listId}-${i}`
 
   const pick = (key: string) => {
     onPick(key)
     setQuery('')
     setActive(0)
+    setMoved(false)
   }
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -82,10 +92,15 @@ export function SuggestInput({
       }
       const step = e.key === 'ArrowDown' ? 1 : -1
       setActive(Math.min(options.length - 1, Math.max(0, activeIndex + step)))
+      setMoved(true)
     } else if (e.key === 'Enter') {
       // Never submits the form: Enter here means "add this".
       e.preventDefault()
-      const option = shown ? options[activeIndex] : undefined
+      const option = !shown
+        ? undefined
+        : activeIndex >= 0
+          ? options[activeIndex]
+          : options.find((o) => o.exact)
       if (option) pick(option.key)
       else if (query.trim() && onEnterText?.(query)) setQuery('')
     } else if (e.key === 'Backspace' && !query && chips.length > 0) {
@@ -133,7 +148,9 @@ export function SuggestInput({
           aria-expanded={shown}
           aria-controls={shown ? listId : undefined}
           aria-autocomplete="list"
-          aria-activedescendant={shown ? optionId(activeIndex) : undefined}
+          aria-activedescendant={
+            shown && activeIndex >= 0 ? optionId(activeIndex) : undefined
+          }
           aria-invalid={invalid || undefined}
           aria-describedby={describedBy}
           disabled={disabled || atLimit}
@@ -142,6 +159,7 @@ export function SuggestInput({
           onChange={(e) => {
             setQuery(e.target.value)
             setActive(0)
+            setMoved(false)
             setOpen(true)
           }}
           onFocus={() => setOpen(true)}
@@ -171,7 +189,7 @@ export function SuggestInput({
               onClick={() => pick(option.key)}
               onMouseEnter={() => setActive(i)}
               className={cn(
-                'flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-[7px] text-[13.5px]',
+                'flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-[7px] text-[13.5px] hover:bg-accent',
                 i === activeIndex && 'bg-accent',
               )}
             >

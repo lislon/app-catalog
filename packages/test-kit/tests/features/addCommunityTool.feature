@@ -57,6 +57,24 @@ Feature: Adding a tool nobody listed
       And I tag it with the topic "  Plate Maps "
       Then the topics read "plate-maps"
 
+    Scenario: Enter adds the typed word as a topic, though an app's name contains it
+      When I choose to add a tool
+      And I paste "https://qc-heatmap-9f8e.pages.example.com/"
+      And I tag it with the topic "order"
+      Then the tags read "order"
+
+    Scenario: An app's exact name adds the app
+      When I choose to add a tool
+      And I paste "https://qc-heatmap-9f8e.pages.example.com/"
+      And I tag it with the topic "order service"
+      Then the tags read "Order Service"
+
+    Scenario: An arrow onto a suggestion picks it
+      When I choose to add a tool
+      And I paste "https://qc-heatmap-9f8e.pages.example.com/"
+      And I type "order" in the tags, move down and press Enter
+      Then the tags read "Order Service"
+
     Scenario: An admin approves a new tool
       Given "QC Heatmap" was added and is not reviewed
       And I am signed in as an admin

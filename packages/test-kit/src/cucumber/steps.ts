@@ -1533,6 +1533,23 @@ When('I tag it with the topic {string}', async (_world, topic: string) => {
   await typeTag(topic)
 })
 
+When(
+  'I type {string} in the tags, move down and press Enter',
+  async (_world, text: string) => {
+    const user = userEvent.setup()
+    await user.click(await waitFor(() => formField(/^Tags/)))
+    await user.keyboard(text)
+    await within(toolForm()).findByRole('option', { name: /.+/ })
+    await user.keyboard('{ArrowDown}{Enter}')
+  },
+)
+
+Then('the tags read {string}', async (_world, tags: string) => {
+  await waitFor(() => {
+    expect(chipsOf(/^Tags/).join(', ')).toBe(tags)
+  })
+})
+
 Then('the topics read {string}', async (_world, topics: string) => {
   await waitFor(() => {
     expect(chipsOf(/^Tags/).join(', ')).toBe(topics)

@@ -11,7 +11,8 @@ const MAX_SUGGESTIONS = 6
 /**
  * App tags, picked from the catalog's own apps so they always resolve, and
  * topic words, suggested from the tags already in use so they converge. One
- * box offers both; Enter on text nothing matches adds it as a new topic.
+ * box offers both. Enter adds the typed text as a topic, unless it is exactly
+ * an app's name or abbreviation, or an arrow chose a suggestion.
  */
 export function TagPicker({
   id,
@@ -65,6 +66,7 @@ export function TagPicker({
       atLimit={value.length >= MAX_TAGS}
       disabled={disabled}
       describedBy={describedBy}
+      textFirst
       suggest={(query) => {
         const q = query.toLowerCase()
         const topic = normalizeTopic(query)
@@ -81,6 +83,9 @@ export function TagPicker({
             label: a.displayName,
             sub: a.abbreviation ? `App · ${a.abbreviation}` : 'App',
             icon: <AppWindow aria-hidden="true" className="size-4" />,
+            exact:
+              a.displayName.toLowerCase() === q ||
+              a.abbreviation?.toLowerCase() === q,
           }))
         const topicOptions = knownTopics
           .filter((t) => t.includes(topic))
