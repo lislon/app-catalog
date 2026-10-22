@@ -54,11 +54,11 @@ beforeEach(() => {
 })
 
 describe('Header login button', () => {
-  it('offers an anonymous visitor a Login button that opens the sign-in modal', async () => {
+  it('offers an anonymous visitor a Sign in button that opens the sign-in modal', async () => {
     window.history.pushState({}, '', '/app/sample-review-app?tab=access')
     render(<Header />)
 
-    await userEvent.click(screen.getByRole('button', { name: 'Login' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
 
     // Comes back to where the visitor was after signing in.
     expect(openLoginModal).toHaveBeenCalledWith(
@@ -75,7 +75,7 @@ describe('Header login button', () => {
     expect(
       screen.getByRole('button', { name: 'DEV Login' }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Login' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument()
   })
 
   it('leaves no empty flex child in the header row', () => {
@@ -95,6 +95,6 @@ describe('Header login button', () => {
     render(<Header />)
 
     expect(screen.getByTestId('user-avatar-button')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Login' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Sign in' })).toBeNull()
   })
 })

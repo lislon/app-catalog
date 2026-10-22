@@ -221,7 +221,7 @@ export function Header({ middle }: HeaderProps) {
         {isLoading ? (
           <Skeleton className="w-8 h-8 rounded-full" />
         ) : !isAuthenticated ? (
-          // The catalog is browsable without signing in; Login is for the parts
+          // The catalog is browsable without signing in; Sign in is for the parts
           // that need an identity (comments, admin). DEV Login is gated behind
           // `devLoginEnabled`, so it never reaches a real deployment.
           <div className="flex items-center gap-2">
@@ -239,7 +239,7 @@ export function Header({ middle }: HeaderProps) {
               onClick={handleLoginClick}
               className="text-sm font-medium text-muted-foreground hover:text-foreground cursor-pointer"
             >
-              Login
+              Sign in
             </button>
           </div>
         ) : (

@@ -24,7 +24,7 @@ Feature: The header's section tabs
     Then the current section is "Catalog"
 
   Scenario: MCP sits next to Sign in
-    Then the header actions are "MCP, Toggle theme, Login"
+    Then the header actions are "MCP, Toggle theme, Sign in"
     And no section tab is "MCP"
 
   Scenario: Community tools is hidden when the feature is off

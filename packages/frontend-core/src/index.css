@@ -33,6 +33,7 @@
     --muted-foreground: oklch(0.52 0.025 60);
     --accent: oklch(0.93 0.05 70); /* soft amber accent */
     --accent-foreground: oklch(0.36 0.04 55);
+    --highlight: oklch(0.88 0.11 80); /* search-match marker */
     --destructive: oklch(0.6368 0.2078 25.3313);
     --destructive-foreground: oklch(1 0 0);
     --border: oklch(0.9 0.018 80); /* warm hairline */

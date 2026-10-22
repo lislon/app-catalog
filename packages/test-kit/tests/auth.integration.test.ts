@@ -11,7 +11,7 @@ import {
 } from '@igstack/app-catalog-test-kit'
 
 describe('Auth Integration', () => {
-  it('unauthenticated user sees a Login button that opens sign-in', async () => {
+  it('unauthenticated user sees a Sign in button that opens sign-in', async () => {
     suppressConsole(/Failed to fetch session/)
 
     await given(
@@ -20,7 +20,7 @@ describe('Auth Integration', () => {
       }),
     )
 
-    const login = await screen.findByRole('button', { name: 'Login' })
+    const login = await screen.findByRole('button', { name: 'Sign in' })
     await userEvent.click(login)
 
     expect(
@@ -67,7 +67,7 @@ describe('Auth Integration', () => {
     await waitFor(() => {
       expect(screen.getByText('DEV Login')).toBeInTheDocument()
     })
-    expect(screen.getByRole('button', { name: 'Login' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument()
   })
 
   it('DEV Login button does not appear when devLoginEnabled is false', async () => {

@@ -25,7 +25,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Given, Then, When } from 'quickpickle'
 import type { DataTable } from 'quickpickle'
-import { expect } from 'vitest'
+import { expect, vi } from 'vitest'
 import { given } from '../harness/given'
 import type { GivenResult } from '../harness/given'
 import { magazine } from '../mock-backend/magazines'
@@ -125,6 +125,14 @@ Given('the {string} catalog', async (_world, name: string) => {
 })
 
 When('I search for {string}', async (_world, query: string) => {
+  // Each section has its own search box; type into the one on screen.
+  const community = screen.queryByLabelText('Search community tools')
+  if (community) {
+    const user = userEvent.setup()
+    await user.clear(community)
+    await user.type(community, query)
+    return
+  }
   await ui().catalog.search(query)
 })
 
@@ -552,6 +560,259 @@ Given(
           tools.pageTitled(tool) ??
           `https://${tool.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pages.example.com/`,
       })
+    })
+  },
+)
+
+/* ------------------------------------------------------- Community tools ---
+ * The page as a visitor sees it: one search box, their pinned shelf and
+ * recents, the ranked feed or, while they type, the results that replace it.
+ */
+
+function communityList(testId: 'community-feed' | 'community-results') {
+  return within(screen.getByTestId(testId)).queryAllByTestId('feed-row')
+}
+
+function rowName(row: HTMLElement): string {
+  return within(row).getByTestId('feed-row-name').textContent.trim()
+}
+
+function rowNamed(
+  testId: 'community-feed' | 'community-results',
+  name: string,
+): HTMLElement {
+  const row = communityList(testId).find((r) => rowName(r) === name)
+  if (!row) throw new Error(`No "${name}" row in ${testId}`)
+  return row
+}
+
+function highlighted(el: HTMLElement): string[] {
+  return [...el.querySelectorAll('.bg-highlight')].map((m) =>
+    m.textContent.toLowerCase(),
+  )
+}
+
+/** The tools a visitor could see in the feed: every one not archived. */
+function liveToolNames(): string[] {
+  if (!current) throw new Error('No catalog opened — missing a Given step?')
+  return current.backend.communityTools
+    .list()
+    .filter((t) => t.lifecycle.state !== 'archived')
+    .map((t) => t.name)
+}
+
+function namesTagged(word: string): string[] {
+  if (!current) throw new Error('No catalog opened — missing a Given step?')
+  return current.backend.communityTools
+    .list()
+    .filter((t) => t.tags.some((g) => g.value === word))
+    .map((t) => t.name)
+}
+
+Given('I opened {string} before', async (_world, tool: string) => {
+  await givenOnServer(({ backendCfg }) => {
+    const tools = backendCfg.communityTools
+    tools.recordView({ slug: tools.slugOf(tool) })
+  })
+})
+
+When('I open Community tools', async () => {
+  const user = userEvent.setup()
+  await user.click(await waitFor(() => sectionTab('Community tools')))
+  await waitFor(() => {
+    expect(screen.getByLabelText('Search community tools')).toBeTruthy()
+  })
+})
+
+Then('the caret is in the search', async () => {
+  await waitFor(() => {
+    expect(document.activeElement).toBe(
+      screen.getByLabelText('Search community tools'),
+    )
+  })
+})
+
+When('I press Enter', async () => {
+  vi.spyOn(window, 'open').mockImplementation(() => null)
+  vi.mocked(window.open).mockClear()
+  const user = userEvent.setup()
+  await user.keyboard('{Enter}')
+})
+
+Then('{string} opens in a new tab', (_world, url: string) => {
+  expect(vi.mocked(window.open)).toHaveBeenCalledWith(
+    url,
+    '_blank',
+    expect.stringContaining('noopener'),
+  )
+})
+
+Then('the first result is {string}', async (_world, name: string) => {
+  await waitFor(() => {
+    const first = communityList('community-results')[0]
+    expect(first && rowName(first)).toBe(name)
+  })
+})
+
+Then('{string} is highlighted in its owner', (_world, word: string) => {
+  const first = communityList('community-results')[0]!
+  expect(highlighted(within(first).getByTestId('feed-row-owner'))).toContain(
+    word.toLowerCase(),
+  )
+})
+
+Then('{string} is highlighted in its name', (_world, word: string) => {
+  const first = communityList('community-results')[0]!
+  expect(highlighted(within(first).getByTestId('feed-row-name'))).toContain(
+    word.toLowerCase(),
+  )
+})
+
+Then('the result says it matched the address', () => {
+  const first = communityList('community-results')[0]!
+  expect(within(first).getByTestId('match-reason').textContent).toContain(
+    'address',
+  )
+})
+
+Then('I see that nothing is listed yet', async () => {
+  await waitFor(() => {
+    expect(screen.getByTestId('no-results').textContent).toContain(
+      'Nothing matches',
+    )
+  })
+})
+
+Then('My tools shows {string}', async (_world, name: string) => {
+  await waitFor(() => {
+    expect(
+      within(screen.getByTestId('my-tools'))
+        .queryAllByTestId('shelf-tile-name')
+        .map((n) => n.textContent),
+    ).toContain(name)
+  })
+})
+
+Then('My tools says {string}', async (_world, text: string) => {
+  await waitFor(() => {
+    expect(
+      within(screen.getByTestId('my-tools')).getByTestId('shelf-empty-hint')
+        .textContent,
+    ).toContain(text)
+  })
+})
+
+Then('My tools is hidden', async () => {
+  await waitFor(() => {
+    expect(screen.queryByTestId('my-tools')).toBeNull()
+  })
+})
+
+When('I choose to sign in from My tools', async () => {
+  const user = userEvent.setup()
+  await user.click(
+    within(screen.getByTestId('my-tools')).getByRole('button', {
+      name: 'Sign in',
+    }),
+  )
+})
+
+Then('I am asked to sign in', async () => {
+  expect(await screen.findByRole('heading', { name: 'Sign In' })).toBeTruthy()
+})
+
+Then('Recently opened shows {string}', async (_world, name: string) => {
+  await waitFor(() => {
+    expect(
+      within(screen.getByTestId('recently-opened'))
+        .queryAllByTestId('recent-chip')
+        .map((c) => c.textContent),
+    ).toContain(name)
+  })
+})
+
+Then('Recently opened is hidden', () => {
+  expect(screen.queryByTestId('recently-opened')).toBeNull()
+})
+
+Then('Most opened by colleagues still lists every tool', async () => {
+  await waitFor(() => {
+    expect(communityList('community-feed').map(rowName).sort()).toEqual(
+      liveToolNames().sort(),
+    )
+  })
+})
+
+Then(
+  'Most opened by colleagues does not list {string}',
+  async (_world, name: string) => {
+    await waitFor(() => {
+      expect(communityList('community-feed').length).toBeGreaterThan(0)
+    })
+    expect(communityList('community-feed').map(rowName)).not.toContain(name)
+  },
+)
+
+Then('the results show {string} as archived', async (_world, name: string) => {
+  await waitFor(() => {
+    const row = rowNamed('community-results', name)
+    expect(within(row).getByTestId('lifecycle-badge').textContent).toBe(
+      'Archived',
+    )
+  })
+})
+
+When('I pin {string} from the feed', async (_world, name: string) => {
+  const user = userEvent.setup()
+  const row = await waitFor(() => rowNamed('community-feed', name))
+  await user.click(within(row).getByTestId('pin-button'))
+})
+
+Then('I am told {string}', async (_world, text: string) => {
+  await waitFor(() => {
+    expect(screen.getByTestId('toast').textContent).toContain(text)
+  })
+})
+
+When('I choose the tag {string}', async (_world, label: string) => {
+  const user = userEvent.setup()
+  const chip = await waitFor(() => {
+    const found = within(screen.getByTestId('tag-row'))
+      .getAllByTestId('tool-tag')
+      .find((c) => c.textContent.startsWith(label))
+    if (!found) throw new Error(`No "${label}" chip in the tag row`)
+    return found
+  })
+  await user.click(chip)
+})
+
+Then(
+  'every listed tool carries the tag {string}',
+  async (_world, label: string) => {
+    await waitFor(() => {
+      const rows = communityList('community-feed')
+      expect(rows.length).toBeGreaterThan(0)
+      for (const row of rows) {
+        expect(
+          within(row)
+            .getAllByTestId('tool-tag')
+            .map((c) => c.textContent),
+        ).toContain(label)
+      }
+      expect(rows.length).toBeLessThan(liveToolNames().length)
+    })
+  },
+)
+
+Then(
+  'the results include every tool tagged {string}',
+  async (_world, word: string) => {
+    const tagged = namesTagged(word)
+    expect(tagged.length).toBeGreaterThan(0)
+    await waitFor(() => {
+      expect(communityList('community-results').map(rowName)).toEqual(
+        expect.arrayContaining(tagged),
+      )
     })
   },
 )
