@@ -131,7 +131,10 @@ export async function given(
     browserState.dismissOnboarding()
   }
   if (browserStateCfg.shouldSeedOfflineData) {
-    await browserState.seedCatalogCache(service.getAppCatalogData())
+    await browserState.seedCatalogCache(
+      service.getAppCatalogData(),
+      service.communityTools.config(),
+    )
   }
   for (const [key, value] of browserStateCfg.localStorageItems) {
     localStorage.setItem(key, value)

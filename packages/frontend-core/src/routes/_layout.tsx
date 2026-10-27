@@ -1,6 +1,7 @@
 import { Outlet, createFileRoute, useRouterState } from '@tanstack/react-router'
 import { AppCatalogLayout } from '~/modules/appCatalog/ui/layout/AppCatalogLayout'
 import { AppCatalogPage } from '~/modules/appCatalog/ui/pages/AppCatalogPage'
+import { communityToolsConfigLoader } from '~/modules/communityTools/communityToolsConfigLoader'
 // Route ids are read off the route objects instead of being spelled out as
 // string literals: renaming/moving either file is then a compile error here
 // rather than a silently non-matching id at runtime. `Route.id` is only
@@ -42,6 +43,7 @@ function hasSlug(params: unknown): params is { slug: string } {
 
 export const Route = createFileRoute('/_layout')({
   component: LayoutComponent,
+  loader: communityToolsConfigLoader,
 })
 
 function LayoutComponent() {
