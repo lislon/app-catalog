@@ -16,6 +16,7 @@
 export { App } from './App'
 export type { AppProps } from './App'
 export { AcDb, dbCacheDbKeys } from './userDb/AcDb'
+export type { CommunityToolsConfig } from './userDb/AcDb'
 export {
   SEARCH_STORAGE_KEY,
   clearSessionState,

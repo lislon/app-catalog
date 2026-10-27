@@ -1,6 +1,13 @@
 import Dexie from 'dexie'
-import type { AppCatalogData } from '@igstack/app-catalog-backend-core'
+import type {
+  AppCatalogData,
+  TRPCRouter,
+} from '@igstack/app-catalog-backend-core'
+import type { inferRouterOutputs } from '@trpc/server'
 import type { Table } from 'dexie'
+
+export type CommunityToolsConfig =
+  inferRouterOutputs<TRPCRouter>['communityTools']['config']
 
 export interface AppClickHistoryItem {
   id?: number
@@ -11,6 +18,7 @@ export interface AppClickHistoryItem {
 export class AcDb extends Dexie {
   appCatalog!: Table<AppCatalogData>
   appClickHistory!: Table<AppClickHistoryItem>
+  communityToolsConfig!: Table<CommunityToolsConfig>
 
   constructor() {
     super('app-catalog')
@@ -20,6 +28,11 @@ export class AcDb extends Dexie {
     this.version(2).stores({
       appCatalog: '',
       appClickHistory: '++id, appSlug, timestamp',
+    })
+    this.version(3).stores({
+      appCatalog: '',
+      appClickHistory: '++id, appSlug, timestamp',
+      communityToolsConfig: '',
     })
   }
 
@@ -37,4 +50,5 @@ export class AcDb extends Dexie {
 
 export enum dbCacheDbKeys {
   AppCatalog = 'appCatalog',
+  CommunityToolsConfig = 'communityToolsConfig',
 }

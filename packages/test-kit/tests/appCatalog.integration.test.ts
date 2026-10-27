@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { HttpResponse, http } from 'msw'
 import '@testing-library/jest-dom/vitest'
 
 import {
@@ -195,6 +196,32 @@ describe('App Catalog Integration', () => {
     expect(tableData.length).toBe(5)
     expect(tableData.map((r) => r.name)).toContain('TaskFlow')
     expect(tableData.map((r) => r.name)).toContain('TeamChat')
+  })
+
+  it('returning user sees the Community tools tab even when backend is unavailable', async () => {
+    suppressConsole([/TRPC Error/, /Failed to fetch/])
+
+    await given(
+      magazine.fullReturningUser(({ backendCfg, networkCfg }) => {
+        backendCfg.communityTools.enable({ captureHosts: [] })
+        networkCfg.overrideConfig((catalog) => {
+          catalog.replace(['appCatalog-query'], makeConnectionResetError())
+          catalog.replace(
+            ['community-tools-config'],
+            http.get(/\/api\/trpc\/communityTools\.config/, () =>
+              HttpResponse.error(),
+            ),
+          )
+        })
+      }),
+    )
+
+    // No waitFor: the tab is there on the first paint, from IndexedDB.
+    expect(
+      within(screen.getByTestId('section-tabs'))
+        .getAllByRole('link')
+        .map((tab) => tab.firstChild?.textContent),
+    ).toEqual(['Catalog', 'Community tools', 'Service Desks'])
   })
 
   // Test 3: Network Error — Connection Reset

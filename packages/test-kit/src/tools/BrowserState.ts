@@ -3,13 +3,14 @@ import {
   AcDb,
   dbCacheDbKeys,
 } from '@igstack/app-catalog-frontend-core/internal'
+import type { CommunityToolsConfig } from '@igstack/app-catalog-frontend-core/internal'
 
 /**
  * Pre-populate the browser's local state to simulate a returning user.
  * Call before `given()` to set up IndexedDB cache and localStorage flags.
  *
  * Usage:
- *   await browserState.seedCatalogCache(data)
+ *   await browserState.seedCatalogCache(data, { enabled: true })
  *   browserState.dismissOnboarding()
  */
 export const browserState = {
@@ -17,9 +18,16 @@ export const browserState = {
    * Seed the IndexedDB cache with app catalog data,
    * as if the user has previously loaded the app.
    */
-  async seedCatalogCache(data: AppCatalogData): Promise<void> {
+  async seedCatalogCache(
+    data: AppCatalogData,
+    communityToolsConfig: CommunityToolsConfig,
+  ): Promise<void> {
     const db = new AcDb()
     await db.appCatalog.put(data, dbCacheDbKeys.AppCatalog)
+    await db.communityToolsConfig.put(
+      communityToolsConfig,
+      dbCacheDbKeys.CommunityToolsConfig,
+    )
     db.close()
   },
 
@@ -34,8 +42,11 @@ export const browserState = {
   /**
    * Simulate a returning user: onboarding dismissed + catalog data cached.
    */
-  async returningUser(data: AppCatalogData): Promise<void> {
+  async returningUser(
+    data: AppCatalogData,
+    communityToolsConfig: CommunityToolsConfig,
+  ): Promise<void> {
     this.dismissOnboarding()
-    await this.seedCatalogCache(data)
+    await this.seedCatalogCache(data, communityToolsConfig)
   },
 }
