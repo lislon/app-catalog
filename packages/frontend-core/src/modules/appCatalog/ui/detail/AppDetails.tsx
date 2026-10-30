@@ -755,9 +755,9 @@ export function AppDetails({
                   ? 'Usage discouraged'
                   : 'This application is deprecated'}
               </h3>
-              <p className="text-sm text-muted-foreground">
+              <MarkdownText className="prose prose-sm max-w-none text-sm text-muted-foreground [&_p]:m-0">
                 {app.deprecated.comment}
-              </p>
+              </MarkdownText>
               {replacementApp && (
                 <button
                   type="button"
