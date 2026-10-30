@@ -1,5 +1,14 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.12.3
+
+### Patch Changes
+
+- [#338](https://github.com/lislon/app-catalog/pull/338) [`a4b7d94`](https://github.com/lislon/app-catalog/commit/a4b7d9445aa635d6164ea083ab0d01b256015b1f) Thanks [@lislon](https://github.com/lislon)! - A deprecation comment now renders as markdown, like the description: `[Name](/app/<slug>)` links to another catalog entry and `#channel` mentions link to the chat channel.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.12.3
+
 ## 6.12.2
 
 ### Patch Changes

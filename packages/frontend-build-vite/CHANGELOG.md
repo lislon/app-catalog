@@ -1,5 +1,7 @@
 # @igstack/app-catalog-frontend-build-vite
 
+## 6.12.3
+
 ## 6.12.2
 
 ## 6.12.1
