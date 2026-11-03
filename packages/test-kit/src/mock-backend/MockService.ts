@@ -1,4 +1,7 @@
-import type { AppCatalogData } from '@igstack/app-catalog-backend-core'
+import type {
+  AppCatalogData,
+  McpCatalogConfigResponse,
+} from '@igstack/app-catalog-backend-core'
 import type { MockFeedbackStore } from '../mock-network/MockFeedbackStore'
 import type { MockDb } from './MockDb'
 import type { MockUserContext } from './MockUserContext'
@@ -18,6 +21,14 @@ export class MockService {
 
   getServiceDesks() {
     return this.db.getServiceDesks()
+  }
+
+  getMcpCatalogConfig(): McpCatalogConfigResponse {
+    const config = this.db.getMcpCatalogConfig()
+    return {
+      ...config,
+      sensitiveDataLabel: config.sensitiveDataLabel ?? 'Sensitive data',
+    }
   }
 
   getSessionResponse(): object | null {

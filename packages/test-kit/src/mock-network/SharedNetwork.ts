@@ -38,6 +38,15 @@ export const SharedNetwork = {
     }
   },
 
+  mcpCatalogConfig(service: MockService): NetworkInterceptor {
+    return {
+      scopeKey: ['mcpCatalog-config'],
+      handler: trpcMsw.mcpCatalog.config.query(() => {
+        return service.getMcpCatalogConfig()
+      }),
+    }
+  },
+
   /**
    * Every opened resource asks for its feedback.
    *

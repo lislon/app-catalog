@@ -448,6 +448,290 @@ function communityMagazine(postConfigure?: Magazine): Magazine {
   }
 }
 
+function mcpMagazine(postConfigure?: Magazine): Magazine {
+  return (ctx) => {
+    // Start with the full catalog
+    fullMagazine({}, undefined)(ctx)
+
+    const { backendCfg } = ctx
+
+    // Add groups for MCP server owners
+    const aiTeam = backendCfg.withGroup({
+      slug: 'ai-team',
+      displayName: 'AI Platform Team',
+      email: 'ai-team@example.com',
+      memberSlugs: [],
+    })
+
+    // 8 MCP servers covering all Triad combinations (2 transport × 2 auth × 2 access = 8)
+    // http + sso + read
+    backendCfg.withMcpServer({
+      slug: 'ticket-search',
+      displayName: 'Ticket Search',
+      description: 'Search and view issue tickets',
+      category: 'productivity',
+      status: 'production',
+      access: 'read',
+      requiredAppSlugs: ['taskflow'],
+      auth: {
+        kind: 'sso',
+        note: 'Uses your TaskFlow SSO credentials',
+      },
+      transport: {
+        type: 'http',
+        url: 'https://mcp.example.com/tickets',
+        headers: { Authorization: '<TASKFLOW_TOKEN>' },
+      },
+      tools: [
+        { name: 'search_tickets', description: 'Search for tickets' },
+        { name: 'get_ticket', description: 'Get ticket details' },
+      ],
+      sources: [{ url: 'https://github.com/example/ticket-mcp' }],
+    })
+
+    // http + sso + write
+    backendCfg.withMcpServer({
+      slug: 'logs',
+      displayName: 'Log Viewer',
+      description: 'Query application logs and traces',
+      category: 'observability',
+      status: 'production',
+      access: 'write',
+      writeNote: 'Can create log queries and alerts',
+      sensitiveData: true,
+      auth: {
+        kind: 'sso',
+      },
+      transport: {
+        type: 'http',
+        url: 'https://logs.example.com/mcp',
+      },
+      tools: [
+        { name: 'query_logs', description: 'Query logs' },
+        { name: 'create_alert', description: 'Create a log alert' },
+      ],
+      ownerSlug: aiTeam.slug,
+      sources: [{ url: 'https://logs.example.com/docs' }],
+    })
+
+    // http + token + read
+    backendCfg.withMcpServer({
+      slug: 'wiki',
+      displayName: 'Wiki Browser',
+      description: 'Search documentation and wiki pages',
+      category: 'knowledge',
+      aliases: ['docs', 'confluence'],
+      status: 'beta',
+      access: 'read',
+      auth: {
+        kind: 'token',
+        note: 'Requires a wiki API token',
+        token: {
+          page: 'https://wiki.example.com/settings/tokens',
+          steps: [
+            'Go to wiki.example.com/settings/tokens',
+            'Click "Generate Token"',
+            'Copy the token',
+          ],
+        },
+      },
+      transport: {
+        type: 'http',
+        url: 'https://wiki.example.com/mcp',
+        headers: { 'X-API-Key': '<WIKI_TOKEN>' },
+      },
+      tools: [
+        { name: 'search_pages', description: 'Search wiki pages' },
+        { name: 'get_page', description: 'Get page content' },
+      ],
+      sources: [{ url: 'https://wiki.example.com/mcp-docs' }],
+    })
+
+    // http + token + write (relative URL)
+    backendCfg.withMcpServer({
+      slug: 'mail-test',
+      displayName: 'Mail Catcher',
+      description: 'View and manage test emails',
+      category: 'dev-tools',
+      status: 'personal',
+      access: 'write',
+      writeNote: 'Can clear test emails',
+      auth: {
+        kind: 'token',
+        token: {
+          page: 'http://localhost:1080/settings',
+          steps: ['Run mail catcher locally', 'Copy the admin token'],
+        },
+      },
+      transport: {
+        type: 'http',
+        url: '/mcp/mail',
+        headers: { 'X-Admin-Token': '<MAIL_ADMIN_TOKEN>' },
+      },
+      tools: [
+        { name: 'list_emails', description: 'List captured emails' },
+        { name: 'clear_all', description: 'Clear all test emails' },
+      ],
+      sources: [{ url: 'https://github.com/example/mail-catcher-mcp' }],
+    })
+
+    // stdio + sso + read
+    backendCfg.withMcpServer({
+      slug: 'code-search',
+      displayName: 'Code Search',
+      description: 'Search code repositories',
+      category: 'dev-tools',
+      status: 'production',
+      access: 'read',
+      requiredAppSlugs: [],
+      auth: {
+        kind: 'sso',
+        note: 'Uses GitHub CLI authentication',
+      },
+      transport: {
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', '@example/code-search-mcp'],
+      },
+      tools: [
+        { name: 'search_code', description: 'Search code' },
+        { name: 'get_file', description: 'Get file contents' },
+      ],
+      sources: [{ url: 'https://github.com/example/code-search-mcp' }],
+    })
+
+    // stdio + sso + write
+    backendCfg.withMcpServer({
+      slug: 'db-query',
+      displayName: 'Database Query',
+      description: 'Query analytics warehouse',
+      category: 'data',
+      status: 'beta',
+      access: 'write',
+      writeNote: 'Can execute write queries on dev databases',
+      sensitiveData: true,
+      auth: {
+        kind: 'sso',
+      },
+      transport: {
+        type: 'stdio',
+        command: 'warehouse-mcp',
+        args: ['--env', 'dev'],
+      },
+      tools: [
+        { name: 'query', description: 'Execute SQL query' },
+        { name: 'list_tables', description: 'List tables' },
+      ],
+      sources: [{ url: 'https://warehouse.example.com/docs/mcp' }],
+    })
+
+    // stdio + token + read
+    backendCfg.withMcpServer({
+      slug: 'slack-read',
+      displayName: 'Slack Reader',
+      description: 'Read Slack messages and channels',
+      category: 'communication',
+      status: 'personal',
+      access: 'read',
+      auth: {
+        kind: 'token',
+        note: 'Requires a Slack bot token',
+        token: {
+          page: 'https://api.slack.com/apps',
+          steps: [
+            'Create a Slack app',
+            'Add bot token scopes: channels:history, channels:read',
+            'Install to workspace',
+            'Copy Bot User OAuth Token',
+          ],
+        },
+      },
+      transport: {
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', '@modelcontextprotocol/server-slack'],
+      },
+      tools: [
+        { name: 'list_channels', description: 'List Slack channels' },
+        { name: 'read_messages', description: 'Read channel messages' },
+      ],
+      sources: [
+        {
+          url: 'https://github.com/modelcontextprotocol/servers/tree/main/src/slack',
+        },
+      ],
+    })
+
+    // stdio + token + write
+    backendCfg.withMcpServer({
+      slug: 'fs-local',
+      displayName: 'Local Filesystem',
+      description: 'Read and write local project files',
+      category: 'dev-tools',
+      status: 'production',
+      access: 'write',
+      writeNote: 'Can modify local files',
+      auth: {
+        kind: 'token',
+        note: 'Token is the file path allowlist',
+        token: {
+          page: 'file://~/.config/mcp/filesystem.json',
+          steps: [
+            'Create ~/.config/mcp/filesystem.json',
+            'Add allowed paths: {"paths": ["/Users/me/projects"]}',
+          ],
+        },
+      },
+      transport: {
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', '@modelcontextprotocol/server-filesystem'],
+      },
+      tools: [
+        { name: 'read_file', description: 'Read file contents' },
+        { name: 'write_file', description: 'Write to a file' },
+        { name: 'list_directory', description: 'List directory contents' },
+      ],
+      sources: [
+        {
+          url: 'https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem',
+        },
+      ],
+    })
+
+    // MCP catalog config
+    backendCfg.withMcpCatalogConfig({
+      categories: [
+        {
+          key: 'productivity',
+          title: 'Productivity',
+          blurb: 'Task tracking, tickets, and project management',
+        },
+        { key: 'dev-tools', title: 'Developer Tools' },
+      ],
+      intents: [
+        {
+          query: 'logs',
+          title: 'View Logs',
+          caption: 'Query application logs',
+          icon: 'search',
+        },
+        {
+          query: 'tickets',
+          title: 'Search Tickets',
+          caption: 'Find and view issues',
+          icon: 'ticket',
+        },
+      ],
+      tryQueries: ['logs', 'tickets'],
+      sensitiveDataLabel: 'Contains company data',
+      installIconUrl: 'https://example.com/mcp-icon.svg',
+    })
+
+    postConfigure?.(ctx)
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Magazine entries
 // ---------------------------------------------------------------------------
@@ -475,6 +759,9 @@ export const magazine = {
 
   /** Community tools catalog with 3 tools, 3 persons, and 1 official app — accepts optional post-configurer */
   community: (postConfigure?: Magazine) => communityMagazine(postConfigure),
+
+  /** Full catalog plus 8 MCP servers and config — accepts optional post-configurer */
+  mcp: (postConfigure?: Magazine) => mcpMagazine(postConfigure),
 
   /** Inline custom configurer — pass-through for ad-hoc tests */
   custom: (fn: Magazine): Magazine => fn,
