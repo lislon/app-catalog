@@ -135,15 +135,9 @@ export function cursorLink(server: McpServer): string {
     }
   }
   const json = JSON.stringify(config)
-  // UTF-8 safe base64: encode to bytes first
-  const bytes =
-    typeof TextEncoder !== 'undefined'
-      ? new TextEncoder().encode(json)
-      : Buffer.from(json, 'utf-8')
-  const base64 =
-    typeof btoa !== 'undefined'
-      ? btoa(String.fromCharCode(...bytes))
-      : bytes.toString('base64')
+  // UTF-8 safe base64: encode to bytes first (browser)
+  const bytes = new TextEncoder().encode(json)
+  const base64 = btoa(String.fromCharCode(...bytes))
   const encoded = encodeURIComponent(base64)
   return `cursor://anysphere.cursor-deeplink/mcp/install?name=${encodeURIComponent(server.slug)}&config=${encoded}`
 }
@@ -213,20 +207,42 @@ export function installPrompt(
 
   const steps: string[] = []
 
-  // Access check
-  const allRequiredSlugs = [
-    ...new Set(servers.flatMap((s) => s.requiredAppSlugs || [])),
-  ]
-  if (allRequiredSlugs.length > 0) {
+  // get_mcp_server and access check (first step when catalog available)
+  if (ctx.catalogMcpAvailable) {
+    const allRequiredSlugs = [
+      ...new Set(servers.flatMap((s) => s.requiredAppSlugs || [])),
+    ]
     const appNames = allRequiredSlugs
       .map((slug) => ctx.apps.find((a) => a.slug === slug))
       .filter((a): a is { slug: string; name: string; url: string } => !!a)
+
     if (appNames.length > 0) {
-      const appUrls = appNames.map((a) => a.url).join(', ')
       const names = appNames.map((a) => a.name).join(', ')
+      const appUrls = appNames.map((a) => a.url).join(', ')
       steps.push(
-        `Check I can sign in to ${names}. If an account is missing, stop and send me its access-request page: ${appUrls}`,
+        `If the App Catalog MCP (app-catalog) is connected, call get_mcp_server for ${names} to get the latest access steps and check I can sign in. If an account is missing, stop and send me its access-request page: ${appUrls}`,
       )
+    } else {
+      steps.push(
+        `If the App Catalog MCP (app-catalog) is connected, call get_mcp_server to get the latest access steps.`,
+      )
+    }
+  } else {
+    // Access check without catalog
+    const allRequiredSlugs = [
+      ...new Set(servers.flatMap((s) => s.requiredAppSlugs || [])),
+    ]
+    if (allRequiredSlugs.length > 0) {
+      const appNames = allRequiredSlugs
+        .map((slug) => ctx.apps.find((a) => a.slug === slug))
+        .filter((a): a is { slug: string; name: string; url: string } => !!a)
+      if (appNames.length > 0) {
+        const appUrls = appNames.map((a) => a.url).join(', ')
+        const names = appNames.map((a) => a.name).join(', ')
+        steps.push(
+          `Check I can sign in to ${names}. If an account is missing, stop and send me its access-request page: ${appUrls}`,
+        )
+      }
     }
   }
 
@@ -238,16 +254,8 @@ export function installPrompt(
   // Token steps
   const tokenServers = servers.filter((s) => s.auth.kind === 'token')
   if (tokenServers.length > 0) {
-    const tokenApps = [
-      ...new Set(
-        tokenServers
-          .flatMap((s) => s.requiredAppSlugs || [])
-          .map((slug) => ctx.apps.find((a) => a.slug === slug)?.name)
-          .filter((n): n is string => !!n),
-      ),
-    ].join(', ')
     const catalogLine = ctx.catalogMcpAvailable
-      ? ` If the App Catalog MCP (app-catalog) is connected, first call get_mcp_server${tokenApps ? ` for ${tokenApps}` : ''} and follow its current access steps where they differ from the sources listed above. Otherwise read the authentication section from those sources.`
+      ? ' Follow the latest access steps where they differ from the sources listed above. Otherwise read the authentication section from those sources.'
       : ' Read the authentication section from the sources listed above.'
     steps.push(
       `Walk me through getting ${tokenServers.length > 1 ? 'each token, one at a time' : 'the token'}: open the page above for me, tell me exactly which options and scopes to pick, and wait while I create it.${catalogLine}`,
@@ -267,23 +275,6 @@ export function installPrompt(
     )
   } else {
     steps.push(`Handle sign-in as described above.`)
-  }
-
-  // Call get_mcp_server step (when available, regardless of auth type)
-  if (ctx.catalogMcpAvailable) {
-    const relevantApps = [
-      ...new Set(
-        servers
-          .flatMap((s) => s.requiredAppSlugs || [])
-          .map((slug) => ctx.apps.find((a) => a.slug === slug)?.name)
-          .filter((n): n is string => !!n),
-      ),
-    ].join(', ')
-    if (relevantApps) {
-      steps.push(
-        `If the App Catalog MCP (app-catalog) is connected, call get_mcp_server for ${relevantApps} to get the latest access steps.`,
-      )
-    }
   }
 
   // Verify
@@ -309,7 +300,7 @@ export function installPrompt(
   const sensitiveServers = servers.filter((s) => s.sensitiveData)
   if (sensitiveServers.length > 0) {
     steps.push(
-      `${sensitiveServers.map((s) => s.displayName).join(', ')} touches ${ctx.sensitiveDataLabel.toLowerCase()}. Default to non-production environments and never paste sensitive data into chat unless I ask for a specific case.`,
+      `${sensitiveServers.map((s) => s.displayName).join(', ')} touches ${ctx.sensitiveDataLabel}. Default to non-production environments and never paste sensitive data into chat unless I ask for a specific case.`,
     )
   }
 
@@ -470,7 +461,7 @@ export function whatHappensSteps(
   if (servers.some((s) => s.sensitiveData)) {
     steps.push({
       title: 'Stays on non-production by default',
-      detail: `Production holds ${sensitiveDataLabel.toLowerCase()}.`,
+      detail: `${sensitiveDataLabel}: production holds sensitive data.`,
     })
   }
 

@@ -12,7 +12,7 @@ export type McpServer = {
   status: 'production' | 'beta' | 'personal'
   access: 'read' | 'write'
   writeNote?: string // what exactly it can change
-  sensitiveData?: boolean // label configured per company (company: "Production PHI")
+  sensitiveData?: boolean // whether it touches company-configured sensitive data
   requiredAppSlugs?: string[] // apps in this catalog you need an account in; must resolve to DbResource
   auth: {
     kind: 'sso' | 'token' | 'none'

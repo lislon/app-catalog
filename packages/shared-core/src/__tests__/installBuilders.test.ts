@@ -178,16 +178,10 @@ describe('installBuilders', () => {
       expect(match).toBeTruthy()
       const encodedConfig = match?.[1]
       if (!encodedConfig) throw new Error('match is null')
-      // Decode: URL decode, then base64, then parse JSON
+      // Decode: URL decode, then base64, then parse JSON (browser)
       const base64 = decodeURIComponent(encodedConfig)
-      const bytes =
-        typeof atob !== 'undefined'
-          ? Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
-          : Buffer.from(base64, 'base64')
-      const json =
-        typeof TextDecoder !== 'undefined'
-          ? new TextDecoder().decode(bytes)
-          : bytes.toString('utf-8')
+      const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
+      const json = new TextDecoder().decode(bytes)
       const config = JSON.parse(json)
       expect(config.headers.key).toBe('<ТОКЕН>')
     })
@@ -343,7 +337,7 @@ describe('installBuilders', () => {
       expect(prompt).toContain('its headers (http) or env (stdio)')
     })
 
-    it('includes "call get_mcp_server" when catalogMcpAvailable is set', () => {
+    it('includes get_mcp_server as first step when available', () => {
       const server = makeServer({
         slug: 'gitlab',
         requiredAppSlugs: ['gitlab'],
@@ -362,13 +356,23 @@ describe('installBuilders', () => {
         sensitiveDataLabel: 'Sensitive data',
       })
       expect(prompt).toContain('get_mcp_server')
+      // Should be first step
+      const lines = prompt.split('\n')
+      const firstStep = lines.find((l) => l.startsWith('1. '))
+      expect(firstStep).toContain('get_mcp_server')
     })
 
-    it('includes get_mcp_server with sso-only server', () => {
+    it('includes get_mcp_server exactly once', () => {
       const server = makeServer({
         slug: 'gitlab',
         requiredAppSlugs: ['gitlab'],
-        auth: { kind: 'sso' },
+        auth: {
+          kind: 'token',
+          token: {
+            page: 'https://gitlab.example/tokens',
+            steps: ['Get token'],
+          },
+        },
         transport: { type: 'http', url: 'https://h/mcp' },
       })
       const prompt = installPrompt([server], {
@@ -376,7 +380,25 @@ describe('installBuilders', () => {
         catalogMcpAvailable: true,
         sensitiveDataLabel: 'Sensitive data',
       })
+      const matches = prompt.match(/get_mcp_server/g)
+      expect(matches?.length).toBe(1)
+    })
+
+    it('includes get_mcp_server for server with no requiredAppSlugs', () => {
+      const server = makeServer({
+        slug: 'test',
+        auth: { kind: 'none' },
+        transport: { type: 'http', url: 'https://h/mcp' },
+      })
+      const prompt = installPrompt([server], {
+        apps: [],
+        catalogMcpAvailable: true,
+        sensitiveDataLabel: 'Sensitive data',
+      })
       expect(prompt).toContain('get_mcp_server')
+      const lines = prompt.split('\n')
+      const firstStep = lines.find((l) => l.startsWith('1. '))
+      expect(firstStep).toContain('get_mcp_server')
     })
 
     it('omits get_mcp_server when flag is false', () => {
@@ -449,7 +471,7 @@ describe('installBuilders', () => {
       )
     })
 
-    it('uses sensitiveDataLabel parameter', () => {
+    it('uses sensitiveDataLabel exactly as given', () => {
       const sensitiveServer = makeServer({
         slug: 'lims',
         sensitiveData: true,
@@ -458,13 +480,12 @@ describe('installBuilders', () => {
       const prompt = installPrompt([sensitiveServer], {
         apps: [],
         catalogMcpAvailable: false,
-        sensitiveDataLabel: 'Production PHI',
+        sensitiveDataLabel: 'Customer records',
       })
-      expect(prompt.toLowerCase()).toContain('production phi')
-      expect(prompt.toLowerCase()).not.toContain('patient data')
+      expect(prompt).toContain('Customer records')
     })
 
-    it('never mentions PHI in shared-core', () => {
+    it('preserves label case (acronyms stay intact)', () => {
       const sensitiveServer = makeServer({
         slug: 'lims',
         sensitiveData: true,
@@ -473,10 +494,10 @@ describe('installBuilders', () => {
       const prompt = installPrompt([sensitiveServer], {
         apps: [],
         catalogMcpAvailable: false,
-        sensitiveDataLabel: 'Sensitive data',
+        sensitiveDataLabel: 'PII',
       })
-      expect(prompt).not.toContain('PHI')
-      expect(prompt).not.toContain('patient data')
+      expect(prompt).toContain('PII')
+      expect(prompt).not.toContain('pii')
     })
 
     it('includes sources URLs', () => {
@@ -566,19 +587,19 @@ describe('installBuilders', () => {
       expect(accessStep?.title).not.toContain('gitlab')
     })
 
-    it('uses sensitiveDataLabel parameter', () => {
+    it('uses sensitiveDataLabel exactly as given', () => {
       const server = makeServer({
         slug: 'lims',
         sensitiveData: true,
         transport: { type: 'http', url: 'https://h/mcp' },
       })
       const steps = whatHappensSteps([server], 'claude-code', {
-        sensitiveDataLabel: 'Production PHI',
+        sensitiveDataLabel: 'Customer records',
       })
       const sensitiveStep = steps.find((s) =>
-        s.detail.toLowerCase().includes('production'),
+        s.detail.includes('Customer records'),
       )
-      expect(sensitiveStep?.detail.toLowerCase()).toContain('production phi')
+      expect(sensitiveStep?.detail).toContain('Customer records')
     })
 
     it('guards against malformed token page URL', () => {
