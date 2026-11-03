@@ -11,7 +11,11 @@ import { upsertAsset } from '../modules/assets/upsertAsset'
 import type { ApprovalMethod, Group, Person } from '../types'
 import type { PrismaClient } from '../generated/prisma/client'
 import { naturalSort } from '../utils/naturalSort'
-import { syncSourceLinks, syncSourceUrls } from '../modules/sources/sourcesDb'
+import {
+  pruneOrphanedSourceUrls,
+  syncSourceLinks,
+  syncSourceUrls,
+} from '../modules/sources/sourcesDb'
 
 export interface SyncAppCatalogResult {
   created: number
@@ -23,17 +27,6 @@ export interface SyncAppCatalogResult {
 interface AssetSyncResult {
   screenshotIds: string[]
   iconName: string | null
-}
-
-/**
- * ISO string to Date, tolerating junk. The per-source schedule comes from a file
- * an agent writes, so a malformed date must drop that one field rather than fail
- * the whole catalog sync on `Invalid Date`.
- */
-function asDate(iso: string | null | undefined): Date | null {
-  if (!iso) return null
-  const t = Date.parse(iso)
-  return Number.isNaN(t) ? null : new Date(t)
 }
 
 function isFileNotFoundError(error: unknown): boolean {
@@ -254,26 +247,6 @@ export async function syncAppCatalog(
       ...TABLE_SYNC_MAGAZINE.DbAppTagDefinition,
     }).sync(tagsDefinitions)
 
-    // Collect all unique source slugs for sync
-    const uniqueSourceSlugs = new Set<string>()
-    for (const resource of resources) {
-      for (const source of resource.sources ?? []) {
-        const url = typeof source === 'string' ? source : source.url
-        const sourceSlug = parseSourceSlug(url)
-        uniqueSourceSlugs.add(sourceSlug)
-      }
-    }
-
-    // Sync Source entries using tableSyncPrisma
-    const sources = Array.from(uniqueSourceSlugs).map((slug) => ({
-      slug,
-      userPrompt: null,
-    }))
-    await tableSyncPrisma({
-      prisma,
-      ...TABLE_SYNC_MAGAZINE.Source,
-    }).sync(sources)
-
     // Sort resources: parents first (no parentSlug), then children — for FK integrity
     const sortedResources = [...resources].sort((a, b) => {
       const aIsChild = a.parentSlug ? 1 : 0
@@ -372,13 +345,6 @@ export async function syncAppCatalog(
 
     // Build all source references (URLs + schedules)
     const allSourceRefs = sortedResources.flatMap((resource) => {
-      const resourceSlug =
-        resource.slug ||
-        resource.displayName
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '')
-
       return (resource.sources ?? []).map((source) => {
         const url = typeof source === 'string' ? source : source.url
         // A bare URL from config carries no schedule; an enriched source does,
@@ -423,13 +389,20 @@ export async function syncAppCatalog(
       })
     })
 
+    // Collect all synced resource IDs to handle deletions
+    const allOwnerIds = new Set(Object.values(slugToId))
+
     // Sync all resource->source links (set semantics: old links deleted, new links created)
     await syncSourceLinks(
       prisma,
       'DbResourceSourceUrl',
       'resourceId',
       allLinkRows,
+      allOwnerIds,
     )
+
+    // Prune orphaned SourceUrl rows (URLs with no links)
+    await pruneOrphanedSourceUrls(prisma)
 
     // Seed aiMemory only for resources where the static config provides an initial value
     // and the DB currently has none. This preserves AI-written updates across restarts.

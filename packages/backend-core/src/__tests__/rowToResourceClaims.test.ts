@@ -16,7 +16,7 @@ function row(claims: unknown) {
     urlIssues: [],
     aliases: [],
     approverSlugs: [],
-    sourceRefs: [],
+    sourceLinks: [],
     createdAt: new Date('2026-01-01'),
     claims,
   } as unknown as Parameters<typeof rowToResource>[0]

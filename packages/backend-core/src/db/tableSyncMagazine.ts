@@ -6,6 +6,7 @@ interface CommonSyncTableInfo<TPrismaModelName extends Prisma.ModelName> {
   id?: ScalarKeys<TPrismaModelName>
   uniqColumns: ScalarKeys<TPrismaModelName>[]
   relationColumns?: ObjectKeys<TPrismaModelName>[]
+  upsertOnly?: boolean
 }
 
 type TableSyncMagazineType = Partial<{
@@ -49,6 +50,7 @@ export const TABLE_SYNC_MAGAZINE = {
     id: 'url',
     prismaModelName: 'SourceUrl',
     uniqColumns: ['url'],
+    upsertOnly: true,
   },
   DbResourceSourceUrl: {
     prismaModelName: 'DbResourceSourceUrl',

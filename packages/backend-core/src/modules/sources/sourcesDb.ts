@@ -15,12 +15,28 @@ import { TABLE_SYNC_MAGAZINE } from '../../db/tableSyncMagazine'
 
 /**
  * Upserts Source and SourceUrl rows from a list of references (from config + registry).
- * Schedule fields come from `ref.schedule`.
+ * Schedule fields come from `ref.schedule`. Dedupes by URL, preferring entries with schedules.
  */
 export async function syncSourceUrls(
   prisma: PrismaClient,
   refs: SourceReference[],
 ): Promise<void> {
+  // Dedupe by URL, preferring entries with schedules over bare strings
+  const urlMap = new Map<string, SourceReference>()
+  const hasScheduleData = (ref: SourceReference) =>
+    ref.schedule?.checkIntervalHours != null ||
+    ref.schedule?.nextCheckAfter != null ||
+    ref.schedule?.lastCheckedAt != null ||
+    ref.schedule?.lastContentChangeAt != null
+
+  for (const ref of refs) {
+    const existing = urlMap.get(ref.url)
+    // Prefer the entry that carries actual schedule data
+    if (!existing || (!hasScheduleData(existing) && hasScheduleData(ref))) {
+      urlMap.set(ref.url, ref)
+    }
+  }
+
   // Collect unique sources and URLs
   const sourceSlugSet = new Set<string>()
   const urlData: {
@@ -34,7 +50,7 @@ export async function syncSourceUrls(
     changeHistory: unknown | null
   }[] = []
 
-  for (const ref of refs) {
+  for (const ref of urlMap.values()) {
     const sourceSlug = ref.sourceSlug ?? parseSourceSlug(ref.url)
     sourceSlugSet.add(sourceSlug)
 
@@ -70,48 +86,68 @@ export async function syncSourceUrls(
 
 /**
  * Syncs a link table with set semantics: removes old links, adds new links.
+ * Handles empty owner sets (deletes all links for owners not in the synced set).
  * @param model - 'DbResourceSourceUrl' (or 'DbMcpServerSourceUrl' in a later task)
  * @param ownerColumn - the FK column name ('resourceId' or 'mcpServerSlug')
  * @param rows - array of { owner: string, url: string }
+ * @param allOwners - optional set of all owners being synced; links for owners not in this set are deleted
  */
 export async function syncSourceLinks<TModel extends 'DbResourceSourceUrl'>(
   prisma: PrismaClient,
   model: TModel,
   ownerColumn: string,
   rows: { owner: string; url: string }[],
+  allOwners?: Set<string>,
 ): Promise<void> {
-  // Group rows by owner for per-owner sync
-  const byOwner = new Map<string, string[]>()
-  for (const { owner, url } of rows) {
-    if (!byOwner.has(owner)) {
-      byOwner.set(owner, [])
-    }
-    byOwner.get(owner)!.push(url)
-  }
-
-  // Sync each owner's links independently
-  for (const [owner, urls] of byOwner) {
-    // Manually handle deletes for models with composite keys
-    const linkRows = urls.map((url) => ({
-      [ownerColumn]: owner,
-      url,
-    }))
-
-    // Delete all existing links for this owner
-    const modelOps = prisma[
-      (model.charAt(0).toLowerCase() + model.slice(1)) as keyof PrismaClient
+  await prisma.$transaction(async (tx) => {
+    const modelOps = tx[
+      (model.charAt(0).toLowerCase() + model.slice(1)) as keyof typeof tx
     ] as any
-    await modelOps.deleteMany({
-      where: { [ownerColumn]: owner },
-    })
 
-    // Create all new links
-    if (linkRows.length > 0) {
-      await modelOps.createMany({
-        data: linkRows,
-      })
+    // Group rows by owner for per-owner sync, deduping URLs per owner
+    const byOwner = new Map<string, Set<string>>()
+    for (const { owner, url } of rows) {
+      if (!byOwner.has(owner)) {
+        byOwner.set(owner, new Set())
+      }
+      byOwner.get(owner)!.add(url)
     }
-  }
+
+    // If allOwners is provided, delete links for owners not in the set
+    if (allOwners) {
+      const ownersInRows = new Set(byOwner.keys())
+      const ownersToDelete = Array.from(allOwners).filter(
+        (owner) => !ownersInRows.has(owner),
+      )
+      if (ownersToDelete.length > 0) {
+        await modelOps.deleteMany({
+          where: { [ownerColumn]: { in: ownersToDelete } },
+        })
+      }
+    }
+
+    // Sync each owner's links independently
+    for (const [owner, urlSet] of byOwner) {
+      const urls = Array.from(urlSet)
+      const linkRows = urls.map((url) => ({
+        [ownerColumn]: owner,
+        url,
+      }))
+
+      // Delete all existing links for this owner
+      await modelOps.deleteMany({
+        where: { [ownerColumn]: owner },
+      })
+
+      // Create all new links
+      if (linkRows.length > 0) {
+        await modelOps.createMany({
+          data: linkRows,
+          skipDuplicates: true,
+        })
+      }
+    }
+  })
 }
 
 /**
@@ -131,6 +167,18 @@ export function toSourceReference(row: SourceUrl): SourceReference {
       changeHistory: row.changeHistory as SourceCheck[] | null,
     }),
   }
+}
+
+/**
+ * Prunes orphaned SourceUrl rows (URLs with no links from any owner).
+ * Call this at the end of the boot sync only, not in updateApp.
+ */
+export async function pruneOrphanedSourceUrls(
+  prisma: PrismaClient,
+): Promise<void> {
+  await prisma.sourceUrl.deleteMany({
+    where: { resourceLinks: { none: {} } },
+  })
 }
 
 function asDate(iso: string | null | undefined): Date | null {

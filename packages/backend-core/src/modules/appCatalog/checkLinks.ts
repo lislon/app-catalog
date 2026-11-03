@@ -1,5 +1,6 @@
 import type { Resource } from '../../types/common/appCatalogTypes'
 import { getDbClient } from '../../db/client'
+import { toSourceReference } from '../sources/sourcesDb'
 
 interface LinkCheck {
   url: string
@@ -151,7 +152,7 @@ async function getAppsFromDb(): Promise<Resource[]> {
   const prisma = getDbClient()
   const rows = await prisma.dbResource.findMany({
     include: {
-      sourceRefs: true,
+      sourceLinks: { include: { sourceUrl: true } },
     },
   })
 
@@ -162,11 +163,9 @@ async function getAppsFromDb(): Promise<Resource[]> {
     const tags = (row.tags as unknown as Resource['tags']) ?? []
     const screenshotIds =
       (row.screenshotIds as unknown as Resource['screenshotIds']) ?? []
-    const sources = row.sourceRefs.map((ref) => ({
-      sourceSlug: ref.sourceSlug,
-      url: ref.url,
-      parseDate: ref.parseDate ? ref.parseDate.toISOString() : null,
-    }))
+    const sources = row.sourceLinks.map((link) =>
+      toSourceReference(link.sourceUrl),
+    )
     const notes = row.notes == null ? undefined : row.notes
     const appUrl = row.appUrl == null ? undefined : row.appUrl
     const iconName = row.iconName == null ? undefined : row.iconName

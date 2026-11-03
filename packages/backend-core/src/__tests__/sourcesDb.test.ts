@@ -1,117 +1,138 @@
 // @vitest-environment node
+/**
+ * DB-backed integration tests for sources module.
+ * Requires AC_CORE_DATABASE_URL pointing to a disposable test database.
+ */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { getDbClient } from '../db/client'
+import { syncAppCatalog } from '../db/syncAppCatalog'
 import {
-  syncSourceLinks,
-  syncSourceUrls,
-  toSourceReference,
-} from '../modules/sources/sourcesDb'
-import type { SourceReference } from '../types/common/appCatalogTypes'
+  getResourcesFromPrisma,
+  updateApp,
+} from '../modules/appCatalog/service'
+import type { Resource } from '../types/common/appCatalogTypes'
 
-describe('sourcesDb', () => {
-  let testResourceIds: string[]
+describe('sourcesDb integration', () => {
+  let testResourceIds: string[] = []
 
   beforeEach(async () => {
-    const prisma = getDbClient()
-
-    // Clean up existing test data
-    await prisma.dbResourceSourceUrl.deleteMany({})
-    await prisma.sourceUrl.deleteMany({})
-    await prisma.source.deleteMany({})
-    await prisma.dbResource.deleteMany({})
-
-    // Create test resources
-    const res1 = await prisma.dbResource.create({
-      data: {
-        slug: 'test-app-1',
-        displayName: 'Test App 1',
-        description: 'First test app',
-      },
-    })
-    const res2 = await prisma.dbResource.create({
-      data: {
-        slug: 'test-app-2',
-        displayName: 'Test App 2',
-        description: 'Second test app',
-      },
-    })
-    testResourceIds = [res1.id, res2.id]
+    testResourceIds = []
   })
 
   afterEach(async () => {
     const prisma = getDbClient()
-    await prisma.dbResourceSourceUrl.deleteMany({})
-    await prisma.sourceUrl.deleteMany({})
-    await prisma.source.deleteMany({})
-    await prisma.dbResource.deleteMany({})
+    if (testResourceIds.length > 0) {
+      await prisma.dbResource.deleteMany({
+        where: { id: { in: testResourceIds } },
+      })
+    }
+    await prisma.sourceUrl.deleteMany({
+      where: { url: { startsWith: 'https://test-sources-' } },
+    })
+    await prisma.source.deleteMany({
+      where: { slug: { startsWith: 'test-sources-' } },
+    })
   })
 
-  it('two apps citing one URL share one SourceUrl row', async () => {
+  it('two apps citing one URL share one SourceUrl row, and other apps survive updateApp', async () => {
     const prisma = getDbClient()
-    const sharedUrl = 'https://docs.example.com/guide'
-    const sourceRefs: SourceReference[] = [
-      { url: sharedUrl, sourceSlug: 'docs-example' },
-      { url: 'https://github.com/example/app1', sourceSlug: 'github' },
-    ]
+    const sharedUrl = 'https://test-sources-shared.example.com/guide'
+    const url1 = 'https://test-sources-app1.example.com/readme'
+    const url2 = 'https://test-sources-app2.example.com/readme'
 
-    // Sync sources
-    await syncSourceUrls(prisma, sourceRefs)
+    const app1: Resource = {
+      id: 'test-sources-app1',
+      slug: 'test-sources-app1',
+      displayName: 'Test Sources App 1',
+      description: 'First test app',
+      sources: [sharedUrl, url1],
+    }
+    const app2: Resource = {
+      id: 'test-sources-app2',
+      slug: 'test-sources-app2',
+      displayName: 'Test Sources App 2',
+      description: 'Second test app',
+      sources: [sharedUrl, url2],
+    }
 
-    // Link first app
-    await syncSourceLinks(prisma, 'DbResourceSourceUrl', 'resourceId', [
-      { owner: testResourceIds[0], url: sharedUrl },
-      { owner: testResourceIds[0], url: 'https://github.com/example/app1' },
-    ])
+    await syncAppCatalog([app1, app2], [], [])
 
-    // Link second app with the shared URL
-    await syncSourceLinks(prisma, 'DbResourceSourceUrl', 'resourceId', [
-      { owner: testResourceIds[1], url: sharedUrl },
-    ])
+    const synced = await prisma.dbResource.findMany({
+      where: { slug: { in: ['test-sources-app1', 'test-sources-app2'] } },
+    })
+    testResourceIds = synced.map((r) => r.id)
 
-    // Verify only one SourceUrl row for the shared URL
-    const count = await prisma.sourceUrl.count({
+    const sharedCount = await prisma.sourceUrl.count({
       where: { url: sharedUrl },
     })
-    expect(count).toBe(1)
+    expect(sharedCount).toBe(1)
 
-    // Verify both resources can read back the shared URL
-    const resource1 = await prisma.dbResource.findUnique({
-      where: { id: testResourceIds[0] },
-      include: { sourceLinks: { include: { sourceUrl: true } } },
-    })
-    const resource2 = await prisma.dbResource.findUnique({
-      where: { id: testResourceIds[1] },
-      include: { sourceLinks: { include: { sourceUrl: true } } },
+    const resources = await getResourcesFromPrisma()
+    const res1 = resources.find((r) => r.slug === 'test-sources-app1')
+    const res2 = resources.find((r) => r.slug === 'test-sources-app2')
+
+    const res1Urls = res1?.sources?.map((s) =>
+      typeof s === 'string' ? s : s.url,
+    )
+    const res2Urls = res2?.sources?.map((s) =>
+      typeof s === 'string' ? s : s.url,
+    )
+
+    expect(res1Urls).toContain(sharedUrl)
+    expect(res1Urls).toContain(url1)
+    expect(res2Urls).toContain(sharedUrl)
+    expect(res2Urls).toContain(url2)
+
+    await updateApp({
+      id: synced[0]!.id,
+      data: { sources: [sharedUrl] },
     })
 
-    expect(resource1?.sourceLinks.some((link) => link.url === sharedUrl)).toBe(
-      true,
-    )
-    expect(resource2?.sourceLinks.some((link) => link.url === sharedUrl)).toBe(
-      true,
-    )
+    const app1Links = await prisma.dbResourceSourceUrl.findMany({
+      where: { resourceId: synced[0]!.id },
+    })
+    expect(app1Links).toHaveLength(1)
+    expect(app1Links[0]!.url).toBe(sharedUrl)
+
+    const app2Links = await prisma.dbResourceSourceUrl.findMany({
+      where: { resourceId: synced[1]!.id },
+    })
+    expect(app2Links).toHaveLength(2)
+    expect(app2Links.map((l) => l.url).sort()).toEqual([sharedUrl, url2].sort())
   })
 
-  it('schedule from an enriched source survives sync', async () => {
+  it('schedule from an enriched source survives sync and produces correct pulse', async () => {
     const prisma = getDbClient()
-    const url = 'https://api.example.com/docs'
+    const url = 'https://test-sources-scheduled.example.com/api'
     const nextCheckAfter = new Date('2026-12-01T00:00:00Z')
     const lastCheckedAt = new Date('2026-11-01T00:00:00Z')
     const lastContentChangeAt = new Date('2026-10-15T00:00:00Z')
 
-    const sourceRef: SourceReference = {
-      url,
-      sourceSlug: 'api-example',
-      schedule: {
-        nextCheckAfter: nextCheckAfter.toISOString(),
-        lastCheckedAt: lastCheckedAt.toISOString(),
-        lastContentChangeAt: lastContentChangeAt.toISOString(),
-        checkIntervalHours: 24,
-        changeHistory: [{ date: '2026-10-15T00:00:00Z', changed: true }],
-      },
+    const app: Resource = {
+      id: 'test-sources-scheduled',
+      slug: 'test-sources-scheduled',
+      displayName: 'Test Sources Scheduled',
+      description: 'Test app with schedule',
+      sources: [
+        {
+          url,
+          schedule: {
+            nextCheckAfter: nextCheckAfter.toISOString(),
+            lastCheckedAt: lastCheckedAt.toISOString(),
+            lastContentChangeAt: lastContentChangeAt.toISOString(),
+            checkIntervalHours: 24,
+            changeHistory: [{ date: '2026-10-15T00:00:00Z', changed: true }],
+          },
+        },
+      ],
     }
 
-    await syncSourceUrls(prisma, [sourceRef])
+    await syncAppCatalog([app], [], [])
+
+    const synced = await prisma.dbResource.findUnique({
+      where: { slug: 'test-sources-scheduled' },
+    })
+    testResourceIds = synced ? [synced.id] : []
 
     const sourceUrl = await prisma.sourceUrl.findUnique({
       where: { url },
@@ -129,93 +150,156 @@ describe('sourcesDb', () => {
     )
     expect(sourceUrl?.checkIntervalHours).toBe(24)
 
-    // Read back via toSourceReference and verify pulse is computed
-    const readBack = toSourceReference(sourceUrl!)
-    expect(readBack.url).toBe(url)
-    expect(readBack.sourceSlug).toBe('api-example')
-    expect(readBack.pulse).toBeTruthy()
+    const resources = await getResourcesFromPrisma()
+    const res = resources.find((r) => r.slug === 'test-sources-scheduled')
+    const source = res?.sources?.[0]
+
+    if (typeof source === 'string') {
+      throw new Error('Expected SourceReference, got string')
+    }
+
+    expect(source?.pulse).toBeTruthy()
+    expect(source?.pulse?.cadence).toBe('daily')
+    expect(source?.pulse?.state).toBeTruthy()
   })
 
   it('removing a source from config deletes only that link', async () => {
     const prisma = getDbClient()
-    const url1 = 'https://docs.example.com/app1'
-    const url2 = 'https://docs.example.com/app2'
+    const url1 = 'https://test-sources-remove1.example.com/app1'
+    const url2 = 'https://test-sources-remove2.example.com/app2'
 
-    await syncSourceUrls(prisma, [
-      { url: url1, sourceSlug: 'docs-example' },
-      { url: url2, sourceSlug: 'docs-example' },
-    ])
+    const app1: Resource = {
+      id: 'test-sources-remove-app1',
+      slug: 'test-sources-remove-app1',
+      displayName: 'Test Sources Remove App 1',
+      description: 'First test app',
+      sources: [url1, url2],
+    }
+    const app2: Resource = {
+      id: 'test-sources-remove-app2',
+      slug: 'test-sources-remove-app2',
+      displayName: 'Test Sources Remove App 2',
+      description: 'Second test app',
+      sources: [url1],
+    }
 
-    // Link both URLs to first resource
-    await syncSourceLinks(prisma, 'DbResourceSourceUrl', 'resourceId', [
-      { owner: testResourceIds[0], url: url1 },
-      { owner: testResourceIds[0], url: url2 },
-    ])
+    await syncAppCatalog([app1, app2], [], [])
 
-    // Link url1 to second resource
-    await syncSourceLinks(prisma, 'DbResourceSourceUrl', 'resourceId', [
-      { owner: testResourceIds[1], url: url1 },
-    ])
+    const synced = await prisma.dbResource.findMany({
+      where: {
+        slug: { in: ['test-sources-remove-app1', 'test-sources-remove-app2'] },
+      },
+    })
+    testResourceIds = synced.map((r) => r.id)
 
-    // Now sync first resource again without url1
-    await syncSourceLinks(prisma, 'DbResourceSourceUrl', 'resourceId', [
-      { owner: testResourceIds[0], url: url2 },
-    ])
+    const app1Updated: Resource = {
+      id: 'test-sources-remove-app1',
+      slug: 'test-sources-remove-app1',
+      displayName: 'Test Sources Remove App 1',
+      description: 'First test app',
+      sources: [url2],
+    }
+    await syncAppCatalog([app1Updated, app2], [], [])
 
-    // Verify first resource only has url2
     const resource1Links = await prisma.dbResourceSourceUrl.findMany({
-      where: { resourceId: testResourceIds[0] },
+      where: { resourceId: synced[0]!.id },
     })
     expect(resource1Links).toHaveLength(1)
-    expect(resource1Links[0].url).toBe(url2)
+    expect(resource1Links[0]!.url).toBe(url2)
 
-    // Verify second resource still has url1
     const resource2Links = await prisma.dbResourceSourceUrl.findMany({
-      where: { resourceId: testResourceIds[1] },
+      where: { resourceId: synced[1]!.id },
     })
     expect(resource2Links).toHaveLength(1)
-    expect(resource2Links[0].url).toBe(url1)
+    expect(resource2Links[0]!.url).toBe(url1)
   })
 
-  it("updateApp replaces this app's links only", async () => {
+  it('removing all sources from an app deletes all its links', async () => {
     const prisma = getDbClient()
-    const url1 = 'https://docs.example.com/shared'
-    const url2 = 'https://github.com/example/app1'
-    const url3 = 'https://github.com/example/app2'
+    const url1 = 'https://test-sources-removeall.example.com/url1'
+    const url2 = 'https://test-sources-removeall.example.com/url2'
 
-    await syncSourceUrls(prisma, [
-      { url: url1, sourceSlug: 'docs-example' },
-      { url: url2, sourceSlug: 'github' },
-      { url: url3, sourceSlug: 'github' },
-    ])
+    const app: Resource = {
+      id: 'test-sources-removeall',
+      slug: 'test-sources-removeall',
+      displayName: 'Test Sources Remove All',
+      description: 'Test app',
+      sources: [url1, url2],
+    }
 
-    // Both resources cite url1 initially
-    await syncSourceLinks(prisma, 'DbResourceSourceUrl', 'resourceId', [
-      { owner: testResourceIds[0], url: url1 },
-      { owner: testResourceIds[0], url: url2 },
-    ])
-    await syncSourceLinks(prisma, 'DbResourceSourceUrl', 'resourceId', [
-      { owner: testResourceIds[1], url: url1 },
-    ])
+    await syncAppCatalog([app], [], [])
 
-    // Update first resource to use url3 instead of url2, keeping url1
-    await syncSourceLinks(prisma, 'DbResourceSourceUrl', 'resourceId', [
-      { owner: testResourceIds[0], url: url1 },
-      { owner: testResourceIds[0], url: url3 },
-    ])
-
-    // Verify first resource has url1 and url3
-    const resource1Links = await prisma.dbResourceSourceUrl.findMany({
-      where: { resourceId: testResourceIds[0] },
+    const synced = await prisma.dbResource.findUnique({
+      where: { slug: 'test-sources-removeall' },
     })
-    expect(resource1Links).toHaveLength(2)
-    expect(resource1Links.map((l) => l.url).sort()).toEqual([url1, url3].sort())
+    testResourceIds = synced ? [synced.id] : []
 
-    // Verify second resource still has only url1
-    const resource2Links = await prisma.dbResourceSourceUrl.findMany({
-      where: { resourceId: testResourceIds[1] },
+    let links = await prisma.dbResourceSourceUrl.findMany({
+      where: { resourceId: synced!.id },
     })
-    expect(resource2Links).toHaveLength(1)
-    expect(resource2Links[0].url).toBe(url1)
+    expect(links).toHaveLength(2)
+
+    const appNoSources: Resource = {
+      id: 'test-sources-removeall',
+      slug: 'test-sources-removeall',
+      displayName: 'Test Sources Remove All',
+      description: 'Test app',
+      sources: [],
+    }
+    await syncAppCatalog([appNoSources], [], [])
+
+    links = await prisma.dbResourceSourceUrl.findMany({
+      where: { resourceId: synced!.id },
+    })
+    expect(links).toHaveLength(0)
+  })
+
+  it('first boot handles duplicate URLs from multiple apps', async () => {
+    const prisma = getDbClient()
+    const sharedUrl = 'https://test-sources-dupboot.example.com/shared'
+
+    const app1: Resource = {
+      id: 'test-sources-dupboot1',
+      slug: 'test-sources-dupboot1',
+      displayName: 'Test Sources Dup Boot 1',
+      description: 'First test app',
+      sources: [sharedUrl],
+    }
+    const app2: Resource = {
+      id: 'test-sources-dupboot2',
+      slug: 'test-sources-dupboot2',
+      displayName: 'Test Sources Dup Boot 2',
+      description: 'Second test app',
+      sources: [
+        {
+          url: sharedUrl,
+          schedule: {
+            nextCheckAfter: new Date('2026-12-01T00:00:00Z').toISOString(),
+            checkIntervalHours: 48,
+          },
+        },
+      ],
+    }
+
+    await syncAppCatalog([app1, app2], [], [])
+
+    const synced = await prisma.dbResource.findMany({
+      where: {
+        slug: { in: ['test-sources-dupboot1', 'test-sources-dupboot2'] },
+      },
+    })
+    testResourceIds = synced.map((r) => r.id)
+
+    const sourceUrl = await prisma.sourceUrl.findUnique({
+      where: { url: sharedUrl },
+    })
+    expect(sourceUrl).toBeTruthy()
+    expect(sourceUrl?.checkIntervalHours).toBe(48)
+
+    const links = await prisma.dbResourceSourceUrl.findMany({
+      where: { resourceId: { in: testResourceIds } },
+    })
+    expect(links).toHaveLength(2)
+    expect(links.every((l) => l.url === sharedUrl)).toBe(true)
   })
 })

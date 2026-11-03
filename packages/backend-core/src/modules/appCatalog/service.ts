@@ -6,12 +6,10 @@ import type {
   AppCategory,
   GroupingTagDefinition,
   Resource,
-  SourceCheck,
 } from '../../types/common/appCatalogTypes'
 import type { ServiceConfig } from '../../types/common/approvalMethodTypes'
 import type { Group, Person } from '../../types/common/personGroupTypes'
 import { omit } from 'radashi'
-import { parseSourceSlug } from '../../utils/parseSourceSlug'
 import { computeFreshness } from './freshness'
 import {
   syncSourceLinks,
@@ -295,7 +293,7 @@ export async function updateApp(input: UpdateAppInput): Promise<Resource> {
   const updated = await prisma.dbResource.update({
     where: { id },
     data: updatePayload,
-    include: { sourceRefs: true },
+    include: { sourceLinks: { include: { sourceUrl: true } } },
   })
 
   if (data.sources !== undefined) {
@@ -339,7 +337,7 @@ export async function updateAiMemory(
   const updated = await prisma.dbResource.update({
     where: { id: input.id },
     data: { aiMemory: input.aiMemory },
-    include: { sourceRefs: true },
+    include: { sourceLinks: { include: { sourceUrl: true } } },
   })
   return rowToResource(updated)
 }
