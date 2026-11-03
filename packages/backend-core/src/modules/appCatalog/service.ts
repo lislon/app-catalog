@@ -13,11 +13,15 @@ import type { Group, Person } from '../../types/common/personGroupTypes'
 import { omit } from 'radashi'
 import { parseSourceSlug } from '../../utils/parseSourceSlug'
 import { computeFreshness } from './freshness'
-import { computeSourcePulse } from './sourcePulse'
+import {
+  syncSourceLinks,
+  syncSourceUrls,
+  toSourceReference,
+} from '../sources/sourcesDb'
 
-/** Prisma query result for DbResource with sourceRefs included (used by rowToResource) */
-type ResourceRowWithSourceRefs = Prisma.DbResourceGetPayload<{
-  include: { sourceRefs: true }
+/** Prisma query result for DbResource with sourceLinks included (used by rowToResource) */
+type ResourceRowWithSourceLinks = Prisma.DbResourceGetPayload<{
+  include: { sourceLinks: { include: { sourceUrl: true } } }
 }>
 
 function capitalize(word: string): string {
@@ -152,27 +156,16 @@ async function getAllApprovalMethodsFromPrisma(): Promise<AppApprovalMethod[]> {
   })
 }
 
-export function rowToResource(row: ResourceRowWithSourceRefs): Resource {
+export function rowToResource(row: ResourceRowWithSourceLinks): Resource {
   const accessRequest =
     row.accessRequest as unknown as Resource['accessRequest']
   const teams = (row.teams as unknown as string[] | null) ?? []
   const tags = (row.tags as unknown as Resource['tags']) ?? []
   const screenshotIds =
     (row.screenshotIds as unknown as Resource['screenshotIds']) ?? []
-  const sources = row.sourceRefs.map((ref) => ({
-    sourceSlug: ref.sourceSlug,
-    url: ref.url,
-    parseDate: ref.parseDate ? ref.parseDate.toISOString() : null,
-    // Derived here rather than shipped raw so the pulse mark can stay a dumb
-    // renderer, the same way `freshness` is computed for the entry below.
-    pulse: computeSourcePulse({
-      lastCheckedAt: ref.lastCheckedAt?.toISOString() ?? null,
-      nextCheckAfter: ref.nextCheckAfter?.toISOString() ?? null,
-      lastContentChangeAt: ref.lastContentChangeAt?.toISOString() ?? null,
-      checkIntervalHours: ref.checkIntervalHours,
-      changeHistory: ref.changeHistory as SourceCheck[] | null,
-    }),
-  }))
+  const sources = row.sourceLinks.map((link) =>
+    toSourceReference(link.sourceUrl),
+  )
   const notes = row.notes == null ? undefined : row.notes
   const background = row.background == null ? undefined : row.background
   const appUrl = row.appUrl == null ? undefined : row.appUrl
@@ -254,7 +247,7 @@ export async function getResourcesFromPrisma(): Promise<Resource[]> {
 
   const rows = await prisma.dbResource.findMany({
     include: {
-      sourceRefs: true,
+      sourceLinks: { include: { sourceUrl: true } },
     },
   })
 
@@ -307,33 +300,18 @@ export async function updateApp(input: UpdateAppInput): Promise<Resource> {
 
   if (data.sources !== undefined) {
     const urls = [...new Set(data.sources.map((u) => u.trim()).filter(Boolean))]
-    const uniqueSourceSlugs = [...new Set(urls.map(parseSourceSlug))]
 
-    for (const sourceSlug of uniqueSourceSlugs) {
-      await prisma.source.upsert({
-        where: { slug: sourceSlug },
-        create: { slug: sourceSlug },
-        update: {},
-      })
-    }
+    // Sync Source and SourceUrl rows
+    const sourceRefs = urls.map((url) => ({ url }))
+    await syncSourceUrls(prisma, sourceRefs)
 
-    await prisma.sourceReference.deleteMany({
-      where: { resourceId: updated.id },
-    })
-
-    if (urls.length > 0) {
-      await prisma.sourceReference.createMany({
-        data: urls.map((url) => ({
-          resourceId: updated.id,
-          sourceSlug: parseSourceSlug(url),
-          url: url.trim(),
-        })),
-      })
-    }
+    // Sync this resource's links (replaces old links with new ones)
+    const linkRows = urls.map((url) => ({ owner: updated.id, url }))
+    await syncSourceLinks(prisma, 'DbResourceSourceUrl', 'resourceId', linkRows)
 
     const refetched = await prisma.dbResource.findUnique({
       where: { id },
-      include: { sourceRefs: true },
+      include: { sourceLinks: { include: { sourceUrl: true } } },
     })
     if (!refetched) throw new Error('Resource not found after update')
     return rowToResource(refetched)

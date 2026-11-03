@@ -45,8 +45,13 @@ export const TABLE_SYNC_MAGAZINE = {
     prismaModelName: 'Source',
     uniqColumns: ['slug'],
   },
-  SourceReference: {
-    prismaModelName: 'SourceReference',
+  SourceUrl: {
+    id: 'url',
+    prismaModelName: 'SourceUrl',
+    uniqColumns: ['url'],
+  },
+  DbResourceSourceUrl: {
+    prismaModelName: 'DbResourceSourceUrl',
     uniqColumns: ['resourceId', 'url'],
   },
 } as const satisfies TableSyncMagazineType

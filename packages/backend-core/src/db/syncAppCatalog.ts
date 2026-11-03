@@ -11,7 +11,7 @@ import { upsertAsset } from '../modules/assets/upsertAsset'
 import type { ApprovalMethod, Group, Person } from '../types'
 import type { PrismaClient } from '../generated/prisma/client'
 import { naturalSort } from '../utils/naturalSort'
-import { parseSourceSlug } from '../utils/parseSourceSlug'
+import { syncSourceLinks, syncSourceUrls } from '../modules/sources/sourcesDb'
 
 export interface SyncAppCatalogResult {
   created: number
@@ -362,7 +362,7 @@ export async function syncAppCatalog(
       `
     }
 
-    // Resolve slug -> id for synced resources so SourceReference can reference by resourceId
+    // Resolve slug -> id for synced resources so links can reference by resourceId
     const slugs = dbResources.map((a) => a.slug)
     const resourceRows = await prisma.dbResource.findMany({
       where: { slug: { in: slugs } },
@@ -370,8 +370,40 @@ export async function syncAppCatalog(
     })
     const slugToId = Object.fromEntries(resourceRows.map((r) => [r.slug, r.id]))
 
-    // Build allSourceRefs with resourceId (slug already resolved to id)
+    // Build all source references (URLs + schedules)
     const allSourceRefs = sortedResources.flatMap((resource) => {
+      const resourceSlug =
+        resource.slug ||
+        resource.displayName
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+
+      return (resource.sources ?? []).map((source) => {
+        const url = typeof source === 'string' ? source : source.url
+        // A bare URL from config carries no schedule; an enriched source does,
+        // and it is the autoupdate registry's copy that wins on every sync.
+        const schedule =
+          typeof source === 'string' ? {} : (source.schedule ?? {})
+        return {
+          url,
+          sourceSlug: undefined, // Will be derived in syncSourceUrls
+          schedule: {
+            lastCheckedAt: schedule.lastCheckedAt,
+            nextCheckAfter: schedule.nextCheckAfter,
+            lastContentChangeAt: schedule.lastContentChangeAt,
+            checkIntervalHours: schedule.checkIntervalHours,
+            changeHistory: schedule.changeHistory,
+          },
+        }
+      })
+    })
+
+    // Sync Source and SourceUrl rows
+    await syncSourceUrls(prisma, allSourceRefs)
+
+    // Build link rows (resource -> URL)
+    const allLinkRows = sortedResources.flatMap((resource) => {
       const resourceSlug =
         resource.slug ||
         resource.displayName
@@ -387,32 +419,17 @@ export async function syncAppCatalog(
 
       return (resource.sources ?? []).map((source) => {
         const url = typeof source === 'string' ? source : source.url
-        const sourceSlug = parseSourceSlug(url)
-        // A bare URL from config carries no schedule; an enriched source does,
-        // and it is the autoupdate registry's copy that wins on every sync.
-        const schedule =
-          typeof source === 'string' ? {} : (source.schedule ?? {})
-        return {
-          resourceId,
-          sourceSlug,
-          url,
-          parseDate: null,
-          excerpts: [],
-          userPrompt: null,
-          lastCheckedAt: asDate(schedule.lastCheckedAt),
-          nextCheckAfter: asDate(schedule.nextCheckAfter),
-          lastContentChangeAt: asDate(schedule.lastContentChangeAt),
-          checkIntervalHours: schedule.checkIntervalHours ?? null,
-          changeHistory: schedule.changeHistory ?? null,
-        }
+        return { owner: resourceId, url }
       })
     })
 
-    // Then sync all SourceReferences (with set semantics: old ones deleted, new ones created)
-    await tableSyncPrisma({
+    // Sync all resource->source links (set semantics: old links deleted, new links created)
+    await syncSourceLinks(
       prisma,
-      ...TABLE_SYNC_MAGAZINE.SourceReference,
-    }).sync(allSourceRefs)
+      'DbResourceSourceUrl',
+      'resourceId',
+      allLinkRows,
+    )
 
     // Seed aiMemory only for resources where the static config provides an initial value
     // and the DB currently has none. This preserves AI-written updates across restarts.

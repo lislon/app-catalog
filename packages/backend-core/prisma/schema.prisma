@@ -160,7 +160,7 @@ model DbResource {
   /// [Claim[]] Statements the card text is built from; see Claim in appCatalogTypes.
   claims                     Json?
   childrenLabel              String? // Plural noun for this resource's children ("Accounts"); set on the parent, names its tab
-  sourceRefs                 SourceReference[]
+  sourceLinks                DbResourceSourceUrl[]
   feedback                   DbFeedback[]
   // Self-referential tree: sub-resources point to their parent
   parentSlug                 String?
@@ -338,33 +338,32 @@ model DbAsset {
 }
 
 model Source {
-  slug       String            @id
+  slug       String      @id
   userPrompt String?
-  references SourceReference[]
+  urls       SourceUrl[]
 }
 
-model SourceReference {
-  id         Int        @id @default(autoincrement())
-  sourceSlug String
-  source     Source     @relation(fields: [sourceSlug], references: [slug], onDelete: Cascade)
-  resourceId String
-  resource   DbResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
-  url        String
-  parseDate  DateTime?
-  excerpts   String[]   @default([])
-  userPrompt String?
-
-  // Per-source schedule from the autoupdate loop — the same three dates
-  // DbResource carries for the whole entry, plus what only a source has: its own
-  // adaptive interval and its own recent check results. Drives the pulse mark.
+model SourceUrl {
+  url                 String                  @id
+  sourceSlug          String
+  source              Source                  @relation(fields: [sourceSlug], references: [slug], onDelete: Cascade)
+  excerpts            String[]                @default([])
   lastCheckedAt       DateTime?
   nextCheckAfter      DateTime?
   lastContentChangeAt DateTime?
   checkIntervalHours  Int?
-  /// Newest-first [{date, changed}], capped by the producer.
   changeHistory       Json?
+  resourceLinks       DbResourceSourceUrl[]
+}
 
-  @@unique([resourceId, url])
+model DbResourceSourceUrl {
+  resourceId String
+  resource   DbResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  url        String
+  sourceUrl  SourceUrl  @relation(fields: [url], references: [url], onDelete: Cascade)
+  userPrompt String?
+
+  @@id([resourceId, url])
 }
 
 // ========== Community Tools Models ==========
