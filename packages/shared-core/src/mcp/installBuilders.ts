@@ -26,6 +26,25 @@ const CFG_FILE: Record<InstallOptionId, string> = {
   json: 'the config file you paste into',
 }
 
+const INSTALL_OPTION_LABELS: Record<InstallOptionId, string> = {
+  'claude-vscode': 'Claude Code in VS Code',
+  'claude-code': 'Claude Code in terminal',
+  'claude-desktop': 'Claude Code desktop',
+  cursor: 'Cursor',
+  gemini: 'Gemini CLI',
+  prompt: 'any AI chat',
+  json: 'your MCP config',
+}
+
+/**
+ * POSIX shell quote: wraps unsafe strings in single quotes.
+ * Safe tokens (alphanumeric + limited punctuation) pass through bare.
+ */
+function shq(s: string): string {
+  if (/^[A-Za-z0-9_@%+=:,./-]+$/.test(s)) return s
+  return "'" + s.replace(/'/g, "'\\''") + "'"
+}
+
 /**
  * Makes a relative `transport.url` absolute.
  * HTTP transport: prefixes relative URLs with origin.
@@ -49,6 +68,7 @@ export function resolveUrl(server: McpServer, origin: string): McpServer {
 /**
  * Builds a `claude mcp add` or `gemini mcp add` command for one or more servers.
  * Multi-server: joins with ` && \\\n  `.
+ * All tokens are shell-quoted for safety.
  */
 export function cliCommand(
   option: 'claude-code' | 'gemini',
@@ -60,15 +80,13 @@ export function cliCommand(
       if (s.transport.type === 'http') {
         const headers = s.transport.headers
           ? Object.entries(s.transport.headers)
-              .map(([k, v]) => {
-                const escaped = v.replace(/"/g, '\\"')
-                return ` -H "${k}: ${escaped}"`
-              })
+              .map(([k, v]) => ` -H ${shq(`${k}: ${v}`)}`)
               .join('')
           : ''
-        return `${cmd} mcp add --transport http ${s.slug} ${s.transport.url}${headers}`
+        return `${cmd} mcp add --transport http ${shq(s.slug)} ${shq(s.transport.url)}${headers}`
       } else {
-        return `${cmd} mcp add ${s.slug} -- ${s.transport.command} ${s.transport.args.join(' ')}`
+        const args = s.transport.args.map(shq).join(' ')
+        return `${cmd} mcp add ${shq(s.slug)} -- ${shq(s.transport.command)} ${args}`
       }
     })
     .join(' && \\\n  ')
@@ -99,6 +117,7 @@ export function jsonConfig(servers: McpServer[]): string {
 /**
  * Builds a Cursor deep link.
  * Format: cursor://anysphere.cursor-deeplink/mcp/install?name=<slug>&config=<base64>
+ * Handles UTF-8 text safely (not just Latin-1).
  */
 export function cursorLink(server: McpServer): string {
   let config: unknown
@@ -115,7 +134,17 @@ export function cursorLink(server: McpServer): string {
       args: server.transport.args,
     }
   }
-  const encoded = encodeURIComponent(btoa(JSON.stringify(config)))
+  const json = JSON.stringify(config)
+  // UTF-8 safe base64: encode to bytes first
+  const bytes =
+    typeof TextEncoder !== 'undefined'
+      ? new TextEncoder().encode(json)
+      : Buffer.from(json, 'utf-8')
+  const base64 =
+    typeof btoa !== 'undefined'
+      ? btoa(String.fromCharCode(...bytes))
+      : bytes.toString('base64')
+  const encoded = encodeURIComponent(base64)
   return `cursor://anysphere.cursor-deeplink/mcp/install?name=${encodeURIComponent(server.slug)}&config=${encoded}`
 }
 
@@ -136,10 +165,12 @@ export function installPrompt(
     option?: InstallOptionId
     apps: { slug: string; name: string; url: string }[]
     catalogMcpAvailable: boolean
+    sensitiveDataLabel: string
   },
 ): string {
+  const optionLabel = ctx.option ? INSTALL_OPTION_LABELS[ctx.option] : undefined
   const lines: string[] = [
-    `Install ${servers.length > 1 ? 'these MCP servers' : 'this MCP server'} for me${ctx.option ? ` in ${ctx.option}` : ''} and check ${servers.length > 1 ? 'they work' : 'it works'}.`,
+    `Install ${servers.length > 1 ? 'these MCP servers' : 'this MCP server'} for me${optionLabel ? ` in ${optionLabel}` : ''} and check ${servers.length > 1 ? 'they work' : 'it works'}.`,
     '',
   ]
 
@@ -172,6 +203,10 @@ export function installPrompt(
     } else {
       lines.push(`  sign-in: none.`)
     }
+
+    if (s.sources.length > 0) {
+      lines.push(`  sources: ${s.sources.join(', ')}`)
+    }
   })
 
   lines.push('', 'Steps:')
@@ -186,11 +221,13 @@ export function installPrompt(
     const appNames = allRequiredSlugs
       .map((slug) => ctx.apps.find((a) => a.slug === slug))
       .filter((a): a is { slug: string; name: string; url: string } => !!a)
-    const appUrls = appNames.map((a) => a.url).join(' , ')
-    const names = appNames.map((a) => a.name).join(', ')
-    steps.push(
-      `Check I can sign in to ${names}. If an account is missing, stop and send me its access-request page: ${appUrls}`,
-    )
+    if (appNames.length > 0) {
+      const appUrls = appNames.map((a) => a.url).join(', ')
+      const names = appNames.map((a) => a.name).join(', ')
+      steps.push(
+        `Check I can sign in to ${names}. If an account is missing, stop and send me its access-request page: ${appUrls}`,
+      )
+    }
   }
 
   // Add servers
@@ -210,25 +247,55 @@ export function installPrompt(
       ),
     ].join(', ')
     const catalogLine = ctx.catalogMcpAvailable
-      ? ` If the App Catalog MCP (app-catalog) is connected, first call get_mcp_server${tokenApps ? ` for ${tokenApps}` : ''} and follow its current access steps where they differ from mine. Otherwise read the authentication section of the docs link.`
-      : ' Read the authentication section of the docs link.'
+      ? ` If the App Catalog MCP (app-catalog) is connected, first call get_mcp_server${tokenApps ? ` for ${tokenApps}` : ''} and follow its current access steps where they differ from the sources listed above. Otherwise read the authentication section from those sources.`
+      : ' Read the authentication section from the sources listed above.'
     steps.push(
       `Walk me through getting ${tokenServers.length > 1 ? 'each token, one at a time' : 'the token'}: open the page above for me, tell me exactly which options and scopes to pick, and wait while I create it.${catalogLine}`,
     )
+    const httpServers = tokenServers.filter((s) => s.transport.type === 'http')
+    const stdioServers = tokenServers.filter(
+      (s) => s.transport.type === 'stdio',
+    )
+    const storageNote =
+      httpServers.length > 0 && stdioServers.length > 0
+        ? 'its headers (http) or env (stdio)'
+        : httpServers.length > 0
+          ? 'its headers'
+          : 'env'
     steps.push(
-      `Store each token only in the MCP config (an env value, user scope). Never repeat it in chat and never write it to a file that is committed.`,
+      `Store each token only in the MCP config (${storageNote}, user scope). Never repeat it in chat and never write it to a file that is committed.`,
     )
   } else {
     steps.push(`Handle sign-in as described above.`)
   }
 
+  // Call get_mcp_server step (when available, regardless of auth type)
+  if (ctx.catalogMcpAvailable) {
+    const relevantApps = [
+      ...new Set(
+        servers
+          .flatMap((s) => s.requiredAppSlugs || [])
+          .map((slug) => ctx.apps.find((a) => a.slug === slug)?.name)
+          .filter((n): n is string => !!n),
+      ),
+    ].join(', ')
+    if (relevantApps) {
+      steps.push(
+        `If the App Catalog MCP (app-catalog) is connected, call get_mcp_server for ${relevantApps} to get the latest access steps.`,
+      )
+    }
+  }
+
   // Verify
-  const toolCalls = servers
-    .map((s) => `${s.slug}.${s.tools[0]?.name}`)
-    .join(', ')
-  steps.push(
-    `Verify: call ${toolCalls} with the smallest possible input and show me one line per server: ok / failed and why.`,
-  )
+  const serversWithTools = servers.filter((s) => s.tools.length > 0)
+  if (serversWithTools.length > 0) {
+    const toolCalls = serversWithTools
+      .map((s) => `${s.slug}.${s.tools[0]?.name}`)
+      .join(', ')
+    steps.push(
+      `Verify: call ${toolCalls} with the smallest possible input and show me one line per server: ok / failed and why.`,
+    )
+  }
 
   // Write warning
   const writeServers = servers.filter((s) => s.access === 'write')
@@ -242,7 +309,7 @@ export function installPrompt(
   const sensitiveServers = servers.filter((s) => s.sensitiveData)
   if (sensitiveServers.length > 0) {
     steps.push(
-      `${sensitiveServers.map((s) => s.displayName).join(', ')} can reach production patient data (PHI). Default to non-production environments and never paste patient data into chat unless I ask for a specific case.`,
+      `${sensitiveServers.map((s) => s.displayName).join(', ')} touches ${ctx.sensitiveDataLabel.toLowerCase()}. Default to non-production environments and never paste sensitive data into chat unless I ask for a specific case.`,
     )
   }
 
@@ -258,7 +325,13 @@ export function installPrompt(
 export function whatHappensSteps(
   servers: McpServer[],
   option?: InstallOptionId,
+  opts?: {
+    apps?: { slug: string; name: string }[]
+    sensitiveDataLabel?: string
+  },
 ): { title: string; detail: string }[] {
+  const apps = opts?.apps || []
+  const sensitiveDataLabel = opts?.sensitiveDataLabel || 'Sensitive data'
   const one = servers.length === 1
   const names = servers.map((s) => s.slug).join(' ')
   const tokenServers = servers.filter((s) => s.auth.kind === 'token')
@@ -317,8 +390,11 @@ export function whatHappensSteps(
     ...new Set(servers.flatMap((s) => s.requiredAppSlugs || [])),
   ]
   if (allRequiredSlugs.length > 0) {
+    const appNames = allRequiredSlugs
+      .map((slug) => apps.find((a) => a.slug === slug)?.name || slug)
+      .join(', ')
     steps.push({
-      title: `Checks you can sign in to ${allRequiredSlugs.join(', ')}`,
+      title: `Checks you can sign in to ${appNames}`,
       detail:
         'If not, it stops and gives you the App Catalog page that says how to request access.',
     })
@@ -336,9 +412,15 @@ export function whatHappensSteps(
   // Token steps
   tokenServers.forEach((s) => {
     const page = s.auth.token?.page
-    const hostNote = page
-      ? `Opens ${new URL(page).host} and says which options to pick. `
-      : ''
+    let hostNote = ''
+    if (page) {
+      try {
+        const url = new URL(page)
+        hostNote = `Opens ${url.host} and says which options to pick. `
+      } catch {
+        hostNote = `Opens ${page} and says which options to pick. `
+      }
+    }
     const headerKey =
       s.transport.type === 'http' && s.transport.headers
         ? Object.keys(s.transport.headers).find((k) =>
@@ -360,16 +442,20 @@ export function whatHappensSteps(
   }
 
   // Test call
-  const testTools = servers
-    .slice(0, 3)
-    .map((s) => s.tools[0]?.name)
-    .filter((t): t is string => !!t)
-    .join(' ')
-  const extra = servers.length > 3 ? ` +${servers.length - 3} more` : ''
-  steps.push({
-    title: `Tests ${one ? 'it' : 'each one'} with one small call`,
-    detail: `${testTools}${extra}, then reports ok or failed.`,
-  })
+  const serversWithTools = servers.filter((s) => s.tools.length > 0)
+  if (serversWithTools.length > 0) {
+    const testTools = serversWithTools
+      .slice(0, 3)
+      .map((s) => s.tools[0]?.name)
+      .filter((t): t is string => !!t)
+      .join(' ')
+    const extra =
+      serversWithTools.length > 3 ? ` +${serversWithTools.length - 3} more` : ''
+    steps.push({
+      title: `Tests ${one ? 'it' : 'each one'} with one small call`,
+      detail: `${testTools}${extra}, then reports ok or failed.`,
+    })
+  }
 
   // Write warning
   const writeServers = servers.filter((s) => s.access === 'write')
@@ -384,7 +470,7 @@ export function whatHappensSteps(
   if (servers.some((s) => s.sensitiveData)) {
     steps.push({
       title: 'Stays on non-production by default',
-      detail: 'Production holds patient data.',
+      detail: `Production holds ${sensitiveDataLabel.toLowerCase()}.`,
     })
   }
 
