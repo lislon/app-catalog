@@ -18,6 +18,7 @@ import { Route as LayoutServiceDesksRouteImport } from './routes/_layout/service
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as LayoutAppSlugRouteImport } from './routes/_layout/app.$slug'
 import { Route as LayoutCommunitySlugRouteImport } from './routes/_layout/community.$slug'
+import { Route as LayoutServiceDesksSlugRouteImport } from './routes/_layout/service-desks.$slug'
 import { Route as LayoutCatalogAppsIndexRouteImport } from './routes/_layout/catalog.apps.index'
 import { Route as LayoutAppSlugSubSubSlugRouteImport } from './routes/_layout/app.$slug_.sub.$subSlug'
 
@@ -65,6 +66,11 @@ const LayoutCommunitySlugRoute = LayoutCommunitySlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => LayoutCommunityRoute,
 } as any)
+const LayoutServiceDesksSlugRoute = LayoutServiceDesksSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => LayoutServiceDesksRoute,
+} as any)
 const LayoutCatalogAppsIndexRoute = LayoutCatalogAppsIndexRouteImport.update({
   id: '/catalog/apps/',
   path: '/catalog/apps/',
@@ -81,10 +87,11 @@ export interface FileRoutesByFullPath {
   '/community': typeof LayoutCommunityRouteWithChildren
   '/login': typeof LayoutLoginRoute
   '/mcp': typeof LayoutMcpRoute
-  '/service-desks': typeof LayoutServiceDesksRoute
+  '/service-desks': typeof LayoutServiceDesksRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/app/$slug': typeof LayoutAppSlugRoute
   '/community/$slug': typeof LayoutCommunitySlugRoute
+  '/service-desks/$slug': typeof LayoutServiceDesksSlugRoute
   '/catalog/apps/': typeof LayoutCatalogAppsIndexRoute
   '/app/$slug/sub/$subSlug': typeof LayoutAppSlugSubSubSlugRoute
 }
@@ -92,11 +99,12 @@ export interface FileRoutesByTo {
   '/community': typeof LayoutCommunityRouteWithChildren
   '/login': typeof LayoutLoginRoute
   '/mcp': typeof LayoutMcpRoute
-  '/service-desks': typeof LayoutServiceDesksRoute
+  '/service-desks': typeof LayoutServiceDesksRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/': typeof LayoutIndexRoute
   '/app/$slug': typeof LayoutAppSlugRoute
   '/community/$slug': typeof LayoutCommunitySlugRoute
+  '/service-desks/$slug': typeof LayoutServiceDesksSlugRoute
   '/catalog/apps': typeof LayoutCatalogAppsIndexRoute
   '/app/$slug/sub/$subSlug': typeof LayoutAppSlugSubSubSlugRoute
 }
@@ -106,11 +114,12 @@ export interface FileRoutesById {
   '/_layout/community': typeof LayoutCommunityRouteWithChildren
   '/_layout/login': typeof LayoutLoginRoute
   '/_layout/mcp': typeof LayoutMcpRoute
-  '/_layout/service-desks': typeof LayoutServiceDesksRoute
+  '/_layout/service-desks': typeof LayoutServiceDesksRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/app/$slug': typeof LayoutAppSlugRoute
   '/_layout/community/$slug': typeof LayoutCommunitySlugRoute
+  '/_layout/service-desks/$slug': typeof LayoutServiceDesksSlugRoute
   '/_layout/catalog/apps/': typeof LayoutCatalogAppsIndexRoute
   '/_layout/app/$slug_/sub/$subSlug': typeof LayoutAppSlugSubSubSlugRoute
 }
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/app/$slug'
     | '/community/$slug'
+    | '/service-desks/$slug'
     | '/catalog/apps/'
     | '/app/$slug/sub/$subSlug'
   fileRoutesByTo: FileRoutesByTo
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app/$slug'
     | '/community/$slug'
+    | '/service-desks/$slug'
     | '/catalog/apps'
     | '/app/$slug/sub/$subSlug'
   id:
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/_layout/'
     | '/_layout/app/$slug'
     | '/_layout/community/$slug'
+    | '/_layout/service-desks/$slug'
     | '/_layout/catalog/apps/'
     | '/_layout/app/$slug_/sub/$subSlug'
   fileRoutesById: FileRoutesById
@@ -224,6 +236,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutCommunitySlugRouteImport
       parentRoute: typeof LayoutCommunityRoute
     }
+    '/_layout/service-desks/$slug': {
+      id: '/_layout/service-desks/$slug'
+      path: '/$slug'
+      fullPath: '/service-desks/$slug'
+      preLoaderRoute: typeof LayoutServiceDesksSlugRouteImport
+      parentRoute: typeof LayoutServiceDesksRoute
+    }
     '/_layout/catalog/apps/': {
       id: '/_layout/catalog/apps/'
       path: '/catalog/apps'
@@ -253,11 +272,22 @@ const LayoutCommunityRouteWithChildren = LayoutCommunityRoute._addFileChildren(
   LayoutCommunityRouteChildren,
 )
 
+interface LayoutServiceDesksRouteChildren {
+  LayoutServiceDesksSlugRoute: typeof LayoutServiceDesksSlugRoute
+}
+
+const LayoutServiceDesksRouteChildren: LayoutServiceDesksRouteChildren = {
+  LayoutServiceDesksSlugRoute: LayoutServiceDesksSlugRoute,
+}
+
+const LayoutServiceDesksRouteWithChildren =
+  LayoutServiceDesksRoute._addFileChildren(LayoutServiceDesksRouteChildren)
+
 interface LayoutRouteChildren {
   LayoutCommunityRoute: typeof LayoutCommunityRouteWithChildren
   LayoutLoginRoute: typeof LayoutLoginRoute
   LayoutMcpRoute: typeof LayoutMcpRoute
-  LayoutServiceDesksRoute: typeof LayoutServiceDesksRoute
+  LayoutServiceDesksRoute: typeof LayoutServiceDesksRouteWithChildren
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutAppSlugRoute: typeof LayoutAppSlugRoute
   LayoutCatalogAppsIndexRoute: typeof LayoutCatalogAppsIndexRoute
@@ -268,7 +298,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutCommunityRoute: LayoutCommunityRouteWithChildren,
   LayoutLoginRoute: LayoutLoginRoute,
   LayoutMcpRoute: LayoutMcpRoute,
-  LayoutServiceDesksRoute: LayoutServiceDesksRoute,
+  LayoutServiceDesksRoute: LayoutServiceDesksRouteWithChildren,
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutAppSlugRoute: LayoutAppSlugRoute,
   LayoutCatalogAppsIndexRoute: LayoutCatalogAppsIndexRoute,

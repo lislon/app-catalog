@@ -12,24 +12,27 @@ import { given, magazine } from '@igstack/app-catalog-test-kit'
 
 const search = () => screen.getByLabelText('Search service desks')
 const results = () => screen.queryAllByTestId('service-desk-result')
-const listedDesks = () =>
+const linkDesks = () =>
   screen.queryAllByTestId('service-desk-name').map((n) => n.textContent.trim())
+const formTitles = () =>
+  results().map((r) => within(r).getByRole('heading').textContent)
 
 describe('Service Desks view', () => {
-  it('lists every service desk by area, and no other approval method, before a search', async () => {
+  it('lists every form by area, then the desks that offer none, before a search', async () => {
     await given(magazine.full(), { initialRoute: '/service-desks' })
 
-    // Support Portal's portal is in area IT; Ops Portal has no portal, so it
-    // goes to the catch-all section, listed last.
+    // Flat: Support Portal's two forms sit in its area, IT. Ops Portal has no
+    // portal, so it is a plain link in the last section.
     await waitFor(() =>
-      expect(listedDesks()).toEqual(['Support Portal', 'Ops Portal']),
+      expect(formTitles()).toEqual(['Database access', 'New laptop']),
     )
+    expect(linkDesks()).toEqual(['Ops Portal'])
     expect(
       screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent),
     ).toEqual(['IT', 'Other ways to ask'])
   })
 
-  it('keeps the open card in the URL, so Back closes it', async () => {
+  it('gives each form card its own address, so Back closes it', async () => {
     const user = userEvent.setup()
     const { router } = await given(magazine.full(), {
       initialRoute: '/service-desks',
@@ -43,23 +46,28 @@ describe('Service Desks view', () => {
     await user.click(within(results()[0]!).getByRole('heading'))
 
     await screen.findByRole('dialog')
-    expect(router.state.location.search).toMatchObject({
-      desk: 'it-support',
-      form: 11,
-    })
+    expect(router.state.location.pathname).toBe('/service-desks/help-11')
     router.history.back()
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     )
+    expect(router.state.location.pathname).toBe('/service-desks')
   })
 
-  it('opens the card straight from a link', async () => {
-    await given(magazine.full(), {
-      initialRoute: '/service-desks?desk=it-support&form=11',
-    })
+  it('opens a form card straight from its address', async () => {
+    await given(magazine.full(), { initialRoute: '/service-desks/help-11' })
 
     const dialog = await screen.findByRole('dialog')
     expect(dialog).toHaveTextContent('Database access')
+  })
+
+  it('moves an old ?desk=&form= link to the form card address', async () => {
+    const { router } = await given(magazine.full(), {
+      initialRoute: '/service-desks?desk=it-support&form=11',
+    })
+
+    await screen.findByRole('dialog')
+    expect(router.state.location.pathname).toBe('/service-desks/help-11')
   })
 
   it('finds a form by a dropdown option and marks the option', async () => {

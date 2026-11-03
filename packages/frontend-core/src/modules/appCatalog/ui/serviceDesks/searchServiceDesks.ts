@@ -171,3 +171,39 @@ export function searchServiceDesks(
     .sort((a, b) => b.tier - a.tier || a.order - b.order)
     .map((r) => r.result)
 }
+
+/**
+ * A form's address in the Service Desks view: the desk's key and the form's id,
+ * `/service-desks/help-42`. The id, not the name, so a renamed form keeps its
+ * links; the key, so the address still says which desk it belongs to.
+ */
+export function formSlug(desk: PortalDesk, form: ServiceRequestType): string {
+  return `${desk.config.portal.key.toLowerCase()}-${form.id}`
+}
+
+/** The desk and form behind a `formSlug`, or undefined. */
+export function findBySlug(
+  desks: PortalDesk[],
+  slug: string,
+): { desk: PortalDesk; form: ServiceRequestType } | undefined {
+  for (const desk of desks) {
+    const key = `${desk.config.portal.key.toLowerCase()}-`
+    if (!slug.startsWith(key)) continue
+    const form = desk.config.portal.requestTypes.find(
+      (f) => f.id === slug.slice(key.length),
+    )
+    if (form) return { desk, form }
+  }
+  return undefined
+}
+
+/** Every form of every desk, unmatched: the Service Desks view with no search. */
+export function allForms(desks: PortalDesk[]): FormResult[] {
+  return desks.flatMap((desk) =>
+    desk.config.portal.requestTypes.map((form) => ({
+      desk,
+      form,
+      fieldMatches: [],
+    })),
+  )
+}
