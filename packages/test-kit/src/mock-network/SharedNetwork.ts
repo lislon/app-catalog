@@ -29,6 +29,15 @@ export const SharedNetwork = {
     }
   },
 
+  serviceDesksQuery(service: MockService): NetworkInterceptor {
+    return {
+      scopeKey: ['appCatalog-service-desks'],
+      handler: trpcMsw.appCatalog.getServiceDesks.query(() =>
+        service.getServiceDesks(),
+      ),
+    }
+  },
+
   /**
    * Every opened resource asks for its feedback.
    *

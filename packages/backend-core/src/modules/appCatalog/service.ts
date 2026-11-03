@@ -74,9 +74,33 @@ export async function getGroupingTagDefinitionsFromPrisma(): Promise<
   })
 }
 
+/**
+ * Every approval method for the main catalog payload. A service desk's `portal`
+ * (its forms and their fields) is dropped: across a hundred desks it outweighs
+ * the rest of the payload, and only the Service Desks view reads it, through
+ * `getServiceDesksFromPrisma`.
+ */
 export async function getApprovalMethodsFromPrisma(): Promise<
   AppApprovalMethod[]
 > {
+  return (await getAllApprovalMethodsFromPrisma()).map((method) => {
+    if (method.type !== 'service' || !method.config.portal) return method
+    const { portal: _portal, ...config } = method.config
+    return { ...method, config }
+  })
+}
+
+/** The `service` approval methods with their portals, for the Service Desks view. */
+export async function getServiceDesksFromPrisma(): Promise<
+  Extract<AppApprovalMethod, { type: 'service' }>[]
+> {
+  return (await getAllApprovalMethodsFromPrisma()).filter(
+    (m): m is Extract<AppApprovalMethod, { type: 'service' }> =>
+      m.type === 'service',
+  )
+}
+
+async function getAllApprovalMethodsFromPrisma(): Promise<AppApprovalMethod[]> {
   const prisma = getDbClient()
 
   // Fetch all approval methods

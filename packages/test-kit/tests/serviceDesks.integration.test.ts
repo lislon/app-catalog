@@ -5,108 +5,164 @@ import '@testing-library/jest-dom/vitest'
 
 import { given, magazine } from '@igstack/app-catalog-test-kit'
 
-// #9: a header tab (Catalog | Service Desks) + a /service-desks route showing a
-// searchable table of all type:'service' approval methods with open links.
-// magazine.full() seeds two service desks (Support Portal, Ops Portal) and
-// two custom methods (Manager Approval, Self-Service) which must NOT appear.
+// #9, #273: /service-desks searches every type:'service' approval method — its
+// key, name, description, forms and the forms' dropdown options. magazine.full()
+// seeds Support Portal (key HELP, two forms) and Ops Portal (no portal), plus two
+// custom methods that must never appear.
 
-function serviceDeskTable(): HTMLElement {
-  // The service-desks table (only table on that route).
-  return screen.getByRole('table')
-}
+const search = () => screen.getByLabelText('Search service desks')
+const results = () => screen.queryAllByTestId('service-desk-result')
+const listedDesks = () =>
+  screen.queryAllByTestId('service-desk-name').map((n) => n.textContent.trim())
 
-function deskNames(): string[] {
-  const rows = within(serviceDeskTable()).getAllByRole('row')
-  return rows
-    .map(
-      (r) =>
-        within(r).queryByTestId('service-desk-name')?.textContent.trim() ?? '',
+describe('Service Desks view', () => {
+  it('lists every service desk by area, and no other approval method, before a search', async () => {
+    await given(magazine.full(), { initialRoute: '/service-desks' })
+
+    // Support Portal's portal is in area IT; Ops Portal has no portal, so it
+    // goes to the catch-all section, listed last.
+    await waitFor(() =>
+      expect(listedDesks()).toEqual(['Support Portal', 'Ops Portal']),
     )
-    .filter(Boolean)
-}
-
-describe('Service Desks view (#9)', () => {
-  it('lists only service-type approval methods with open links', async () => {
-    await given(magazine.full(), {
-      initialRoute: '/service-desks',
-    })
-
-    await waitFor(() => {
-      expect(screen.getByLabelText('Search service desks')).toBeInTheDocument()
-    })
-
-    const names = deskNames()
-    expect(names).toContain('Support Portal')
-    expect(names).toContain('Ops Portal')
-    // custom-type methods are not service desks
-    expect(names).not.toContain('Manager Approval')
-    expect(names).not.toContain('Self-Service')
-
-    // Each service desk row has links to its portal opening in a new tab.
-    // The name itself is now also a link, plus the URL is shown under the name.
-    const itRow = within(serviceDeskTable())
-      .getAllByRole('row')
-      .find((r) => r.textContent.includes('Support Portal'))!
-    const links = within(itRow).getAllByRole('link')
-    // All links in the row point to the same portal URL
-    for (const link of links) {
-      expect(link).toHaveAttribute('href', 'https://support.example.com')
-      expect(link).toHaveAttribute('target', '_blank')
-    }
-    // At least one link shows the URL without the scheme
-    const urlLink = links.find((l) =>
-      String(l.textContent).includes('support.example.com'),
-    )
-    expect(urlLink).toBeTruthy()
-    expect(urlLink).not.toHaveTextContent('https://')
+    expect(
+      screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent),
+    ).toEqual(['IT', 'Other ways to ask'])
   })
 
-  it('shows the service desk description as subtext when present', async () => {
-    await given(magazine.full(), {
-      initialRoute: '/service-desks',
-    })
-
-    await waitFor(() => {
-      expect(screen.getByLabelText('Search service desks')).toBeInTheDocument()
-    })
-
-    // Support Portal has a description; it renders in the same name cell as subtext.
-    const itRow = within(serviceDeskTable())
-      .getAllByRole('row')
-      .find((r) => r.textContent.includes('Support Portal'))!
-    const nameCell = within(itRow).getAllByRole('cell')[0]
-    expect(nameCell).toHaveTextContent('General IT support desk')
-
-    // Ops Portal has no description — its name element shows only the name
-    // (the cell also contains the URL link now, so check the name element).
-    const uxRow = within(serviceDeskTable())
-      .getAllByRole('row')
-      .find((r) => r.textContent.includes('Ops Portal'))!
-    const uxNameEl = within(uxRow).getByTestId('service-desk-name')
-    expect(uxNameEl.textContent.trim()).toBe('Ops Portal')
-  })
-
-  it('filters the desks by search', async () => {
+  it('keeps the open card in the URL, so Back closes it', async () => {
     const user = userEvent.setup()
-    await given(magazine.full(), {
+    const { router } = await given(magazine.full(), {
       initialRoute: '/service-desks',
     })
+    await user.type(
+      await screen.findByLabelText('Search service desks'),
+      'orders',
+    )
+    await waitFor(() => expect(results()).toHaveLength(1))
 
-    await waitFor(() => expect(deskNames()).toContain('Ops Portal'))
+    await user.click(within(results()[0]!).getByRole('heading'))
 
-    await user.type(screen.getByLabelText('Search service desks'), 'Ops')
-
-    await waitFor(() => {
-      const names = deskNames()
-      expect(names).toContain('Ops Portal')
-      expect(names).not.toContain('Support Portal')
+    await screen.findByRole('dialog')
+    expect(router.state.location.search).toMatchObject({
+      desk: 'it-support',
+      form: 11,
     })
+    router.history.back()
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    )
+  })
+
+  it('opens the card straight from a link', async () => {
+    await given(magazine.full(), {
+      initialRoute: '/service-desks?desk=it-support&form=11',
+    })
+
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog).toHaveTextContent('Database access')
+  })
+
+  it('finds a form by a dropdown option and marks the option', async () => {
+    const user = userEvent.setup()
+    await given(magazine.full(), { initialRoute: '/service-desks' })
+
+    await user.type(
+      await screen.findByLabelText('Search service desks'),
+      'orders',
+    )
+
+    await waitFor(() => expect(results()).toHaveLength(1))
+    const card = results()[0]!
+    expect(card).toHaveTextContent('Database access')
+    expect(card).toHaveTextContent('HELP · Support Portal')
+    expect(within(card).getByText('Orders DB').tagName).toBe('MARK')
+    // the dead-end option is never listed
+    expect(card).not.toHaveTextContent('Legacy DB')
+    expect(within(card).getByRole('link')).toHaveAttribute(
+      'href',
+      'https://support.example.com/create/11',
+    )
+  })
+
+  it('returns every form of a desk searched by its key', async () => {
+    const user = userEvent.setup()
+    await given(magazine.full(), { initialRoute: '/service-desks' })
+
+    await user.type(
+      await screen.findByLabelText('Search service desks'),
+      'help',
+    )
+
+    await waitFor(() =>
+      expect(
+        results().map((r) => within(r).getByRole('heading').textContent),
+      ).toEqual(['Database access', 'New laptop']),
+    )
+  })
+
+  it('reads a query typed on the Cyrillic keyboard layout', async () => {
+    const user = userEvent.setup()
+    await given(magazine.full(), { initialRoute: '/service-desks' })
+
+    // "щквукы" is "orders" typed with the layout left on Cyrillic
+    await user.type(
+      await screen.findByLabelText('Search service desks'),
+      'щквукы',
+    )
+
+    await waitFor(() => expect(results()).toHaveLength(1))
+    expect(screen.getByText(/Showing results for/)).toHaveTextContent('orders')
+  })
+
+  it('opens the details card from a result, on the form that was clicked', async () => {
+    const user = userEvent.setup()
+    await given(magazine.full(), { initialRoute: '/service-desks' })
+    await user.type(
+      await screen.findByLabelText('Search service desks'),
+      'orders',
+    )
+    await waitFor(() => expect(results()).toHaveLength(1))
+
+    await user.click(within(results()[0]!).getByRole('heading'))
+
+    const dialog = await screen.findByRole('dialog')
+    expect(
+      within(dialog).getByRole('tab', { name: 'Overview' }),
+    ).toBeInTheDocument()
+    expect(
+      within(dialog).getByRole('tab', { name: 'Behind this card' }),
+    ).toBeInTheDocument()
+    expect(
+      within(dialog).getByRole('link', { name: /Open the form/ }),
+    ).toHaveAttribute('href', 'https://support.example.com/create/11')
+    expect(dialog).toHaveTextContent('You will be asked for')
+    expect(dialog).toHaveTextContent('One or more of: Orders DB, Billing DB')
+    expect(dialog).toHaveTextContent('A person, picked from the directory')
+    expect(dialog).toHaveTextContent(
+      'Access is granted within 2 business days.',
+    )
+  })
+
+  it('clears the search with the clear button and with Escape', async () => {
+    const user = userEvent.setup()
+    await given(magazine.full(), { initialRoute: '/service-desks' })
+    await user.type(
+      await screen.findByLabelText('Search service desks'),
+      'orders',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Clear search' }))
+    expect(search()).toHaveValue('')
+    expect(search()).toHaveFocus()
+
+    await user.type(search(), 'laptop')
+    await user.keyboard('{Escape}')
+    expect(search()).toHaveValue('')
   })
 
   it('toggles between Catalog and Service Desks from the header', async () => {
     const { router } = await given(magazine.full(), { initialRoute: '/' })
 
-    // Catalog view first — the catalog search box is present.
     await waitFor(() =>
       expect(screen.getByLabelText('Search apps')).toBeInTheDocument(),
     )
@@ -117,23 +173,19 @@ describe('Service Desks view (#9)', () => {
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/service-desks')
     })
-    expect(screen.getByLabelText('Search service desks')).toBeInTheDocument()
+    expect(search()).toBeInTheDocument()
   })
 
   it('autofocuses the search input when the view loads (parity with Catalog)', async () => {
-    await given(magazine.full(), {
-      initialRoute: '/service-desks',
-    })
+    await given(magazine.full(), { initialRoute: '/service-desks' })
 
-    const search = await screen.findByLabelText('Search service desks')
-    await waitFor(() => expect(search).toHaveFocus())
+    const input = await screen.findByLabelText('Search service desks')
+    await waitFor(() => expect(input).toHaveFocus())
   })
 })
 
 // #23: the header "Catalog" tab must stay active while viewing an app-detail route
-// (/app/<slug>) — the detail panel is part of the Catalog view. Previously the Catalog
-// link was active only on the exact "/" route, so /app/taskflow highlighted
-// neither tab.
+// (/app/<slug>) — the detail panel is part of the Catalog view.
 describe('Section tab active state (#23)', () => {
   const catalogTab = () => screen.getByRole('link', { name: /^Catalog/ })
   const deskTab = () => screen.getByRole('link', { name: /^Service Desks/ })

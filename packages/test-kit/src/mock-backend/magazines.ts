@@ -42,6 +42,38 @@ function fullMagazine(
       config: {
         url: 'https://support.example.com',
         description: 'General IT support desk',
+        portal: {
+          key: 'HELP',
+          area: 'IT',
+          requestTypes: [
+            {
+              id: '11',
+              name: 'Database access',
+              description: 'Access to a production database',
+              url: 'https://support.example.com/create/11',
+              fields: [
+                {
+                  name: 'Component/s',
+                  required: true,
+                  type: 'array',
+                  options: [
+                    'Orders DB',
+                    'Billing DB',
+                    "Legacy DB - HELP doesn't handle",
+                  ],
+                },
+                { name: 'Manager', required: true, type: 'user' },
+              ],
+            },
+            {
+              id: '12',
+              name: 'New laptop',
+              url: 'https://support.example.com/create/12',
+              fields: [],
+            },
+          ],
+          followUp: 'Access is granted within **2 business days**.',
+        },
       },
     })
     backendCfg.withApprovalMethod({

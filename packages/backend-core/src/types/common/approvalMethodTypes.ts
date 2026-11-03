@@ -23,6 +23,56 @@ export interface ServiceConfig {
   url?: string // Service URL (clickable in UI)
   icon?: string // Icon identifier
   description?: string // Optional human description of the service desk (shown as subtext in the Service Desks view)
+  /**
+   * What the desk's portal offers: its request forms and the fields each one
+   * asks for. Set for ticketing portals the deployment reads from its service
+   * desk tool; drives search and the details card in the Service Desks view.
+   * Too heavy for the main catalog payload, so `appCatalog.getData` leaves it
+   * out and `appCatalog.getServiceDesks` returns it.
+   */
+  portal?: ServicePortal
+}
+
+/** A ticketing portal behind a `service` approval method. */
+export interface ServicePortal {
+  /** Short code people quote and search by ("HELP"). */
+  key: string
+  /** Business area the desk serves, used to group and tag it. */
+  area?: string
+  requestTypes: ServiceRequestType[]
+  /** Markdown: what happens after filing, when to chase, where to ask. */
+  followUp?: string
+  keyPeople?: { name: string; role?: string }[]
+  /** A thread or page with good example requests. */
+  examples?: { label: string; url: string }
+  /** URLs the portal entry is built from. */
+  sources?: string[]
+  /** Guidance for whoever maintains this entry. */
+  aiPrompt?: string
+  /** Facts the maintainer has learned about this desk. */
+  aiMemory?: string
+  /** When the request types were last read from the source, ISO 8601. */
+  syncedAt?: string
+}
+
+/** One form on a portal. */
+export interface ServiceRequestType {
+  id: string
+  name: string
+  description?: string
+  /** Opens this exact form. */
+  url: string
+  fields: ServiceRequestField[]
+}
+
+/** One field on a form, as the source describes it. */
+export interface ServiceRequestField {
+  name: string
+  required: boolean
+  /** Source field type: string, user, date, array, option… */
+  type?: string
+  /** Choices for a dropdown field. */
+  options?: string[]
 }
 
 /**
