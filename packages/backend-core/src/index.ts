@@ -51,6 +51,14 @@ export {
   type Writer,
 } from './modules/communityTools/writeService'
 export type { CommunityToolsOptions } from './middleware/types'
+
+// MCP server catalog
+export {
+  createMcpCatalogRouter,
+  type McpCatalogConfigResponse,
+} from './modules/mcpCatalog/router'
+export { validateMcpServers } from './modules/mcpCatalog/validateMcpServers'
+export { getMcpServersFromPrisma } from './modules/appCatalog/service.js'
 export type {
   CaptureResult,
   ScreenshotCapturer,

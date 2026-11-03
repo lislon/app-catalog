@@ -12,6 +12,8 @@ import { createAuthRouter } from '../modules/auth/authRouter.js'
 import { createFeedbackRouter } from '../modules/feedback/feedbackRouter'
 import { createCommunityToolsRouter } from '../modules/communityTools/router'
 import type { CommunityToolsOptions } from '../middleware/types'
+import { createMcpCatalogRouter } from '../modules/mcpCatalog/router'
+import type { McpCatalogConfig } from '@igstack/app-catalog-shared-core'
 import { publicProcedure, router, t } from './trpcSetup'
 import { z } from 'zod'
 
@@ -41,6 +43,7 @@ export function createTrpcRouter(
   options?: {
     devLoginEnabled?: boolean
     communityTools?: CommunityToolsOptions
+    mcpCatalog?: McpCatalogConfig
   },
 ) {
   return router({
@@ -77,6 +80,8 @@ export function createTrpcRouter(
     feedback: createFeedbackRouter(),
 
     communityTools: createCommunityToolsRouter(options?.communityTools),
+
+    mcpCatalog: createMcpCatalogRouter(options?.mcpCatalog),
 
     // Auth routes (requires auth instance)
     auth: createAuthRouter(t, auth, options),

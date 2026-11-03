@@ -5,7 +5,6 @@
  * Creates and drops a throwaway schema per test run.
  */
 import {
-  afterAll,
   afterEach,
   beforeAll,
   beforeEach,
@@ -21,77 +20,15 @@ import {
   updateApp,
 } from '../modules/appCatalog/service'
 import type { Resource } from '../types/common/appCatalogTypes'
-import { execSync } from 'node:child_process'
-import * as dbClient from '../db/client'
-import { createCorePrismaClient } from '../db/client'
-import { fileURLToPath } from 'node:url'
-import { dirname, resolve } from 'node:path'
+import { TEST_DB_URL, useTestDatabase } from './utils/testDatabase'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const BACKEND_CORE_ROOT = resolve(__dirname, '../..')
-
-const TEST_DB_URL = process.env.AC_TEST_DATABASE_URL
-const shouldSkip = !TEST_DB_URL
-
-describe.skipIf(shouldSkip)('sourcesDb integration', () => {
+describe.skipIf(!TEST_DB_URL)('sourcesDb integration', () => {
+  const db = useTestDatabase('test_sources')
   let prisma: PrismaClient
-  let testSchema: string
   let testResourceIds: string[] = []
 
-  beforeAll(async () => {
-    if (!TEST_DB_URL) {
-      console.log('Skipping: AC_TEST_DATABASE_URL not set')
-      return
-    }
-
-    // Create throwaway schema
-    testSchema = `test_sources_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-    const schemaUrl = `${TEST_DB_URL}?schema=${testSchema}`
-
-    // Create schema
-    execSync(`psql "${TEST_DB_URL}" -c "CREATE SCHEMA \\"${testSchema}\\""`, {
-      stdio: 'inherit',
-    })
-
-    // Push Prisma schema to test schema
-    execSync(
-      `pnpm exec prisma db push --accept-data-loss --url="${schemaUrl}"`,
-      {
-        cwd: BACKEND_CORE_ROOT,
-        stdio: 'inherit',
-      },
-    )
-
-    // Create Prisma client for test schema using repo's factory
-    const created = createCorePrismaClient({
-      connectionString: TEST_DB_URL,
-      configuredSchema: testSchema,
-    })
-    prisma = created.client
-    await prisma.$connect()
-
-    // Mock getDbClient to return our test client
-    vi.spyOn(dbClient, 'getDbClient').mockReturnValue(prisma)
-  })
-
-  afterAll(async () => {
-    if (!TEST_DB_URL || !testSchema) return
-
-    await prisma.$disconnect()
-
-    // Drop schema
-    try {
-      execSync(
-        `psql "${TEST_DB_URL}" -c "DROP SCHEMA IF EXISTS \\"${testSchema}\\" CASCADE"`,
-        { stdio: 'inherit' },
-      )
-    } catch (e) {
-      console.error('Failed to drop test schema:', e)
-    }
-
-    // Restore original getDbClient
-    vi.restoreAllMocks()
+  beforeAll(() => {
+    prisma = db.prisma
   })
 
   beforeEach(() => {
@@ -474,7 +411,7 @@ describe.skipIf(shouldSkip)('sourcesDb integration', () => {
   })
 })
 
-if (shouldSkip) {
+if (!TEST_DB_URL) {
   console.log(
     '\n⚠️  Skipping sourcesDb integration tests: AC_TEST_DATABASE_URL not set\n',
   )

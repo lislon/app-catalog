@@ -59,6 +59,7 @@ export class MockDb {
   getAppCatalogData(): AppCatalogData {
     return {
       resources: this.resources,
+      mcpServers: [],
       tagsDefinitions: this.tagsDefinitions,
       // Same rule as the real loader: the portal rides only on getServiceDesks.
       approvalMethods: this.approvalMethods.map((m) => {

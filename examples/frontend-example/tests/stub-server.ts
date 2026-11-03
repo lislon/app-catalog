@@ -7,6 +7,7 @@ const t = initTRPC.create()
 
 const stubData = {
   resources: [],
+  mcpServers: [],
   tagsDefinitions: [],
   approvalMethods: [],
   persons: [],

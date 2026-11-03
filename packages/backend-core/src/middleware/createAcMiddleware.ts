@@ -44,6 +44,7 @@ export async function createAcMiddleware(
   const trpcRouter = createTrpcRouter(auth, {
     devLoginEnabled: !!options.auth.devMockUser,
     communityTools,
+    mcpCatalog: options.mcpCatalog,
   })
 
   const stopHealthJob = communityTools?.enabled

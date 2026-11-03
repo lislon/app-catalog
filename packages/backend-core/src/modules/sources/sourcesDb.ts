@@ -125,12 +125,14 @@ export async function ensureSourceUrls(
 /**
  * Syncs a link table with set semantics: removes old links, adds new links.
  * Handles empty owner sets (deletes all links for owners not in the synced set).
- * @param model - 'DbResourceSourceUrl' (or 'DbMcpServerSourceUrl' in a later task)
+ * @param model - the link table: 'DbResourceSourceUrl' or 'DbMcpServerSourceUrl'
  * @param ownerColumn - the FK column name ('resourceId' or 'mcpServerSlug')
  * @param rows - array of { owner: string, url: string }
  * @param allOwners - optional set of all owners being synced; links for owners not in this set are deleted
  */
-export async function syncSourceLinks<TModel extends 'DbResourceSourceUrl'>(
+export async function syncSourceLinks<
+  TModel extends 'DbResourceSourceUrl' | 'DbMcpServerSourceUrl',
+>(
   prisma: PrismaClient,
   model: TModel,
   ownerColumn: string,
@@ -202,14 +204,14 @@ export function toSourceReference(row: SourceUrl): SourceReference {
 }
 
 /**
- * Prunes orphaned SourceUrl rows (URLs with no links from any owner).
+ * Prunes orphaned SourceUrl rows: URLs no resource and no MCP server cites.
  * Call this at the end of the boot sync only, not in updateApp.
  */
 export async function pruneOrphanedSourceUrls(
   prisma: PrismaClient,
 ): Promise<void> {
   await prisma.sourceUrl.deleteMany({
-    where: { resourceLinks: { none: {} } },
+    where: { resourceLinks: { none: {} }, mcpServerLinks: { none: {} } },
   })
 }
 

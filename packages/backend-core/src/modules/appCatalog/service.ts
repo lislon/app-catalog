@@ -4,6 +4,7 @@ import type {
   AppApprovalMethod,
   AppCatalogData,
   AppCategory,
+  CatalogMcpServer,
   GroupingTagDefinition,
   Resource,
 } from '../../types/common/appCatalogTypes'
@@ -386,6 +387,34 @@ export async function getGroupsFromPrisma(): Promise<Group[]> {
   }))
 }
 
+/** MCP servers from the boot sync, sorted by display name, sources with pulse. */
+export async function getMcpServersFromPrisma(): Promise<CatalogMcpServer[]> {
+  const rows = await getDbClient().dbMcpServer.findMany({
+    include: {
+      sourceLinks: { include: { sourceUrl: true }, orderBy: { url: 'asc' } },
+    },
+    orderBy: { displayName: 'asc' },
+  })
+  return rows.map((row) => ({
+    slug: row.slug,
+    displayName: row.displayName,
+    description: row.description,
+    category: row.category,
+    aliases: row.aliases,
+    status: row.status as CatalogMcpServer['status'],
+    access: row.access as CatalogMcpServer['access'],
+    writeNote: row.writeNote ?? undefined,
+    sensitiveData: row.sensitiveData ?? undefined,
+    requiredAppSlugs: row.requiredAppSlugs,
+    auth: row.auth as CatalogMcpServer['auth'],
+    transport: row.transport as CatalogMcpServer['transport'],
+    tools: row.tools as CatalogMcpServer['tools'],
+    ownerSlug: row.ownerSlug ?? undefined,
+    support: (row.support as CatalogMcpServer['support']) ?? undefined,
+    sources: row.sourceLinks.map((link) => toSourceReference(link.sourceUrl)),
+  }))
+}
+
 export async function getAppCatalogData(
   getResourcesOptional?: () => Promise<Resource[]>,
 ): Promise<AppCatalogData> {
@@ -395,6 +424,7 @@ export async function getAppCatalogData(
 
   return {
     resources,
+    mcpServers: await getMcpServersFromPrisma(),
     tagsDefinitions: await getGroupingTagDefinitionsFromPrisma(),
     approvalMethods: await getApprovalMethodsFromPrisma(),
     persons: await getPersonsFromPrisma(),

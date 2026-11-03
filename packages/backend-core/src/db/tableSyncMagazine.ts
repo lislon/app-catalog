@@ -41,6 +41,11 @@ export const TABLE_SYNC_MAGAZINE = {
     prismaModelName: 'DbApprovalMethod',
     uniqColumns: ['slug'],
   },
+  DbMcpServer: {
+    id: 'slug',
+    prismaModelName: 'DbMcpServer',
+    uniqColumns: ['slug'],
+  },
   Source: {
     id: 'slug',
     prismaModelName: 'Source',

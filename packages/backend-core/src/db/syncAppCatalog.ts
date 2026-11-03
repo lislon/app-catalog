@@ -1,7 +1,11 @@
 import type {
+  CatalogMcpServer,
   GroupingTagDefinition,
   Resource,
+  SourceReference,
 } from '../types/common/appCatalogTypes'
+import type { McpServer } from '@igstack/app-catalog-shared-core'
+import { validateMcpServers } from '../modules/mcpCatalog/validateMcpServers'
 import { getDbClient } from './client'
 import { TABLE_SYNC_MAGAZINE } from './tableSyncMagazine'
 import { tableSyncPrisma } from './tableSyncPrismaAdapter'
@@ -175,6 +179,25 @@ async function syncAssetsFromFileSystem(
 export interface SyncAppCatalogOptions {
   persons?: Person[]
   groups?: Group[]
+  /** Omitted: MCP rows are left as they are. `[]`: all are removed. */
+  mcpServers?: (McpServer | CatalogMcpServer)[]
+}
+
+/** A config source as a sync reference: bare URLs carry no schedule. */
+function toSyncRef(source: string | SourceReference): SourceReference {
+  // An enriched source's schedule is the autoupdate registry's copy, and it wins on every sync.
+  const schedule = typeof source === 'string' ? {} : (source.schedule ?? {})
+  return {
+    url: typeof source === 'string' ? source : source.url,
+    sourceSlug: undefined, // Will be derived in syncSourceUrls
+    schedule: {
+      lastCheckedAt: schedule.lastCheckedAt,
+      nextCheckAfter: schedule.nextCheckAfter,
+      lastContentChangeAt: schedule.lastContentChangeAt,
+      checkIntervalHours: schedule.checkIntervalHours,
+      changeHistory: schedule.changeHistory,
+    },
+  }
 }
 
 /**
@@ -343,27 +366,26 @@ export async function syncAppCatalog(
     })
     const slugToId = Object.fromEntries(resourceRows.map((r) => [r.slug, r.id]))
 
-    // Build all source references (URLs + schedules)
-    const allSourceRefs = sortedResources.flatMap((resource) => {
-      return (resource.sources ?? []).map((source) => {
-        const url = typeof source === 'string' ? source : source.url
-        // A bare URL from config carries no schedule; an enriched source does,
-        // and it is the autoupdate registry's copy that wins on every sync.
-        const schedule =
-          typeof source === 'string' ? {} : (source.schedule ?? {})
-        return {
-          url,
-          sourceSlug: undefined, // Will be derived in syncSourceUrls
-          schedule: {
-            lastCheckedAt: schedule.lastCheckedAt,
-            nextCheckAfter: schedule.nextCheckAfter,
-            lastContentChangeAt: schedule.lastContentChangeAt,
-            checkIntervalHours: schedule.checkIntervalHours,
-            changeHistory: schedule.changeHistory,
-          },
-        }
+    // MCP servers reference apps, persons and groups: validate against what was
+    // just synced, before anything is written for MCP.
+    const mcpServers = options?.mcpServers
+    if (mcpServers) {
+      const owners = await Promise.all([
+        prisma.dbPerson.findMany({ select: { slug: true } }),
+        prisma.dbGroup.findMany({ select: { slug: true } }),
+      ])
+      validateMcpServers(mcpServers, {
+        resourceSlugs: new Set(slugs),
+        ownerSlugs: new Set(owners.flat().map((o) => o.slug)),
       })
-    })
+    }
+
+    // Build all source references (URLs + schedules) from resources and MCP
+    // servers together, so the prune below sees every cited URL.
+    const allSourceRefs = [
+      ...sortedResources.flatMap((r) => (r.sources ?? []).map(toSyncRef)),
+      ...(mcpServers ?? []).flatMap((s) => s.sources.map(toSyncRef)),
+    ]
 
     // Sync Source and SourceUrl rows
     await syncSourceUrls(prisma, allSourceRefs)
@@ -400,6 +422,44 @@ export async function syncAppCatalog(
       allLinkRows,
       allOwnerIds,
     )
+
+    if (mcpServers) {
+      // Servers dropped from config are deleted; their links cascade.
+      await tableSyncPrisma({
+        prisma,
+        ...TABLE_SYNC_MAGAZINE.DbMcpServer,
+      }).sync(
+        mcpServers.map((s) => ({
+          slug: s.slug,
+          displayName: s.displayName,
+          description: s.description,
+          category: s.category,
+          aliases: s.aliases ?? [],
+          status: s.status,
+          access: s.access,
+          writeNote: s.writeNote ?? null,
+          sensitiveData: s.sensitiveData ?? null,
+          requiredAppSlugs: s.requiredAppSlugs ?? [],
+          auth: s.auth,
+          transport: s.transport,
+          tools: s.tools,
+          ownerSlug: s.ownerSlug ?? null,
+          support: s.support ?? null,
+        })),
+      )
+      await syncSourceLinks(
+        prisma,
+        'DbMcpServerSourceUrl',
+        'mcpServerSlug',
+        mcpServers.flatMap((s) =>
+          s.sources.map((source) => ({
+            owner: s.slug,
+            url: toSyncRef(source).url,
+          })),
+        ),
+        new Set(mcpServers.map((s) => s.slug)),
+      )
+    }
 
     // Prune orphaned SourceUrl rows (URLs with no links)
     await pruneOrphanedSourceUrls(prisma)

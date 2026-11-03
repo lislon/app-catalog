@@ -354,6 +354,7 @@ model SourceUrl {
   checkIntervalHours  Int?
   changeHistory       Json?
   resourceLinks       DbResourceSourceUrl[]
+  mcpServerLinks      DbMcpServerSourceUrl[]
 }
 
 model DbResourceSourceUrl {
@@ -364,6 +365,37 @@ model DbResourceSourceUrl {
   userPrompt String?
 
   @@id([resourceId, url])
+}
+
+// ========== MCP Server Catalog Models ==========
+
+/// An MCP server from static config (the McpServer type in shared-core); rebuilt on every boot.
+model DbMcpServer {
+  slug             String                 @id
+  displayName      String
+  description      String
+  category         String
+  aliases          String[]               @default([])
+  status           String
+  access           String
+  writeNote        String?
+  sensitiveData    Boolean?
+  requiredAppSlugs String[]               @default([])
+  auth             Json
+  transport        Json
+  tools            Json
+  ownerSlug        String?
+  support          Json?
+  sourceLinks      DbMcpServerSourceUrl[]
+}
+
+model DbMcpServerSourceUrl {
+  mcpServerSlug String
+  mcpServer     DbMcpServer @relation(fields: [mcpServerSlug], references: [slug], onDelete: Cascade)
+  url           String
+  sourceUrl     SourceUrl   @relation(fields: [url], references: [url], onDelete: Cascade)
+
+  @@id([mcpServerSlug, url])
 }
 
 // ========== Community Tools Models ==========
