@@ -5,7 +5,12 @@ export type { AppPropsFactoryOptions } from './appPropsFactory.js'
 export type { AcRouterContext, AcRouterInitParams } from './types/types'
 export { App } from './App'
 export type { AppProps } from './App'
-export type { AreaIcon, AreasSettings, UiSettings } from './types/uiSettings'
+export type {
+  AreaIcon,
+  AreasSettings,
+  ServiceDesksSettings,
+  UiSettings,
+} from './types/uiSettings'
 export {
   DAY_TO_DAY_AREA_KEY,
   DAY_TO_DAY_TAG,

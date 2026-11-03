@@ -24,6 +24,15 @@ export interface AreasSettings {
 }
 
 /**
+ * Presentation of the Service Desks view's area sections. A desk's area comes
+ * from its portal data, so the core knows none of them.
+ */
+export interface ServiceDesksSettings {
+  /** Icon per area name, as the portals spell it. Areas without one show the accent bar. */
+  areaIcons?: Record<string, AreaIcon>
+}
+
+/**
  * UI settings passed from the app entry point.
  */
 export interface UiSettings {
@@ -43,6 +52,8 @@ export interface UiSettings {
   chatChannelUrlTemplate?: string
   /** Area sections on the home view: icons and the day-to-day fold. */
   areas?: AreasSettings
+  /** The Service Desks view's area sections. */
+  serviceDesks?: ServiceDesksSettings
   /** PWA auto-update configuration (idle timeout, check interval, debug) */
   pwaAutoUpdate?: PwaAutoUpdateOptions
   /**

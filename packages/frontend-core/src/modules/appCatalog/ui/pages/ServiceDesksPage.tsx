@@ -10,6 +10,7 @@ import {
   useState,
 } from 'react'
 import { useTRPC } from '~/api/infra/trpc'
+import { useUiSettings } from '~/context/UiSettingsContext'
 import { cn } from '~/lib/utils'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { DeskCard, ServiceDeskCard } from '../serviceDesks/ServiceDeskCard'
@@ -22,6 +23,7 @@ import {
   hasPortal,
   searchServiceDesks,
 } from '../serviceDesks/searchServiceDesks'
+import type { AreaIcon } from '~/types/uiSettings'
 import type {
   FormResult,
   PortalDesk,
@@ -249,7 +251,7 @@ export function ServiceDesksPage() {
                   <h2 className="m-0 mb-3 px-1 font-serif text-[15px] font-semibold tracking-tight">
                     Other desks
                   </h2>
-                  <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <ul className="flex flex-col gap-3">
                     {plainHits.map((d) => (
                       <DeskCard key={d.slug} desk={d} />
                     ))}
@@ -295,6 +297,7 @@ function AreaBrowse({
   onOpen: (slug: string) => void
   scrollRef: React.RefObject<HTMLDivElement | null>
 }) {
+  const icons = useUiSettings().serviceDesks?.areaIcons
   const [current, setCurrent] = useState(areas[0]?.[0])
   useEffect(() => {
     const root = scrollRef.current
@@ -337,7 +340,7 @@ function AreaBrowse({
             className="mt-11 first:mt-2"
           >
             <div className="mb-4 flex items-center gap-2.5">
-              <div className="h-[3px] w-11 rounded-full bg-primary" />
+              <AreaMark Icon={icons?.[area]} />
               <h2 className="m-0 font-serif text-[27px] font-semibold leading-tight tracking-tight">
                 {area}
               </h2>
@@ -345,7 +348,7 @@ function AreaBrowse({
                 {countLabel(list)}
               </span>
             </div>
-            <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <ul className="flex flex-col gap-3">
               {list.map((e) =>
                 e.kind === 'form' ? (
                   <ServiceDeskCard
@@ -406,6 +409,18 @@ function AreaBrowse({
         </ol>
       </nav>
     </div>
+  )
+}
+
+/**
+ * The deployment's icon for an area, as on the catalog home; the accent bar
+ * when it has none. Decorative: the heading beside it carries the name.
+ */
+function AreaMark({ Icon }: { Icon?: AreaIcon }) {
+  return Icon ? (
+    <Icon size={26} strokeWidth={1.75} className="shrink-0 text-primary" />
+  ) : (
+    <div className="h-[3px] w-11 shrink-0 rounded-full bg-primary" />
   )
 }
 
