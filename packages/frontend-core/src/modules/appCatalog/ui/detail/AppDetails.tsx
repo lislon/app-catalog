@@ -1,7 +1,4 @@
-import type {
-  Resource,
-  SourceReference,
-} from '@igstack/app-catalog-backend-core'
+import type { Resource } from '@igstack/app-catalog-backend-core'
 import { Link, useSearch } from '@tanstack/react-router'
 import { ExternalLink, Plus, Trash2 } from 'lucide-react'
 import React from 'react'
@@ -18,7 +15,7 @@ import { InlineEditableField } from '../components/InlineEditableField'
 import { MarkdownText } from '../components/MarkdownText'
 import { ScreenshotGallery } from '../components/ScreenshotGallery'
 import { SourcePulse } from '../components/SourcePulse'
-import { SourcesList } from '../components/SourcesList'
+import { SourcesList, useSourceUrlsWithPulse } from '../components/SourcesList'
 import { useUpdateApp } from '../../hooks/useUpdateApp'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
@@ -193,22 +190,11 @@ export function AppDetails({
   const subSlug = search.sub
 
   const displayTags = (app.tags ?? []).filter((tag) => !tag.includes(':'))
-  const sourceUrls: string[] =
-    app.sources?.map((s) => (typeof s === 'string' ? s : s.url)) ?? []
+  const { urls: sourceUrls, pulseByUrl } = useSourceUrlsWithPulse(
+    app.sources ?? [],
+  )
   const displaySources =
     draftSource !== null ? [...sourceUrls, draftSource] : sourceUrls
-  // The list renders bare URLs (they are editable as text), so the pulse has to
-  // be looked up rather than carried alongside. Absent until the autoupdate loop
-  // has seen the source — a freshly added one simply gets no mark.
-  const pulseByUrl = React.useMemo(() => {
-    const byUrl = new Map<string, NonNullable<SourceReference['pulse']>>()
-    for (const source of app.sources ?? []) {
-      if (typeof source !== 'string' && source.pulse) {
-        byUrl.set(source.url, source.pulse)
-      }
-    }
-    return byUrl
-  }, [app.sources])
 
   const children = React.useMemo(
     () => getChildResources(allResources, app.slug),

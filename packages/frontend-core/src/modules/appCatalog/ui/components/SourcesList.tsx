@@ -8,10 +8,8 @@ interface SourcesListProps {
   sources: (string | SourceReference)[]
 }
 
-export function SourcesList({ sources }: SourcesListProps) {
-  const sourceUrls: string[] = sources.map((s) =>
-    typeof s === 'string' ? s : s.url,
-  )
+export function useSourceUrlsWithPulse(sources: (string | SourceReference)[]) {
+  const urls: string[] = sources.map((s) => (typeof s === 'string' ? s : s.url))
   // The list renders bare URLs (they are editable as text), so the pulse has to
   // be looked up rather than carried alongside. Absent until the autoupdate loop
   // has seen the source — a freshly added one simply gets no mark.
@@ -24,6 +22,12 @@ export function SourcesList({ sources }: SourcesListProps) {
     }
     return byUrl
   }, [sources])
+
+  return { urls, pulseByUrl }
+}
+
+export function SourcesList({ sources }: SourcesListProps) {
+  const { urls: sourceUrls, pulseByUrl } = useSourceUrlsWithPulse(sources)
 
   return (
     <ul className="space-y-2">
