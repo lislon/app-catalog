@@ -25,12 +25,33 @@ import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Given, Then, When } from 'quickpickle'
 import type { DataTable } from 'quickpickle'
-import { afterEach, expect, vi } from 'vitest'
+import { afterEach, beforeEach, expect, vi } from 'vitest'
 import type { Mock } from 'vitest'
 import { given } from '../harness/given'
 import type { GivenResult } from '../harness/given'
 import { magazine } from '../mock-backend/magazines'
 import type { Magazine } from '../mock-backend/magazines'
+
+/** Fixed time for deterministic "N days ago" calculations. */
+const PINNED_NOW = new Date('2026-10-21T12:00:00Z')
+
+beforeEach(() => {
+  vi.useFakeTimers({
+    shouldAdvanceTime: true,
+    toFake: [
+      'setTimeout',
+      'clearTimeout',
+      'setInterval',
+      'clearInterval',
+      'Date',
+    ],
+  })
+  vi.setSystemTime(PINNED_NOW)
+})
+
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 interface RegisteredCatalog {
   fixture: Magazine
@@ -1032,8 +1053,7 @@ Then('the feed is filtered to {string}', async (_world, tag: string) => {
 Given(
   'the site of {string} changed {int} day(s) ago',
   async (_world, name: string, days: number) => {
-    // On the real clock: the row measures "N days ago" against it.
-    const at = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+    const at = new Date(PINNED_NOW.getTime() - days * 24 * 60 * 60 * 1000)
     await givenOnServer(({ backendCfg }) => {
       const tools = backendCfg.communityTools
       tools.siteUpdated(tools.slugOf(name), at)
@@ -1196,17 +1216,6 @@ Given('{string} was just added', async (_world, name: string) => {
       lastCheckAt: null,
     })
   })
-  // The card asks again every few seconds while it waits; fake clocks let a
-  // scenario step over that wait. They still tick with real time, so the
-  // network and user-event delays run as usual.
-  vi.useFakeTimers({
-    shouldAdvanceTime: true,
-    toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
-  })
-})
-
-afterEach(() => {
-  vi.useRealTimers()
 })
 
 Given(
