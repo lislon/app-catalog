@@ -86,6 +86,43 @@ export async function syncSourceUrls(
 }
 
 /**
+ * Ensures Source and SourceUrl rows exist for a list of URLs without overwriting
+ * existing schedule data. Used by updateApp to add new sources.
+ */
+export async function ensureSourceUrls(
+  prisma: PrismaClient,
+  urls: string[],
+): Promise<void> {
+  const uniqueSourceSlugs = [...new Set(urls.map(parseSourceSlug))]
+  const sourceUpserts = uniqueSourceSlugs.map((slug) =>
+    prisma.source.upsert({
+      where: { slug },
+      create: { slug },
+      update: {},
+    }),
+  )
+
+  const urlUpserts = urls.map((url) =>
+    prisma.sourceUrl.upsert({
+      where: { url },
+      create: {
+        url,
+        sourceSlug: parseSourceSlug(url),
+        excerpts: [],
+        lastCheckedAt: null,
+        nextCheckAfter: null,
+        lastContentChangeAt: null,
+        checkIntervalHours: null,
+        changeHistory: null,
+      },
+      update: {}, // Empty update preserves existing schedule
+    }),
+  )
+
+  await prisma.$transaction([...sourceUpserts, ...urlUpserts])
+}
+
+/**
  * Syncs a link table with set semantics: removes old links, adds new links.
  * Handles empty owner sets (deletes all links for owners not in the synced set).
  * @param model - 'DbResourceSourceUrl' (or 'DbMcpServerSourceUrl' in a later task)
@@ -116,9 +153,9 @@ export async function syncSourceLinks<TModel extends 'DbResourceSourceUrl'>(
   // Collect all owners that have links in this sync
   const ownersWithLinks = new Set(byOwner.keys())
 
-  // Determine which owners need deletion: either in allOwners but not in rows, or in rows
+  // Delete set: union of allOwners and row owners
   const ownersToSync = allOwners
-    ? Array.from(allOwners)
+    ? Array.from(new Set([...allOwners, ...ownersWithLinks]))
     : Array.from(ownersWithLinks)
 
   // Build all link rows to create

@@ -14,7 +14,7 @@ import {
   it,
   vi,
 } from 'vitest'
-import { PrismaClient } from '../generated/prisma/client'
+import type { PrismaClient } from '../generated/prisma/client'
 import { syncAppCatalog } from '../db/syncAppCatalog'
 import {
   getResourcesFromPrisma,
@@ -23,6 +23,13 @@ import {
 import type { Resource } from '../types/common/appCatalogTypes'
 import { execSync } from 'node:child_process'
 import * as dbClient from '../db/client'
+import { createCorePrismaClient } from '../db/client'
+import { fileURLToPath } from 'node:url'
+import { dirname, resolve } from 'node:path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const BACKEND_CORE_ROOT = resolve(__dirname, '../..')
 
 const TEST_DB_URL = process.env.AC_TEST_DATABASE_URL
 const shouldSkip = !TEST_DB_URL
@@ -51,17 +58,17 @@ describe.skipIf(shouldSkip)('sourcesDb integration', () => {
     execSync(
       `pnpm exec prisma db push --accept-data-loss --url="${schemaUrl}"`,
       {
-        cwd: '/Users/igolovin/src/ig-umbrella/ac-mcp/packages/backend-core',
+        cwd: BACKEND_CORE_ROOT,
         stdio: 'inherit',
       },
     )
 
-    // Create Prisma client for test schema using adapter
-    const { Pool } = await import('pg')
-    const pool = new Pool({ connectionString: schemaUrl })
-    const { PrismaPg } = await import('@prisma/adapter-pg')
-    const adapter = new PrismaPg(pool, { schema: testSchema })
-    prisma = new PrismaClient({ adapter })
+    // Create Prisma client for test schema using repo's factory
+    const created = createCorePrismaClient({
+      connectionString: TEST_DB_URL,
+      configuredSchema: testSchema,
+    })
+    prisma = created.client
     await prisma.$connect()
 
     // Mock getDbClient to return our test client
@@ -173,6 +180,11 @@ describe.skipIf(shouldSkip)('sourcesDb integration', () => {
   })
 
   it('schedule from an enriched source survives sync and produces correct pulse', async () => {
+    // Pin clock to make pulse deterministic
+    const now = new Date('2026-11-15T00:00:00Z')
+    vi.useFakeTimers()
+    vi.setSystemTime(now)
+
     const url = 'https://test-sources-scheduled.example.com/api'
     const nextCheckAfter = new Date('2026-12-01T00:00:00Z')
     const lastCheckedAt = new Date('2026-11-01T00:00:00Z')
@@ -228,11 +240,25 @@ describe.skipIf(shouldSkip)('sourcesDb integration', () => {
       throw new Error('Expected SourceReference, got string')
     }
 
-    expect(source?.pulse).toMatchObject({
+    // Compare full pulse with pinned clock
+    expect(source?.pulse).toEqual({
       cadence: 'daily',
       state: 'ok',
       intervalHours: 24,
+      dueAt: '2026-12-01T00:00:00.000Z',
+      lastCheckedAt: '2026-11-01T00:00:00.000Z',
+      lastContentChangeAt: '2026-10-15T00:00:00.000Z',
+      contentChangeIsLowerBound: false,
+      checks: [{ date: '2026-10-15T00:00:00Z', changed: true }],
     })
+
+    // Assert no test data leaked into public schema
+    const publicCount = await prisma.$queryRaw<
+      { count: bigint }[]
+    >`SELECT COUNT(*) as count FROM public."DbResource" WHERE slug LIKE 'test-sources-%'`
+    expect(Number(publicCount[0]?.count)).toBe(0)
+
+    vi.useRealTimers()
   })
 
   it('removing a source from config deletes only that link', async () => {
