@@ -1,5 +1,15 @@
 # @igstack/app-catalog-backend-core
 
+## 6.13.1
+
+### Patch Changes
+
+- [#341](https://github.com/lislon/app-catalog/pull/341) [`ed183c9`](https://github.com/lislon/app-catalog/commit/ed183c9fe94ba98e0fe8e0cbd7ada7b6e5e05ba0) Thanks [@lislon](https://github.com/lislon)! - Republish backend-core: the 6.13.0 release reported it as published, but the registry never served it (404, `latest` stayed on 6.12.4); the other five packages are on 6.13.0. No code change.
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.13.1
+  - @igstack/app-catalog-table-sync@6.13.1
+
 ## 6.13.0
 
 ### Minor Changes
