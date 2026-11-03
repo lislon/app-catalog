@@ -25,7 +25,7 @@ import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Given, Then, When } from 'quickpickle'
 import type { DataTable } from 'quickpickle'
-import { afterEach, beforeEach, expect, vi } from 'vitest'
+import { afterEach, expect, vi } from 'vitest'
 import type { Mock } from 'vitest'
 import { given } from '../harness/given'
 import type { GivenResult } from '../harness/given'
@@ -34,24 +34,6 @@ import type { Magazine } from '../mock-backend/magazines'
 
 /** Fixed time for deterministic "N days ago" calculations. */
 const PINNED_NOW = new Date('2026-10-21T12:00:00Z')
-
-beforeEach(() => {
-  vi.useFakeTimers({
-    shouldAdvanceTime: true,
-    toFake: [
-      'setTimeout',
-      'clearTimeout',
-      'setInterval',
-      'clearInterval',
-      'Date',
-    ],
-  })
-  vi.setSystemTime(PINNED_NOW)
-})
-
-afterEach(() => {
-  vi.useRealTimers()
-})
 
 interface RegisteredCatalog {
   fixture: Magazine
@@ -1053,13 +1035,23 @@ Then('the feed is filtered to {string}', async (_world, tag: string) => {
 Given(
   'the site of {string} changed {int} day(s) ago',
   async (_world, name: string, days: number) => {
-    const at = new Date(PINNED_NOW.getTime() - days * 24 * 60 * 60 * 1000)
+    // Pin Date so "N days ago" buckets stay stable across test runs.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(PINNED_NOW)
+    // Compute N calendar days ago by manipulating the date, not milliseconds,
+    // so DST boundaries don't shift the bucket.
+    const at = new Date(PINNED_NOW)
+    at.setDate(at.getDate() - days)
     await givenOnServer(({ backendCfg }) => {
       const tools = backendCfg.communityTools
       tools.siteUpdated(tools.slugOf(name), at)
     })
   },
 )
+
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 When('I sort by {string}', async (_world, label: string) => {
   await userEvent.setup().click(
@@ -1215,6 +1207,12 @@ Given('{string} was just added', async (_world, name: string) => {
       // Its first visit has not run yet.
       lastCheckAt: null,
     })
+  })
+  // The card polls for screenshot completion; fake timers let a scenario step
+  // over that wait. They still tick with real time so async delays work.
+  vi.useFakeTimers({
+    shouldAdvanceTime: true,
+    toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
   })
 })
 
