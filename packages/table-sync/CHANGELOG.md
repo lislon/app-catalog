@@ -1,5 +1,7 @@
 # @igstack/app-catalog-table-sync
 
+## 6.15.0
+
 ## 6.14.0
 
 ## 6.13.1

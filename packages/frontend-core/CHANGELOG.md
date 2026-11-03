@@ -1,5 +1,16 @@
 # @igstack/app-catalog-frontend-core
 
+## 6.15.0
+
+### Minor Changes
+
+- [#343](https://github.com/lislon/app-catalog/pull/343) [`2dccf68`](https://github.com/lislon/app-catalog/commit/2dccf68689749a72d77490ff35ad7c6d385e41a1) Thanks [@lislon](https://github.com/lislon)! - Service Desks lists one card per row, and an area's heading can carry an icon: `uiSettings.serviceDesks.areaIcons` maps an area name to an icon component, as `uiSettings.areas.icons` does on the catalog home. Areas without one keep the accent bar.
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.15.0
+
 ## 6.14.0
 
 ### Minor Changes
