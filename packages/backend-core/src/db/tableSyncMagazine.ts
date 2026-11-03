@@ -52,10 +52,6 @@ export const TABLE_SYNC_MAGAZINE = {
     uniqColumns: ['url'],
     upsertOnly: true,
   },
-  DbResourceSourceUrl: {
-    prismaModelName: 'DbResourceSourceUrl',
-    uniqColumns: ['resourceId', 'url'],
-  },
 } as const satisfies TableSyncMagazineType
 
 export type TableSyncMagazine = typeof TABLE_SYNC_MAGAZINE

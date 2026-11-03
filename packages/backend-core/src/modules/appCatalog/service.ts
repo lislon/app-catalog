@@ -11,11 +11,8 @@ import type { ServiceConfig } from '../../types/common/approvalMethodTypes'
 import type { Group, Person } from '../../types/common/personGroupTypes'
 import { omit } from 'radashi'
 import { computeFreshness } from './freshness'
-import {
-  syncSourceLinks,
-  syncSourceUrls,
-  toSourceReference,
-} from '../sources/sourcesDb'
+import { parseSourceSlug } from '../../utils/parseSourceSlug'
+import { syncSourceLinks, toSourceReference } from '../sources/sourcesDb'
 
 /** Prisma query result for DbResource with sourceLinks included (used by rowToResource) */
 type ResourceRowWithSourceLinks = Prisma.DbResourceGetPayload<{
@@ -299,13 +296,44 @@ export async function updateApp(input: UpdateAppInput): Promise<Resource> {
   if (data.sources !== undefined) {
     const urls = [...new Set(data.sources.map((u) => u.trim()).filter(Boolean))]
 
-    // Sync Source and SourceUrl rows
-    const sourceRefs = urls.map((url) => ({ url }))
-    await syncSourceUrls(prisma, sourceRefs)
+    // Ensure Source rows exist for all source slugs
+    const uniqueSourceSlugs = [...new Set(urls.map(parseSourceSlug))]
+    for (const sourceSlug of uniqueSourceSlugs) {
+      await prisma.source.upsert({
+        where: { slug: sourceSlug },
+        create: { slug: sourceSlug },
+        update: {},
+      })
+    }
 
-    // Sync this resource's links (replaces old links with new ones)
+    // Ensure SourceUrl rows exist (but don't overwrite schedules with null)
+    for (const url of urls) {
+      const sourceSlug = parseSourceSlug(url)
+      await prisma.sourceUrl.upsert({
+        where: { url },
+        create: {
+          url,
+          sourceSlug,
+          excerpts: [],
+          lastCheckedAt: null,
+          nextCheckAfter: null,
+          lastContentChangeAt: null,
+          checkIntervalHours: null,
+          changeHistory: null,
+        },
+        update: {}, // Don't overwrite existing schedule data
+      })
+    }
+
+    // Sync this resource's links only (pass allOwners to handle sources: [])
     const linkRows = urls.map((url) => ({ owner: updated.id, url }))
-    await syncSourceLinks(prisma, 'DbResourceSourceUrl', 'resourceId', linkRows)
+    await syncSourceLinks(
+      prisma,
+      'DbResourceSourceUrl',
+      'resourceId',
+      linkRows,
+      new Set([updated.id]),
+    )
 
     const refetched = await prisma.dbResource.findUnique({
       where: { id },

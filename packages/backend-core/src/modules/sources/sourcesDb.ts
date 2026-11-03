@@ -27,7 +27,8 @@ export async function syncSourceUrls(
     ref.schedule?.checkIntervalHours != null ||
     ref.schedule?.nextCheckAfter != null ||
     ref.schedule?.lastCheckedAt != null ||
-    ref.schedule?.lastContentChangeAt != null
+    ref.schedule?.lastContentChangeAt != null ||
+    ref.schedule?.changeHistory != null
 
   for (const ref of refs) {
     const existing = urlMap.get(ref.url)
@@ -99,55 +100,49 @@ export async function syncSourceLinks<TModel extends 'DbResourceSourceUrl'>(
   rows: { owner: string; url: string }[],
   allOwners?: Set<string>,
 ): Promise<void> {
-  await prisma.$transaction(async (tx) => {
-    const modelOps = tx[
-      (model.charAt(0).toLowerCase() + model.slice(1)) as keyof typeof tx
-    ] as any
+  const modelOps = prisma[
+    (model.charAt(0).toLowerCase() + model.slice(1)) as keyof typeof prisma
+  ] as any
 
-    // Group rows by owner for per-owner sync, deduping URLs per owner
-    const byOwner = new Map<string, Set<string>>()
-    for (const { owner, url } of rows) {
-      if (!byOwner.has(owner)) {
-        byOwner.set(owner, new Set())
-      }
-      byOwner.get(owner)!.add(url)
+  // Group rows by owner, deduping URLs per owner
+  const byOwner = new Map<string, Set<string>>()
+  for (const { owner, url } of rows) {
+    if (!byOwner.has(owner)) {
+      byOwner.set(owner, new Set())
     }
+    byOwner.get(owner)!.add(url)
+  }
 
-    // If allOwners is provided, delete links for owners not in the set
-    if (allOwners) {
-      const ownersInRows = new Set(byOwner.keys())
-      const ownersToDelete = Array.from(allOwners).filter(
-        (owner) => !ownersInRows.has(owner),
-      )
-      if (ownersToDelete.length > 0) {
-        await modelOps.deleteMany({
-          where: { [ownerColumn]: { in: ownersToDelete } },
-        })
-      }
+  // Collect all owners that have links in this sync
+  const ownersWithLinks = new Set(byOwner.keys())
+
+  // Determine which owners need deletion: either in allOwners but not in rows, or in rows
+  const ownersToSync = allOwners
+    ? Array.from(allOwners)
+    : Array.from(ownersWithLinks)
+
+  // Build all link rows to create
+  const allLinkRows: any[] = []
+  for (const [owner, urlSet] of byOwner) {
+    for (const url of urlSet) {
+      allLinkRows.push({ [ownerColumn]: owner, url })
     }
+  }
 
-    // Sync each owner's links independently
-    for (const [owner, urlSet] of byOwner) {
-      const urls = Array.from(urlSet)
-      const linkRows = urls.map((url) => ({
-        [ownerColumn]: owner,
-        url,
-      }))
-
-      // Delete all existing links for this owner
-      await modelOps.deleteMany({
-        where: { [ownerColumn]: owner },
-      })
-
-      // Create all new links
-      if (linkRows.length > 0) {
-        await modelOps.createMany({
-          data: linkRows,
-          skipDuplicates: true,
-        })
-      }
-    }
-  })
+  // Batch: one deleteMany for all affected owners, one createMany for all links
+  await prisma.$transaction([
+    modelOps.deleteMany({
+      where: { [ownerColumn]: { in: ownersToSync } },
+    }),
+    ...(allLinkRows.length > 0
+      ? [
+          modelOps.createMany({
+            data: allLinkRows,
+            skipDuplicates: true,
+          }),
+        ]
+      : []),
+  ])
 }
 
 /**
