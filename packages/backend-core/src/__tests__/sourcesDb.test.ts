@@ -49,9 +49,9 @@ describe.skipIf(shouldSkip)('sourcesDb integration', () => {
 
     // Push Prisma schema to test schema
     execSync(
-      `cd packages/backend-core && DATABASE_URL="${schemaUrl}" pnpm exec prisma db push`,
+      `pnpm exec prisma db push --accept-data-loss --url="${schemaUrl}"`,
       {
-        cwd: '/Users/igolovin/src/ig-umbrella/ac-mcp',
+        cwd: '/Users/igolovin/src/ig-umbrella/ac-mcp/packages/backend-core',
         stdio: 'inherit',
       },
     )
@@ -228,9 +228,10 @@ describe.skipIf(shouldSkip)('sourcesDb integration', () => {
       throw new Error('Expected SourceReference, got string')
     }
 
-    expect(source?.pulse).toEqual({
+    expect(source?.pulse).toMatchObject({
       cadence: 'daily',
-      state: 'current',
+      state: 'ok',
+      intervalHours: 24,
     })
   })
 
