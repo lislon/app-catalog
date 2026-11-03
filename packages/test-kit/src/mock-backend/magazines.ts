@@ -463,8 +463,19 @@ function mcpMagazine(postConfigure?: Magazine): Magazine {
       memberSlugs: [],
     })
 
-    // 8 MCP servers covering all Triad combinations (2 transport × 2 auth × 2 access = 8)
-    // http + sso + read
+    // 8 MCP servers covering all Triad combinations: access × needsAccess × sensitiveData
+    // | Server        | Access | Needs Access | Sensitive |
+    // |---------------|--------|--------------|-----------|
+    // | ticket-search | read   | yes          | no        |
+    // | code-search   | read   | yes          | yes       |
+    // | wiki          | read   | no           | no        |
+    // | chat-search   | read   | no           | yes       |
+    // | fs-local      | write  | yes          | no        |
+    // | db-query      | write  | yes          | yes       |
+    // | mail-test     | write  | no           | no        |
+    // | logs          | write  | no           | yes       |
+
+    // 1. read + needs access + not sensitive
     backendCfg.withMcpServer({
       slug: 'ticket-search',
       displayName: 'Ticket Search',
@@ -489,38 +500,39 @@ function mcpMagazine(postConfigure?: Magazine): Magazine {
       sources: [{ url: 'https://github.com/example/ticket-mcp' }],
     })
 
-    // http + sso + write
+    // 2. read + needs access + sensitive (stdio)
     backendCfg.withMcpServer({
-      slug: 'logs',
-      displayName: 'Log Viewer',
-      description: 'Query application logs and traces',
-      category: 'observability',
+      slug: 'code-search',
+      displayName: 'Code Search',
+      description: 'Search code repositories',
+      category: 'dev-tools',
       status: 'production',
-      access: 'write',
-      writeNote: 'Can create log queries and alerts',
+      access: 'read',
       sensitiveData: true,
+      requiredAppSlugs: ['taskflow'],
       auth: {
         kind: 'sso',
+        note: 'Uses GitHub CLI authentication',
       },
       transport: {
-        type: 'http',
-        url: 'https://logs.example.com/mcp',
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', '@example/code-search-mcp'],
       },
       tools: [
-        { name: 'query_logs', description: 'Query logs' },
-        { name: 'create_alert', description: 'Create a log alert' },
+        { name: 'search_code', description: 'Search code' },
+        { name: 'get_file', description: 'Get file contents' },
       ],
-      ownerSlug: aiTeam.slug,
-      sources: [{ url: 'https://logs.example.com/docs' }],
+      sources: [{ url: 'https://github.com/example/code-search-mcp' }],
     })
 
-    // http + token + read
+    // 3. read + no access needed + not sensitive (token with steps)
     backendCfg.withMcpServer({
       slug: 'wiki',
       displayName: 'Wiki Browser',
       description: 'Search documentation and wiki pages',
       category: 'knowledge',
-      aliases: ['docs', 'confluence'],
+      aliases: ['docs'],
       status: 'beta',
       access: 'read',
       auth: {
@@ -547,7 +559,105 @@ function mcpMagazine(postConfigure?: Magazine): Magazine {
       sources: [{ url: 'https://wiki.example.com/mcp-docs' }],
     })
 
-    // http + token + write (relative URL)
+    // 4. read + no access needed + sensitive
+    backendCfg.withMcpServer({
+      slug: 'chat-search',
+      displayName: 'Chat Search',
+      description: 'Search team chat messages and channels',
+      category: 'communication',
+      status: 'personal',
+      access: 'read',
+      sensitiveData: true,
+      auth: {
+        kind: 'token',
+        note: 'Requires a chat bot token',
+        token: {
+          page: 'https://chat.example.com/apps',
+          steps: [
+            'Create a chat app',
+            'Add bot token scopes: channels:history, channels:read',
+            'Install to workspace',
+            'Copy Bot User OAuth Token',
+          ],
+        },
+      },
+      transport: {
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', '@example/chat-mcp'],
+      },
+      tools: [
+        { name: 'list_channels', description: 'List chat channels' },
+        { name: 'read_messages', description: 'Read channel messages' },
+      ],
+      sources: [{ url: 'https://github.com/example/chat-mcp' }],
+    })
+
+    // 5. write + needs access + not sensitive
+    backendCfg.withMcpServer({
+      slug: 'fs-local',
+      displayName: 'Local Filesystem',
+      description: 'Read and write local project files',
+      category: 'dev-tools',
+      status: 'production',
+      access: 'write',
+      writeNote: 'Can modify local files',
+      requiredAppSlugs: ['taskflow'],
+      auth: {
+        kind: 'token',
+        note: 'Token is the file path allowlist',
+        token: {
+          page: 'file://~/.config/mcp/filesystem.json',
+          steps: [
+            'Create ~/.config/mcp/filesystem.json',
+            'Add allowed paths: {"paths": ["/Users/me/projects"]}',
+          ],
+        },
+      },
+      transport: {
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', '@modelcontextprotocol/server-filesystem'],
+      },
+      tools: [
+        { name: 'read_file', description: 'Read file contents' },
+        { name: 'write_file', description: 'Write to a file' },
+        { name: 'list_directory', description: 'List directory contents' },
+      ],
+      sources: [
+        {
+          url: 'https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem',
+        },
+      ],
+    })
+
+    // 6. write + needs access + sensitive
+    backendCfg.withMcpServer({
+      slug: 'db-query',
+      displayName: 'Database Query',
+      description: 'Query analytics warehouse',
+      category: 'data',
+      status: 'beta',
+      access: 'write',
+      writeNote: 'Can execute write queries on dev databases',
+      sensitiveData: true,
+      requiredAppSlugs: ['teamchat'],
+      auth: {
+        kind: 'sso',
+      },
+      transport: {
+        type: 'stdio',
+        command: 'warehouse-mcp',
+        args: ['--env', 'dev'],
+      },
+      tools: [
+        { name: 'query', description: 'Execute SQL query' },
+        { name: 'list_tables', description: 'List tables' },
+      ],
+      sources: [{ url: 'https://warehouse.example.com/docs/mcp' }],
+    })
+
+    // 7. write + no access needed + not sensitive (relative URL)
     backendCfg.withMcpServer({
       slug: 'mail-test',
       displayName: 'Mail Catcher',
@@ -575,128 +685,29 @@ function mcpMagazine(postConfigure?: Magazine): Magazine {
       sources: [{ url: 'https://github.com/example/mail-catcher-mcp' }],
     })
 
-    // stdio + sso + read
+    // 8. write + no access needed + sensitive (group owner)
     backendCfg.withMcpServer({
-      slug: 'code-search',
-      displayName: 'Code Search',
-      description: 'Search code repositories',
-      category: 'dev-tools',
+      slug: 'logs',
+      displayName: 'Log Viewer',
+      description: 'Query application logs and traces',
+      category: 'observability',
       status: 'production',
-      access: 'read',
-      requiredAppSlugs: [],
-      auth: {
-        kind: 'sso',
-        note: 'Uses GitHub CLI authentication',
-      },
-      transport: {
-        type: 'stdio',
-        command: 'npx',
-        args: ['-y', '@example/code-search-mcp'],
-      },
-      tools: [
-        { name: 'search_code', description: 'Search code' },
-        { name: 'get_file', description: 'Get file contents' },
-      ],
-      sources: [{ url: 'https://github.com/example/code-search-mcp' }],
-    })
-
-    // stdio + sso + write
-    backendCfg.withMcpServer({
-      slug: 'db-query',
-      displayName: 'Database Query',
-      description: 'Query analytics warehouse',
-      category: 'data',
-      status: 'beta',
       access: 'write',
-      writeNote: 'Can execute write queries on dev databases',
+      writeNote: 'Can create log queries and alerts',
       sensitiveData: true,
       auth: {
         kind: 'sso',
       },
       transport: {
-        type: 'stdio',
-        command: 'warehouse-mcp',
-        args: ['--env', 'dev'],
+        type: 'http',
+        url: 'https://logs.example.com/mcp',
       },
       tools: [
-        { name: 'query', description: 'Execute SQL query' },
-        { name: 'list_tables', description: 'List tables' },
+        { name: 'query_logs', description: 'Query logs' },
+        { name: 'create_alert', description: 'Create a log alert' },
       ],
-      sources: [{ url: 'https://warehouse.example.com/docs/mcp' }],
-    })
-
-    // stdio + token + read
-    backendCfg.withMcpServer({
-      slug: 'slack-read',
-      displayName: 'Slack Reader',
-      description: 'Read Slack messages and channels',
-      category: 'communication',
-      status: 'personal',
-      access: 'read',
-      auth: {
-        kind: 'token',
-        note: 'Requires a Slack bot token',
-        token: {
-          page: 'https://api.slack.com/apps',
-          steps: [
-            'Create a Slack app',
-            'Add bot token scopes: channels:history, channels:read',
-            'Install to workspace',
-            'Copy Bot User OAuth Token',
-          ],
-        },
-      },
-      transport: {
-        type: 'stdio',
-        command: 'npx',
-        args: ['-y', '@modelcontextprotocol/server-slack'],
-      },
-      tools: [
-        { name: 'list_channels', description: 'List Slack channels' },
-        { name: 'read_messages', description: 'Read channel messages' },
-      ],
-      sources: [
-        {
-          url: 'https://github.com/modelcontextprotocol/servers/tree/main/src/slack',
-        },
-      ],
-    })
-
-    // stdio + token + write
-    backendCfg.withMcpServer({
-      slug: 'fs-local',
-      displayName: 'Local Filesystem',
-      description: 'Read and write local project files',
-      category: 'dev-tools',
-      status: 'production',
-      access: 'write',
-      writeNote: 'Can modify local files',
-      auth: {
-        kind: 'token',
-        note: 'Token is the file path allowlist',
-        token: {
-          page: 'file://~/.config/mcp/filesystem.json',
-          steps: [
-            'Create ~/.config/mcp/filesystem.json',
-            'Add allowed paths: {"paths": ["/Users/me/projects"]}',
-          ],
-        },
-      },
-      transport: {
-        type: 'stdio',
-        command: 'npx',
-        args: ['-y', '@modelcontextprotocol/server-filesystem'],
-      },
-      tools: [
-        { name: 'read_file', description: 'Read file contents' },
-        { name: 'write_file', description: 'Write to a file' },
-        { name: 'list_directory', description: 'List directory contents' },
-      ],
-      sources: [
-        {
-          url: 'https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem',
-        },
-      ],
+      ownerSlug: aiTeam.slug,
+      sources: [{ url: 'https://logs.example.com/docs' }],
     })
 
     // MCP catalog config
