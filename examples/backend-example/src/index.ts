@@ -13,6 +13,7 @@ import {
   mockAppCatalog,
   mockApprovalMethods,
   mockGroups,
+  mockMcpServers,
   mockPersons,
   mockSubResources,
   mockTagDefinitions,
@@ -129,9 +130,12 @@ app.listen(port, async () => {
       {
         persons: mockPersons,
         groups: mockGroups,
+        mcpServers: mockMcpServers,
       },
     )
-    console.log(`✓ Synced ${allResources.length} resources to database`)
+    console.log(
+      `✓ Synced ${allResources.length} resources, ${mockMcpServers.length} MCP servers to database`,
+    )
   } catch (error) {
     console.error('Failed to sync app catalog:', error)
   }

@@ -5,6 +5,7 @@ import type {
   Person,
   Resource,
 } from '@igstack/app-catalog-backend-core'
+import type { McpServer } from '@igstack/app-catalog-shared-core'
 
 // ============================================================================
 // TAG DEFINITIONS
@@ -883,5 +884,192 @@ export const mockSubResources: Resource[] = [
     ownerPersonSlug: 'bwilson@example.com',
     approverSlugs: ['data-team'],
     extra: { orgUnit: 'Data', accounting: 'OpEx' },
+  },
+]
+
+// ============================================================================
+// MCP SERVERS
+// ============================================================================
+
+export const mockMcpServers: McpServer[] = [
+  // http + sso + production
+  {
+    slug: 'issue-tracker',
+    displayName: 'Issue Tracker',
+    description: 'Search tickets, create issues, update status',
+    category: 'productivity',
+    status: 'production',
+    access: 'write',
+    writeNote: 'Can create and update tickets',
+    requiredAppSlugs: ['github'],
+    auth: {
+      kind: 'sso',
+      note: 'Uses your GitHub SSO credentials',
+    },
+    transport: {
+      type: 'http',
+      url: 'https://mcp.example.com/issue-tracker',
+      headers: { Authorization: '<GITHUB_TOKEN>' },
+    },
+    tools: [
+      { name: 'search_issues', description: 'Search for issues by keywords' },
+      { name: 'create_issue', description: 'Create a new issue' },
+      { name: 'update_issue', description: 'Update an existing issue' },
+    ],
+    ownerSlug: 'jsmith@example.com',
+    sources: ['https://github.com/example/issue-tracker-mcp'],
+  },
+
+  // http + token (with steps) + beta
+  {
+    slug: 'log-warehouse',
+    displayName: 'Log Warehouse',
+    description: 'Query application logs and metrics across services',
+    category: 'observability',
+    status: 'beta',
+    access: 'read',
+    sensitiveData: true,
+    requiredAppSlugs: [],
+    auth: {
+      kind: 'token',
+      note: 'Requires an API token from the logs portal',
+      token: {
+        page: 'https://logs.example.com/settings/tokens',
+        steps: [
+          'Navigate to Settings > API Tokens',
+          'Click "Generate New Token"',
+          'Select "read:logs" scope',
+          'Copy the token',
+        ],
+      },
+    },
+    transport: {
+      type: 'http',
+      url: 'https://logs.example.com/mcp',
+      headers: { 'X-API-Token': '<LOGS_API_TOKEN>' },
+    },
+    tools: [
+      { name: 'query_logs', description: 'Query logs with filters' },
+      { name: 'get_metrics', description: 'Retrieve metrics for a service' },
+    ],
+    ownerSlug: 'cloud-team',
+    support: {
+      label: 'Cloud Team Slack',
+      url: 'https://yourcompany.slack.com/archives/cloud',
+    },
+    sources: ['https://logs.example.com/docs/mcp'],
+  },
+
+  // http + none + production (relative URL)
+  {
+    slug: 'mail-catcher',
+    displayName: 'Mail Catcher',
+    description: 'View test emails sent in development environments',
+    category: 'dev-tools',
+    status: 'production',
+    access: 'read',
+    auth: {
+      kind: 'none',
+    },
+    transport: {
+      type: 'http',
+      url: '/mcp/mail-catcher',
+    },
+    tools: [
+      { name: 'list_messages', description: 'List all captured emails' },
+      { name: 'get_message', description: 'Get email content by ID' },
+      { name: 'clear_messages', description: 'Clear all captured emails' },
+    ],
+    ownerSlug: 'ajones@example.com',
+    sources: ['https://example.com/mail-catcher/README'],
+  },
+
+  // stdio + sso + personal
+  {
+    slug: 'wiki-search',
+    displayName: 'Wiki Search',
+    description: 'Search Confluence pages and spaces',
+    category: 'productivity',
+    aliases: ['confluence', 'docs'],
+    status: 'personal',
+    access: 'read',
+    requiredAppSlugs: ['confluence'],
+    auth: {
+      kind: 'sso',
+      note: 'Uses your Confluence credentials',
+    },
+    transport: {
+      type: 'stdio',
+      command: 'npx',
+      args: ['-y', '@example/wiki-mcp'],
+    },
+    tools: [
+      { name: 'search_pages', description: 'Search wiki pages' },
+      { name: 'get_page', description: 'Get page content by ID' },
+    ],
+    ownerSlug: 'bwilson@example.com',
+    sources: ['https://github.com/example/wiki-mcp'],
+  },
+
+  // stdio + token + production
+  {
+    slug: 'data-warehouse',
+    displayName: 'Data Warehouse',
+    description: 'Query analytics database with SQL',
+    category: 'data',
+    status: 'production',
+    access: 'read',
+    sensitiveData: true,
+    auth: {
+      kind: 'token',
+      note: 'Requires a database read token',
+      token: {
+        page: 'https://warehouse.example.com/tokens',
+        steps: [
+          'Go to warehouse.example.com/tokens',
+          'Click "New Token"',
+          'Copy the generated token',
+        ],
+      },
+    },
+    transport: {
+      type: 'stdio',
+      command: 'warehouse-mcp',
+      args: ['--token', '<WAREHOUSE_TOKEN>'],
+    },
+    tools: [
+      { name: 'query', description: 'Execute a SQL query' },
+      { name: 'list_tables', description: 'List available tables' },
+      { name: 'get_schema', description: 'Get table schema' },
+    ],
+    ownerSlug: 'data-team',
+    sources: ['https://warehouse.example.com/docs/mcp-server'],
+  },
+
+  // stdio + none + beta (owned by group)
+  {
+    slug: 'local-files',
+    displayName: 'Local Files',
+    description: 'Access local filesystem for reading project files',
+    category: 'dev-tools',
+    status: 'beta',
+    access: 'read',
+    auth: {
+      kind: 'none',
+    },
+    transport: {
+      type: 'stdio',
+      command: 'npx',
+      args: ['-y', '@modelcontextprotocol/server-filesystem'],
+    },
+    tools: [
+      { name: 'read_file', description: 'Read file contents' },
+      { name: 'list_directory', description: 'List directory contents' },
+      { name: 'search_files', description: 'Search for files by pattern' },
+    ],
+    ownerSlug: 'cloud-team',
+    sources: [
+      'https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem',
+    ],
   },
 ]
