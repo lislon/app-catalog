@@ -1,5 +1,6 @@
 import {
   getAppCatalogData,
+  getServiceDesksFromPrisma,
   updateAiMemory as updateAiMemoryService,
   updateApp as updateAppService,
 } from '../modules/appCatalog/service'
@@ -55,6 +56,7 @@ export function createTrpcRouter(
           }
         },
       ),
+      getServiceDesks: publicProcedure.query(() => getServiceDesksFromPrisma()),
       updateApp: publicProcedure
         .input(updateAppInputSchema)
         .mutation(async ({ input }): Promise<Resource> => {

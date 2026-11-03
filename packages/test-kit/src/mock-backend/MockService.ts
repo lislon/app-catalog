@@ -16,6 +16,10 @@ export class MockService {
     return this.db.getAppCatalogData()
   }
 
+  getServiceDesks() {
+    return this.db.getServiceDesks()
+  }
+
   getSessionResponse(): object | null {
     return this.userContext.getSessionResponse()
   }

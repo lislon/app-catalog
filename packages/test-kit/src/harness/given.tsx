@@ -228,7 +228,8 @@ export async function given(
       // Either section's search: a reload can land on the community page.
       const hasSearchbox =
         screen.queryByLabelText('Search apps') ??
-        screen.queryByLabelText('Search community tools')
+        screen.queryByLabelText('Search community tools') ??
+        screen.queryByLabelText('Search service desks')
       const hasLoginPage = screen.queryByTestId('login-page')
       const hasTanstackError = document.body.textContent.includes(
         'Something went wrong',

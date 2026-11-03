@@ -60,9 +60,20 @@ export class MockDb {
     return {
       resources: this.resources,
       tagsDefinitions: this.tagsDefinitions,
-      approvalMethods: this.approvalMethods,
+      // Same rule as the real loader: the portal rides only on getServiceDesks.
+      approvalMethods: this.approvalMethods.map((m) => {
+        if (m.type !== 'service' || !m.config.portal) return m
+        const { portal: _portal, ...config } = m.config
+        return { ...m, config }
+      }),
       persons: this.persons,
       groups: [],
     }
+  }
+
+  getServiceDesks() {
+    return this.approvalMethods.filter(
+      (m): m is Extract<typeof m, { type: 'service' }> => m.type === 'service',
+    )
   }
 }
