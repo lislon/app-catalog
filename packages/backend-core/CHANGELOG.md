@@ -1,5 +1,17 @@
 # @igstack/app-catalog-backend-core
 
+## 6.13.0
+
+### Minor Changes
+
+- [#340](https://github.com/lislon/app-catalog/pull/340) [`c97b84d`](https://github.com/lislon/app-catalog/commit/c97b84d7782a1f9eb0abf0936e8063d568ec5bbf) Thanks [@lislon](https://github.com/lislon)! - Service Desks view searches every desk's forms. A `service` approval method can carry a `portal`: its key, area, request forms and the fields each form asks for. Search ranks a key match first, then the desk name, then descriptions, then dropdown options, and rereads queries typed on the Cyrillic keyboard layout. With no search, desks are grouped by area with a contents list. A desk's card (Overview and Behind this card) opens from a result and lives in the URL (`?desk=&form=`). Portals ride on the new `appCatalog.getServiceDesks` query; `appCatalog.getData` leaves them out.
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @igstack/app-catalog-shared-core@6.13.0
+  - @igstack/app-catalog-table-sync@6.13.0
+
 ## 6.12.4
 
 ### Patch Changes
