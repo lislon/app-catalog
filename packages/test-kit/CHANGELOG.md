@@ -1,5 +1,18 @@
 # @igstack/app-catalog-test-kit
 
+## 6.14.0
+
+### Minor Changes
+
+- [#342](https://github.com/lislon/app-catalog/pull/342) [`b2b2514`](https://github.com/lislon/app-catalog/commit/b2b2514885a186e792a50386df11ba6e975673ea) Thanks [@lislon](https://github.com/lislon)! - Service Desks is flat: every entry is a form, and its card lives at `/service-desks/<slug>` (the desk's key and the form's id). There is no desk-level card. With no search the view lists every form by area; desks that offer no forms are plain links at the end. Old `?desk=&form=` links redirect to the new address.
+
+### Patch Changes
+
+- Updated dependencies [[`b2b2514`](https://github.com/lislon/app-catalog/commit/b2b2514885a186e792a50386df11ba6e975673ea)]:
+  - @igstack/app-catalog-frontend-core@6.14.0
+  - @igstack/app-catalog-backend-core@6.14.0
+  - @igstack/app-catalog-shared-core@6.14.0
+
 ## 6.13.1
 
 ### Patch Changes
