@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { Search, X } from 'lucide-react'
 import {
   useCallback,
@@ -15,23 +15,33 @@ import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { DeskCard, ServiceDeskCard } from '../serviceDesks/ServiceDeskCard'
 import { ServiceDeskDetail } from '../serviceDesks/ServiceDeskDetail'
 import {
+  allForms,
   effectiveQuery,
+  findBySlug,
+  formSlug,
   hasPortal,
   searchServiceDesks,
 } from '../serviceDesks/searchServiceDesks'
-import type { ServiceDesk } from '../serviceDesks/searchServiceDesks'
+import type {
+  FormResult,
+  PortalDesk,
+  ServiceDesk,
+} from '../serviceDesks/searchServiceDesks'
 
 /** Results rendered before "Show more": a one-letter query matches hundreds. */
 const FIRST_PAGE = 50
 
-/** Where desks with no area, or no portal at all, are listed. */
-const OTHER_AREA = 'Other ways to ask'
+/** Forms whose desk has no area yet. */
+const NO_AREA = 'Other forms'
+/** Desks that offer no forms: chat bots, web forms, portals with nothing listed. */
+const NO_FORMS = 'Other ways to ask'
 
 /**
  * Service Desks view (#9, #273): one search over every service desk — its key,
- * name, description, request forms and their dropdown options. A result is a
- * form; the card opens the desk's details, the form's address opens the portal.
- * With no search, every desk is listed by area, like the catalog's own home.
+ * name, description, request forms and their dropdown options. Flat: every entry
+ * is a form, and its card is the route `/service-desks/<slug>`; there is no
+ * desk-level card. With no search, every form is listed by area, like the
+ * catalog home; desks that offer no forms are plain links at the end.
  *
  * The desks' portals come from `getServiceDesks`, kept out of the main catalog
  * payload. Until it answers, the catalog's own (portal-less) desks are listed.
@@ -42,8 +52,9 @@ export function ServiceDesksPage() {
   const fetched = useQuery(trpc.appCatalog.getServiceDesks.queryOptions())
   const [search, setSearch] = useState('')
   const [shown, setShown] = useState(FIRST_PAGE)
-  // The open card lives in the URL, so Back closes it and a link reopens it.
-  const { desk: openSlug, form: openFormId } = useSearch({ strict: false })
+  // The open card is the route, so Back closes it and a link reopens it.
+  const { slug: openSlug } = useParams({ strict: false })
+  const { desk: legacyDesk, form: legacyForm } = useSearch({ strict: false })
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -87,50 +98,48 @@ export function ServiceDesksPage() {
     }
   }, [portalDesks, deferredSearch])
 
-  // Desks found by name or description that publish no forms: links only.
+  // Desks found by name or description that offer no forms: links only.
   const plainHits = useMemo(() => {
     if (!isSearching) return []
     const q = query.trim().toLowerCase()
     return desks.filter(
       (d) =>
-        !hasPortal(d) &&
+        offersNoForms(d) &&
         `${d.displayName} ${d.config.description ?? ''}`
           .toLowerCase()
           .includes(q),
     )
   }, [desks, isSearching, query])
 
-  const areas = useMemo(() => groupByArea(desks), [desks])
+  const areas = useMemo(
+    () => groupByArea(desks, portalDesks),
+    [desks, portalDesks],
+  )
 
   const onOpen = useCallback(
-    (slug: string, formId?: string) =>
-      void navigate({
-        to: '/service-desks',
-        search: (prev) => ({
-          ...prev,
-          desk: slug,
-          form: formId && /^\d+$/.test(formId) ? Number(formId) : formId,
-          tab: undefined,
-        }),
-      }),
+    (slug: string) =>
+      void navigate({ to: '/service-desks/$slug', params: { slug } }),
     [navigate],
   )
-  const onClose = () =>
-    void navigate({
-      to: '/service-desks',
-      search: (prev) => ({
-        ...prev,
-        desk: undefined,
-        form: undefined,
-        tab: undefined,
-      }),
-    })
-  const openDesk = openSlug
-    ? portalDesks.find((d) => d.slug === openSlug)
-    : undefined
-  const openForm = openDesk?.config.portal.requestTypes.find(
-    (f) => openFormId !== undefined && f.id === String(openFormId),
-  )
+  const onClose = () => void navigate({ to: '/service-desks' })
+  const opened = openSlug ? findBySlug(portalDesks, openSlug) : undefined
+
+  // `?desk=&form=` links from before a card had its own address.
+  useEffect(() => {
+    if (!legacyDesk || !fetched.data) return
+    const desk = portalDesks.find((d) => d.slug === legacyDesk)
+    const form = desk?.config.portal.requestTypes.find(
+      (f) => f.id === String(legacyForm),
+    )
+    void (desk && form
+      ? navigate({
+          to: '/service-desks/$slug',
+          params: { slug: formSlug(desk, form) },
+          replace: true,
+        })
+      : navigate({ to: '/service-desks', replace: true }))
+  }, [legacyDesk, legacyForm, fetched.data, portalDesks, navigate])
+
   const deskCount = new Set(results.map((r) => r.desk.slug)).size
 
   const updateSearch = (value: string) => {
@@ -242,7 +251,7 @@ export function ServiceDesksPage() {
                   </h2>
                   <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     {plainHits.map((d) => (
-                      <DeskCard key={d.slug} desk={d} onOpen={onOpen} />
+                      <DeskCard key={d.slug} desk={d} />
                     ))}
                   </ul>
                 </section>
@@ -254,8 +263,12 @@ export function ServiceDesksPage() {
         </div>
       </div>
 
-      {openDesk && (
-        <ServiceDeskDetail desk={openDesk} form={openForm} onClose={onClose} />
+      {opened && (
+        <ServiceDeskDetail
+          desk={opened.desk}
+          form={opened.form}
+          onClose={onClose}
+        />
       )}
     </div>
   )
@@ -264,8 +277,13 @@ export function ServiceDesksPage() {
 const areaId = (area: string) =>
   `area-${area.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
 
+/** One row of the area listing: a form, or a desk that is only a link. */
+type Entry =
+  | { kind: 'form'; result: FormResult }
+  | { kind: 'link'; desk: ServiceDesk }
+
 /**
- * Every desk by area, with a contents list beside it on wide screens. The list
+ * Every form by area, with a contents list beside it on wide screens. The list
  * scrolls the page to an area and marks the one being read.
  */
 function AreaBrowse({
@@ -273,7 +291,7 @@ function AreaBrowse({
   onOpen,
   scrollRef,
 }: {
-  areas: [string, ServiceDesk[]][]
+  areas: [string, Entry[]][]
   onOpen: (slug: string) => void
   scrollRef: React.RefObject<HTMLDivElement | null>
 }) {
@@ -324,18 +342,23 @@ function AreaBrowse({
                 {area}
               </h2>
               <span className="text-[13px] text-muted-foreground">
-                {list.length} {list.length === 1 ? 'desk' : 'desks'}
+                {countLabel(list)}
               </span>
             </div>
             <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              {list.map((d) => (
-                <DeskCard
-                  key={d.slug}
-                  desk={d}
-                  onOpen={onOpen}
-                  showArea={false}
-                />
-              ))}
+              {list.map((e) =>
+                e.kind === 'form' ? (
+                  <ServiceDeskCard
+                    key={`${e.result.desk.slug}:${e.result.form.id}`}
+                    result={e.result}
+                    query=""
+                    onOpen={onOpen}
+                    showArea={false}
+                  />
+                ) : (
+                  <DeskCard key={e.desk.slug} desk={e.desk} />
+                ),
+              )}
             </ul>
           </section>
         ))}
@@ -386,17 +409,36 @@ function AreaBrowse({
   )
 }
 
+const offersNoForms = (d: ServiceDesk) =>
+  !hasPortal(d) || d.config.portal.requestTypes.length === 0
+
+const countLabel = (list: Entry[]) => {
+  const n = list.length
+  return list[0]?.kind === 'link'
+    ? `${n} ${n === 1 ? 'desk' : 'desks'}`
+    : `${n} ${n === 1 ? 'form' : 'forms'}`
+}
+
 /**
- * Desks by their portal's area, areas A to Z, desks A to Z inside one. Desks
- * with no area — chat bots, web forms, portals nobody has placed yet — go last.
+ * Forms by their desk's area, areas A to Z, then desk and form A to Z inside
+ * one. Forms of a desk with no area come next to last; desks that offer no
+ * forms come last, as links.
  */
-function groupByArea(desks: ServiceDesk[]): [string, ServiceDesk[]][] {
-  const byArea = new Map<string, ServiceDesk[]>()
-  for (const d of desks) {
-    const area = (hasPortal(d) && d.config.portal.area) || OTHER_AREA
-    byArea.set(area, [...(byArea.get(area) ?? []), d])
+function groupByArea(
+  desks: ServiceDesk[],
+  portalDesks: PortalDesk[],
+): [string, Entry[]][] {
+  const byArea = new Map<string, Entry[]>()
+  const add = (area: string, e: Entry) =>
+    byArea.set(area, [...(byArea.get(area) ?? []), e])
+  for (const result of allForms(portalDesks)) {
+    add(result.desk.config.portal.area || NO_AREA, { kind: 'form', result })
   }
-  return [...byArea.entries()].sort(([a], [b]) =>
-    a === OTHER_AREA ? 1 : b === OTHER_AREA ? -1 : a.localeCompare(b),
+  for (const desk of desks.filter(offersNoForms)) {
+    add(NO_FORMS, { kind: 'link', desk })
+  }
+  const rank = (a: string) => (a === NO_FORMS ? 2 : a === NO_AREA ? 1 : 0)
+  return [...byArea.entries()].sort(
+    ([a], [b]) => rank(a) - rank(b) || a.localeCompare(b),
   )
 }

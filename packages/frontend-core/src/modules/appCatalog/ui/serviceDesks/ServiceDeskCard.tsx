@@ -2,7 +2,7 @@ import { ExternalLink } from 'lucide-react'
 import { memo, useState } from 'react'
 import { displayUrl } from '~/modules/appCatalog/utils/displayUrl'
 import { Marked } from './Marked'
-import { hasPortal, liveOptions } from './searchServiceDesks'
+import { formSlug, hasPortal, liveOptions } from './searchServiceDesks'
 import type { FieldMatch, FormResult, ServiceDesk } from './searchServiceDesks'
 
 /** Options shown per matched dropdown before "Show all". */
@@ -12,21 +12,25 @@ const OPTIONS_SHOWN = 8
  * One form in the results. Three styles only: the title in ink, everything
  * else muted, and the search marker as the single accent.
  *
- * The card opens the desk's details; the form's address is the only way out to
- * the portal, so a stray click never leaves the catalog.
+ * The card opens the form's own card (`/service-desks/<slug>`); the form's
+ * address is the only way out to the portal, so a stray click never leaves the
+ * catalog.
  */
 export const ServiceDeskCard = memo(function ResultCardView({
   result,
   query,
   onOpen,
+  showArea = true,
 }: {
   result: FormResult
   query: string
-  /** Stable across renders, so an unchanged card skips re-rendering. */
-  onOpen: (deskSlug: string, formId?: string) => void
+  /** Takes the form's slug. Stable across renders, so an unchanged card skips re-rendering. */
+  onOpen: (slug: string) => void
+  /** Off inside an area's own section, where the tag would repeat its heading. */
+  showArea?: boolean
 }) {
   const { desk, form, fieldMatches } = result
-  const onOpenDetails = () => onOpen(desk.slug, form.id)
+  const onOpenDetails = () => onOpen(formSlug(desk, form))
   const portal = desk.config.portal
   return (
     <li
@@ -44,9 +48,9 @@ export const ServiceDeskCard = memo(function ResultCardView({
       }}
       className="cursor-pointer rounded-[var(--radius)] border border-border bg-card p-5 transition-colors hover:border-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
-      <h2 className="text-[17px] font-semibold leading-snug">
+      <h3 className="text-[17px] font-semibold leading-snug">
         <Marked text={form.name} query={query} />
-      </h2>
+      </h3>
       <p className="mt-0.5 text-[13px] text-muted-foreground">
         <span className="font-semibold tracking-wide" title="Portal key">
           <Marked text={portal.key} query={query} />
@@ -78,53 +82,25 @@ export const ServiceDeskCard = memo(function ResultCardView({
           {displayUrl(form.url)}
           <ExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
         </a>
-        {portal.area && (
-          <span className="whitespace-nowrap rounded-full bg-muted px-2 py-1 text-[11.5px] leading-none text-muted-foreground">
-            {portal.area}
-          </span>
-        )}
+        {showArea && portal.area && <Tag>{portal.area}</Tag>}
       </div>
     </li>
   )
 })
 
 /**
- * A desk on the Service Desks home: the same anatomy as a result card, minus
- * the form and its fields. A desk with a portal opens its details; one without
- * (a chat bot, a web form) is only its link.
+ * A desk that offers no forms (a chat bot, a web form, a portal with nothing
+ * listed): the same anatomy as a form card, and only a link to the desk.
  */
 export const DeskCard = memo(function DeskCardView({
   desk,
-  onOpen,
-  showArea = true,
 }: {
   desk: ServiceDesk
-  onOpen: (deskSlug: string) => void
-  /** Off inside an area's own section, where the tag would repeat its heading. */
-  showArea?: boolean
 }) {
   const portal = hasPortal(desk) ? desk.config.portal : undefined
   const url = desk.config.url
-  const forms = portal?.requestTypes.length ?? 0
-  const open = () =>
-    portal
-      ? onOpen(desk.slug)
-      : url && window.open(url, '_blank', 'noopener,noreferrer')
-  return (
-    <li
-      role="button"
-      tabIndex={0}
-      aria-label={
-        portal ? `Details for ${desk.displayName}` : `Open ${desk.displayName}`
-      }
-      onClick={(e) => {
-        if (!(e.target as HTMLElement).closest('a,button')) open()
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' && e.target === e.currentTarget) open()
-      }}
-      className="flex cursor-pointer flex-col rounded-[var(--radius)] border border-border bg-card p-5 transition-colors hover:border-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-    >
+  const body = (
+    <>
       <h3
         className="text-[17px] font-semibold leading-snug"
         data-testid="service-desk-name"
@@ -144,25 +120,30 @@ export const DeskCard = memo(function DeskCardView({
           {desk.config.description}
         </p>
       )}
-      <div className="mt-auto flex flex-wrap items-end justify-between gap-x-4 gap-y-2 pt-1">
-        {url ? (
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex min-w-0 items-center gap-1 text-[13.5px] text-muted-foreground underline decoration-muted-foreground/40 underline-offset-2 hover:text-foreground hover:decoration-foreground"
-          >
-            <span className="truncate">{displayUrl(url)}</span>
-            <ExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
-          </a>
-        ) : (
-          <span />
-        )}
-        <span className="flex flex-wrap justify-end gap-1">
-          {forms > 0 && <Tag>{forms === 1 ? '1 form' : `${forms} forms`}</Tag>}
-          {showArea && portal?.area && <Tag>{portal.area}</Tag>}
+      {url && (
+        <span className="mt-auto inline-flex min-w-0 items-center gap-1 pt-1 text-[13.5px] text-muted-foreground underline decoration-muted-foreground/40 underline-offset-2">
+          <span className="truncate">{displayUrl(url)}</span>
+          <ExternalLink className="size-3.5 shrink-0" aria-hidden="true" />
         </span>
-      </div>
+      )}
+    </>
+  )
+  const cls =
+    'flex h-full flex-col rounded-[var(--radius)] border border-border bg-card p-5 transition-colors'
+  return (
+    <li>
+      {url ? (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`${cls} hover:border-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring`}
+        >
+          {body}
+        </a>
+      ) : (
+        <div className={cls}>{body}</div>
+      )}
     </li>
   )
 })

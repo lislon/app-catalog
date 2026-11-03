@@ -16,9 +16,8 @@ import { liveOptions } from './searchServiceDesks'
 import type { PortalDesk } from './searchServiceDesks'
 
 /**
- * A desk's card, opened from a result (then `form` is the form clicked) or from
- * the desk list (then it covers every form). Overview reads top to bottom like a
- * short page: what the request is for, the one way into it, what it asks, and
+ * One form's card, at `/service-desks/<slug>`. Overview reads top to bottom like
+ * a short page: what the request is for, the one way into it, what it asks, and
  * what happens after. Behind this card says where the card comes from.
  *
  * One link only: the button. The header is the subject, not a second door.
@@ -29,7 +28,7 @@ export function ServiceDeskDetail({
   onClose,
 }: {
   desk: PortalDesk
-  form?: ServiceRequestType
+  form: ServiceRequestType
   onClose: () => void
 }) {
   const portal = desk.config.portal
@@ -37,21 +36,21 @@ export function ServiceDeskDetail({
   const band = (
     <div className="pr-20">
       <h2 className="m-0 font-serif text-[28px] font-semibold leading-tight tracking-tight">
-        {form?.name ?? desk.displayName}
+        {form.name}
       </h2>
       <p className="mt-1 text-[14px] text-muted-foreground">
         <span className="font-semibold tracking-wide" title="Portal key">
           {portal.key}
         </span>
-        {form && <> · {desk.displayName}</>}
+        · {desk.displayName}
       </p>
     </div>
   )
 
   return (
     <DetailDialogShell
-      label={`${form?.name ?? desk.displayName} details`}
-      shownKey={`${desk.slug}:${form?.id ?? ''}`}
+      label={`${form.name} details`}
+      shownKey={`${desk.slug}:${form.id}`}
       maxWidthClass="max-w-[min(1000px,94vw)]"
       focusSelector="[data-primary-action]"
       onClose={onClose}
@@ -102,20 +101,19 @@ function Overview({
   form,
 }: {
   desk: PortalDesk
-  form?: ServiceRequestType
+  form: ServiceRequestType
 }) {
   const portal = desk.config.portal
-  const url = form?.url ?? desk.config.url
   return (
     <div className="flex max-w-[760px] flex-col gap-8 pt-1">
       <div>
-        {form?.description && (
+        {form.description && (
           <p className="text-[17px] leading-[1.6]">{form.description}</p>
         )}
         {desk.config.description && (
           <p
             className={
-              form?.description
+              form.description
                 ? 'mt-2 text-[14px] text-muted-foreground'
                 : 'text-[17px] leading-[1.6]'
             }
@@ -123,55 +121,15 @@ function Overview({
             {desk.config.description}
           </p>
         )}
-        {url && (
-          <div className="mt-5">
-            <OpenButton
-              url={url}
-              label={form ? 'Open the form' : 'Open the portal'}
-            />
-          </div>
-        )}
+        <div className="mt-5">
+          <OpenButton url={form.url} label="Open the form" />
+        </div>
       </div>
 
-      {form ? (
-        <div>
-          <Heading>You will be asked for</Heading>
-          <FieldList fields={form.fields} />
-        </div>
-      ) : (
-        <div>
-          <Heading>Forms on this portal</Heading>
-          {portal.requestTypes.length ? (
-            <ul className="flex flex-col gap-4">
-              {portal.requestTypes.map((rt) => (
-                <li key={rt.id}>
-                  <a
-                    href={rt.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[15px] font-medium underline decoration-muted-foreground/40 underline-offset-2 hover:decoration-foreground"
-                  >
-                    {rt.name}
-                    <ExternalLink
-                      className="size-3.5 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                  </a>
-                  {rt.description && (
-                    <p className="text-[14px] text-muted-foreground">
-                      {rt.description}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-[14px] text-muted-foreground">
-              This desk publishes no forms.
-            </p>
-          )}
-        </div>
-      )}
+      <div>
+        <Heading>You will be asked for</Heading>
+        <FieldList fields={form.fields} />
+      </div>
 
       <div>
         <Heading>After you file</Heading>
