@@ -518,6 +518,25 @@ describe('installBuilders', () => {
       expect(prompt).toContain('https://docs.example/gitlab')
     })
 
+    it('prints the URL of a source read back as an object', () => {
+      const server = {
+        ...makeServer({ slug: 'gitlab' }),
+        sources: [
+          { url: 'https://gitlab.example/readme', sourceSlug: 'gitlab' },
+          'https://docs.example/gitlab',
+        ],
+      }
+      const prompt = installPrompt([server], {
+        apps: [],
+        catalogMcpAvailable: false,
+        sensitiveDataLabel: 'Sensitive data',
+      })
+      expect(prompt).toContain(
+        'sources: https://gitlab.example/readme, https://docs.example/gitlab',
+      )
+      expect(prompt).not.toContain('[object Object]')
+    })
+
     it('uses human label instead of option ID', () => {
       const server = makeServer({
         slug: 'test',

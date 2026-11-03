@@ -28,6 +28,14 @@ export type McpServer = {
   sources: string[] // URLs actually read to write this entry (README, docs, thread); at least one
 }
 
+/**
+ * What the install builders take: an authored McpServer, or one read back from
+ * the catalog, whose sources carry more than the URL.
+ */
+export type InstallableMcpServer = Omit<McpServer, 'sources'> & {
+  sources: readonly (string | { url: string })[]
+}
+
 export type McpCatalogConfig = {
   categories?: { key: string; title: string; blurb?: string }[]
   intents?: { query: string; title: string; caption: string; icon: string }[]

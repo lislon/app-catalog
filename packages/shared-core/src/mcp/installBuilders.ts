@@ -5,7 +5,7 @@
  * Never reads window — always takes inputs explicitly.
  */
 
-import type { McpServer } from './mcpServerTypes'
+import type { InstallableMcpServer } from './mcpServerTypes'
 
 export type InstallOptionId =
   | 'claude-vscode'
@@ -50,7 +50,10 @@ function shq(s: string): string {
  * HTTP transport: prefixes relative URLs with origin.
  * Stdio transport: unchanged.
  */
-export function resolveUrl(server: McpServer, origin: string): McpServer {
+export function resolveUrl<T extends InstallableMcpServer>(
+  server: T,
+  origin: string,
+): T {
   if (server.transport.type !== 'http') return server
   const url = server.transport.url
   if (url.startsWith('http://') || url.startsWith('https://')) {
@@ -72,7 +75,7 @@ export function resolveUrl(server: McpServer, origin: string): McpServer {
  */
 export function cliCommand(
   option: 'claude-code' | 'gemini',
-  servers: McpServer[],
+  servers: InstallableMcpServer[],
 ): string {
   const cmd = option === 'claude-code' ? 'claude' : 'gemini'
   return servers
@@ -95,7 +98,7 @@ export function cliCommand(
 /**
  * Builds JSON config for mcpServers.
  */
-export function jsonConfig(servers: McpServer[]): string {
+export function jsonConfig(servers: InstallableMcpServer[]): string {
   const entries: Record<string, unknown> = {}
   servers.forEach((s) => {
     if (s.transport.type === 'http') {
@@ -119,7 +122,7 @@ export function jsonConfig(servers: McpServer[]): string {
  * Format: cursor://anysphere.cursor-deeplink/mcp/install?name=<slug>&config=<base64>
  * Handles UTF-8 text safely (not just Latin-1).
  */
-export function cursorLink(server: McpServer): string {
+export function cursorLink(server: InstallableMcpServer): string {
   let config: unknown
   if (server.transport.type === 'http') {
     config = {
@@ -154,7 +157,7 @@ export function vscodeLink(prompt: string): string {
  * Numbers the steps, includes access checks, token steps, verify, write warnings, etc.
  */
 export function installPrompt(
-  servers: McpServer[],
+  servers: InstallableMcpServer[],
   ctx: {
     option?: InstallOptionId
     apps: { slug: string; name: string; url: string }[]
@@ -199,7 +202,10 @@ export function installPrompt(
     }
 
     if (s.sources.length > 0) {
-      lines.push(`  sources: ${s.sources.join(', ')}`)
+      const urls = s.sources.map((src) =>
+        typeof src === 'string' ? src : src.url,
+      )
+      lines.push(`  sources: ${urls.join(', ')}`)
     }
   })
 
@@ -314,7 +320,7 @@ export function installPrompt(
  * Returns {title, detail}[] where title is the step heading and detail is the explanation.
  */
 export function whatHappensSteps(
-  servers: McpServer[],
+  servers: InstallableMcpServer[],
   option?: InstallOptionId,
   opts?: {
     apps?: { slug: string; name: string }[]

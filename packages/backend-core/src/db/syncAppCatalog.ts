@@ -216,6 +216,29 @@ export async function syncAppCatalog(
   try {
     const prisma = getDbClient()
 
+    // Validate MCP servers before the first write, so a bad record leaves the
+    // whole catalog as it was. Owners not passed in come from the DB.
+    const mcpServers = options?.mcpServers
+    if (mcpServers) {
+      const [persons, groups] = await Promise.all([
+        options.persons ?? prisma.dbPerson.findMany({ select: { slug: true } }),
+        options.groups ?? prisma.dbGroup.findMany({ select: { slug: true } }),
+      ])
+      validateMcpServers(mcpServers, {
+        resourceSlugs: new Set(
+          resources.map(
+            (r) =>
+              r.slug ||
+              r.displayName
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, ''),
+          ),
+        ),
+        ownerSlugs: new Set([...persons, ...groups].map((o) => o.slug)),
+      })
+    }
+
     // Sync Persons first (groups depend on persons via memberships)
     if (options?.persons) {
       const dbPersons = options.persons.map((p) => ({
@@ -365,20 +388,6 @@ export async function syncAppCatalog(
       select: { slug: true, id: true },
     })
     const slugToId = Object.fromEntries(resourceRows.map((r) => [r.slug, r.id]))
-
-    // MCP servers reference apps, persons and groups: validate against what was
-    // just synced, before anything is written for MCP.
-    const mcpServers = options?.mcpServers
-    if (mcpServers) {
-      const owners = await Promise.all([
-        prisma.dbPerson.findMany({ select: { slug: true } }),
-        prisma.dbGroup.findMany({ select: { slug: true } }),
-      ])
-      validateMcpServers(mcpServers, {
-        resourceSlugs: new Set(slugs),
-        ownerSlugs: new Set(owners.flat().map((o) => o.slug)),
-      })
-    }
 
     // Build all source references (URLs + schedules) from resources and MCP
     // servers together, so the prune below sees every cited URL.

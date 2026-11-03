@@ -220,23 +220,79 @@ describe.skipIf(!TEST_DB_URL)('MCP server sync (DB)', () => {
 
     expect(await getMcpServersFromPrisma()).toEqual([asStored(docs)])
     expect(
+      await db.prisma.dbMcpServerSourceUrl.count({
+        where: { mcpServerSlug: 'tracker' },
+      }),
+    ).toBe(0)
+    expect(
       await db.prisma.sourceUrl.count({ where: { url: trackerReadme } }),
     ).toBe(0)
   })
 
-  it('fails the boot before writing anything for MCP', async () => {
+  it('an invalid MCP record fails the boot before the first write', async () => {
+    await syncAppCatalog([trackerApp], [], [], undefined, {
+      persons,
+      groups,
+      mcpServers: [docs],
+    })
+    const snapshot = async () => ({
+      resources: await db.prisma.dbResource.findMany(),
+      persons: await db.prisma.dbPerson.findMany(),
+      groups: await db.prisma.dbGroup.findMany(),
+      mcpServers: await getMcpServersFromPrisma(),
+    })
+    const before = await snapshot()
+
     await expect(
-      syncAppCatalog([trackerApp], [], [], undefined, {
-        persons,
-        groups,
-        mcpServers: [{ ...tracker, requiredAppSlugs: ['nope'] }],
-      }),
+      syncAppCatalog(
+        [
+          { ...trackerApp, displayName: 'Renamed' },
+          { id: 'extra', slug: 'extra', displayName: 'Extra', description: '' },
+        ],
+        [],
+        [],
+        undefined,
+        {
+          persons: [...persons, { slug: 'bob', firstName: 'B', lastName: 'C' }],
+          groups: [{ slug: 'other-team', memberSlugs: [] }],
+          mcpServers: [{ ...tracker, requiredAppSlugs: ['nope'] }],
+        },
+      ),
     ).rejects.toThrow(/tracker: requiredAppSlugs entry 'nope'/)
 
-    expect(await db.prisma.dbMcpServer.count()).toBe(0)
-    expect(
-      await db.prisma.sourceUrl.count({ where: { url: trackerReadme } }),
-    ).toBe(0)
+    expect(await snapshot()).toEqual(before)
+  })
+
+  it('validates owners against the DB when persons and groups are omitted', async () => {
+    await syncAppCatalog([trackerApp], [], [], undefined, { persons, groups })
+    await syncAppCatalog([trackerApp], [], [], undefined, {
+      mcpServers: [tracker],
+    })
+
+    expect(await getMcpServersFromPrisma()).toEqual([asStored(tracker)])
+  })
+
+  it('a URL cited by an app and an MCP server keeps one schedule', async () => {
+    await syncAppCatalog(
+      [
+        {
+          ...trackerApp,
+          sources: [{ url: sharedUrl, schedule: { checkIntervalHours: 72 } }],
+        },
+      ],
+      [],
+      [],
+      undefined,
+      { persons, groups, mcpServers: [tracker] },
+    )
+
+    expect(await db.prisma.sourceUrl.count({ where: { url: sharedUrl } })).toBe(
+      1,
+    )
+    const row = await db.prisma.sourceUrl.findUnique({
+      where: { url: sharedUrl },
+    })
+    expect(row?.checkIntervalHours).toBe(72)
   })
 
   it('getData includes mcpServers', async () => {
