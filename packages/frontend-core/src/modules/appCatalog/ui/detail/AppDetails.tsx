@@ -18,6 +18,7 @@ import { InlineEditableField } from '../components/InlineEditableField'
 import { MarkdownText } from '../components/MarkdownText'
 import { ScreenshotGallery } from '../components/ScreenshotGallery'
 import { SourcePulse } from '../components/SourcePulse'
+import { SourcesList } from '../components/SourcesList'
 import { useUpdateApp } from '../../hooks/useUpdateApp'
 import { useAppCatalogContext } from '../../context/AppCatalogContext'
 import { useAppClickHistory } from '../../hooks/useAppClickHistory'
@@ -568,40 +569,7 @@ export function AppDetails({
                   </Button>
                 </>
               ) : (
-                <ul className="space-y-2">
-                  {sourceUrls.map((url, index) => (
-                    // `group` so hovering anywhere on the row fades that source's
-                    // track in — the mark sits in a right-hand column, and row
-                    // hover is what ties the two ends of a wide row together.
-                    <li
-                      key={index}
-                      className="group flex items-center gap-2 text-xs"
-                    >
-                      <span className="text-muted-foreground shrink-0 tabular-nums">
-                        {index + 1}.
-                      </span>
-                      {url ? (
-                        <a
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:text-primary inline-flex min-w-0 items-center gap-1 truncate"
-                        >
-                          {displayUrl(url)}
-                          <ExternalLink className="size-3 shrink-0" />
-                        </a>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                      {pulseByUrl.has(url) && (
-                        <SourcePulse
-                          pulse={pulseByUrl.get(url)!}
-                          className="ml-auto"
-                        />
-                      )}
-                    </li>
-                  ))}
-                </ul>
+                <SourcesList sources={app.sources ?? []} />
               )}
               {datesLine && (
                 <p className="behind-dates" title={datesTitle}>
