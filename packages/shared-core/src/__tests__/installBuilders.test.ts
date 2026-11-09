@@ -596,7 +596,7 @@ describe('installBuilders', () => {
         requiredAppSlugs: ['gitlab'],
         transport: { type: 'http', url: 'https://h/mcp' },
       })
-      const steps = whatHappensSteps([server], 'claude-code', {
+      const steps = whatHappensSteps([server], 'claude-vscode', {
         apps: [{ slug: 'gitlab', name: 'GitLab' }],
       })
       const accessStep = steps.find((s) =>
@@ -606,19 +606,107 @@ describe('installBuilders', () => {
       expect(accessStep?.title).not.toContain('gitlab')
     })
 
-    it('uses sensitiveDataLabel exactly as given', () => {
-      const server = makeServer({
-        slug: 'lims',
-        sensitiveData: true,
-        transport: { type: 'http', url: 'https://h/mcp' },
-      })
-      const steps = whatHappensSteps([server], 'claude-code', {
-        sensitiveDataLabel: 'Customer records',
-      })
-      const sensitiveStep = steps.find((s) =>
-        s.detail.includes('Customer records'),
+    // One server that exercises every step: needs an app, a token in a
+    // header, writes, touches sensitive data, has a tool to test with.
+    const full = makeServer({
+      slug: 'wiki',
+      displayName: 'Wiki',
+      access: 'write',
+      sensitiveData: true,
+      requiredAppSlugs: ['wiki-app'],
+      auth: {
+        kind: 'token',
+        token: {
+          page: 'https://wiki.example.com/tokens',
+          steps: ['Open Settings', 'Generate a token'],
+        },
+      },
+      transport: {
+        type: 'http',
+        url: 'https://h/mcp',
+        headers: { 'X-API-Key': '<WIKI_TOKEN>' },
+      },
+      tools: [{ name: 'search_pages', description: 'Search' }],
+    })
+    const apps = [{ slug: 'wiki-app', name: 'Wiki App' }]
+    const lines = (option: Parameters<typeof whatHappensSteps>[1]) =>
+      whatHappensSteps([full], option, { apps }).map(
+        (s) => `${s.title} | ${s.detail}`,
       )
-      expect(sensitiveStep?.detail).toContain('Customer records')
+
+    it('terminal options: no AI, so you replace the token and test it yourself', () => {
+      const terminal = [
+        'You paste one command into your terminal | It only writes the server entry; no AI is involved.',
+        "You need an account in Wiki App | Without one the server cannot sign in; the app's App Catalog page says how to request access.",
+        'Adds wiki to ~/.claude.json | Your user settings (~/.claude.json), not a repo.',
+        'Replace <WIKI_TOKEN> in the command with your token from wiki.example.com | Open Settings; Generate a token. It stays in your user settings; never paste it into a chat.',
+        'Ask your AI to call search_pages to check it works | Installing makes no test call of its own.',
+        "Some tools change data | Wiki can write; your AI client's approval settings decide whether it asks first.",
+        'Prefer non-production | Production holds sensitive data — prefer non-production environments when you use it.',
+      ]
+      expect(lines('claude-code')).toEqual(terminal)
+      expect(lines('gemini')).toEqual(
+        terminal.map((l) =>
+          l.replaceAll('~/.claude.json', '~/.gemini/settings.json'),
+        ),
+      )
+    })
+
+    it('AI-driven options: the AI checks access, helps with the token and tests', () => {
+      const guided = [
+        'Checks you can sign in to Wiki App | If not, it stops and gives you the App Catalog page that says how to request access.',
+        'Adds wiki to ~/.claude.json | Your user settings (~/.claude.json), not a repo. An existing entry with the same name is shown to you first.',
+        'Helps you create your Wiki token | Opens wiki.example.com and says which options to pick. You create it; it goes into header X-API-Key, never into the chat.',
+        'Tests it with one small call | search_pages, then reports ok or failed.',
+        'Asks before anything that changes data | Wiki can write.',
+        'Stays on non-production by default | Production holds sensitive data, so your AI asks before touching it.',
+      ]
+      expect(lines('claude-vscode')).toEqual([
+        'VS Code opens Claude Code with a prepared message | Nothing runs until you read it and press Enter.',
+        ...guided,
+      ])
+      expect(lines('prompt')).toEqual([
+        'You paste the prompt into any AI chat | Your AI does the steps below and asks you at each one.',
+        ...guided.map((l) =>
+          l.replaceAll(
+            '~/.claude.json | Your user settings (~/.claude.json)',
+            "your AI's own MCP settings | Your user settings",
+          ),
+        ),
+      ])
+    })
+
+    it("cursor: Cursor's dialog adds it, then you replace the token in the config", () => {
+      expect(lines('cursor').slice(0, 4)).toEqual([
+        "Cursor shows its 'Install MCP server' dialog | You click Install there, and Cursor adds the server.",
+        "You need an account in Wiki App | Without one the server cannot sign in; the app's App Catalog page says how to request access.",
+        'Adds wiki to ~/.cursor/mcp.json | Your user settings (~/.cursor/mcp.json), not a repo.',
+        'Replace <WIKI_TOKEN> in the config with your token from wiki.example.com | Open Settings; Generate a token. It stays in your user settings; never paste it into a chat.',
+      ])
+    })
+
+    it('json: you paste the config, then replace the placeholders', () => {
+      expect(lines('json').slice(0, 3)).toEqual([
+        "You paste the config yourself | Under mcpServers in your client's MCP config.",
+        "You need an account in Wiki App | Without one the server cannot sign in; the app's App Catalog page says how to request access.",
+        'Replace <WIKI_TOKEN> in the config with your token from wiki.example.com | Open Settings; Generate a token. It stays in your user settings; never paste it into a chat.',
+      ])
+    })
+
+    it('SSO: your usual company sign-in, with no "once" promise', () => {
+      const sso = makeServer({
+        slug: 'logs',
+        displayName: 'Logs',
+        auth: { kind: 'sso' },
+      })
+      expect(
+        whatHappensSteps([sso], 'claude-code').find((s) =>
+          s.title.includes('SSO'),
+        ),
+      ).toEqual({
+        title: 'SSO sign-in in your browser',
+        detail: 'For Logs, your usual company sign-in.',
+      })
     })
 
     it('guards against malformed token page URL', () => {

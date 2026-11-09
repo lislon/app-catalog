@@ -8,7 +8,7 @@ import {
   resolveUrl,
   vscodeLink,
 } from '@igstack/app-catalog-shared-core'
-import { useCallback, useId, useMemo } from 'react'
+import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { externalLink } from '~/lib/externalLink'
 import { useAppCatalogContext } from '../../appCatalog/context/AppCatalogContext'
 import { useMcpCatalogConfig } from '../useMcpCatalogConfig'
@@ -147,24 +147,47 @@ export const INSTALL_OPTIONS: readonly InstallOption[] = [
 /** The options a person can pick: everything not hidden. */
 export const VISIBLE_INSTALL_OPTIONS = INSTALL_OPTIONS.filter((o) => !o.hidden)
 
-/** Copies text, falling back to a hidden textarea where the API is refused. */
-export async function copyText(text: string): Promise<void> {
+/**
+ * Copies text, falling back to a hidden textarea where the API is refused.
+ * Resolves false when both fail; never rejects.
+ */
+export async function copyText(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text)
+    return true
   } catch {
     const area = document.createElement('textarea')
     area.value = text
     document.body.appendChild(area)
-    area.select()
-    document.execCommand('copy')
-    area.remove()
+    try {
+      area.select()
+      return document.execCommand('copy')
+    } catch {
+      return false
+    } finally {
+      area.remove()
+    }
   }
+}
+
+export type CopyFlash = 'copied' | 'copy-failed' | null
+
+/** A copy's outcome, shown for a moment and then cleared. */
+export function useCopyFlash() {
+  const [flash, setFlash] = useState<CopyFlash>(null)
+  useEffect(() => {
+    if (!flash) return
+    const t = setTimeout(() => setFlash(null), 1600)
+    return () => clearTimeout(t)
+  }, [flash])
+  return [flash, setFlash] as const
 }
 
 /**
  * Everything an install needs for `servers`: their URLs resolved against this
  * host, the prompt for an option, and `run`, which carries the option out and
- * says whether it copied (the caller shows "Copied") or opened another app.
+ * says whether it copied (the caller shows "Copied"), failed to copy, or
+ * opened another app.
  */
 export function useInstall(servers: readonly CatalogMcpServer[]) {
   const { resources } = useAppCatalogContext()
@@ -202,15 +225,15 @@ export function useInstall(servers: readonly CatalogMcpServer[]) {
   )
 
   const run = useCallback(
-    async (option: InstallOptionId): Promise<'copied' | 'opened'> => {
+    async (
+      option: InstallOptionId,
+    ): Promise<'copied' | 'copy-failed' | 'opened'> => {
       const open = (url: string) => {
         externalLink.open(url)
         return 'opened' as const
       }
-      const copy = async (text: string) => {
-        await copyText(text)
-        return 'copied' as const
-      }
+      const copy = async (text: string) =>
+        (await copyText(text)) ? ('copied' as const) : ('copy-failed' as const)
       switch (option) {
         case 'claude-vscode':
           return open(vscodeLink(prompt(option)))

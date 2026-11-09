@@ -164,10 +164,21 @@ export class McpTools {
 
   /**
    * The open "What happens?" popup: the picked option, each step as
-   * "title — detail", and the "Touches on your machine" chips.
+   * "title — detail", the "Touches on your machine" chips and the "Talks to"
+   * hosts.
    */
-  whatHappens(): { picked: string; steps: string[]; touches: string[] } {
+  whatHappens(): {
+    picked: string
+    steps: string[]
+    touches: string[]
+    talksTo: string[]
+  } {
     const popup = screen.getByRole('dialog', { name: /^What happens when/ })
+    const chips = (testId: string) =>
+      [
+        ...(within(popup).queryByTestId(testId)?.querySelectorAll('span') ??
+          []),
+      ].map((chip) => chip.textContent.trim())
     return {
       picked:
         within(popup)
@@ -179,11 +190,8 @@ export class McpTools {
           (li) =>
             `${li.querySelector('b')?.textContent} — ${li.querySelector('span')?.textContent}`,
         ),
-      touches: [
-        ...within(popup)
-          .getByTestId('mcp-what-touches')
-          .querySelectorAll('span'),
-      ].map((chip) => chip.textContent.trim()),
+      touches: chips('mcp-what-touches'),
+      talksTo: chips('mcp-what-talks-to'),
     }
   }
 

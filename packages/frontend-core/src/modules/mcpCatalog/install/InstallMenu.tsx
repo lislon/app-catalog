@@ -72,17 +72,31 @@ export function InstallMenu({
     }
   }, [anchor, onClose])
 
+  // The ARIA menu keys: arrows wrap, Home and End jump, Tab leaves (closing
+  // the menu; the dismiss stack hands the caret back to the button).
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
-    e.preventDefault()
+    if (e.key === 'Tab') {
+      e.preventDefault()
+      onClose()
+      return
+    }
     const items = [
       ...(ref.current?.querySelectorAll<HTMLElement>(
         '[role="menuitemradio"]',
       ) ?? []),
     ]
     const i = items.indexOf(document.activeElement as HTMLElement)
-    const step = e.key === 'ArrowDown' ? 1 : -1
-    items[(i + step + items.length) % items.length]?.focus()
+    const next = (
+      {
+        ArrowDown: (i + 1) % items.length,
+        ArrowUp: (i - 1 + items.length) % items.length,
+        Home: 0,
+        End: items.length - 1,
+      } as Record<string, number | undefined>
+    )[e.key]
+    if (next === undefined) return
+    e.preventDefault()
+    items[next]?.focus()
   }
 
   const group = (title: string, options: readonly InstallOption[]) => (

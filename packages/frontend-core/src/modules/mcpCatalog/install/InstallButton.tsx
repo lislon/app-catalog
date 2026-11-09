@@ -1,11 +1,11 @@
 import type { CatalogMcpServer } from '@igstack/app-catalog-backend-core'
 import type { InstallOptionId } from '@igstack/app-catalog-shared-core'
-import { Check, ChevronDown, Sparkles } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Check, ChevronDown, Sparkles, TriangleAlert } from 'lucide-react'
+import { useCallback, useRef, useState } from 'react'
 import { cn } from '~/lib/utils'
 import { useMcpCatalogConfig } from '../useMcpCatalogConfig'
 import { InstallMenu } from './InstallMenu'
-import { INSTALL_OPTIONS, useInstall } from './installOptions'
+import { INSTALL_OPTIONS, useCopyFlash, useInstall } from './installOptions'
 import { useMcpPrefs } from './useMcpPrefs'
 
 const HALF =
@@ -14,7 +14,8 @@ const HALF =
 /**
  * Split button: the main half installs with the remembered option (or, before
  * any choice, opens the menu); the caret always opens the menu. A copy shows
- * "Copied" on the main half for a moment.
+ * "Copied" (or "Copy failed") on the main half for a moment. While the
+ * remembered choice is still loading it is a blank, disabled placeholder.
  */
 export function InstallButton({
   servers,
@@ -24,38 +25,50 @@ export function InstallButton({
   /** `dark` for a dark bar, such as the cart's. */
   tone?: 'light' | 'dark'
 }) {
-  const { installWith, setInstallWith } = useMcpPrefs()
+  const { loading, installWith, setInstallWith } = useMcpPrefs()
   const { run } = useInstall(servers)
   const iconUrl = useMcpCatalogConfig()?.installIconUrl
   const splitRef = useRef<HTMLDivElement>(null)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [copied, setCopied] = useState(false)
-
-  useEffect(() => {
-    if (!copied) return
-    const t = setTimeout(() => setCopied(false), 1600)
-    return () => clearTimeout(t)
-  }, [copied])
+  const [flash, setFlash] = useCopyFlash()
 
   const chosen = INSTALL_OPTIONS.find((o) => o.id === installWith && !o.hidden)
   const closeMenu = useCallback(() => setMenuOpen(false), [])
 
   const go = async (id: InstallOptionId) => {
-    if ((await run(id)) === 'copied') setCopied(true)
+    const outcome = await run(id)
+    if (outcome !== 'opened') setFlash(outcome)
   }
   const pick = async (id: InstallOptionId) => {
     setMenuOpen(false)
-    // Copy first: the clipboard wants the click's user activation.
+    // Copy first: the clipboard wants the click's user activation. The pick
+    // is stored whatever the copy did.
     await go(id)
     await setInstallWith(id)
   }
 
   const hover = tone === 'dark' ? 'hover:bg-white/15' : 'hover:bg-muted'
 
+  const firstVisit = (
+    <>
+      {iconUrl ? (
+        <img
+          src={iconUrl}
+          alt=""
+          className="-my-[3px] size-[22px] object-contain"
+        />
+      ) : (
+        <Sparkles aria-hidden="true" className="size-4 text-primary" />
+      )}
+      Let me do it for you
+    </>
+  )
+
   return (
     <div
       ref={splitRef}
       data-testid="mcp-install"
+      aria-busy={loading || undefined}
       className={cn(
         'inline-flex shrink-0 overflow-hidden rounded-[calc(var(--radius)-4px)] border',
         tone === 'dark'
@@ -65,8 +78,11 @@ export function InstallButton({
     >
       <button
         type="button"
+        disabled={loading}
         data-icon={
-          copied ? 'copied' : (chosen?.id ?? (iconUrl ? 'custom' : 'default'))
+          loading
+            ? 'loading'
+            : (flash ?? chosen?.id ?? (iconUrl ? 'custom' : 'default'))
         }
         title={
           chosen
@@ -77,14 +93,28 @@ export function InstallButton({
         className={cn(
           HALF,
           hover,
-          'pr-2.5 pl-2',
-          copied && 'text-green-700 dark:text-green-400',
+          'pr-2.5 pl-2 disabled:hover:bg-transparent',
+          flash === 'copied' && 'text-green-700 dark:text-green-400',
+          flash === 'copy-failed' && 'text-destructive',
         )}
       >
-        {copied ? (
+        {loading ? (
+          // Holds the first-visit width without claiming either state.
+          <span
+            aria-hidden="true"
+            className="invisible inline-flex items-center gap-1.5"
+          >
+            {firstVisit}
+          </span>
+        ) : flash === 'copied' ? (
           <>
             <Check aria-hidden="true" className="size-4" />
             Copied
+          </>
+        ) : flash === 'copy-failed' ? (
+          <>
+            <TriangleAlert aria-hidden="true" className="size-4" />
+            Copy failed
           </>
         ) : chosen ? (
           <>
@@ -92,18 +122,7 @@ export function InstallButton({
             Install
           </>
         ) : (
-          <>
-            {iconUrl ? (
-              <img
-                src={iconUrl}
-                alt=""
-                className="-my-[3px] size-[22px] object-contain"
-              />
-            ) : (
-              <Sparkles aria-hidden="true" className="size-4 text-primary" />
-            )}
-            Let me do it for you
-          </>
+          firstVisit
         )}
       </button>
       <button
@@ -111,6 +130,7 @@ export function InstallButton({
         aria-label="Choose how to install"
         aria-haspopup="menu"
         aria-expanded={menuOpen}
+        disabled={loading}
         onClick={() => setMenuOpen((o) => !o)}
         className={cn(
           HALF,
@@ -125,7 +145,7 @@ export function InstallButton({
         <InstallMenu
           anchor={splitRef}
           current={chosen?.id}
-          onPick={(id) => void pick(id)}
+          onPick={(id) => void pick(id).catch(console.error)}
           onClose={closeMenu}
         />
       )}

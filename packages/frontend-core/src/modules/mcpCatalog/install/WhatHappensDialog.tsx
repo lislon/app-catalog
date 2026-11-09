@@ -3,15 +3,30 @@ import {
   INSTALL_CONFIG_FILE,
   whatHappensSteps,
 } from '@igstack/app-catalog-shared-core'
-import { Braces, Check, Copy, ExternalLink, KeyRound, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import {
+  Braces,
+  Check,
+  Copy,
+  ExternalLink,
+  KeyRound,
+  SquareTerminal,
+  X,
+} from 'lucide-react'
+import { useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useDismissable } from '~/modules/dismiss/DismissStack'
 import { Button } from '~/ui/button'
 import { InstallButton } from './InstallButton'
-import { VISIBLE_INSTALL_OPTIONS, copyText, useInstall } from './installOptions'
+import {
+  VISIBLE_INSTALL_OPTIONS,
+  copyText,
+  useCopyFlash,
+  useInstall,
+} from './installOptions'
 import { useMcpPrefs } from './useMcpPrefs'
 
+const GROUP =
+  'w-full text-[11.5px] tracking-[.05em] text-muted-foreground uppercase'
 const CHIP =
   'inline-flex items-center gap-[5px] rounded-full border border-border bg-card px-[9px] py-0.5 font-semibold [&_svg]:size-[13px]'
 
@@ -30,25 +45,18 @@ export function WhatHappensDialog({
   const ref = useRef<HTMLDivElement>(null)
   useDismissable(ref, onClose)
   const { installWith, setInstallWith } = useMcpPrefs()
-  const { resolved, apps, prompt, sensitiveDataLabel } = useInstall(servers)
-  const [copied, setCopied] = useState(false)
-
-  useEffect(() => {
-    if (!copied) return
-    const t = setTimeout(() => setCopied(false), 1600)
-    return () => clearTimeout(t)
-  }, [copied])
+  const { resolved, apps, prompt } = useInstall(servers)
+  const [flash, setFlash] = useCopyFlash()
 
   const option = VISIBLE_INSTALL_OPTIONS.find((o) => o.id === installWith)?.id
-  const steps = whatHappensSteps(resolved, option, { apps, sensitiveDataLabel })
+  const steps = whatHappensSteps(resolved, option, { apps })
   const fullPrompt = prompt(option)
   const tokens = resolved.filter((s) => s.auth.kind === 'token').length
+  const runsLocally = resolved.some((s) => s.transport.type === 'stdio')
   const hosts = [
     ...new Set(
-      resolved.map((s) =>
-        s.transport.type === 'http'
-          ? new URL(s.transport.url).host
-          : 'runs on your computer',
+      resolved.flatMap((s) =>
+        s.transport.type === 'http' ? [new URL(s.transport.url).host] : [],
       ),
     ),
   ]
@@ -120,13 +128,11 @@ export function WhatHappensDialog({
           ))}
         </ol>
         <div className="mt-3.5 flex flex-wrap gap-1.5 rounded-[calc(var(--radius)-2px)] bg-muted px-3 py-2.5 text-[12.5px]">
-          <b className="w-full text-[11.5px] tracking-[.05em] text-muted-foreground uppercase">
-            Touches on your machine
-          </b>
+          <b className={GROUP}>Touches on your machine</b>
           <div data-testid="mcp-what-touches" className="contents">
             <span className={CHIP}>
               <Braces aria-hidden="true" />
-              {option ? INSTALL_CONFIG_FILE[option] : 'your AI’s settings'}
+              {option ? INSTALL_CONFIG_FILE[option] : "your AI's settings"}
             </span>
             {tokens > 0 && (
               <span className={CHIP}>
@@ -134,13 +140,26 @@ export function WhatHappensDialog({
                 {tokens} token{tokens > 1 ? 's' : ''} you create
               </span>
             )}
-            {hosts.map((h) => (
-              <span key={h} className={CHIP}>
-                <ExternalLink aria-hidden="true" />
-                {h}
+            {runsLocally && (
+              <span className={CHIP}>
+                <SquareTerminal aria-hidden="true" />
+                runs on your computer
               </span>
-            ))}
+            )}
           </div>
+          {hosts.length > 0 && (
+            <>
+              <b className={`${GROUP} mt-1.5`}>Talks to</b>
+              <div data-testid="mcp-what-talks-to" className="contents">
+                {hosts.map((h) => (
+                  <span key={h} className={CHIP}>
+                    <ExternalLink aria-hidden="true" />
+                    {h}
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <InstallButton servers={servers} />
@@ -148,15 +167,21 @@ export function WhatHappensDialog({
             size="sm"
             variant="outline"
             onClick={() =>
-              void copyText(fullPrompt).then(() => setCopied(true))
+              void copyText(fullPrompt).then((ok) =>
+                setFlash(ok ? 'copied' : 'copy-failed'),
+              )
             }
           >
-            {copied ? (
+            {flash === 'copied' ? (
               <Check aria-hidden="true" />
             ) : (
               <Copy aria-hidden="true" />
             )}
-            {copied ? 'Copied' : 'Copy full prompt'}
+            {flash === 'copied'
+              ? 'Copied'
+              : flash === 'copy-failed'
+                ? 'Copy failed'
+                : 'Copy full prompt'}
           </Button>
         </div>
         <details className="mt-2.5">

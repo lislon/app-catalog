@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom/vitest'
@@ -428,10 +428,13 @@ describe('MCP install', () => {
     const { ui } = await given(magazine.mcp(), { initialRoute: '/mcp/wiki' })
     await screen.findByRole('dialog', { name: 'Wiki Browser' })
 
-    expect(ui.mcp.installButton()).toEqual({
-      label: 'Let me do it for you',
-      icon: 'default',
-    })
+    // Briefly a blank placeholder while IndexedDB answers; then the first visit.
+    await waitFor(() =>
+      expect(ui.mcp.installButton()).toEqual({
+        label: 'Let me do it for you',
+        icon: 'default',
+      }),
+    )
     await ui.mcp.clickInstall()
     expect(await screen.findByRole('menu')).toBeInTheDocument()
     expect(ui.mcp.installMenu()).toEqual(MENU)
@@ -536,20 +539,18 @@ describe('MCP install', () => {
     const popup = screen.getByRole('dialog', { name: /^What happens when/ })
     await user.click(within(popup).getByRole('button', { name: 'Cursor' }))
 
+    // Cursor installs by hand: you fill in the token, and nothing tests it.
     await waitFor(() =>
       expect(ui.mcp.whatHappens()).toEqual({
         picked: 'Cursor',
         steps: [
-          "Cursor shows its 'Install MCP server' dialog — You click Install there.",
-          'Adds wiki to ~/.cursor/mcp.json — Your user settings (~/.cursor/mcp.json), not a repo. An existing entry with the same name is shown to you first.',
-          'Gets your Wiki Browser token with you — Opens wiki.example.com and says which options to pick. You create it; it goes into header X-API-Key, never into the chat.',
-          'Tests it with one small call — search_pages, then reports ok or failed.',
+          "Cursor shows its 'Install MCP server' dialog — You click Install there, and Cursor adds the server.",
+          'Adds wiki to ~/.cursor/mcp.json — Your user settings (~/.cursor/mcp.json), not a repo.',
+          'Replace <WIKI_TOKEN> in the config with your token from wiki.example.com — Go to wiki.example.com/settings/tokens; Click "Generate Token"; Copy the token. It stays in your user settings; never paste it into a chat.',
+          'Ask your AI to call search_pages to check it works — Installing makes no test call of its own.',
         ],
-        touches: [
-          '~/.cursor/mcp.json',
-          '1 token you create',
-          'wiki.example.com',
-        ],
+        touches: ['~/.cursor/mcp.json', '1 token you create'],
+        talksTo: ['wiki.example.com'],
       }),
     )
     // The pick is the remembered choice, so the popup's own button follows it.
@@ -557,6 +558,15 @@ describe('MCP install', () => {
       label: 'Install',
       icon: 'cursor',
     })
+    // With an AI the steps are guided, and the token goes into the header.
+    await user.click(
+      within(popup).getByRole('button', { name: 'Claude Code in VS Code' }),
+    )
+    await waitFor(() =>
+      expect(ui.mcp.whatHappens().steps).toContain(
+        'Helps you create your Wiki Browser token — Opens wiki.example.com and says which options to pick. You create it; it goes into header X-API-Key, never into the chat.',
+      ),
+    )
     // The full prompt sits collapsed under the actions.
     expect(within(popup).getByText('Show the full prompt')).toBeVisible()
     expect(within(popup).getByText(/name: wiki/)).not.toBeVisible()
@@ -564,7 +574,7 @@ describe('MCP install', () => {
       within(popup).getByRole('button', { name: 'Copy full prompt' }),
     )
     expect(await navigator.clipboard.readText()).toContain(
-      'Install this MCP server for me in Cursor',
+      'Install this MCP server for me in Claude Code in VS Code',
     )
   })
 
@@ -650,6 +660,66 @@ describe('MCP install', () => {
     expect(main.querySelector('img')).toHaveAttribute(
       'src',
       'https://example.com/mcp-icon.svg',
+    )
+  })
+
+  it('menu keys: focus starts on the first option, arrows and Home/End move, Tab closes', async () => {
+    const { ui } = await given(magazine.mcp(), { initialRoute: '/mcp/wiki' })
+    await screen.findByRole('dialog', { name: 'Wiki Browser' })
+    await ui.mcp.openInstallMenu()
+    const focused = () =>
+      document.activeElement?.querySelector('b')?.textContent
+
+    await waitFor(() => expect(focused()).toBe('Claude Code in VS Code'))
+    const user = userEvent.setup()
+    await user.keyboard('{ArrowDown}')
+    expect(focused()).toBe('Claude Code in terminal')
+    await user.keyboard('{End}')
+    expect(focused()).toBe('Copy JSON config')
+    await user.keyboard('{ArrowDown}')
+    expect(focused()).toBe('Claude Code in VS Code')
+    await user.keyboard('{Home}{ArrowUp}')
+    expect(focused()).toBe('Copy JSON config')
+
+    await user.keyboard('{Tab}')
+    await waitFor(() => expect(ui.mcp.installMenu()).toBeNull())
+    expect(screen.getByRole('dialog', { name: 'Wiki Browser' })).toBeVisible()
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: 'Choose how to install' }),
+      ),
+    )
+  })
+
+  it('a refused clipboard says "Copy failed" and still remembers the pick', async () => {
+    const { ui } = await given(magazine.mcp(), { initialRoute: '/mcp/wiki' })
+    await screen.findByRole('dialog', { name: 'Wiki Browser' })
+    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(
+      new Error('denied'),
+    )
+    const execCommand = vi.fn(() => false)
+    const original = document.execCommand
+    document.execCommand = execCommand
+    onTestFinished(() => {
+      document.execCommand = original
+      vi.restoreAllMocks()
+    })
+
+    await ui.mcp.openInstallMenu()
+    await ui.mcp.pickInstallOption('Claude Code in terminal')
+
+    await waitFor(() =>
+      expect(ui.mcp.installButton()).toEqual({
+        label: 'Copy failed',
+        icon: 'copy-failed',
+      }),
+    )
+    expect(execCommand).toHaveBeenCalledWith('copy')
+    await waitFor(() =>
+      expect(ui.mcp.installButton()).toEqual({
+        label: 'Install',
+        icon: 'claude-code',
+      }),
     )
   })
 })

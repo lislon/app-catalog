@@ -9,6 +9,8 @@ import { useDb } from '~/userDb/DbContext'
  * row on screen follows a change made anywhere.
  */
 export function useMcpPrefs(): {
+  /** Still reading IndexedDB: nothing is known yet, not even "no choice". */
+  loading: boolean
   installWith?: InstallOptionId
   setInstallWith: (id: InstallOptionId) => Promise<void>
   installed: Set<string>
@@ -43,5 +45,11 @@ export function useMcpPrefs(): {
     [db],
   )
 
-  return { installWith, setInstallWith, installed, toggleInstalled }
+  return {
+    loading: rows === undefined,
+    installWith,
+    setInstallWith,
+    installed,
+    toggleInstalled,
+  }
 }

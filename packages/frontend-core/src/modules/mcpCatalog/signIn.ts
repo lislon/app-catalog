@@ -9,7 +9,7 @@ export const SIGN_IN: Record<
   sso: {
     Icon: ShieldCheck,
     badge: 'SSO',
-    tip: 'Sign-in: single sign-on. A browser window opens once',
+    tip: 'Sign-in: single sign-on. A browser window opens to sign you in',
   },
   token: {
     Icon: KeyRound,

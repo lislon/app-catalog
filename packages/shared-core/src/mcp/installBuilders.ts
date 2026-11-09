@@ -316,8 +316,41 @@ export function installPrompt(
   return lines.join('\n')
 }
 
+/** Options where an AI reads the prompt and does the steps with you. */
+const AI_DRIVEN: ReadonlySet<InstallOptionId | undefined> = new Set([
+  undefined,
+  'claude-vscode',
+  'claude-desktop',
+  'prompt',
+])
+
+/** The host of a token page, or the page itself when it is not a URL. */
+function hostOf(page: string): string {
+  try {
+    return new URL(page).host
+  } catch {
+    return page
+  }
+}
+
+/** The header a token goes into: the one named like a token, else the first. */
+function tokenHeader(
+  s: InstallableMcpServer,
+): { name: string; placeholder: string } | undefined {
+  if (s.transport.type !== 'http' || !s.transport.headers) return undefined
+  const headers = s.transport.headers
+  const name =
+    Object.keys(headers).find((k) => /token|key|secret|auth/i.test(k)) ??
+    Object.keys(headers)[0]
+  return name ? { name, placeholder: headers[name] ?? '' } : undefined
+}
+
 /**
- * Builds "What happens?" steps for the chosen install option.
+ * Builds "What happens?" steps for the chosen install option: only what that
+ * option really does. With an AI (VS Code, desktop, a pasted prompt, or no
+ * choice yet) the AI walks you through access, the token and a test call. A
+ * terminal command, Cursor's dialog or pasted JSON involves no AI: you fill
+ * in the token yourself and nothing tests the server for you.
  * Returns {title, detail}[] where title is the step heading and detail is the explanation.
  */
 export function whatHappensSteps(
@@ -325,15 +358,15 @@ export function whatHappensSteps(
   option?: InstallOptionId,
   opts?: {
     apps?: { slug: string; name: string }[]
-    sensitiveDataLabel?: string
   },
 ): { title: string; detail: string }[] {
   const apps = opts?.apps || []
-  const sensitiveDataLabel = opts?.sensitiveDataLabel || 'Sensitive data'
+  const ai = AI_DRIVEN.has(option)
   const one = servers.length === 1
   const names = servers.map((s) => s.slug).join(' ')
   const tokenServers = servers.filter((s) => s.auth.kind === 'token')
   const ssoServers = servers.filter((s) => s.auth.kind === 'sso')
+  const pasted = option === 'json' || (option === 'cursor' && !one)
 
   const steps: { title: string; detail: string }[] = []
 
@@ -362,7 +395,7 @@ export function whatHappensSteps(
     if (one) {
       steps.push({
         title: "Cursor shows its 'Install MCP server' dialog",
-        detail: 'You click Install there.',
+        detail: 'You click Install there, and Cursor adds the server.',
       })
     } else {
       steps.push({
@@ -379,11 +412,11 @@ export function whatHappensSteps(
     // json
     steps.push({
       title: 'You paste the config yourself',
-      detail: 'Then fill in the token placeholders.',
+      detail: "Under mcpServers in your client's MCP config.",
     })
   }
 
-  // Access check
+  // Access check: the AI checks it; otherwise it is on you.
   const allRequiredSlugs = [
     ...new Set(servers.flatMap((s) => s.requiredAppSlugs || [])),
   ]
@@ -391,43 +424,58 @@ export function whatHappensSteps(
     const appNames = allRequiredSlugs
       .map((slug) => apps.find((a) => a.slug === slug)?.name || slug)
       .join(', ')
-    steps.push({
-      title: `Checks you can sign in to ${appNames}`,
-      detail:
-        'If not, it stops and gives you the App Catalog page that says how to request access.',
-    })
+    steps.push(
+      ai
+        ? {
+            title: `Checks you can sign in to ${appNames}`,
+            detail:
+              'If not, it stops and gives you the App Catalog page that says how to request access.',
+          }
+        : {
+            title: `You need an account in ${appNames}`,
+            detail:
+              "Without one the server cannot sign in; the app's App Catalog page says how to request access.",
+          },
+    )
   }
 
-  // Add to config
-  const configFile = option ? INSTALL_CONFIG_FILE[option] : "your AI's settings"
-  const pathNote =
-    option && configFile.startsWith('~/') ? ` (${configFile})` : ''
-  steps.push({
-    title: `Adds ${names} to ${configFile}`,
-    detail: `Your user settings${pathNote}, not a repo. An existing entry with the same name is shown to you first.`,
-  })
+  // Add to config. Pasted JSON names no file of its own: the paste is the add.
+  if (!pasted) {
+    const configFile = option
+      ? INSTALL_CONFIG_FILE[option]
+      : "your AI's settings"
+    const pathNote =
+      option && configFile.startsWith('~/') ? ` (${configFile})` : ''
+    steps.push({
+      title: `Adds ${names} to ${configFile}`,
+      detail: ai
+        ? `Your user settings${pathNote}, not a repo. An existing entry with the same name is shown to you first.`
+        : `Your user settings${pathNote}, not a repo.`,
+    })
+  }
 
   // Token steps
   tokenServers.forEach((s) => {
     const page = s.auth.token?.page
-    let hostNote = ''
-    if (page) {
-      try {
-        const url = new URL(page)
-        hostNote = `Opens ${url.host} and says which options to pick. `
-      } catch {
-        hostNote = `Opens ${page} and says which options to pick. `
-      }
+    const header = tokenHeader(s)
+    if (ai) {
+      steps.push({
+        title: `Helps you create your ${s.displayName} token`,
+        detail: `${page ? `Opens ${hostOf(page)} and says which options to pick. ` : ''}You create it; it goes into ${header ? `header ${header.name}` : 'the server config'}, never into the chat.`,
+      })
+      return
     }
-    const headerKey =
-      s.transport.type === 'http' && s.transport.headers
-        ? Object.keys(s.transport.headers).find((k) =>
-            /token|key|secret/i.test(k),
-          ) || Object.keys(s.transport.headers)[0]
-        : undefined
+    const where =
+      option === 'claude-code' || option === 'gemini'
+        ? 'the command'
+        : 'the config'
+    const from = page ? ` from ${hostOf(page)}` : ''
+    const tokenSteps = s.auth.token?.steps ?? []
     steps.push({
-      title: `Gets your ${s.displayName} token with you`,
-      detail: `${hostNote}You create it; it goes into ${headerKey ? `header ${headerKey}` : 'the server config'}, never into the chat.`,
+      title: header
+        ? `Replace ${header.placeholder} in ${where} with your token${from}`
+        : `Add your ${s.displayName} token to ${where}${from}`,
+      detail: `${tokenSteps.length > 0 ? `${tokenSteps.join('; ')}. ` : ''}It stays in your user settings; never paste it into a chat.`,
     })
   })
 
@@ -435,11 +483,11 @@ export function whatHappensSteps(
   if (ssoServers.length > 0) {
     steps.push({
       title: 'SSO sign-in in your browser',
-      detail: `Once, for ${ssoServers.map((s) => s.displayName).join(', ')}.`,
+      detail: `For ${ssoServers.map((s) => s.displayName).join(', ')}, your usual company sign-in.`,
     })
   }
 
-  // Test call
+  // Test call: the AI makes one; a manual install makes none.
   const serversWithTools = servers.filter((s) => s.tools.length > 0)
   if (serversWithTools.length > 0) {
     const testTools = serversWithTools
@@ -449,27 +497,51 @@ export function whatHappensSteps(
       .join(' ')
     const extra =
       serversWithTools.length > 3 ? ` +${serversWithTools.length - 3} more` : ''
-    steps.push({
-      title: `Tests ${one ? 'it' : 'each one'} with one small call`,
-      detail: `${testTools}${extra}, then reports ok or failed.`,
-    })
+    steps.push(
+      ai
+        ? {
+            title: `Tests ${one ? 'it' : 'each one'} with one small call`,
+            detail: `${testTools}${extra}, then reports ok or failed.`,
+          }
+        : {
+            title: `Ask your AI to call ${testTools}${extra} to check it works`,
+            detail: 'Installing makes no test call of its own.',
+          },
+    )
   }
 
   // Write warning
   const writeServers = servers.filter((s) => s.access === 'write')
   if (writeServers.length > 0) {
-    steps.push({
-      title: 'Asks before anything that changes data',
-      detail: `${writeServers.map((s) => s.displayName).join(', ')} can write.`,
-    })
+    const writers = writeServers.map((s) => s.displayName).join(', ')
+    steps.push(
+      ai
+        ? {
+            title: 'Asks before anything that changes data',
+            detail: `${writers} can write.`,
+          }
+        : {
+            title: 'Some tools change data',
+            detail: `${writers} can write; your AI client's approval settings decide whether it asks first.`,
+          },
+    )
   }
 
   // Sensitive data warning
   if (servers.some((s) => s.sensitiveData)) {
-    steps.push({
-      title: 'Stays on non-production by default',
-      detail: `${sensitiveDataLabel}: production holds sensitive data.`,
-    })
+    steps.push(
+      ai
+        ? {
+            title: 'Stays on non-production by default',
+            detail:
+              'Production holds sensitive data, so your AI asks before touching it.',
+          }
+        : {
+            title: 'Prefer non-production',
+            detail:
+              'Production holds sensitive data — prefer non-production environments when you use it.',
+          },
+    )
   }
 
   return steps
