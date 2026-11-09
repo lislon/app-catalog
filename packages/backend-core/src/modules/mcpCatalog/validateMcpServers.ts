@@ -2,18 +2,19 @@ import type { McpServer } from '@igstack/app-catalog-shared-core'
 import type { CatalogMcpServer } from '../../types/common/appCatalogTypes'
 
 /**
- * A header value must contain at least one `<NAME>` placeholder where NAME is
- * uppercase with underscores, and no `<` or `>` outside placeholders. Values
- * with no placeholder are rejected since they could be literal secrets.
- * Examples: `<GITLAB_API_TOKEN>`, `<USERNAME>@example.com`, `Bearer <TOKEN>`.
+ * A header value must match the pattern: optional auth prefix (Bearer, Token, or
+ * Basic), exactly ONE `<NAME>` placeholder where NAME is `[A-Z][A-Z0-9_]*`, and
+ * an optional `@domain` suffix. This prevents secrets from riding alongside
+ * placeholders (R23).
+ *
+ * Valid: `<TOKEN>`, `Bearer <TOKEN>`, `<USERNAME>@example.com`, `<SNOWFLAKE_USERNAME>@EXAMPLE.COM`
+ * Rejected: `<TOKEN>sk-live-abc123`, `prod-<TOKEN>`, `<A><`, `<2FA_TOKEN>`, `<lowercase>`, `PROD`, `you@example.com`, `<A> <B>`
  */
-const PLACEHOLDER_NAME = /[A-Z][A-Z0-9_]*/
+const VALID_HEADER_VALUE =
+  /^(?:(?:Bearer|Token|Basic) )?<[A-Z][A-Z0-9_]*>(?:@[A-Za-z0-9.-]+)?$/
+
 function hasValidPlaceholder(value: string): boolean {
-  // Extract all <...> segments and check each one is a valid placeholder
-  const segments = value.match(/<[^<>]+>/g)
-  if (!segments || segments.length === 0) return false
-  // All <...> must be <VALID_NAME>
-  return segments.every((seg) => PLACEHOLDER_NAME.test(seg.slice(1, -1)))
+  return VALID_HEADER_VALUE.test(value)
 }
 /** Lowercase words joined by `-`: no comma (the cart's separator) and no leading `-` (read as a CLI flag). */
 const SLUG = /^[a-z0-9][a-z0-9-]*$/
@@ -57,7 +58,7 @@ export function validateMcpServers(
       for (const [name, value] of Object.entries(s.transport.headers ?? {})) {
         if (!hasValidPlaceholder(value)) {
           problems.push(
-            `${s.slug}: header '${name}' must contain at least one <UPPERCASE_NAME> placeholder and no stray < or >. Valid: <TOKEN>, <USERNAME>@example.com, Bearer <TOKEN>. Rejected: literal values, <lowercase>, <A><`,
+            `${s.slug}: header '${name}' must match: [Bearer|Token|Basic ]<UPPERCASE_NAME>[@domain]. Valid: <TOKEN>, Bearer <TOKEN>, <USERNAME>@example.com. Rejected: <TOKEN>sk-live-abc123, prod-<TOKEN>, <A><, <2FA_TOKEN>, <lowercase>, PROD, you@example.com, <A> <B>`,
           )
         }
       }
