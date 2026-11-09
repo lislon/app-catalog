@@ -1,8 +1,20 @@
 import type { McpServer } from '@igstack/app-catalog-shared-core'
 import type { CatalogMcpServer } from '../../types/common/appCatalogTypes'
 
-/** A header value must be a whole `<NAME>` placeholder, never a real token. */
-const PLACEHOLDER = /^<[^<>]+>$/
+/**
+ * A header value must contain at least one `<NAME>` placeholder where NAME is
+ * uppercase with underscores, and no `<` or `>` outside placeholders. Values
+ * with no placeholder are rejected since they could be literal secrets.
+ * Examples: `<GITLAB_API_TOKEN>`, `<USERNAME>@example.com`, `Bearer <TOKEN>`.
+ */
+const PLACEHOLDER_NAME = /[A-Z][A-Z0-9_]*/
+function hasValidPlaceholder(value: string): boolean {
+  // Extract all <...> segments and check each one is a valid placeholder
+  const segments = value.match(/<[^<>]+>/g)
+  if (!segments || segments.length === 0) return false
+  // All <...> must be <VALID_NAME>
+  return segments.every((seg) => PLACEHOLDER_NAME.test(seg.slice(1, -1)))
+}
 /** Lowercase words joined by `-`: no comma (the cart's separator) and no leading `-` (read as a CLI flag). */
 const SLUG = /^[a-z0-9][a-z0-9-]*$/
 
@@ -43,9 +55,9 @@ export function validateMcpServers(
 
     if (s.transport.type === 'http') {
       for (const [name, value] of Object.entries(s.transport.headers ?? {})) {
-        if (!PLACEHOLDER.test(value)) {
+        if (!hasValidPlaceholder(value)) {
           problems.push(
-            `${s.slug}: header '${name}' must be a <...> placeholder, not a value`,
+            `${s.slug}: header '${name}' must contain at least one <UPPERCASE_NAME> placeholder and no stray < or >. Valid: <TOKEN>, <USERNAME>@example.com, Bearer <TOKEN>. Rejected: literal values, <lowercase>, <A><`,
           )
         }
       }
