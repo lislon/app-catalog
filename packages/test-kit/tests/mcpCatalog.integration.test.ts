@@ -325,3 +325,331 @@ describe('MCP server detail', () => {
     ).toBeInTheDocument()
   })
 })
+
+describe('MCP server detail: access, owner and sign-in lines', () => {
+  it('an app slug that resolves to no app is a plain chip, not a link', async () => {
+    await given(
+      magazine.mcp(({ backendCfg }) => {
+        backendCfg.withMcpServer({
+          slug: 'orphan',
+          displayName: 'Orphan Server',
+          description: 'Needs an app the catalog does not list',
+          category: 'data',
+          status: 'production',
+          access: 'read',
+          requiredAppSlugs: ['taskflow', 'no-such-app'],
+          auth: { kind: 'none' },
+          transport: { type: 'http', url: 'https://orphan.example.com/mcp' },
+          tools: [],
+          sources: [],
+        })
+      }),
+      { initialRoute: '/mcp/orphan' },
+    )
+
+    const dialog = await screen.findByRole('dialog', { name: 'Orphan Server' })
+    const line = within(dialog).getByText(/To use this MCP you need access to:/)
+    expect(
+      within(line)
+        .getAllByRole('link')
+        .map((a) => a.getAttribute('href')),
+    ).toEqual(['/app/taskflow'])
+    expect(within(line).getByText('no-such-app')).toBeInTheDocument()
+  })
+
+  it("owner shows a person's name, the slug for a nameless person, and the slug when unknown", async () => {
+    const ownedBy = (slug: string, ownerSlug: string) =>
+      magazine.mcp(({ backendCfg }) => {
+        backendCfg.withPerson({
+          slug: 'kim',
+          email: 'kim@example.com',
+          firstName: 'Kim',
+          lastName: 'Ng',
+        })
+        backendCfg.withPerson({
+          slug: 'nameless',
+          email: 'nameless@example.com',
+          firstName: ' ',
+          lastName: '',
+        })
+        backendCfg.withMcpServer({
+          slug,
+          displayName: 'Owned Server',
+          description: 'Has an owner',
+          category: 'data',
+          status: 'production',
+          access: 'read',
+          auth: { kind: 'none' },
+          transport: { type: 'http', url: 'https://owned.example.com/mcp' },
+          tools: [],
+          sources: [],
+          ownerSlug,
+        })
+      })
+    const owner = async () =>
+      within(
+        await screen.findByRole('dialog', { name: 'Owned Server' }),
+      ).getByTestId('mcp-tile-owner').textContent
+
+    await given(ownedBy('owned', 'kim'), { initialRoute: '/mcp/owned' })
+    expect(await owner()).toBe('OwnerKim Ng')
+    await given(ownedBy('owned', 'nameless'), { initialRoute: '/mcp/owned' })
+    expect(await owner()).toBe('Ownernameless')
+    await given(ownedBy('owned', 'who-is-this'), { initialRoute: '/mcp/owned' })
+    expect(await owner()).toBe('Ownerwho-is-this')
+  })
+
+  it('SSO without a note says a browser window opens to sign you in', async () => {
+    await given(magazine.mcp(), { initialRoute: '/mcp/logs' })
+
+    const dialog = await screen.findByRole('dialog', { name: 'Log Viewer' })
+    expect(
+      within(dialog).getByText('A browser window opens to sign you in.'),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('MCP install', () => {
+  const MENU = {
+    groups: {
+      'Install with': [
+        'Claude Code in VS Code',
+        'Claude Code in terminal',
+        'Cursor',
+        'Gemini CLI',
+      ],
+      'Text only': ['Copy prompt', 'Copy JSON config'],
+    },
+    footer: 'We remember your choice for next time.',
+  }
+
+  it('fresh visitor sees "Let me do it for you" and the default icon, and clicking opens the menu', async () => {
+    // A new context: the harness deleted IndexedDB, and there is no reload.
+    const { ui } = await given(magazine.mcp(), { initialRoute: '/mcp/wiki' })
+    await screen.findByRole('dialog', { name: 'Wiki Browser' })
+
+    expect(ui.mcp.installButton()).toEqual({
+      label: 'Let me do it for you',
+      icon: 'default',
+    })
+    await ui.mcp.clickInstall()
+    expect(await screen.findByRole('menu')).toBeInTheDocument()
+    expect(ui.mcp.installMenu()).toEqual(MENU)
+  })
+
+  it('picking Claude Code in terminal copies the command, shows "Copied", and the next visit\'s button says Install with that icon', async () => {
+    const { ui } = await given(magazine.mcp(), { initialRoute: '/mcp/wiki' })
+    await screen.findByRole('dialog', { name: 'Wiki Browser' })
+
+    await ui.mcp.openInstallMenu()
+    await ui.mcp.pickInstallOption('Claude Code in terminal')
+
+    await waitFor(() =>
+      expect(ui.mcp.installButton()).toEqual({
+        label: 'Copied',
+        icon: 'copied',
+      }),
+    )
+    expect(await navigator.clipboard.readText()).toBe(
+      "claude mcp add --transport http wiki https://wiki.example.com/mcp -H 'X-API-Key: <WIKI_TOKEN>'",
+    )
+    expect(ui.mcp.installMenu()).toBeNull()
+    // Remembered: the menu now ticks it.
+    await waitFor(() =>
+      expect(ui.mcp.installButton()).toEqual({
+        label: 'Install',
+        icon: 'claude-code',
+      }),
+    )
+
+    // The next visit: a reload keeps IndexedDB.
+    const next = await given(magazine.mcp(), {
+      initialRoute: '/mcp/wiki',
+      reload: true,
+    })
+    await screen.findByRole('dialog', { name: 'Wiki Browser' })
+    await waitFor(() =>
+      expect(next.ui.mcp.installButton()).toEqual({
+        label: 'Install',
+        icon: 'claude-code',
+      }),
+    )
+    await next.ui.mcp.openInstallMenu()
+    expect(next.ui.mcp.installMenu()?.groups['Install with']).toContain(
+      '*Claude Code in terminal',
+    )
+  })
+
+  it('Claude Code in VS Code sets location to a vscode:// link whose prompt contains the server slug', async () => {
+    const { ui } = await given(magazine.mcp(), { initialRoute: '/mcp/wiki' })
+    await screen.findByRole('dialog', { name: 'Wiki Browser' })
+
+    await ui.mcp.openInstallMenu()
+    await ui.mcp.pickInstallOption('Claude Code in VS Code')
+
+    const url = ui.window.lastExternalUrl()
+    expect(url).toMatch(/^vscode:\/\/anthropic\.claude-code\/open\?prompt=/)
+    const prompt = new URL(url!).searchParams.get('prompt')
+    expect(prompt).toContain(
+      'Install this MCP server for me in Claude Code in VS Code',
+    )
+    expect(prompt).toContain('- Wiki Browser (name: wiki)')
+    // This deployment serves the catalog's own MCP, so the AI is told to ask it.
+    expect(prompt).toContain('call get_mcp_server')
+  })
+
+  it('relative-URL server installs against the current origin', async () => {
+    // From a search card: the result carries its own Install button.
+    const { ui } = await given(magazine.mcp(), { initialRoute: '/mcp?q=mail' })
+    await waitFor(() =>
+      expect(ui.mcp.searchResults().map((r) => r.name)).toEqual([
+        'Mail Catcher',
+      ]),
+    )
+    const card = screen.getByTestId('mcp-result')
+
+    await ui.mcp.openInstallMenu(card)
+    await ui.mcp.pickInstallOption('Copy JSON config')
+
+    expect(JSON.parse(await navigator.clipboard.readText())).toEqual({
+      mcpServers: {
+        'mail-test': {
+          type: 'http',
+          url: `${window.location.origin}/mcp/mail`,
+          headers: { 'X-Admin-Token': '<MAIL_ADMIN_TOKEN>' },
+        },
+      },
+    })
+    await waitFor(() => expect(ui.mcp.installButton(card).label).toBe('Copied'))
+  })
+
+  it('"What happens?" lists the config file for the chosen option and the token header name', async () => {
+    const { ui } = await given(magazine.mcp(), { initialRoute: '/mcp/wiki' })
+    await screen.findByRole('dialog', { name: 'Wiki Browser' })
+
+    await ui.mcp.openWhatHappens()
+    expect(ui.mcp.whatHappens().steps[0]).toBe(
+      'Pick your AI above — The steps below adjust to it.',
+    )
+
+    const user = userEvent.setup()
+    const popup = screen.getByRole('dialog', { name: /^What happens when/ })
+    await user.click(within(popup).getByRole('button', { name: 'Cursor' }))
+
+    await waitFor(() =>
+      expect(ui.mcp.whatHappens()).toEqual({
+        picked: 'Cursor',
+        steps: [
+          "Cursor shows its 'Install MCP server' dialog — You click Install there.",
+          'Adds wiki to ~/.cursor/mcp.json — Your user settings (~/.cursor/mcp.json), not a repo. An existing entry with the same name is shown to you first.',
+          'Gets your Wiki Browser token with you — Opens wiki.example.com and says which options to pick. You create it; it goes into header X-API-Key, never into the chat.',
+          'Tests it with one small call — search_pages, then reports ok or failed.',
+        ],
+        touches: [
+          '~/.cursor/mcp.json',
+          '1 token you create',
+          'wiki.example.com',
+        ],
+      }),
+    )
+    // The pick is the remembered choice, so the popup's own button follows it.
+    expect(ui.mcp.installButton(popup)).toEqual({
+      label: 'Install',
+      icon: 'cursor',
+    })
+    // The full prompt sits collapsed under the actions.
+    expect(within(popup).getByText('Show the full prompt')).toBeVisible()
+    expect(within(popup).getByText(/name: wiki/)).not.toBeVisible()
+    await user.click(
+      within(popup).getByRole('button', { name: 'Copy full prompt' }),
+    )
+    expect(await navigator.clipboard.readText()).toContain(
+      'Install this MCP server for me in Cursor',
+    )
+  })
+
+  it('Mark as installed greys the row, shows "Installed", and survives reload', async () => {
+    const { ui } = await given(magazine.mcp(), { initialRoute: '/mcp' })
+    await waitFor(() => expect(ui.mcp.getMcpRows()).toHaveLength(8))
+
+    await ui.mcp.openMcpServer('Wiki Browser')
+    await ui.mcp.toggleInstalled()
+    const dialog = screen.getByRole('dialog', { name: 'Wiki Browser' })
+    await waitFor(() =>
+      expect(
+        within(dialog).getByRole('button', { name: 'Installed here' }),
+      ).toHaveAttribute('aria-pressed', 'true'),
+    )
+    const user = userEvent.setup()
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+
+    expect(ui.mcp.isRowInstalled('Wiki Browser')).toBe(true)
+    expect(
+      within(ui.mcp.mcpRow('Wiki Browser')).getByText('Installed'),
+    ).toBeInTheDocument()
+    expect(ui.mcp.isRowInstalled('Chat Search')).toBe(false)
+
+    const next = await given(magazine.mcp(), {
+      initialRoute: '/mcp',
+      reload: true,
+    })
+    await waitFor(() =>
+      expect(next.ui.mcp.isRowInstalled('Wiki Browser')).toBe(true),
+    )
+    expect(next.ui.mcp.isRowInstalled('Chat Search')).toBe(false)
+  })
+
+  it('Escape in the open menu inside the dialog closes the menu only; a second Escape closes the dialog', async () => {
+    const { ui, router } = await given(magazine.mcp(), { initialRoute: '/mcp' })
+    await waitFor(() => expect(ui.mcp.getMcpRows()).toHaveLength(8))
+    await ui.mcp.openMcpServer('Wiki Browser')
+    const opener = within(ui.mcp.mcpRow('Wiki Browser')).getByRole('link')
+
+    await ui.mcp.openInstallMenu()
+    const user = userEvent.setup()
+    await user.keyboard('{Escape}')
+
+    await waitFor(() => expect(ui.mcp.installMenu()).toBeNull())
+    expect(screen.getByRole('dialog', { name: 'Wiki Browser' })).toBeVisible()
+    expect(router.state.location.pathname).toBe('/mcp/wiki')
+    // The caret took the focus back, inside the dialog.
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: 'Choose how to install' }),
+      ),
+    )
+
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(router.state.location.pathname).toBe('/mcp')
+    await waitFor(() => expect(document.activeElement).toBe(opener))
+  })
+
+  it('installIconUrl from config replaces the default icon', async () => {
+    const { ui } = await given(
+      magazine.mcp(({ backendCfg }) => {
+        backendCfg.withMcpCatalogConfig({
+          sensitiveDataLabel: 'Contains company data',
+          installIconUrl: 'https://example.com/mcp-icon.svg',
+        })
+      }),
+      { initialRoute: '/mcp/wiki' },
+    )
+    await screen.findByRole('dialog', { name: 'Wiki Browser' })
+
+    await waitFor(() =>
+      expect(ui.mcp.installButton()).toEqual({
+        label: 'Let me do it for you',
+        icon: 'custom',
+      }),
+    )
+    const main = within(screen.getByTestId('mcp-install')).getAllByRole(
+      'button',
+    )[0]!
+    expect(main.querySelector('img')).toHaveAttribute(
+      'src',
+      'https://example.com/mcp-icon.svg',
+    )
+  })
+})

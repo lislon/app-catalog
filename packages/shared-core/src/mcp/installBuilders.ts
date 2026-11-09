@@ -16,7 +16,8 @@ export type InstallOptionId =
   | 'prompt'
   | 'json'
 
-const CFG_FILE: Record<InstallOptionId, string> = {
+/** The file each option writes the server entry to. */
+export const INSTALL_CONFIG_FILE: Record<InstallOptionId, string> = {
   'claude-vscode': '~/.claude.json',
   'claude-code': '~/.claude.json',
   'claude-desktop': '~/.claude.json',
@@ -398,7 +399,7 @@ export function whatHappensSteps(
   }
 
   // Add to config
-  const configFile = option ? CFG_FILE[option] : "your AI's settings"
+  const configFile = option ? INSTALL_CONFIG_FILE[option] : "your AI's settings"
   const pathNote =
     option && configFile.startsWith('~/') ? ` (${configFile})` : ''
   steps.push({

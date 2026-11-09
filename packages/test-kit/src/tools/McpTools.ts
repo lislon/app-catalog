@@ -81,10 +81,124 @@ export class McpTools {
   }
 
   /**
-   * Get the install menu button (typically in the detail panel).
+   * Where the install controls are looked up: the dialog on top, else the page.
    */
-  installMenu(): HTMLElement {
-    return screen.getByLabelText(/install|add to/i)
+  private scope(): HTMLElement {
+    return screen.queryAllByRole('dialog').at(-1) ?? document.body
+  }
+
+  /**
+   * The split Install button in `scope` (default: the dialog on top): its
+   * label, and which icon it shows: `default` (the neutral sparkle), `custom`
+   * (the deployment's `installIconUrl`) or the remembered option's id.
+   */
+  installButton(scope: HTMLElement = this.scope()): {
+    label: string
+    icon: string
+  } {
+    const main = within(within(scope).getByTestId('mcp-install')).getAllByRole(
+      'button',
+    )[0]!
+    return {
+      label: main.textContent.trim(),
+      icon: main.getAttribute('data-icon') ?? '',
+    }
+  }
+
+  /** Clicks the Install button's main half in `scope`. */
+  async clickInstall(scope: HTMLElement = this.scope()): Promise<void> {
+    const main = within(within(scope).getByTestId('mcp-install')).getAllByRole(
+      'button',
+    )[0]!
+    await this.user.click(main)
+  }
+
+  /** Opens the install menu from the caret in `scope`, and waits for it. */
+  async openInstallMenu(scope: HTMLElement = this.scope()): Promise<void> {
+    await this.user.click(
+      within(scope).getByRole('button', { name: 'Choose how to install' }),
+    )
+    await screen.findByRole('menu', { name: 'Choose how to install' })
+  }
+
+  /**
+   * The open install menu: each group's options (`*` marks the remembered
+   * one) and the footer. Null when no menu is open.
+   */
+  installMenu(): { groups: Record<string, string[]>; footer: string } | null {
+    const menu = screen.queryByRole('menu', { name: 'Choose how to install' })
+    if (!menu) return null
+    const groups: Record<string, string[]> = {}
+    for (const group of within(menu).getAllByRole('group')) {
+      groups[group.getAttribute('aria-label') ?? ''] = within(group)
+        .getAllByRole('menuitemradio')
+        .map(
+          (item) =>
+            (item.getAttribute('aria-checked') === 'true' ? '*' : '') +
+            (item.querySelector('b')?.textContent ?? ''),
+        )
+    }
+    return {
+      groups,
+      footer: menu.querySelector('[data-slot="footer"]')?.textContent ?? '',
+    }
+  }
+
+  /** Picks an option in the open install menu by its label. */
+  async pickInstallOption(label: string): Promise<void> {
+    const menu = screen.getByRole('menu', { name: 'Choose how to install' })
+    await this.user.click(
+      within(menu).getByRole('menuitemradio', {
+        name: new RegExp(`^${label}`),
+      }),
+    )
+  }
+
+  /** Opens "What happens?" from `scope` and waits for its popup. */
+  async openWhatHappens(scope: HTMLElement = this.scope()): Promise<void> {
+    await this.user.click(
+      within(scope).getByRole('button', { name: 'What happens?' }),
+    )
+    await screen.findByRole('dialog', { name: /^What happens when/ })
+  }
+
+  /**
+   * The open "What happens?" popup: the picked option, each step as
+   * "title — detail", and the "Touches on your machine" chips.
+   */
+  whatHappens(): { picked: string; steps: string[]; touches: string[] } {
+    const popup = screen.getByRole('dialog', { name: /^What happens when/ })
+    return {
+      picked:
+        within(popup)
+          .queryAllByRole('button', { pressed: true })[0]
+          ?.textContent.trim() ?? '',
+      steps: within(within(popup).getByTestId('mcp-what-steps'))
+        .getAllByRole('listitem')
+        .map(
+          (li) =>
+            `${li.querySelector('b')?.textContent} — ${li.querySelector('span')?.textContent}`,
+        ),
+      touches: [
+        ...within(popup)
+          .getByTestId('mcp-what-touches')
+          .querySelectorAll('span'),
+      ].map((chip) => chip.textContent.trim()),
+    }
+  }
+
+  /** Clicks "Mark as installed" (or its pressed "Installed here") in `scope`. */
+  async toggleInstalled(scope: HTMLElement = this.scope()): Promise<void> {
+    await this.user.click(
+      within(scope).getByRole('button', {
+        name: /^(Mark as installed|Installed here)$/,
+      }),
+    )
+  }
+
+  /** Whether a home-list row is marked installed (greyed, "Installed" badge). */
+  isRowInstalled(name: string): boolean {
+    return this.mcpRow(name).hasAttribute('data-installed')
   }
 
   /**

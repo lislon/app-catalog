@@ -8,7 +8,7 @@ const ICON = 'size-[15px] shrink-0 self-center'
 const NOTE = 'text-[13px] text-muted-foreground'
 
 const SIGN_IN_NOTE: Record<CatalogMcpServer['auth']['kind'], string> = {
-  sso: 'A browser window opens once to sign you in.',
+  sso: 'A browser window opens to sign you in.',
   token: 'You paste your own token once.',
   none: 'Nothing to set up.',
 }

@@ -1,7 +1,9 @@
 import type { CatalogMcpServer } from '@igstack/app-catalog-backend-core'
 import { Link } from '@tanstack/react-router'
-import { Eye, KeyRound, Pencil, TriangleAlert } from 'lucide-react'
+import { Check, Eye, KeyRound, Pencil, TriangleAlert } from 'lucide-react'
+import { useMemo } from 'react'
 import { cn } from '~/lib/utils'
+import { InstallButton } from './install/InstallButton'
 import { PersonOrGroupBadge } from '../appCatalog/ui/components/PersonBadge'
 import type { McpSearchHit } from './searchMcpServers'
 import { searchTerms } from './searchMcpServers'
@@ -37,10 +39,13 @@ export function McpSearchResult({
   hit,
   q,
   best,
+  installed,
 }: {
   hit: McpSearchHit<CatalogMcpServer>
   q: string
   best: boolean
+  /** Marked installed in this browser: greyed, with a badge. */
+  installed: boolean
 }) {
   const { server, hitTools } = hit
   const sensitiveLabel =
@@ -50,13 +55,16 @@ export function McpSearchResult({
   const signIn = SIGN_IN[server.auth.kind]
   const status = STATUS_CHIP[server.status]
   const apps = useRequiredAppNames(server)
+  const servers = useMemo(() => [server], [server])
 
   return (
     <article
       data-testid="mcp-result"
+      data-installed={installed || undefined}
       className={cn(
-        'relative grid grid-cols-[auto_1fr] items-center gap-4 rounded-xl border border-border bg-card px-4 py-3.5 transition-[border-color,box-shadow] hover:border-ring hover:shadow-lg',
+        'relative grid grid-cols-[auto_1fr_auto] items-center gap-4 rounded-xl border border-border bg-card px-4 py-3.5 transition-[border-color,box-shadow] hover:border-ring hover:shadow-lg',
         best && 'border-[1.5px]',
+        installed && 'opacity-55 hover:opacity-90',
       )}
     >
       <span className="relative z-10 inline-flex">
@@ -134,6 +142,18 @@ export function McpSearchResult({
           {status && (
             <span className={cn(BADGE, status.className)}>{status.label}</span>
           )}
+          {installed && (
+            <span
+              className={cn(
+                BADGE,
+                'bg-green-600/15 text-green-700 dark:text-green-300',
+              )}
+              title="You marked this as installed in this browser"
+            >
+              <Check aria-hidden="true" />
+              Installed
+            </span>
+          )}
           {apps.length > 0 && (
             <span className={BADGE} title="You need an account in these apps">
               <KeyRound aria-hidden="true" />
@@ -142,6 +162,10 @@ export function McpSearchResult({
           )}
           {server.ownerSlug && <PersonOrGroupBadge slug={server.ownerSlug} />}
         </div>
+      </div>
+      {/* Above the card's stretched link. */}
+      <div className="relative z-10">
+        <InstallButton servers={servers} />
       </div>
     </article>
   )

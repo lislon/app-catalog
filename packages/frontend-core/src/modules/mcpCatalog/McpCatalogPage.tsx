@@ -9,6 +9,7 @@ import {
   getPersonBySlug,
 } from '../appCatalog/utils/resolveHelpers'
 import { useAppCatalogContext } from '../appCatalog/context/AppCatalogContext'
+import { useMcpPrefs } from './install/useMcpPrefs'
 import { McpSearchResult } from './McpSearchResult'
 import { McpServerRow } from './McpServerRow'
 import { searchMcpServers } from './searchMcpServers'
@@ -72,6 +73,7 @@ export function McpCatalogPage({ q, onQueryChange }: McpCatalogPageProps) {
     groups: ownerGroups,
   } = useAppCatalogContext()
   const config = useMcpCatalogConfig()
+  const { installed } = useMcpPrefs()
   const inputRef = useRef<HTMLInputElement>(null)
   const setQuery = onQueryChange
 
@@ -190,6 +192,7 @@ export function McpCatalogPage({ q, onQueryChange }: McpCatalogPageProps) {
                     hit={hit}
                     q={q}
                     best={i === 0}
+                    installed={installed.has(hit.server.slug)}
                   />
                 ))}
               </div>
@@ -274,7 +277,11 @@ export function McpCatalogPage({ q, onQueryChange }: McpCatalogPageProps) {
                   </h3>
                   <ul className="m-0 list-none p-0">
                     {group.servers.map((server) => (
-                      <McpServerRow key={server.slug} server={server} />
+                      <McpServerRow
+                        key={server.slug}
+                        server={server}
+                        installed={installed.has(server.slug)}
+                      />
                     ))}
                   </ul>
                 </section>

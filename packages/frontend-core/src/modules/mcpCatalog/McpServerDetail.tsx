@@ -1,10 +1,14 @@
 import type { CatalogMcpServer } from '@igstack/app-catalog-backend-core'
-import { Eye, Plus, ShoppingCart } from 'lucide-react'
+import { Check, Eye, Plus, ShoppingCart } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { cn } from '~/lib/utils'
 import { Button } from '~/ui/button'
 import { Skeleton } from '~/ui/skeleton'
 import { useAppCatalogContext } from '../appCatalog/context/AppCatalogContext'
 import { DetailDialogShell } from '../appCatalog/ui/catalog/DetailDialogShell'
+import { InstallButton } from './install/InstallButton'
+import { useMcpPrefs } from './install/useMcpPrefs'
+import { WhatHappensDialog } from './install/WhatHappensDialog'
 import { McpAccessLine } from './McpAccessLine'
 import { McpInfoTiles } from './McpInfoTiles'
 import { McpSafetyLines } from './McpSafetyLines'
@@ -54,6 +58,10 @@ export function McpServerDetail({
 
 function McpServerBody({ server }: { server: CatalogMcpServer }) {
   const status = STATUS_CHIP[server.status]
+  const [whatOpen, setWhatOpen] = useState(false)
+  const { installed, toggleInstalled } = useMcpPrefs()
+  const isInstalled = installed.has(server.slug)
+  const servers = useMemo(() => [server], [server])
   return (
     <>
       <div className="flex items-start gap-3.5 pr-20">
@@ -80,30 +88,48 @@ function McpServerBody({ server }: { server: CatalogMcpServer }) {
         </div>
       </div>
 
-      {/* Placeholders: the install menu and the cart fill these slots. */}
       <div
         data-testid="mcp-act-row"
         className="mt-6 flex flex-wrap items-center gap-2"
       >
-        <Button size="sm" disabled data-slot="mcp-install">
-          Install
-        </Button>
+        <InstallButton servers={servers} />
         <span className="text-[12.5px] font-semibold text-muted-foreground">
           or
         </span>
+        {/* Placeholder: the cart fills this slot. */}
         <Button size="sm" variant="outline" disabled data-slot="mcp-cart">
           <ShoppingCart aria-hidden="true" />
           Add to cart
         </Button>
-        <Button size="sm" variant="ghost" disabled>
+        <Button size="sm" variant="ghost" onClick={() => setWhatOpen(true)}>
           <Eye aria-hidden="true" />
           What happens?
         </Button>
-        <Button size="sm" variant="ghost" disabled className="ml-auto">
-          <Plus aria-hidden="true" />
-          Mark as installed
+        <Button
+          size="sm"
+          variant="ghost"
+          aria-pressed={isInstalled}
+          title="Only in this browser, for your own list"
+          onClick={() => void toggleInstalled(server.slug)}
+          className={cn(
+            'ml-auto',
+            isInstalled && 'text-green-700 dark:text-green-400',
+          )}
+        >
+          {isInstalled ? (
+            <Check aria-hidden="true" />
+          ) : (
+            <Plus aria-hidden="true" />
+          )}
+          {isInstalled ? 'Installed here' : 'Mark as installed'}
         </Button>
       </div>
+      {whatOpen && (
+        <WhatHappensDialog
+          servers={servers}
+          onClose={() => setWhatOpen(false)}
+        />
+      )}
 
       <div className="mt-[22px]">
         <McpAccessLine server={server} />

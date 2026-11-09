@@ -67,9 +67,10 @@ export function McpInfoTiles({ server }: { server: CatalogMcpServer }) {
 
   const owner = server.ownerSlug
   const person = owner ? getPersonBySlug(persons, owner) : undefined
+  // The same fallbacks as PersonBadge: a blank name or group shows the slug.
   const ownerName = person
-    ? `${person.firstName} ${person.lastName}`
-    : owner && (getGroupBySlug(groups, owner)?.displayName ?? owner)
+    ? `${person.firstName} ${person.lastName}`.trim() || owner
+    : owner && (getGroupBySlug(groups, owner)?.displayName || owner)
 
   return (
     <div className="grid grid-cols-[repeat(auto-fill,120px)] gap-2">

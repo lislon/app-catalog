@@ -9,13 +9,24 @@ import { Triad } from './Triad'
  * One line of the home list: Triad, name, sign-in icon and a status chip. The
  * name's link covers the row and opens the server's dialog, keeping the search.
  */
-export function McpServerRow({ server }: { server: CatalogMcpServer }) {
+export function McpServerRow({
+  server,
+  installed,
+}: {
+  server: CatalogMcpServer
+  /** Marked installed in this browser: greyed, with a badge. */
+  installed: boolean
+}) {
   const signIn = SIGN_IN[server.auth.kind]
   const status = STATUS_CHIP[server.status]
   return (
     <li
       data-testid="mcp-row"
-      className="relative flex min-h-10 items-center gap-2.5 rounded-[10px] px-2 py-1.5 hover:bg-card hover:shadow-[0_0_0_1px_var(--border)]"
+      data-installed={installed || undefined}
+      className={cn(
+        'relative flex min-h-10 items-center gap-2.5 rounded-[10px] px-2 py-1.5 hover:bg-card hover:shadow-[0_0_0_1px_var(--border)]',
+        installed && 'opacity-55 hover:opacity-90',
+      )}
     >
       <span className="relative z-10 inline-flex">
         <Triad server={server} size={28} />
@@ -42,6 +53,14 @@ export function McpServerRow({ server }: { server: CatalogMcpServer }) {
         </TooltipTrigger>
         <TooltipContent>{signIn.tip}</TooltipContent>
       </Tooltip>
+      {installed && (
+        <span
+          title="You marked this as installed in this browser"
+          className="rounded-full bg-green-600/15 px-1.5 py-0.5 text-[10px] leading-none font-bold text-green-700 dark:text-green-300"
+        >
+          Installed
+        </span>
+      )}
       {status && (
         <span
           className={cn(

@@ -3,6 +3,7 @@ import type {
   AppCatalogData,
   TRPCRouter,
 } from '@igstack/app-catalog-backend-core'
+import type { InstallOptionId } from '@igstack/app-catalog-shared-core'
 import type { inferRouterOutputs } from '@trpc/server'
 import type { Table } from 'dexie'
 
@@ -15,10 +16,16 @@ export interface AppClickHistoryItem {
   timestamp: number
 }
 
+/** The MCP tab's remembered choices, one row per key. */
+export type McpPref =
+  | { key: 'installWith'; value: InstallOptionId }
+  | { key: 'installed'; value: string[] }
+
 export class AcDb extends Dexie {
   appCatalog!: Table<AppCatalogData>
   appClickHistory!: Table<AppClickHistoryItem>
   communityToolsConfig!: Table<CommunityToolsConfig>
+  mcpPrefs!: Table<McpPref, McpPref['key']>
 
   constructor() {
     super('app-catalog')
@@ -33,6 +40,12 @@ export class AcDb extends Dexie {
       appCatalog: '',
       appClickHistory: '++id, appSlug, timestamp',
       communityToolsConfig: '',
+    })
+    this.version(4).stores({
+      appCatalog: '',
+      appClickHistory: '++id, appSlug, timestamp',
+      communityToolsConfig: '',
+      mcpPrefs: 'key',
     })
   }
 

@@ -1,9 +1,10 @@
 import 'fake-indexeddb/auto'
 import './polyfillLocalStorage'
-import { afterEach, vi } from 'vitest'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { cleanup, configure } from '@testing-library/react'
 import { cleanupTestResources, takeUnhandledRequests } from '../harness/given'
 import { CONDITION_TIMEOUT } from '../timeouts'
+import { interceptExternalLinks } from '../tools/WindowTools'
 
 configure({ asyncUtilTimeout: CONDITION_TIMEOUT })
 
@@ -12,6 +13,8 @@ Element.prototype.scrollIntoView = vi.fn()
 // Mock window.scrollTo — not implemented in jsdom; the router's scroll restoration
 // calls it on every navigation, and jsdom reports each call as an `Error:` (#119)
 window.scrollTo = vi.fn()
+
+beforeEach(interceptExternalLinks)
 
 // Clean up after each test
 afterEach(async () => {

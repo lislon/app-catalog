@@ -755,7 +755,6 @@ function mcpMagazine(postConfigure?: Magazine): Magazine {
       ],
       tryQueries: ['logs', 'tickets'],
       sensitiveDataLabel: 'Contains company data',
-      installIconUrl: 'https://example.com/mcp-icon.svg',
     })
 
     postConfigure?.(ctx)
