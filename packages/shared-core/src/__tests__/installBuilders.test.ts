@@ -100,6 +100,21 @@ describe('installBuilders', () => {
       const cmd = cliCommand('claude-code', [server])
       expect(cmd).toBe('claude mcp add mailhog -- uvx mailhog-mcp')
     })
+
+    it('handles embedded placeholder like <USERNAME>@example.com', () => {
+      const server = makeServer({
+        slug: 'email',
+        transport: {
+          type: 'http',
+          url: 'https://h/mcp',
+          headers: { user: '<USERNAME>@example.com' },
+        },
+      })
+      const cmd = cliCommand('claude-code', [server])
+      expect(cmd).toBe(
+        "claude mcp add --transport http email https://h/mcp -H 'user: <USERNAME>@example.com'",
+      )
+    })
   })
 
   describe('resolveUrl', () => {
@@ -730,6 +745,54 @@ describe('installBuilders', () => {
       const steps = whatHappensSteps([server], 'claude-code')
       const testStep = steps.find((s) => s.title.toLowerCase().includes('test'))
       expect(testStep).toBeUndefined()
+    })
+
+    it('shows embedded placeholder correctly for <USERNAME>@example.com', () => {
+      const server = makeServer({
+        slug: 'email',
+        auth: {
+          kind: 'token',
+          token: {
+            page: 'https://example.com/tokens',
+            steps: ['Get your username'],
+          },
+        },
+        transport: {
+          type: 'http',
+          url: 'https://h/mcp',
+          headers: { user: '<USERNAME>@example.com' },
+        },
+      })
+      const steps = whatHappensSteps([server], 'claude-code')
+      const tokenStep = steps.find((s) =>
+        s.title.toLowerCase().includes('replace'),
+      )
+      expect(tokenStep?.title).toContain(
+        'In <USERNAME>@example.com, replace <USERNAME>',
+      )
+    })
+
+    it('shows whole placeholder correctly for <TOKEN>', () => {
+      const server = makeServer({
+        slug: 'auth',
+        auth: {
+          kind: 'token',
+          token: {
+            page: 'https://example.com/tokens',
+            steps: ['Get token'],
+          },
+        },
+        transport: {
+          type: 'http',
+          url: 'https://h/mcp',
+          headers: { Authorization: '<TOKEN>' },
+        },
+      })
+      const steps = whatHappensSteps([server], 'claude-code')
+      const tokenStep = steps.find((s) =>
+        s.title.toLowerCase().includes('replace'),
+      )
+      expect(tokenStep?.title).toContain('Replace <TOKEN> in the command')
     })
   })
 })

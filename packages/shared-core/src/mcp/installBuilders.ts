@@ -333,16 +333,24 @@ function hostOf(page: string): string {
   }
 }
 
+/** Extracts all <UPPERCASE_NAME> placeholders from a string. */
+function extractPlaceholders(value: string): string[] {
+  const matches = value.match(/<[A-Z][A-Z0-9_]*>/g)
+  return matches || []
+}
+
 /** The header a token goes into: the one named like a token, else the first. */
 function tokenHeader(
   s: InstallableMcpServer,
-): { name: string; placeholder: string } | undefined {
+): { name: string; value: string; placeholders: string[] } | undefined {
   if (s.transport.type !== 'http' || !s.transport.headers) return undefined
   const headers = s.transport.headers
   const name =
     Object.keys(headers).find((k) => /token|key|secret|auth/i.test(k)) ??
     Object.keys(headers)[0]
-  return name ? { name, placeholder: headers[name] ?? '' } : undefined
+  if (!name) return undefined
+  const value = headers[name] ?? ''
+  return { name, value, placeholders: extractPlaceholders(value) }
 }
 
 /**
@@ -471,10 +479,24 @@ export function whatHappensSteps(
         : 'the config'
     const from = page ? ` from ${hostOf(page)}` : ''
     const tokenSteps = s.auth.token?.steps ?? []
+    let title: string
+    if (header) {
+      // If value is exactly one placeholder, say "Replace <TOKEN>"
+      // Otherwise show the pattern: "In <USERNAME>@example.com, replace <USERNAME>"
+      const isWholePlaceholder =
+        header.placeholders.length === 1 &&
+        header.value === header.placeholders[0]
+      if (isWholePlaceholder) {
+        title = `Replace ${header.value} in ${where} with your token${from}`
+      } else {
+        const ph = header.placeholders[0] || '<TOKEN>'
+        title = `In ${header.value}, replace ${ph} with your token${from}`
+      }
+    } else {
+      title = `Add your ${s.displayName} token to ${where}${from}`
+    }
     steps.push({
-      title: header
-        ? `Replace ${header.placeholder} in ${where} with your token${from}`
-        : `Add your ${s.displayName} token to ${where}${from}`,
+      title,
       detail: `${tokenSteps.length > 0 ? `${tokenSteps.join('; ')}. ` : ''}It stays in your user settings; never paste it into a chat.`,
     })
   })
