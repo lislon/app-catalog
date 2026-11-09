@@ -1,6 +1,7 @@
 import type {
   AppApprovalMethod,
   AppVersionInfo,
+  CatalogMcpServer,
   Group,
   GroupingTagDefinition,
   Person,
@@ -15,6 +16,7 @@ import { mergeFrontendBuildId } from '~/modules/appCatalog/context/mergeFrontend
 
 export interface AppCatalogContextIface {
   resources: Resource[]
+  mcpServers: CatalogMcpServer[]
   isLoadingApps: boolean
   tagsDefinitions: GroupingTagDefinition[]
   approvalMethods: AppApprovalMethod[]
@@ -40,6 +42,7 @@ export function AppCatalogProvider({ children }: AppCatalogProviderProps) {
   const contextValue = useMemo<AppCatalogContextIface>(
     () => ({
       resources: data?.resources ?? [],
+      mcpServers: data?.mcpServers ?? [],
       isLoadingApps,
       tagsDefinitions: data?.tagsDefinitions ?? [],
       approvalMethods: data?.approvalMethods ?? [],
@@ -53,6 +56,7 @@ export function AppCatalogProvider({ children }: AppCatalogProviderProps) {
     [
       data?.approvalMethods,
       data?.resources,
+      data?.mcpServers,
       data?.tagsDefinitions,
       data?.persons,
       data?.groups,

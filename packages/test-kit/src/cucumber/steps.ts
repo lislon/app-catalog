@@ -69,6 +69,15 @@ const catalogs = new Map<string, RegisteredCatalog>([
     },
   ],
   ['community', { fixture: magazine.community() }],
+  /** MCP servers listed, community tools on: every section tab shows. */
+  [
+    'mcp',
+    {
+      fixture: magazine.mcp(({ backendCfg }) =>
+        backendCfg.communityTools.enable({ captureHosts: [] }),
+      ),
+    },
+  ],
 ])
 
 /** Make a fixture available to `Given the "<name>" catalog`. */
@@ -468,20 +477,24 @@ Then('the current section is {string}', async (_world, title: string) => {
   })
 })
 
-Then('no section tab is {string}', (_world, title: string) => {
-  expect(sectionTabs().map((tab) => tab.textContent)).not.toContainEqual(
-    expect.stringMatching(new RegExp(`^${title}`)),
+/** Everything right of the section tabs, in order: the theme toggle's row. */
+function headerActions(): HTMLElement[] {
+  const row = screen.getByRole('button', { name: 'Toggle theme' }).parentElement
+  if (!row) throw new Error('The theme toggle has no row')
+  return [...row.querySelectorAll<HTMLElement>('a, button')]
+}
+
+Then('no header action is {string}', (_world, name: string) => {
+  expect(headerActions().map((el) => el.textContent.trim())).not.toContainEqual(
+    expect.stringMatching(new RegExp(`^${name}`)),
   )
 })
 
 Then('the header actions are {string}', async (_world, names: string) => {
-  // Everything right of the section tabs, in order: MCP's row.
   await waitFor(() => {
-    const row = screen.getByRole('link', { name: 'MCP' }).parentElement
-    if (!row) throw new Error('MCP has no row')
-    expect(
-      [...row.querySelectorAll('a, button')].map((el) => el.textContent.trim()),
-    ).toEqual(names.split(', '))
+    expect(headerActions().map((el) => el.textContent.trim())).toEqual(
+      names.split(', '),
+    )
   })
 })
 

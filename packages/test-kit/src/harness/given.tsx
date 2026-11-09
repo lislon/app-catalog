@@ -40,6 +40,7 @@ import { browserState } from '../tools/BrowserState'
 import { CatalogTools } from '../tools/CatalogTools'
 import { AppDetailTools } from '../tools/AppDetailTools'
 import { GalleryTools } from '../tools/GalleryTools'
+import { McpTools } from '../tools/McpTools'
 
 export interface GivenResult {
   ui: UiTools
@@ -51,6 +52,7 @@ export interface UiTools {
   catalog: CatalogTools
   app: AppDetailTools
   gallery: GalleryTools
+  mcp: McpTools
   globalError: () => GlobalError
 }
 
@@ -225,11 +227,12 @@ export async function given(
     () => {
       const hasAlert = screen.queryByRole('alert')
       const hasTable = screen.queryAllByRole('table').length > 0
-      // Either section's search: a reload can land on the community page.
+      // Any section's search: a reload can land on another section's page.
       const hasSearchbox =
         screen.queryByLabelText('Search apps') ??
         screen.queryByLabelText('Search community tools') ??
-        screen.queryByLabelText('Search service desks')
+        screen.queryByLabelText('Search service desks') ??
+        screen.queryByLabelText('Search MCP servers')
       const hasLoginPage = screen.queryByTestId('login-page')
       const hasTanstackError = document.body.textContent.includes(
         'Something went wrong',
@@ -256,6 +259,7 @@ export async function given(
     catalog: new CatalogTools(),
     app: new AppDetailTools(),
     gallery: new GalleryTools(),
+    mcp: new McpTools(),
     globalError: () => getGlobalError(),
   }
 

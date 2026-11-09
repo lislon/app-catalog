@@ -1,9 +1,17 @@
-import { fireEvent, screen } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 export interface McpServerRow {
   name: string
-  description: string
+  category: string
+}
+
+export interface McpSearchCard {
+  name: string
+  /** The tool the card says your AI calls. */
+  calls: string
+  /** Every highlighted fragment on the card, in order. */
+  marked: string[]
 }
 
 export class McpTools {
@@ -39,14 +47,29 @@ export class McpTools {
    * Get a specific MCP server row element by name.
    */
   mcpRow(name: string): HTMLElement {
-    const row = screen.queryByTitle(`View ${name}`)
+    const row = screen
+      .queryAllByTestId('mcp-row')
+      .find(
+        (r) =>
+          within(r).getByTestId('mcp-row-name').textContent.trim() === name,
+      )
     if (!row) {
       const visibleNames = this.getMcpRows().map((r) => r.name)
       throw new Error(
         `MCP server row "${name}" not found. Visible servers: [${visibleNames.join(', ')}]`,
       )
     }
-    return row.closest('[role="row"]') || row
+    return row
+  }
+
+  /**
+   * The Triad's spelled-out answer for a server's row.
+   */
+  triadLabel(name: string): string {
+    return (
+      within(this.mcpRow(name)).getByRole('img').getAttribute('aria-label') ??
+      ''
+    )
   }
 
   /**
@@ -64,16 +87,15 @@ export class McpTools {
   }
 
   /**
-   * The MCP server rows currently on the page, as structured data.
+   * The home list's rows in page order, each with its category heading.
    */
   getMcpRows(): McpServerRow[] {
-    const rows = screen.queryAllByRole('row')
-    if (rows.length === 0) {
+    const groups = screen.queryAllByTestId('mcp-category')
+    if (groups.length === 0) {
       const bodyText = document.body.textContent
       if (
-        bodyText &&
-        (bodyText.includes('Something went wrong') ||
-          bodyText.includes('Ooops'))
+        bodyText.includes('Something went wrong') ||
+        bodyText.includes('Ooops')
       ) {
         throw new Error(
           `Cannot read MCP rows — global error on page: ${bodyText.slice(0, 500)}`,
@@ -81,19 +103,23 @@ export class McpTools {
       }
       throw new Error('No MCP server rows found on page')
     }
+    return groups.flatMap((group) => {
+      const category = within(group).getByRole('heading').textContent.trim()
+      return within(group)
+        .getAllByTestId('mcp-row-name')
+        .map((n) => ({ name: n.textContent.trim(), category }))
+    })
+  }
 
-    return rows
-      .slice(1) // skip header row
-      .map((row) => {
-        const cells = row.querySelectorAll('[role="cell"]')
-        const name = cells[0]?.textContent
-        const description = cells[1]?.textContent
-        return {
-          name: name ? name.trim() : '',
-          description: description ? description.trim() : '',
-        }
-      })
-      .filter((r) => r.name) // skip empty rows
+  /**
+   * The search-state cards, best match first.
+   */
+  searchResults(): McpSearchCard[] {
+    return screen.queryAllByTestId('mcp-result').map((card) => ({
+      name: within(card).getByTestId('mcp-result-name').textContent.trim(),
+      calls: within(card).getByTestId('mcp-result-calls').textContent.trim(),
+      marked: [...card.querySelectorAll('mark')].map((m) => m.textContent),
+    }))
   }
 
   /**

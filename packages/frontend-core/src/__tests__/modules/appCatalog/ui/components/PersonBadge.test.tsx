@@ -17,6 +17,7 @@ const groups: Group[] = [
 function renderBadge(slug: string) {
   const ctx = {
     resources: [],
+    mcpServers: [],
     isLoadingApps: false,
     tagsDefinitions: [],
     approvalMethods: [],
@@ -56,6 +57,7 @@ describe('PersonOrGroupBadge — group with no real display name', () => {
   it('falls back to joined member names instead of the opaque slug', () => {
     const ctx = {
       resources: [],
+      mcpServers: [],
       isLoadingApps: false,
       tagsDefinitions: [],
       approvalMethods: [],
@@ -82,6 +84,7 @@ describe('PersonOrGroupBadge — group with no real display name', () => {
   it('falls back to the slug when there are no members to show either', () => {
     const ctx = {
       resources: [],
+      mcpServers: [],
       isLoadingApps: false,
       tagsDefinitions: [],
       approvalMethods: [],
