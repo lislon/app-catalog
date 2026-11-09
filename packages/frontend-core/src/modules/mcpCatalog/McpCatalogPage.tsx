@@ -9,6 +9,9 @@ import {
   getPersonBySlug,
 } from '../appCatalog/utils/resolveHelpers'
 import { useAppCatalogContext } from '../appCatalog/context/AppCatalogContext'
+import { cn } from '~/lib/utils'
+import { McpCart } from './cart/McpCart'
+import { useMcpCart } from './cart/useMcpCart'
 import { useMcpPrefs } from './install/useMcpPrefs'
 import { McpSearchResult } from './McpSearchResult'
 import { McpServerRow } from './McpServerRow'
@@ -74,6 +77,7 @@ export function McpCatalogPage({ q, onQueryChange }: McpCatalogPageProps) {
   } = useAppCatalogContext()
   const config = useMcpCatalogConfig()
   const { installed } = useMcpPrefs()
+  const cartShown = useMcpCart().servers.length > 0
   const inputRef = useRef<HTMLInputElement>(null)
   const setQuery = onQueryChange
 
@@ -118,7 +122,13 @@ export function McpCatalogPage({ q, onQueryChange }: McpCatalogPageProps) {
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]">
-      <div className="mx-auto w-full max-w-[1100px] px-1 pt-5 pb-12">
+      <div
+        className={cn(
+          'mx-auto w-full max-w-[1100px] px-1 pt-5 pb-12',
+          // Room for the fixed cart bar, so it never covers the last row.
+          cartShown && 'pb-36',
+        )}
+      >
         <section className="mx-auto max-w-[860px] text-center">
           <h1 className="m-0 font-serif text-[40px] leading-[1.08] font-semibold tracking-[-.02em]">
             What should <em className="text-primary not-italic">your AI</em> be
@@ -290,6 +300,7 @@ export function McpCatalogPage({ q, onQueryChange }: McpCatalogPageProps) {
           </>
         )}
       </div>
+      <McpCart />
     </div>
   )
 }

@@ -2,6 +2,7 @@ import type { CatalogMcpServer } from '@igstack/app-catalog-backend-core'
 import { Link } from '@tanstack/react-router'
 import { cn } from '~/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from '~/ui/tooltip'
+import { CartButton } from './cart/McpCart'
 import { SIGN_IN, STATUS_CHIP } from './signIn'
 import { Triad } from './Triad'
 
@@ -71,6 +72,7 @@ export function McpServerRow({
           {status.label}
         </span>
       )}
+      <CartButton server={server} small />
     </li>
   )
 }

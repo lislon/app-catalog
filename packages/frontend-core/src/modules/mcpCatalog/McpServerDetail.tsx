@@ -1,11 +1,12 @@
 import type { CatalogMcpServer } from '@igstack/app-catalog-backend-core'
-import { Check, Eye, Plus, ShoppingCart } from 'lucide-react'
+import { Check, Eye, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { cn } from '~/lib/utils'
 import { Button } from '~/ui/button'
 import { Skeleton } from '~/ui/skeleton'
 import { useAppCatalogContext } from '../appCatalog/context/AppCatalogContext'
 import { DetailDialogShell } from '../appCatalog/ui/catalog/DetailDialogShell'
+import { CartButton } from './cart/McpCart'
 import { InstallButton } from './install/InstallButton'
 import { useMcpPrefs } from './install/useMcpPrefs'
 import { WhatHappensDialog } from './install/WhatHappensDialog'
@@ -96,11 +97,7 @@ function McpServerBody({ server }: { server: CatalogMcpServer }) {
         <span className="text-[12.5px] font-semibold text-muted-foreground">
           or
         </span>
-        {/* Placeholder: the cart fills this slot. */}
-        <Button size="sm" variant="outline" disabled data-slot="mcp-cart">
-          <ShoppingCart aria-hidden="true" />
-          Add to cart
-        </Button>
+        <CartButton server={server} />
         <Button size="sm" variant="ghost" onClick={() => setWhatOpen(true)}>
           <Eye aria-hidden="true" />
           What happens?

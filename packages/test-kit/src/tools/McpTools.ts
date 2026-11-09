@@ -209,11 +209,63 @@ export class McpTools {
     return this.mcpRow(name).hasAttribute('data-installed')
   }
 
+  /** The cart bar at the bottom of the page; null while the cart is empty. */
+  cart(): HTMLElement | null {
+    return screen.queryByRole('region', { name: 'Your cart' })
+  }
+
   /**
-   * Get the install cart/basket element (shows selected servers).
+   * The cart's title ("Cart · 2"), its chips by display name in cart order,
+   * and its sensitive-data warning (empty when it has none).
    */
-  cart(): HTMLElement {
-    return screen.getByLabelText(/cart|basket|selected/i)
+  cartContents(): { title: string; items: string[]; warning: string } {
+    const bar = this.cart()
+    if (!bar) throw new Error('The cart bar is not on screen')
+    return {
+      title: within(bar).getByTestId('mcp-cart-title').textContent.trim(),
+      items: within(bar)
+        .queryAllByTestId('mcp-cart-item')
+        .map((chip) => chip.textContent.trim()),
+      warning:
+        within(bar).queryByTestId('mcp-cart-warning')?.textContent.trim() ?? '',
+    }
+  }
+
+  /**
+   * Toggles `name` in the cart from the home-list row's small cart icon.
+   */
+  async toggleCartFromRow(name: string): Promise<void> {
+    await this.user.click(
+      within(this.mcpRow(name)).getByRole('button', {
+        name: new RegExp(`^(Add ${name} to|Remove ${name} from) cart$`),
+      }),
+    )
+  }
+
+  /**
+   * The "Add to cart" / "In cart" button in `scope` (default: the dialog on
+   * top; pass a search card for its button).
+   */
+  cartButton(scope: HTMLElement = this.scope()): HTMLElement {
+    return within(scope).getByRole('button', {
+      name: /^(Add to cart|In cart)$/,
+    })
+  }
+
+  /** Removes `name` with its chip's x on the cart bar. */
+  async removeFromCart(name: string): Promise<void> {
+    const bar = this.cart()
+    if (!bar) throw new Error('The cart bar is not on screen')
+    await this.user.click(
+      within(bar).getByRole('button', { name: `Remove ${name}` }),
+    )
+  }
+
+  /** Clicks the cart bar's Share. */
+  async shareCart(): Promise<void> {
+    const bar = this.cart()
+    if (!bar) throw new Error('The cart bar is not on screen')
+    await this.user.click(within(bar).getByRole('button', { name: /^Share/ }))
   }
 
   /**

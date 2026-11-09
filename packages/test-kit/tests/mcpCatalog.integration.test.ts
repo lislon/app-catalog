@@ -723,3 +723,151 @@ describe('MCP install', () => {
     )
   })
 })
+
+describe('MCP cart', () => {
+  it('add two servers, the cart shows both and a sensitive-data warning when one has it', async () => {
+    const { ui, router } = await given(magazine.mcp(), { initialRoute: '/mcp' })
+    await waitFor(() => expect(ui.mcp.getMcpRows()).toHaveLength(8))
+    expect(ui.mcp.cart()).toBeNull()
+
+    // One from its home-list row: no sensitive data, so no warning yet.
+    await ui.mcp.toggleCartFromRow('Wiki Browser')
+    await waitFor(() =>
+      expect(ui.mcp.cartContents()).toEqual({
+        title: 'Cart · 1',
+        items: ['Wiki Browser'],
+        warning: '',
+      }),
+    )
+
+    // One from its dialog, which keeps the cart while it opens and closes.
+    await ui.mcp.openMcpServer('Code Search')
+    expect(router.state.location.search).toEqual({ cart: 'wiki' })
+    const user = userEvent.setup()
+    await user.click(ui.mcp.cartButton())
+    await waitFor(() =>
+      expect(ui.mcp.cartButton()).toHaveAccessibleName('In cart'),
+    )
+    await ui.mcp.closeDetailPanel()
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(router.state.location.search).toEqual({
+      cart: 'wiki,code-search',
+    })
+
+    // The deployment's wording, not a hard-coded one.
+    expect(ui.mcp.cartContents()).toEqual({
+      title: 'Cart · 2',
+      items: ['Wiki Browser', 'Code Search'],
+      warning: 'Contains company data',
+    })
+
+    await ui.mcp.removeFromCart('Code Search')
+    await waitFor(() =>
+      expect(ui.mcp.cartContents().items).toEqual(['Wiki Browser']),
+    )
+    await ui.mcp.removeFromCart('Wiki Browser')
+    await waitFor(() => expect(ui.mcp.cart()).toBeNull())
+    expect(router.state.location.search).toEqual({})
+  })
+
+  it('Share copies a URL with ?cart=a,b', async () => {
+    const { ui } = await given(magazine.mcp(), {
+      initialRoute: '/mcp?q=wiki&cart=wiki,ticket-search',
+    })
+    await waitFor(() => expect(ui.mcp.cartContents().items).toHaveLength(2))
+
+    await ui.mcp.shareCart()
+
+    // The cart only: a shared link opens on the list, not on this search.
+    expect(await navigator.clipboard.readText()).toBe(
+      `${window.location.origin}/mcp?cart=wiki,ticket-search`,
+    )
+    await waitFor(() =>
+      expect(
+        within(ui.mcp.cart()!).getByRole('button', { name: /copied/i }),
+      ).toBeInTheDocument(),
+    )
+  })
+
+  it('opening ?cart=a,,a,nope loads only a, once', async () => {
+    const { ui, router } = await given(magazine.mcp(), {
+      initialRoute: '/mcp?cart=wiki,,wiki,nope',
+    })
+
+    await waitFor(() =>
+      expect(ui.mcp.cartContents()).toEqual({
+        title: 'Cart · 1',
+        items: ['Wiki Browser'],
+        warning: '',
+      }),
+    )
+    // The URL is cleaned to what was loaded, in place.
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({ cart: 'wiki' }),
+    )
+    expect(router.history.length).toBe(1)
+  })
+
+  it('a cart of only unknown slugs shows no cart and drops the param', async () => {
+    const { ui, router } = await given(magazine.mcp(), {
+      initialRoute: '/mcp?cart=nope,,',
+    })
+    await waitFor(() => expect(ui.mcp.getMcpRows()).toHaveLength(8))
+    await waitFor(() => expect(router.state.location.search).toEqual({}))
+    expect(ui.mcp.cart()).toBeNull()
+  })
+
+  it('Install on the cart with Cursor copies one JSON config for all of them', async () => {
+    const { ui } = await given(magazine.mcp(), {
+      initialRoute: '/mcp?cart=wiki,ticket-search',
+    })
+    await waitFor(() => expect(ui.mcp.cartContents().items).toHaveLength(2))
+    const bar = ui.mcp.cart()!
+
+    await ui.mcp.openInstallMenu(bar)
+    await ui.mcp.pickInstallOption('Cursor')
+
+    const config = JSON.parse(await navigator.clipboard.readText()) as {
+      mcpServers: Record<string, unknown>
+    }
+    expect(Object.keys(config.mcpServers)).toEqual(['wiki', 'ticket-search'])
+    // Copied, not opened: a Cursor link holds one server.
+    expect(ui.window.lastExternalUrl()).toBeUndefined()
+    await waitFor(() => expect(ui.mcp.installButton(bar).label).toBe('Copied'))
+
+    await ui.mcp.openWhatHappens(bar)
+    expect(
+      screen.getByRole('dialog', {
+        name: 'What happens when you install 2 servers',
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('Add to cart and In cart buttons have equal width', async () => {
+    const { ui } = await given(magazine.mcp(), { initialRoute: '/mcp?q=wiki' })
+    await waitFor(() => expect(ui.mcp.searchResults()).toHaveLength(1))
+    const card = screen.getByTestId('mcp-result')
+    const button = ui.mcp.cartButton(card)
+    const before = {
+      width: button.getBoundingClientRect().width,
+      classes: widthClasses(button),
+    }
+
+    await userEvent.setup().click(button)
+    await waitFor(() =>
+      expect(ui.mcp.cartButton(card)).toHaveAccessibleName('In cart'),
+    )
+    const after = ui.mcp.cartButton(card)
+
+    // jsdom lays nothing out (both widths are 0), so the width-defining
+    // classes carry the claim here; the real boxes are measured in Chrome.
+    expect(after.getBoundingClientRect().width).toBe(before.width)
+    expect(widthClasses(after)).toEqual(before.classes)
+    expect(before.classes).toContain('w-[120px]')
+  })
+})
+
+/** The classes that set a box's width. */
+function widthClasses(el: HTMLElement): string[] {
+  return [...el.classList].filter((c) => /^(min-|max-)?w-/.test(c)).sort()
+}

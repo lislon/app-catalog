@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { Check, Eye, KeyRound, Pencil, TriangleAlert } from 'lucide-react'
 import { useMemo } from 'react'
 import { cn } from '~/lib/utils'
+import { CartButton } from './cart/McpCart'
 import { InstallButton } from './install/InstallButton'
 import { PersonOrGroupBadge } from '../appCatalog/ui/components/PersonBadge'
 import type { McpSearchHit } from './searchMcpServers'
@@ -164,8 +165,9 @@ export function McpSearchResult({
         </div>
       </div>
       {/* Above the card's stretched link. */}
-      <div className="relative z-10">
+      <div className="relative z-10 flex flex-wrap items-center justify-end gap-2">
         <InstallButton servers={servers} />
+        <CartButton server={server} />
       </div>
     </article>
   )
