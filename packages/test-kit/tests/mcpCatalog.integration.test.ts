@@ -173,7 +173,19 @@ describe('MCP servers tab', () => {
       { initialRoute: '/mcp' },
     )
 
+    // Poll for 404 heading while waiting for rows — it should NEVER appear.
+    const checkFor404 = setInterval(() => {
+      const notFound = screen.queryByRole('heading', { name: /404 Not Found/i })
+      if (notFound) {
+        clearInterval(checkFor404)
+        throw new Error('404 Not Found appeared during initial load')
+      }
+    }, 100)
+
+    onTestFinished(() => clearInterval(checkFor404))
+
     await waitFor(() => expect(ui.mcp.getMcpRows()).toHaveLength(8))
+    clearInterval(checkFor404)
   })
 
   it('finds a server by its category title and its owner', async () => {

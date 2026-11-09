@@ -18,5 +18,5 @@ export function useHasMcpServers(
   // The type says required, but a returning visitor's IndexedDB copy from an
   // older build has no `mcpServers` until the network answers.
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  return data && (data.mcpServers?.length ?? 0) > 0
+  return data && (data.mcpServers ? data.mcpServers.length > 0 : undefined)
 }
