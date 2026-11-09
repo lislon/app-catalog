@@ -1,9 +1,25 @@
 import type { McpServer } from '@igstack/app-catalog-shared-core'
+import { SIGN_IN } from './signIn'
 
 type Searchable = Pick<
   McpServer,
-  'displayName' | 'description' | 'category' | 'aliases' | 'status' | 'tools'
+  | 'displayName'
+  | 'description'
+  | 'category'
+  | 'aliases'
+  | 'status'
+  | 'tools'
+  | 'auth'
+  | 'ownerSlug'
 >
+
+/** Names the page knows and a bare server does not: what a person would type. */
+export interface McpSearchLookups {
+  /** The configured title of a category key. */
+  categoryTitle?: (key: string) => string | undefined
+  /** The display name of the owning person or group. */
+  ownerName?: (slug: string) => string | undefined
+}
 
 export interface McpSearchHit<TServer extends Searchable> {
   server: TServer
@@ -18,13 +34,15 @@ export function searchTerms(q: string): string[] {
 }
 
 /**
- * Every server that matches every term somewhere, best first. A name match
+ * Every server that matches every term somewhere (name, description, category
+ * key and title, owner, status, sign-in, aliases, tool names), best first. A name match
  * weighs most (+10), then an alias (+6), the description (+3) and each tool
  * whose name holds a term (+2); production adds 1, anything else takes 2 off.
  */
 export function searchMcpServers<TServer extends Searchable>(
   servers: readonly TServer[],
   q: string,
+  lookups: McpSearchLookups = {},
 ): McpSearchHit<TServer>[] {
   const terms = searchTerms(q)
   if (terms.length === 0) return []
@@ -36,7 +54,11 @@ export function searchMcpServers<TServer extends Searchable>(
         server.displayName,
         server.description,
         server.category,
+        lookups.categoryTitle?.(server.category) ?? '',
+        server.ownerSlug ? (lookups.ownerName?.(server.ownerSlug) ?? '') : '',
+        // The status and sign-in as their badges read.
         server.status,
+        SIGN_IN[server.auth.kind].badge,
         ...aliases,
         ...toolNames,
       ]

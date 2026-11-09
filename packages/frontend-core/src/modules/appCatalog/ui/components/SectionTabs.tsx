@@ -15,7 +15,7 @@ import { useAppCatalogContext } from '../../context/AppCatalogContext'
 export function SectionTabs() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const trpc = useTRPC()
-  const { mcpServers } = useAppCatalogContext()
+  const { mcpServers = [] } = useAppCatalogContext()
   const { data: communityConfig } = useQuery(
     trpc.communityTools.config.queryOptions(),
   )

@@ -302,7 +302,6 @@ describe('AccessRequestSection — entries with no access information', () => {
   it('keeps pointing at the owner when an approver is listed', () => {
     const ctx = {
       resources: [],
-      mcpServers: [],
       isLoadingApps: false,
       tagsDefinitions: [],
       approvalMethods: [],
@@ -406,7 +405,6 @@ describe('AccessRequestSection — chat channel mentions', () => {
   it('links a #channel mention inside comments and post-approval steps', () => {
     const ctx = {
       resources: [],
-      mcpServers: [],
       isLoadingApps: false,
       tagsDefinitions: [],
       approvalMethods: [],

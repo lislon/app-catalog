@@ -1,7 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
 import { AppCatalogLayout } from '~/modules/appCatalog/ui/layout/AppCatalogLayout'
 import { McpCatalogPage } from '~/modules/mcpCatalog/McpCatalogPage'
+import { useHasMcpServers } from '~/modules/mcpCatalog/useHasMcpServers'
+import { NotFoundError } from '~/ui/error/NotFoundError'
+import { TopLevelProvidersForErrors } from '~/ui/layout/TopLevelProvidersForErrors'
 
 // Both absent by default, so a plain /mcp link stays plain.
 const searchSchema = z.object({
@@ -19,14 +22,26 @@ export const Route = createFileRoute('/_layout/mcp')({
 function RouteComponent() {
   const { queryClient, trpcClient } = Route.useRouteContext()
   const { q } = Route.useSearch()
-  const navigate = Route.useNavigate()
+  // Unscoped, so `to: '.'` is the current match: a child route under /mcp
+  // keeps its params while the query changes.
+  const navigate = useNavigate()
+  const hasServers = useHasMcpServers(queryClient)
+
+  if (hasServers === false) {
+    return (
+      <TopLevelProvidersForErrors>
+        <NotFoundError />
+      </TopLevelProvidersForErrors>
+    )
+  }
 
   return (
     <AppCatalogLayout queryClient={queryClient} trpcClient={trpcClient}>
       <McpCatalogPage
-        initialQuery={q ?? ''}
+        q={q ?? ''}
         onQueryChange={(next) =>
           void navigate({
+            to: '.',
             search: (prev) => ({ ...prev, q: next || undefined }),
             replace: true,
           })

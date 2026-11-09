@@ -118,4 +118,80 @@ describe('MCP servers tab', () => {
       'true',
     )
   })
+
+  it('clicking the tab on /mcp?q=logs empties the box and shows the home list', async () => {
+    const { ui, router } = await given(magazine.mcp(), {
+      initialRoute: '/mcp?q=logs',
+    })
+    await waitFor(() =>
+      expect(ui.mcp.searchResults().map((r) => r.name)).toEqual(['Log Viewer']),
+    )
+
+    const user = userEvent.setup()
+    await user.click(mcpTab()!)
+
+    await waitFor(() => expect(ui.mcp.getMcpRows()).toHaveLength(8))
+    expect(ui.mcp.getSearchInput()).toHaveValue('')
+    expect(ui.mcp.searchResults()).toEqual([])
+    expect(router.state.location.search).toEqual({})
+  })
+
+  it('typing keeps the page and every character', async () => {
+    const { ui, router } = await given(magazine.mcp(), { initialRoute: '/mcp' })
+    await waitFor(() => expect(ui.mcp.getMcpRows()).toHaveLength(8))
+
+    const user = userEvent.setup()
+    await user.type(ui.mcp.getSearchInput(), 'list_tables')
+
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({ q: 'list_tables' }),
+    )
+    expect(router.state.location.pathname).toBe('/mcp')
+    expect(ui.mcp.getSearchInput()).toHaveValue('list_tables')
+  })
+
+  it('a catalog without MCP servers answers /mcp with not found', async () => {
+    await given(magazine.full(), { initialRoute: '/mcp' })
+
+    expect(
+      await screen.findByRole('heading', { name: '404 Not Found' }),
+    ).toBeInTheDocument()
+  })
+
+  it('finds a server by its category title and its owner', async () => {
+    const { ui } = await given(magazine.mcp(), { initialRoute: '/mcp' })
+    await waitFor(() => expect(ui.mcp.getMcpRows()).toHaveLength(8))
+
+    // "Developer Tools" is the configured title of the dev-tools key.
+    await ui.mcp.searchMcp('developer')
+    await waitFor(() =>
+      expect(
+        ui.mcp
+          .searchResults()
+          .map((r) => r.name)
+          .sort(),
+      ).toEqual(['Code Search', 'Local Filesystem', 'Mail Catcher']),
+    )
+
+    // Log Viewer is owned by the AI Platform Team group.
+    await ui.mcp.searchMcp('platform team')
+    await waitFor(() =>
+      expect(ui.mcp.searchResults().map((r) => r.name)).toEqual(['Log Viewer']),
+    )
+  })
+
+  it('the legend samples are hidden from assistive tech and not focusable', async () => {
+    const { ui } = await given(magazine.mcp(), { initialRoute: '/mcp' })
+    await waitFor(() => expect(ui.mcp.getMcpRows()).toHaveLength(8))
+
+    // One labelled Triad per row and nothing else: the legend's three are decoration.
+    expect(
+      screen
+        .getAllByRole('img')
+        .filter((img) => img.closest('svg[viewBox="0 0 44 44"]')),
+    ).toHaveLength(8)
+    const legend = screen.getByText('left dot: needs access')
+    expect(legend.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
+    expect(legend.querySelector('[tabindex]')).toBeNull()
+  })
 })

@@ -16,7 +16,8 @@ import { mergeFrontendBuildId } from '~/modules/appCatalog/context/mergeFrontend
 
 export interface AppCatalogContextIface {
   resources: Resource[]
-  mcpServers: CatalogMcpServer[]
+  /** Optional for code that builds a context by hand; the provider always sets it. */
+  mcpServers?: CatalogMcpServer[]
   isLoadingApps: boolean
   tagsDefinitions: GroupingTagDefinition[]
   approvalMethods: AppApprovalMethod[]

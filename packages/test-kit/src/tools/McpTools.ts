@@ -8,7 +8,7 @@ export interface McpServerRow {
 
 export interface McpSearchCard {
   name: string
-  /** The tool the card says your AI calls. */
+  /** The tool the card says your AI calls; empty for a server with no tools. */
   calls: string
   /** Every highlighted fragment on the card, in order. */
   marked: string[]
@@ -117,7 +117,9 @@ export class McpTools {
   searchResults(): McpSearchCard[] {
     return screen.queryAllByTestId('mcp-result').map((card) => ({
       name: within(card).getByTestId('mcp-result-name').textContent.trim(),
-      calls: within(card).getByTestId('mcp-result-calls').textContent.trim(),
+      calls:
+        within(card).queryByTestId('mcp-result-calls')?.textContent.trim() ??
+        '',
       marked: [...card.querySelectorAll('mark')].map((m) => m.textContent),
     }))
   }

@@ -1,9 +1,13 @@
 import type { CatalogMcpServer } from '@igstack/app-catalog-backend-core'
-import { Search, X } from 'lucide-react'
+import { Search, Sparkles, X } from 'lucide-react'
 import { DynamicIcon, iconNames } from 'lucide-react/dynamic'
 import type { IconName } from 'lucide-react/dynamic'
 import type { ComponentProps } from 'react'
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef } from 'react'
+import {
+  getGroupBySlug,
+  getPersonBySlug,
+} from '../appCatalog/utils/resolveHelpers'
 import { useAppCatalogContext } from '../appCatalog/context/AppCatalogContext'
 import { McpSearchResult } from './McpSearchResult'
 import { McpServerRow } from './McpServerRow'
@@ -16,6 +20,11 @@ const CHIP =
 
 const SECTION_HEADING =
   'mx-auto mt-11 mb-3.5 flex max-w-[1100px] flex-wrap items-baseline gap-x-2.5 gap-y-1'
+
+/** For an intent whose icon is not a lucide name. */
+function FallbackIcon() {
+  return <Sparkles aria-hidden="true" className="size-[18px]" />
+}
 
 function isIconName(name: string): name is IconName {
   return (iconNames as string[]).includes(name)
@@ -43,33 +52,42 @@ function groupByCategory(
 }
 
 export interface McpCatalogPageProps {
-  /** The `?q=` the page opened with. */
-  initialQuery: string
-  /** Every edit of the search, so the URL can carry it. */
+  /** `?q=`: the URL is the search's only home, so a shared link restores it. */
+  q: string
+  /** Every edit of the search, for the URL to carry. */
   onQueryChange: (q: string) => void
 }
+
+const NO_SERVERS: CatalogMcpServer[] = []
 
 /**
  * The MCP servers tab. At rest it asks what your AI should be able to do and
  * lists every server by category; a search turns the list into ranked answers.
  */
-export function McpCatalogPage({
-  initialQuery,
-  onQueryChange,
-}: McpCatalogPageProps) {
-  const { mcpServers } = useAppCatalogContext()
+export function McpCatalogPage({ q, onQueryChange }: McpCatalogPageProps) {
+  const {
+    mcpServers = NO_SERVERS,
+    isLoadingApps,
+    persons,
+    groups: ownerGroups,
+  } = useAppCatalogContext()
   const config = useMcpCatalogConfig()
-  // Local, so typing never waits on navigation; the URL follows it.
-  const [q, setQ] = useState(initialQuery)
   const inputRef = useRef<HTMLInputElement>(null)
-  const setQuery = (next: string) => {
-    setQ(next)
-    onQueryChange(next)
-  }
+  const setQuery = onQueryChange
 
   const results = useMemo(
-    () => searchMcpServers(mcpServers, q),
-    [mcpServers, q],
+    () =>
+      searchMcpServers(mcpServers, q, {
+        categoryTitle: (key) =>
+          config?.categories?.find((c) => c.key === key)?.title,
+        ownerName: (slug) => {
+          const person = getPersonBySlug(persons, slug)
+          return person
+            ? `${person.firstName} ${person.lastName}`
+            : getGroupBySlug(ownerGroups, slug)?.displayName
+        },
+      }),
+    [mcpServers, q, config?.categories, persons, ownerGroups],
   )
   const groups = useMemo(
     () => groupByCategory(mcpServers, config?.categories ?? []),
@@ -189,12 +207,15 @@ export function McpCatalogPage({
                     onClick={() => setQuery(intent.query)}
                   >
                     <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-primary/10 text-primary">
-                      {isIconName(intent.icon) && (
+                      {isIconName(intent.icon) ? (
                         <DynamicIcon
                           name={intent.icon}
                           aria-hidden="true"
                           className="size-[18px]"
+                          fallback={() => <FallbackIcon />}
                         />
+                      ) : (
+                        <FallbackIcon />
                       )}
                     </span>
                     <span>
@@ -212,9 +233,12 @@ export function McpCatalogPage({
               <h2 className="m-0 font-serif text-2xl font-semibold tracking-[-.01em]">
                 Every server
               </h2>
-              <span className="text-[13px] text-muted-foreground">
-                {mcpServers.length} server{mcpServers.length === 1 ? '' : 's'}
-              </span>
+              {!isLoadingApps && (
+                <span className="text-[13px] text-muted-foreground">
+                  {mcpServers.length} server
+                  {mcpServers.length === 1 ? '' : 's'}
+                </span>
+              )}
               <span className="ml-auto flex flex-wrap items-center gap-3.5 text-[12.5px] text-muted-foreground">
                 <LegendItem
                   server={{ access: 'write' }}
@@ -272,7 +296,7 @@ function LegendItem({
 }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <Triad server={server} size={20} />
+      <Triad server={server} size={20} decorative />
       {text}
     </span>
   )

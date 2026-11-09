@@ -8,14 +8,24 @@ import { useMcpCatalogConfig } from './useMcpCatalogConfig'
  * The Triad: a server's icon is its safety answer. The top circle says what
  * your AI can do (eye reads, dark pencil writes), the bottom-left dot whether
  * it needs access to other apps (filled lock), the bottom-right whether it
- * touches sensitive data (red cross). A dotted empty circle means no. The
- * palette is fixed, not themed: like a status colour, it must read the same
- * everywhere.
+ * touches sensitive data (red cross). A dotted empty circle means no. The red
+ * and the muted dots are fixed, like a status colour; the ink follows the
+ * theme, so a dark shape never disappears into a dark page.
  */
-const INK = '#2c2622'
-const RED = '#d4343b'
-const SOFT = '#efe7da'
 const MUTE = '#b9ab98'
+/** Ink shapes: near-black on light, the page's foreground on dark. */
+const INK_FILL = 'fill-[#2c2622] dark:fill-foreground'
+const INK_STROKE = 'stroke-[#2c2622] dark:stroke-foreground'
+/** A glyph drawn on an ink shape: white on light, the page's background on dark. */
+const ON_INK =
+  'stroke-white text-white dark:stroke-background dark:text-background'
+/**
+ * The read-only circle: soft fill on light. On dark it goes hollow, so filled
+ * still means "can write" rather than both circles turning pale.
+ */
+const SOFT_FILL = 'fill-[#efe7da] dark:fill-transparent'
+const ON_SOFT =
+  'stroke-[#2c2622] text-[#2c2622] dark:stroke-foreground dark:text-foreground'
 
 type TriadServer = Pick<
   McpServer,
@@ -52,22 +62,22 @@ function Glyph({
   cx,
   cy,
   size,
-  color,
+  className,
   strokeWidth,
 }: {
   name: keyof typeof GLYPH
   cx: number
   cy: number
   size: number
-  color: string
+  /** Sets the glyph's stroke and `currentColor`. */
+  className: string
   strokeWidth: number
 }) {
   return (
     <g
       transform={`translate(${cx - size / 2} ${cy - size / 2}) scale(${size / 24})`}
       fill="none"
-      stroke={color}
-      color={color}
+      className={className}
       strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -81,22 +91,24 @@ function Pip({
   cx,
   on,
   glyph,
-  fill,
+  fillClass,
+  glyphClass,
 }: {
   cx: number
   on: boolean
   glyph: keyof typeof GLYPH
-  fill: string
+  fillClass: string
+  glyphClass: string
 }) {
   return on ? (
     <>
-      <circle cx={cx} cy={34} r={8.8} fill={fill} />
+      <circle cx={cx} cy={34} r={8.8} className={fillClass} />
       <Glyph
         name={glyph}
         cx={cx}
         cy={34}
         size={10.5}
-        color="#fff"
+        className={glyphClass}
         strokeWidth={2.8}
       />
     </>
@@ -133,9 +145,59 @@ export function useTriadLabel(server: TriadServer): string {
   ].join(' · ')
 }
 
-export function Triad({ server, size }: { server: TriadServer; size: number }) {
+export function Triad({
+  server,
+  size,
+  decorative = false,
+}: {
+  server: TriadServer
+  size: number
+  /** A legend sample: hidden from assistive tech, no tooltip, not focusable. */
+  decorative?: boolean
+}) {
   const label = useTriadLabel(server)
   const write = server.access === 'write'
+  const svg = (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 44 44"
+      {...(decorative
+        ? { 'aria-hidden': true }
+        : { role: 'img', 'aria-label': label })}
+    >
+      <circle
+        cx={22}
+        cy={13.5}
+        r={12}
+        className={`${write ? INK_FILL : SOFT_FILL} ${INK_STROKE}`}
+        strokeWidth={1.8}
+      />
+      <Glyph
+        name={write ? 'pencil' : 'eye'}
+        cx={22}
+        cy={13.5}
+        size={14}
+        className={write ? ON_INK : ON_SOFT}
+        strokeWidth={2.6}
+      />
+      <Pip
+        cx={11}
+        on={(server.requiredAppSlugs ?? []).length > 0}
+        glyph="lock"
+        fillClass={INK_FILL}
+        glyphClass={ON_INK}
+      />
+      <Pip
+        cx={33}
+        on={!!server.sensitiveData}
+        glyph="cross"
+        fillClass="fill-[#d4343b]"
+        glyphClass="stroke-white text-white"
+      />
+    </svg>
+  )
+  if (decorative) return <span className="inline-flex shrink-0">{svg}</span>
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -143,37 +205,7 @@ export function Triad({ server, size }: { server: TriadServer; size: number }) {
           tabIndex={0}
           className="inline-flex shrink-0 rounded-md focus-visible:outline-2 focus-visible:outline-ring"
         >
-          <svg
-            width={size}
-            height={size}
-            viewBox="0 0 44 44"
-            role="img"
-            aria-label={label}
-          >
-            <circle
-              cx={22}
-              cy={13.5}
-              r={12}
-              fill={write ? INK : SOFT}
-              stroke={INK}
-              strokeWidth={1.8}
-            />
-            <Glyph
-              name={write ? 'pencil' : 'eye'}
-              cx={22}
-              cy={13.5}
-              size={14}
-              color={write ? '#fff' : INK}
-              strokeWidth={2.6}
-            />
-            <Pip
-              cx={11}
-              on={(server.requiredAppSlugs ?? []).length > 0}
-              glyph="lock"
-              fill={INK}
-            />
-            <Pip cx={33} on={!!server.sensitiveData} glyph="cross" fill={RED} />
-          </svg>
+          {svg}
         </span>
       </TooltipTrigger>
       <TooltipContent className="max-w-60">{label}</TooltipContent>

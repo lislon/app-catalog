@@ -38,7 +38,13 @@ export type InstallableMcpServer = Omit<McpServer, 'sources'> & {
 
 export type McpCatalogConfig = {
   categories?: { key: string; title: string; blurb?: string }[]
-  intents?: { query: string; title: string; caption: string; icon: string }[]
+  intents?: {
+    query: string
+    title: string
+    caption: string
+    /** A lucide icon name (https://lucide.dev/icons), e.g. 'search'; an unknown name shows a neutral icon. */
+    icon: string
+  }[]
   tryQueries?: string[]
   sensitiveDataLabel?: string
   installIconUrl?: string

@@ -21,7 +21,6 @@ const TEMPLATE = 'https://chat.example.com/channels/{name}'
 
 const ctx = {
   resources: [],
-  mcpServers: [],
   isLoadingApps: false,
   tagsDefinitions: [],
   approvalMethods: [],
