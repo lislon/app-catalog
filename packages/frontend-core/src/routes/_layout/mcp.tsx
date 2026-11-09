@@ -12,12 +12,20 @@ import { useHasMcpServers } from '~/modules/mcpCatalog/useHasMcpServers'
 import { NotFoundError } from '~/ui/error/NotFoundError'
 import { TopLevelProvidersForErrors } from '~/ui/layout/TopLevelProvidersForErrors'
 
+// The router JSON-parses search values, so `?cart=123` or `?q=42` arrive as
+// numbers; both are text here.
+const text = z
+  .union([z.string(), z.number()])
+  .transform(String)
+  .optional()
+  .catch(undefined)
+
 // Both absent by default, so a plain /mcp link stays plain.
 const searchSchema = z.object({
   /** The search, so a search can be shared. */
-  q: z.string().optional().catch(undefined),
+  q: text,
   /** Comma-separated slugs of a shared cart. */
-  cart: z.string().optional().catch(undefined),
+  cart: text,
 })
 
 export const Route = createFileRoute('/_layout/mcp')({

@@ -817,6 +817,37 @@ describe('MCP cart', () => {
     expect(ui.mcp.cart()).toBeNull()
   })
 
+  it('a numeric slug in ?cart= and a numeric ?q= are kept, not dropped', async () => {
+    // The router JSON-parses a search value, so `123` arrives as a number.
+    const withNumericSlug = () =>
+      magazine.mcp(({ backendCfg }) => {
+        backendCfg.withMcpServer({
+          slug: '123',
+          displayName: 'Numbered Server',
+          description: 'A server whose slug is all digits',
+          category: 'data',
+          status: 'production',
+          access: 'read',
+          auth: { kind: 'none' },
+          transport: { type: 'http', url: 'https://n.example.com/mcp' },
+          tools: [],
+          sources: [],
+        })
+      })
+
+    const { ui, router } = await given(withNumericSlug(), {
+      initialRoute: '/mcp?cart=123',
+    })
+    await waitFor(() =>
+      expect(ui.mcp.cartContents().items).toEqual(['Numbered Server']),
+    )
+    expect(router.state.location.search).toEqual({ cart: '123' })
+
+    const next = await given(withNumericSlug(), { initialRoute: '/mcp?q=123' })
+    await waitFor(() => expect(next.ui.mcp.getSearchInput()).toHaveValue('123'))
+    expect(next.router.state.location.search).toEqual({ q: '123' })
+  })
+
   it('Install on the cart with Cursor copies one JSON config for all of them', async () => {
     const { ui } = await given(magazine.mcp(), {
       initialRoute: '/mcp?cart=wiki,ticket-search',
