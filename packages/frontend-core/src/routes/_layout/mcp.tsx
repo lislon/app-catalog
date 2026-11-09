@@ -1,7 +1,13 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import {
+  Outlet,
+  createFileRoute,
+  useNavigate,
+  useParams,
+} from '@tanstack/react-router'
 import { z } from 'zod'
 import { AppCatalogLayout } from '~/modules/appCatalog/ui/layout/AppCatalogLayout'
 import { McpCatalogPage } from '~/modules/mcpCatalog/McpCatalogPage'
+import { McpServerDetail } from '~/modules/mcpCatalog/McpServerDetail'
 import { useHasMcpServers } from '~/modules/mcpCatalog/useHasMcpServers'
 import { NotFoundError } from '~/ui/error/NotFoundError'
 import { TopLevelProvidersForErrors } from '~/ui/layout/TopLevelProvidersForErrors'
@@ -25,6 +31,8 @@ function RouteComponent() {
   // Unscoped, so `to: '.'` is the current match: a child route under /mcp
   // keeps its params while the query changes.
   const navigate = useNavigate()
+  // Set while a server's dialog is open: the child route's slug.
+  const { slug } = useParams({ strict: false })
   const hasServers = useHasMcpServers(queryClient)
 
   if (hasServers === false) {
@@ -47,6 +55,15 @@ function RouteComponent() {
           })
         }
       />
+      {slug && (
+        <McpServerDetail
+          slug={slug}
+          // Back to the list with the search it was opened from.
+          onClose={() => void navigate({ to: '/mcp', search: (prev) => prev })}
+        />
+      )}
+      {/* The detail route renders nothing; the dialog above reads its slug. */}
+      <Outlet />
     </AppCatalogLayout>
   )
 }

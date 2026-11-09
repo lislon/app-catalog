@@ -195,3 +195,133 @@ describe('MCP servers tab', () => {
     expect(legend.querySelector('[tabindex]')).toBeNull()
   })
 })
+
+describe('MCP server detail', () => {
+  it('/mcp/<slug> opens the dialog over the list', async () => {
+    const { ui } = await given(magazine.mcp(), { initialRoute: '/mcp/wiki' })
+
+    const dialog = await screen.findByRole('dialog', { name: 'Wiki Browser' })
+    // The list stays mounted under it.
+    expect(ui.mcp.getMcpRows()).toHaveLength(8)
+    // Beta says so; the token steps start collapsed.
+    expect(within(dialog).getByText('Beta')).toBeInTheDocument()
+    expect(within(dialog).getByText('How to get the token')).toBeVisible()
+    expect(within(dialog).getByText('Click "Generate Token"')).not.toBeVisible()
+    expect(
+      within(dialog).getByRole('row', {
+        name: 'search_pages Search wiki pages',
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('the description is body text and the name sits above it', async () => {
+    await given(magazine.mcp(), { initialRoute: '/mcp/wiki' })
+
+    const dialog = await screen.findByRole('dialog', { name: 'Wiki Browser' })
+    const name = within(dialog).getByRole('heading', { name: 'Wiki Browser' })
+    const description = within(dialog).getByText(
+      'Search documentation and wiki pages',
+    )
+    expect(description.tagName).toBe('P')
+    expect(
+      name.compareDocumentPosition(description) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
+  it('access line links each required app to its card', async () => {
+    await given(magazine.mcp(), { initialRoute: '/mcp/ticket-search' })
+
+    const dialog = await screen.findByRole('dialog', { name: 'Ticket Search' })
+    const line = within(dialog).getByText(/To use this MCP you need access to:/)
+    expect(
+      within(line).getByRole('link', { name: 'TaskFlow' }),
+    ).toHaveAttribute('href', '/app/taskflow')
+  })
+
+  it("owner shows a group's display name", async () => {
+    await given(magazine.mcp(), { initialRoute: '/mcp/logs' })
+
+    const dialog = await screen.findByRole('dialog', { name: 'Log Viewer' })
+    expect(within(dialog).getByTestId('mcp-tile-owner')).toHaveTextContent(
+      'OwnerAI Platform Team',
+    )
+    expect(
+      within(dialog).getByRole('link', { name: /Support.*#logs-help/ }),
+    ).toHaveAttribute('href', 'https://chat.example.com/logs-help')
+    // Production is the default and goes unmarked.
+    expect(within(dialog).queryByText('Production')).toBeNull()
+    // The deployment's sensitive-data wording.
+    expect(
+      within(dialog).getByText('Contains company data'),
+    ).toBeInTheDocument()
+  })
+
+  it('sources render through SourcesList with pulse', async () => {
+    await given(magazine.mcp(), { initialRoute: '/mcp/logs' })
+
+    const dialog = await screen.findByRole('dialog', { name: 'Log Viewer' })
+    const tiles = within(dialog).getAllByTestId('mcp-tile-source')
+    expect(
+      tiles.map((t) => within(t).getByRole('link').getAttribute('href')),
+    ).toEqual([
+      'https://logs.example.com/docs',
+      'https://github.com/example/log-viewer-mcp',
+    ])
+    // Only the source the autoupdate loop has seen carries the pulse.
+    expect(
+      within(tiles[0]!).getByLabelText(/^Source freshness: checked daily/),
+    ).toBeInTheDocument()
+    expect(within(tiles[1]!).queryByLabelText(/^Source freshness/)).toBeNull()
+  })
+
+  it('Escape closes the dialog and focus returns to the row', async () => {
+    const { ui, router } = await given(magazine.mcp(), { initialRoute: '/mcp' })
+    await waitFor(() => expect(ui.mcp.getMcpRows()).toHaveLength(8))
+
+    await ui.mcp.openMcpServer('Wiki Browser')
+    expect(router.state.location.pathname).toBe('/mcp/wiki')
+    const opener = within(ui.mcp.mcpRow('Wiki Browser')).getByRole('link')
+
+    const user = userEvent.setup()
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(router.state.location.pathname).toBe('/mcp')
+    await waitFor(() => expect(document.activeElement).toBe(opener))
+
+    // A second Escape has nothing left to close and leaves the page alone.
+    await user.keyboard('{Escape}')
+    expect(router.state.location.pathname).toBe('/mcp')
+    expect(ui.mcp.getMcpRows()).toHaveLength(8)
+  })
+
+  it('the search survives opening and closing a server', async () => {
+    const { ui, router } = await given(magazine.mcp(), {
+      initialRoute: '/mcp?q=logs',
+    })
+    await waitFor(() =>
+      expect(ui.mcp.searchResults().map((r) => r.name)).toEqual(['Log Viewer']),
+    )
+
+    await ui.mcp.openMcpServer('Log Viewer')
+    expect(router.state.location.pathname).toBe('/mcp/logs')
+    expect(router.state.location.search).toEqual({ q: 'logs' })
+
+    await ui.mcp.closeDetailPanel()
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(router.state.location.pathname).toBe('/mcp')
+    expect(router.state.location.search).toEqual({ q: 'logs' })
+    expect(ui.mcp.getSearchInput()).toHaveValue('logs')
+  })
+
+  it('an unknown slug says so inside the dialog', async () => {
+    await given(magazine.mcp(), { initialRoute: '/mcp/no-such-server' })
+
+    const dialog = await screen.findByRole('dialog')
+    expect(
+      await within(dialog).findByText(
+        'No MCP server is listed at this address.',
+      ),
+    ).toBeInTheDocument()
+  })
+})

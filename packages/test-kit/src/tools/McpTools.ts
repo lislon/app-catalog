@@ -26,18 +26,26 @@ export class McpTools {
   }
 
   /**
-   * Click an MCP server row by display name to open details.
-   * Throws with list of visible servers if name not found.
+   * Open a server's detail dialog from its home-list row or its search card,
+   * by display name, and wait for the dialog.
+   * Throws with the list of visible servers if the name is not on screen.
    */
   async openMcpServer(name: string): Promise<void> {
-    const btn = screen.queryByTitle(`View ${name}`)
-    if (btn) {
-      await this.user.click(btn)
-      await screen.findByLabelText('Close details panel')
+    const link = screen
+      .queryAllByRole('link', { name })
+      .find((a) =>
+        a.closest('[data-testid="mcp-row"], [data-testid="mcp-result"]'),
+      )
+    if (link) {
+      await this.user.click(link)
+      await screen.findByRole('dialog', { name })
       return
     }
 
-    const visibleNames = this.getMcpRows().map((r) => r.name)
+    const visibleNames = [
+      ...screen.queryAllByTestId('mcp-row-name'),
+      ...screen.queryAllByTestId('mcp-result-name'),
+    ].map((n) => n.textContent.trim())
     throw new Error(
       `MCP server "${name}" not found. Visible servers: [${visibleNames.join(', ')}]`,
     )

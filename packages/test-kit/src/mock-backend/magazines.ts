@@ -685,7 +685,7 @@ function mcpMagazine(postConfigure?: Magazine): Magazine {
       sources: [{ url: 'https://github.com/example/mail-catcher-mcp' }],
     })
 
-    // 8. write + no access needed + sensitive (group owner)
+    // 8. write + no access needed + sensitive (group owner, support, two sources, one with a pulse)
     backendCfg.withMcpServer({
       slug: 'logs',
       displayName: 'Log Viewer',
@@ -707,7 +707,26 @@ function mcpMagazine(postConfigure?: Magazine): Magazine {
         { name: 'create_alert', description: 'Create a log alert' },
       ],
       ownerSlug: aiTeam.slug,
-      sources: [{ url: 'https://logs.example.com/docs' }],
+      support: {
+        label: '#logs-help',
+        url: 'https://chat.example.com/logs-help',
+      },
+      sources: [
+        {
+          url: 'https://logs.example.com/docs',
+          pulse: {
+            state: 'ok',
+            intervalHours: 24,
+            cadence: 'daily',
+            lastCheckedAt: '2026-01-02T00:00:00.000Z',
+            dueAt: '2026-01-03T00:00:00.000Z',
+            lastContentChangeAt: '2026-01-01T00:00:00.000Z',
+            contentChangeIsLowerBound: false,
+            checks: [{ date: '2026-01-02T00:00:00.000Z', changed: false }],
+          },
+        },
+        { url: 'https://github.com/example/log-viewer-mcp' },
+      ],
     })
 
     // MCP catalog config

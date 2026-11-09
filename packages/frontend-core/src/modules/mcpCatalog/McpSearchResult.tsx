@@ -1,4 +1,5 @@
 import type { CatalogMcpServer } from '@igstack/app-catalog-backend-core'
+import { Link } from '@tanstack/react-router'
 import { Eye, KeyRound, Pencil, TriangleAlert } from 'lucide-react'
 import { cn } from '~/lib/utils'
 import { PersonOrGroupBadge } from '../appCatalog/ui/components/PersonBadge'
@@ -54,11 +55,13 @@ export function McpSearchResult({
     <article
       data-testid="mcp-result"
       className={cn(
-        'grid grid-cols-[auto_1fr] items-center gap-4 rounded-xl border border-border bg-card px-4 py-3.5 transition-[border-color,box-shadow] hover:border-ring hover:shadow-lg',
+        'relative grid grid-cols-[auto_1fr] items-center gap-4 rounded-xl border border-border bg-card px-4 py-3.5 transition-[border-color,box-shadow] hover:border-ring hover:shadow-lg',
         best && 'border-[1.5px]',
       )}
     >
-      <Triad server={server} size={48} />
+      <span className="relative z-10 inline-flex">
+        <Triad server={server} size={48} />
+      </span>
       <div className="min-w-0">
         {best && (
           <div className="mb-0.5 text-[11px] font-extrabold tracking-[.06em] text-primary uppercase">
@@ -69,12 +72,16 @@ export function McpSearchResult({
           <Highlight text={server.description} q={q} />
         </p>
         <div className="mt-[3px] mb-2 text-[13px] text-muted-foreground">
-          <b
+          {/* Covers the card: the whole answer opens the server's dialog. */}
+          <Link
+            to="/mcp/$slug"
+            params={{ slug: server.slug }}
+            search={(prev) => prev}
             data-testid="mcp-result-name"
-            className="font-bold text-foreground"
+            className="font-bold text-foreground outline-none after:absolute after:inset-0 after:rounded-xl after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-ring"
           >
             <Highlight text={server.displayName} q={q} />
-          </b>
+          </Link>
           {tool && (
             <>
               {' '}
