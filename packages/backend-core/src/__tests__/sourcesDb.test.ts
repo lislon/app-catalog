@@ -189,13 +189,75 @@ describe.skipIf(!TEST_DB_URL)('sourcesDb integration', () => {
       checks: [{ date: '2026-10-15T00:00:00Z', changed: true }],
     })
 
-    // Assert no test data leaked into public schema
-    const publicCount = await prisma.$queryRaw<
-      { count: bigint }[]
-    >`SELECT COUNT(*) as count FROM public."DbResource" WHERE slug LIKE 'test-sources-%'`
+    // Assert no test data leaked into public schema. A fresh CI database has
+    // no public."DbResource" at all, which is not a leak either.
+    const [publicTable] = await prisma.$queryRaw<
+      { exists: boolean }[]
+    >`SELECT to_regclass('public."DbResource"') IS NOT NULL AS exists`
+    const publicCount = publicTable?.exists
+      ? await prisma.$queryRaw<
+          { count: bigint }[]
+        >`SELECT COUNT(*) as count FROM public."DbResource" WHERE slug LIKE 'test-sources-%'`
+      : [{ count: 0n }]
     expect(Number(publicCount[0]?.count)).toBe(0)
 
     vi.useRealTimers()
+  })
+
+  it('catalogAddedAt backfill updates the configured schema, never public', async () => {
+    const slug = 'test-sources-schema-isolation'
+    const publicCreatedAt = new Date('2030-01-01T00:00:00Z')
+    const catalogAddedAt = new Date('2020-01-01T00:00:00Z')
+    // A fresh CI database has an empty public; give it a decoy table so a
+    // raw query that falls through to public would hit a matching row.
+    const [existing] = await prisma.$queryRaw<{ exists: boolean }[]>`
+      SELECT to_regclass('public."DbResource"') IS NOT NULL AS exists`
+    if (!existing?.exists) {
+      await prisma.$executeRawUnsafe(
+        `CREATE TABLE public."DbResource" (LIKE "${db.schema}"."DbResource" INCLUDING ALL)`,
+      )
+    }
+    try {
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO public."DbResource" ("id", "slug", "displayName", "description", "createdAt", "updatedAt")
+         VALUES ($1, $2, 'Decoy', 'Decoy', $3, $3)`,
+        'test-sources-schema-isolation-decoy',
+        slug,
+        publicCreatedAt,
+      )
+      await syncAppCatalog(
+        [
+          {
+            id: slug,
+            slug,
+            displayName: 'Schema Isolation',
+            description: 'raw SQL must target the configured schema',
+            catalogAddedAt: catalogAddedAt.toISOString(),
+          },
+        ],
+        [],
+        [],
+      )
+      const row = await prisma.dbResource.findUnique({ where: { slug } })
+      testResourceIds = row ? [row.id] : []
+      const [decoy] = await prisma.$queryRawUnsafe<{ createdAt: Date }[]>(
+        `SELECT "createdAt" FROM public."DbResource" WHERE "slug" = $1`,
+        slug,
+      )
+      expect({
+        test: row?.createdAt.toISOString(),
+        public: decoy?.createdAt.toISOString(),
+      }).toEqual({
+        test: catalogAddedAt.toISOString(),
+        public: publicCreatedAt.toISOString(),
+      })
+    } finally {
+      await prisma.$executeRawUnsafe(
+        existing?.exists
+          ? `DELETE FROM public."DbResource" WHERE "id" = 'test-sources-schema-isolation-decoy'`
+          : `DROP TABLE public."DbResource"`,
+      )
+    }
   })
 
   it('removing a source from config deletes only that link', async () => {

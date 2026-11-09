@@ -26,13 +26,17 @@ if (process.env.CI && !TEST_DB_URL) {
   )
 }
 
-export function useTestDatabase(prefix: string): { prisma: PrismaClient } {
-  const handle = {} as { prisma: PrismaClient }
+export function useTestDatabase(prefix: string): {
+  prisma: PrismaClient
+  schema: string
+} {
+  const handle = {} as { prisma: PrismaClient; schema: string }
   let testSchema: string | undefined
 
   beforeAll(async () => {
     if (!TEST_DB_URL) return
     testSchema = `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    handle.schema = testSchema
 
     execSync(`psql "${TEST_DB_URL}" -c "CREATE SCHEMA \\"${testSchema}\\""`, {
       stdio: 'inherit',
