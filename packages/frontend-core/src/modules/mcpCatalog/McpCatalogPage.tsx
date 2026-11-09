@@ -17,7 +17,10 @@ import { McpSearchResult } from './McpSearchResult'
 import { McpServerRow } from './McpServerRow'
 import { searchMcpServers } from './searchMcpServers'
 import { Triad } from './Triad'
-import { useMcpCatalogConfig } from './useMcpCatalogConfig'
+import {
+  useMcpCatalogConfig,
+  useSensitiveDataLabel,
+} from './useMcpCatalogConfig'
 
 const CHIP =
   'min-h-[30px] rounded-full border border-border bg-card px-3 py-1 text-[13px] font-semibold text-foreground transition-colors hover:border-ring aria-pressed:border-primary/40 aria-pressed:bg-accent aria-pressed:text-accent-foreground'
@@ -101,7 +104,7 @@ export function McpCatalogPage({ q, onQueryChange }: McpCatalogPageProps) {
   )
   const searching = q.trim() !== ''
   const tryQueries = config?.tryQueries ?? []
-  const sensitiveLabel = config?.sensitiveDataLabel ?? 'Sensitive data'
+  const sensitiveLabel = useSensitiveDataLabel()
 
   const tryChips = (queries: readonly string[]) => (
     <div className="mt-2.5 flex flex-wrap items-center justify-center gap-1.5 text-[13px] text-muted-foreground">

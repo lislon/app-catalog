@@ -7,14 +7,14 @@ import {
   TriangleAlert,
   X,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { cn } from '~/lib/utils'
 import { Button } from '~/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '~/ui/tooltip'
 import { InstallButton } from '../install/InstallButton'
 import { copyText, useCopyFlash } from '../install/installOptions'
 import { WhatHappensDialog } from '../install/WhatHappensDialog'
-import { useMcpCatalogConfig } from '../useMcpCatalogConfig'
+import { useSensitiveDataLabel } from '../useMcpCatalogConfig'
 import { useMcpCart } from './useMcpCart'
 
 const ON_DARK =
@@ -77,19 +77,13 @@ export function CartButton({
 /**
  * The cart bar, fixed at the bottom while the cart has anything: a chip per
  * server, a warning when any has sensitive data, Share, What happens? and
- * Install for all of them. Also cleans a shared link's unknown slugs off the
- * URL.
+ * Install for all of them.
  */
 export function McpCart() {
-  const { servers, toggle, shareUrl, stale, clean } = useMcpCart()
-  const sensitiveLabel =
-    useMcpCatalogConfig()?.sensitiveDataLabel ?? 'Sensitive data'
+  const { servers, toggle, shareUrl } = useMcpCart()
+  const sensitiveLabel = useSensitiveDataLabel()
   const [whatOpen, setWhatOpen] = useState(false)
   const [flash, setFlash] = useCopyFlash()
-
-  useEffect(() => {
-    if (stale) clean()
-  }, [stale, clean])
 
   if (servers.length === 0) return null
   const sensitive = servers.filter((s) => s.sensitiveData)

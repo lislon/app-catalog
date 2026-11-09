@@ -48,4 +48,6 @@ export type McpCatalogConfig = {
   tryQueries?: string[]
   sensitiveDataLabel?: string
   installIconUrl?: string
+  /** This deployment serves the catalog's own MCP endpoint, so install prompts may point at it. Default false. */
+  catalogMcpAvailable?: boolean
 }

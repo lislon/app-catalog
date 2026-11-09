@@ -46,11 +46,6 @@ export const TABLE_SYNC_MAGAZINE = {
     prismaModelName: 'DbMcpServer',
     uniqColumns: ['slug'],
   },
-  Source: {
-    id: 'slug',
-    prismaModelName: 'Source',
-    uniqColumns: ['slug'],
-  },
   SourceUrl: {
     id: 'url',
     prismaModelName: 'SourceUrl',

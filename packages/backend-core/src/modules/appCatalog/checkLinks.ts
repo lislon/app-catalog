@@ -152,7 +152,7 @@ async function getAppsFromDb(): Promise<Resource[]> {
   const prisma = getDbClient()
   const rows = await prisma.dbResource.findMany({
     include: {
-      sourceLinks: { include: { sourceUrl: true } },
+      sourceLinks: { include: { sourceUrl: true }, orderBy: { url: 'asc' } },
     },
   })
 

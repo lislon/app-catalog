@@ -20,6 +20,12 @@ const BACKEND_CORE_ROOT = resolve(
 
 export const TEST_DB_URL = process.env.AC_TEST_DATABASE_URL
 
+if (process.env.CI && !TEST_DB_URL) {
+  throw new Error(
+    'AC_TEST_DATABASE_URL is required in CI: DB-backed suites would otherwise skip silently',
+  )
+}
+
 export function useTestDatabase(prefix: string): { prisma: PrismaClient } {
   const handle = {} as { prisma: PrismaClient }
   let testSchema: string | undefined

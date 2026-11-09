@@ -11,7 +11,10 @@ import {
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import { externalLink } from '~/lib/externalLink'
 import { useAppCatalogContext } from '../../appCatalog/context/AppCatalogContext'
-import { useMcpCatalogConfig } from '../useMcpCatalogConfig'
+import {
+  useMcpCatalogConfig,
+  useSensitiveDataLabel,
+} from '../useMcpCatalogConfig'
 
 export interface InstallOption {
   id: InstallOptionId
@@ -191,8 +194,9 @@ export function useCopyFlash() {
  */
 export function useInstall(servers: readonly CatalogMcpServer[]) {
   const { resources } = useAppCatalogContext()
-  const sensitiveDataLabel =
-    useMcpCatalogConfig()?.sensitiveDataLabel ?? 'Sensitive data'
+  const sensitiveDataLabel = useSensitiveDataLabel()
+  const catalogMcpAvailable =
+    useMcpCatalogConfig()?.catalogMcpAvailable ?? false
 
   const origin = window.location.origin
   const resolved = useMemo(
@@ -217,11 +221,10 @@ export function useInstall(servers: readonly CatalogMcpServer[]) {
       installPrompt(resolved, {
         option,
         apps,
-        // This deployment serves the catalog's own MCP endpoint.
-        catalogMcpAvailable: true,
+        catalogMcpAvailable,
         sensitiveDataLabel,
       }),
-    [resolved, apps, sensitiveDataLabel],
+    [resolved, apps, catalogMcpAvailable, sensitiveDataLabel],
   )
 
   const run = useCallback(

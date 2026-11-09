@@ -119,6 +119,9 @@ describe('validateMcpServers', () => {
     ['empty sources', [{ ...tracker, sources: [] }], /tracker: sources/],
     ['empty tools', [{ ...tracker, tools: [] }], /tracker: tools/],
     ['a duplicate slug', [docs, { ...docs }], /docs: duplicate slug/],
+    ['a comma in the slug', [{ ...docs, slug: 'a,b' }], /a,b: slug must/],
+    ['a leading - in the slug', [{ ...docs, slug: '-rf' }], /-rf: slug must/],
+    ['an uppercase slug', [{ ...docs, slug: 'Docs' }], /Docs: slug must/],
     [
       'a header value that is not a <...> placeholder',
       [
@@ -227,6 +230,23 @@ describe.skipIf(!TEST_DB_URL)('MCP server sync (DB)', () => {
     expect(
       await db.prisma.sourceUrl.count({ where: { url: trackerReadme } }),
     ).toBe(0)
+  })
+
+  it('boot prune drops Source rows no URL is left under', async () => {
+    const opts = { persons, groups }
+    await syncAppCatalog([trackerApp], [], [], undefined, {
+      ...opts,
+      mcpServers: [tracker, docs],
+    })
+    expect(await db.prisma.source.count()).toBeGreaterThan(0)
+
+    await syncAppCatalog([{ ...trackerApp, sources: [] }], [], [], undefined, {
+      ...opts,
+      mcpServers: [],
+    })
+
+    expect(await db.prisma.sourceUrl.count()).toBe(0)
+    expect(await db.prisma.source.count()).toBe(0)
   })
 
   it('an invalid MCP record fails the boot before the first write', async () => {

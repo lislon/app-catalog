@@ -1,7 +1,7 @@
 import type { CatalogMcpServer } from '@igstack/app-catalog-backend-core'
 import { Eye, Pencil, TriangleAlert } from 'lucide-react'
 import { SIGN_IN } from './signIn'
-import { useMcpCatalogConfig } from './useMcpCatalogConfig'
+import { useSensitiveDataLabel } from './useMcpCatalogConfig'
 
 const LINE = 'flex flex-wrap items-baseline gap-x-2'
 const ICON = 'size-[15px] shrink-0 self-center'
@@ -15,8 +15,7 @@ const SIGN_IN_NOTE: Record<CatalogMcpServer['auth']['kind'], string> = {
 
 /** One line each: what it can change, sensitive data, how you sign in. */
 export function McpSafetyLines({ server }: { server: CatalogMcpServer }) {
-  const sensitiveLabel =
-    useMcpCatalogConfig()?.sensitiveDataLabel ?? 'Sensitive data'
+  const sensitiveLabel = useSensitiveDataLabel()
   const signIn = SIGN_IN[server.auth.kind]
   const token = server.auth.token
 

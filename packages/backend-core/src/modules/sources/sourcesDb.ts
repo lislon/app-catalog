@@ -204,8 +204,9 @@ export function toSourceReference(row: SourceUrl): SourceReference {
 }
 
 /**
- * Prunes orphaned SourceUrl rows: URLs no resource and no MCP server cites.
- * Call this at the end of the boot sync only, not in updateApp.
+ * Prunes orphaned SourceUrl rows (URLs no resource and no MCP server cites),
+ * then the Source rows left with no URL. Call this at the end of the boot sync
+ * only, not in updateApp.
  */
 export async function pruneOrphanedSourceUrls(
   prisma: PrismaClient,
@@ -213,6 +214,7 @@ export async function pruneOrphanedSourceUrls(
   await prisma.sourceUrl.deleteMany({
     where: { resourceLinks: { none: {} }, mcpServerLinks: { none: {} } },
   })
+  await prisma.source.deleteMany({ where: { urls: { none: {} } } })
 }
 
 function asDate(iso: string | null | undefined): Date | null {

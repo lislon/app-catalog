@@ -46,7 +46,10 @@ export function createAppCatalogAITools(
         const app = await prisma.dbResource.findUnique({
           where: { slug },
           include: {
-            sourceLinks: { include: { sourceUrl: true } },
+            sourceLinks: {
+              include: { sourceUrl: true },
+              orderBy: { url: 'asc' },
+            },
           },
         })
 

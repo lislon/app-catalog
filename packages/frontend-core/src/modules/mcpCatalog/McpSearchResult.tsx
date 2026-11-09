@@ -10,7 +10,7 @@ import type { McpSearchHit } from './searchMcpServers'
 import { searchTerms } from './searchMcpServers'
 import { SIGN_IN, STATUS_CHIP } from './signIn'
 import { Triad, useRequiredAppNames } from './Triad'
-import { useMcpCatalogConfig } from './useMcpCatalogConfig'
+import { useSensitiveDataLabel } from './useMcpCatalogConfig'
 
 const BADGE =
   'inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-muted px-2 py-1 text-[11.5px] leading-none font-bold text-muted-foreground [&_svg]:size-3'
@@ -49,8 +49,7 @@ export function McpSearchResult({
   installed: boolean
 }) {
   const { server, hitTools } = hit
-  const sensitiveLabel =
-    useMcpCatalogConfig()?.sensitiveDataLabel ?? 'Sensitive data'
+  const sensitiveLabel = useSensitiveDataLabel()
   const tool =
     server.tools.find((t) => t.name === hitTools[0]) ?? server.tools[0]
   const signIn = SIGN_IN[server.auth.kind]

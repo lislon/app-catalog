@@ -2,7 +2,7 @@ import type { McpServer } from '@igstack/app-catalog-shared-core'
 import type { ReactNode } from 'react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '~/ui/tooltip'
 import { useAppCatalogContext } from '../appCatalog/context/AppCatalogContext'
-import { useMcpCatalogConfig } from './useMcpCatalogConfig'
+import { useSensitiveDataLabel } from './useMcpCatalogConfig'
 
 /**
  * The Triad: a server's icon is its safety answer. The top circle says what
@@ -136,8 +136,7 @@ export function useRequiredAppNames(server: TriadServer): string[] {
 /** The Triad's full answer in words, e.g. "Can write · Needs access: X · Sensitive data". */
 export function useTriadLabel(server: TriadServer): string {
   const apps = useRequiredAppNames(server)
-  const sensitiveLabel =
-    useMcpCatalogConfig()?.sensitiveDataLabel ?? 'Sensitive data'
+  const sensitiveLabel = useSensitiveDataLabel()
   return [
     server.access === 'write' ? 'Can write' : 'Read-only',
     apps.length > 0 ? `Needs access: ${apps.join(', ')}` : 'No extra access',

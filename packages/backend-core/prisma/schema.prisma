@@ -343,6 +343,24 @@ model Source {
   urls       SourceUrl[]
 }
 
+/// Inert: no longer read or written. Kept so `db push` stays additive; drop deliberately.
+model SourceReference {
+  id                  Int       @id @default(autoincrement())
+  sourceSlug          String
+  resourceId          String
+  url                 String
+  parseDate           DateTime?
+  excerpts            String[]  @default([])
+  userPrompt          String?
+  lastCheckedAt       DateTime?
+  nextCheckAfter      DateTime?
+  lastContentChangeAt DateTime?
+  checkIntervalHours  Int?
+  changeHistory       Json?
+
+  @@unique([resourceId, url])
+}
+
 model SourceUrl {
   url                 String                  @id
   sourceSlug          String

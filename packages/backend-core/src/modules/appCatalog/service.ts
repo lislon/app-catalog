@@ -246,7 +246,7 @@ export async function getResourcesFromPrisma(): Promise<Resource[]> {
 
   const rows = await prisma.dbResource.findMany({
     include: {
-      sourceLinks: { include: { sourceUrl: true } },
+      sourceLinks: { include: { sourceUrl: true }, orderBy: { url: 'asc' } },
     },
   })
 
@@ -294,7 +294,9 @@ export async function updateApp(input: UpdateAppInput): Promise<Resource> {
   const updated = await prisma.dbResource.update({
     where: { id },
     data: updatePayload,
-    include: { sourceLinks: { include: { sourceUrl: true } } },
+    include: {
+      sourceLinks: { include: { sourceUrl: true }, orderBy: { url: 'asc' } },
+    },
   })
 
   if (data.sources !== undefined) {
@@ -315,7 +317,9 @@ export async function updateApp(input: UpdateAppInput): Promise<Resource> {
 
     const refetched = await prisma.dbResource.findUnique({
       where: { id },
-      include: { sourceLinks: { include: { sourceUrl: true } } },
+      include: {
+        sourceLinks: { include: { sourceUrl: true }, orderBy: { url: 'asc' } },
+      },
     })
     if (!refetched) throw new Error('Resource not found after update')
     return rowToResource(refetched)
@@ -343,7 +347,9 @@ export async function updateAiMemory(
   const updated = await prisma.dbResource.update({
     where: { id: input.id },
     data: { aiMemory: input.aiMemory },
-    include: { sourceLinks: { include: { sourceUrl: true } } },
+    include: {
+      sourceLinks: { include: { sourceUrl: true }, orderBy: { url: 'asc' } },
+    },
   })
   return rowToResource(updated)
 }

@@ -3,6 +3,8 @@ import type { CatalogMcpServer } from '../../types/common/appCatalogTypes'
 
 /** A header value must be a whole `<NAME>` placeholder, never a real token. */
 const PLACEHOLDER = /^<[^<>]+>$/
+/** Lowercase words joined by `-`: no comma (the cart's separator) and no leading `-` (read as a CLI flag). */
+const SLUG = /^[a-z0-9][a-z0-9-]*$/
 
 /**
  * Checks MCP server records against the catalog. Throws one Error listing every
@@ -18,6 +20,11 @@ export function validateMcpServers(
   for (const s of servers) {
     if (seen.has(s.slug)) problems.push(`${s.slug}: duplicate slug`)
     seen.add(s.slug)
+    if (!SLUG.test(s.slug)) {
+      problems.push(
+        `${s.slug}: slug must be lowercase letters, digits and '-', not starting with '-'`,
+      )
+    }
 
     for (const app of s.requiredAppSlugs ?? []) {
       if (!known.resourceSlugs.has(app)) {

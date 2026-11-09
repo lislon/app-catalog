@@ -183,6 +183,17 @@ export interface SyncAppCatalogOptions {
   mcpServers?: (McpServer | CatalogMcpServer)[]
 }
 
+/** A resource's slug: its own, else derived from its display name. */
+function slugOf(resource: Pick<Resource, 'slug' | 'displayName'>): string {
+  return (
+    resource.slug ||
+    resource.displayName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+  )
+}
+
 /** A config source as a sync reference: bare URLs carry no schedule. */
 function toSyncRef(source: string | SourceReference): SourceReference {
   // An enriched source's schedule is the autoupdate registry's copy, and it wins on every sync.
@@ -225,16 +236,7 @@ export async function syncAppCatalog(
         options.groups ?? prisma.dbGroup.findMany({ select: { slug: true } }),
       ])
       validateMcpServers(mcpServers, {
-        resourceSlugs: new Set(
-          resources.map(
-            (r) =>
-              r.slug ||
-              r.displayName
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, '-')
-                .replace(/^-+|-+$/g, ''),
-          ),
-        ),
+        resourceSlugs: new Set(resources.map((r) => slugOf(r))),
         ownerSlugs: new Set([...persons, ...groups].map((o) => o.slug)),
       })
     }
@@ -302,12 +304,7 @@ export async function syncAppCatalog(
 
     // Transform Resource to DbResource format (scalar fields only)
     const dbResources = sortedResources.map((resource) => {
-      const slug =
-        resource.slug ||
-        resource.displayName
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '')
+      const slug = slugOf(resource)
 
       return {
         slug,
@@ -368,12 +365,7 @@ export async function syncAppCatalog(
     for (const resource of resources) {
       if (!resource.catalogAddedAt) continue
       const addedAt = new Date(resource.catalogAddedAt)
-      const slug =
-        resource.slug ||
-        resource.displayName
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '')
+      const slug = slugOf(resource)
       await prisma.$executeRaw`
         UPDATE "DbResource"
         SET "createdAt" = ${addedAt}
@@ -401,12 +393,7 @@ export async function syncAppCatalog(
 
     // Build link rows (resource -> URL)
     const allLinkRows = sortedResources.flatMap((resource) => {
-      const resourceSlug =
-        resource.slug ||
-        resource.displayName
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '')
+      const resourceSlug = slugOf(resource)
       const resourceId = slugToId[resourceSlug]
       if (!resourceId) {
         throw new Error(
@@ -480,12 +467,7 @@ export async function syncAppCatalog(
     )
     if (resourcesWithAiMemorySeed.length > 0) {
       for (const resource of resourcesWithAiMemorySeed) {
-        const slug =
-          resource.slug ||
-          resource.displayName
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-+|-+$/g, '')
+        const slug = slugOf(resource)
         await prisma.dbResource.updateMany({
           where: { slug, aiMemory: null },
           data: { aiMemory: resource.aiMemory },

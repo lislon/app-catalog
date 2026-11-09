@@ -3,6 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom/vitest'
 
+import type { AppCatalogData } from '@igstack/app-catalog-backend-core'
 import { given, magazine } from '@igstack/app-catalog-test-kit'
 
 // The MCP servers tab: a catalog of servers that plug company systems into an
@@ -156,6 +157,23 @@ describe('MCP servers tab', () => {
     expect(
       await screen.findByRole('heading', { name: '404 Not Found' }),
     ).toBeInTheDocument()
+  })
+
+  it('a cached catalog from before MCP servers existed still loads /mcp', async () => {
+    // A returning visitor's IndexedDB copy predates `mcpServers`.
+    const { ui } = await given(
+      magazine.mcp(({ browserStateCfg }) => {
+        browserStateCfg.withOfflineData(
+          ({ mcpServers: _, ...older }) =>
+            ({
+              ...older,
+            }) as AppCatalogData,
+        )
+      }),
+      { initialRoute: '/mcp' },
+    )
+
+    await waitFor(() => expect(ui.mcp.getMcpRows()).toHaveLength(8))
   })
 
   it('finds a server by its category title and its owner', async () => {
@@ -484,7 +502,12 @@ describe('MCP install', () => {
   })
 
   it('Claude Code in VS Code sets location to a vscode:// link whose prompt contains the server slug', async () => {
-    const { ui } = await given(magazine.mcp(), { initialRoute: '/mcp/wiki' })
+    const { ui } = await given(
+      magazine.mcp(({ backendCfg }) => {
+        backendCfg.withMcpCatalogConfig({ catalogMcpAvailable: true })
+      }),
+      { initialRoute: '/mcp/wiki' },
+    )
     await screen.findByRole('dialog', { name: 'Wiki Browser' })
 
     await ui.mcp.openInstallMenu()
@@ -497,8 +520,22 @@ describe('MCP install', () => {
       'Install this MCP server for me in Claude Code in VS Code',
     )
     expect(prompt).toContain('- Wiki Browser (name: wiki)')
-    // This deployment serves the catalog's own MCP, so the AI is told to ask it.
+    // The deployment says it serves the catalog's own MCP, so the AI is told to ask it.
     expect(prompt).toContain('call get_mcp_server')
+  })
+
+  it('without catalogMcpAvailable the prompt does not send the AI to a catalog MCP', async () => {
+    const { ui } = await given(magazine.mcp(), { initialRoute: '/mcp/wiki' })
+    await screen.findByRole('dialog', { name: 'Wiki Browser' })
+
+    await ui.mcp.openInstallMenu()
+    await ui.mcp.pickInstallOption('Claude Code in VS Code')
+
+    const prompt = new URL(ui.window.lastExternalUrl()!).searchParams.get(
+      'prompt',
+    )
+    expect(prompt).toContain('- Wiki Browser (name: wiki)')
+    expect(prompt).not.toContain('get_mcp_server')
   })
 
   it('relative-URL server installs against the current origin', async () => {
@@ -789,7 +826,7 @@ describe('MCP cart', () => {
     )
   })
 
-  it('opening ?cart=a,,a,nope loads only a, once', async () => {
+  it('opening ?cart=a,,a,nope shows only a, once, and leaves the URL as written', async () => {
     const { ui, router } = await given(magazine.mcp(), {
       initialRoute: '/mcp?cart=wiki,,wiki,nope',
     })
@@ -801,19 +838,17 @@ describe('MCP cart', () => {
         warning: '',
       }),
     )
-    // The URL is cleaned to what was loaded, in place.
-    await waitFor(() =>
-      expect(router.state.location.search).toEqual({ cart: 'wiki' }),
-    )
+    // A shared link's slugs may exist on another deployment: keep them.
+    expect(router.state.location.search).toEqual({ cart: 'wiki,,wiki,nope' })
     expect(router.history.length).toBe(1)
   })
 
-  it('a cart of only unknown slugs shows no cart and drops the param', async () => {
+  it('a cart of only unknown slugs shows no cart and keeps the param', async () => {
     const { ui, router } = await given(magazine.mcp(), {
       initialRoute: '/mcp?cart=nope,,',
     })
     await waitFor(() => expect(ui.mcp.getMcpRows()).toHaveLength(8))
-    await waitFor(() => expect(router.state.location.search).toEqual({}))
+    expect(router.state.location.search).toEqual({ cart: 'nope,,' })
     expect(ui.mcp.cart()).toBeNull()
   })
 

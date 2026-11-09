@@ -10,11 +10,10 @@ function parseCart(raw: string | undefined): string[] {
 
 /**
  * The cart, kept in `?cart=` so the URL is its only home and a link shares
- * it. Unknown and repeated slugs are ignored, and once the servers are known
- * `clean` rewrites the URL to what loaded.
+ * it. Unknown and repeated slugs are ignored and left in the URL as written.
  */
 export function useMcpCart() {
-  const { mcpServers, isLoadingApps } = useAppCatalogContext()
+  const { mcpServers } = useAppCatalogContext()
   const { cart: raw } = useSearch({ strict: false })
   // Unscoped, so `to: '.'` keeps an open server's dialog.
   const navigate = useNavigate()
@@ -39,12 +38,6 @@ export function useMcpCart() {
     [navigate],
   )
 
-  // A shared link may carry slugs that do not exist (any more), blanks or
-  // repeats; once the servers are known, the URL can say what loaded.
-  const loaded = !isLoadingApps && !!mcpServers?.length
-  const stale = loaded && raw !== (slugs.join(',') || undefined)
-  const clean = useCallback(() => write(slugs), [slugs, write])
-
   const has = useCallback((slug: string) => slugs.includes(slug), [slugs])
   const toggle = useCallback(
     (slug: string) =>
@@ -67,5 +60,5 @@ export function useMcpCart() {
     return url.href
   }, [router, slugs])
 
-  return { servers, has, toggle, shareUrl, stale, clean }
+  return { servers, has, toggle, shareUrl }
 }

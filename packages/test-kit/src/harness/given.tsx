@@ -143,7 +143,7 @@ export async function given(
   }
   if (browserStateCfg.shouldSeedOfflineData) {
     await browserState.seedCatalogCache(
-      service.getAppCatalogData(),
+      browserStateCfg.editOfflineData(service.getAppCatalogData()),
       service.communityTools.config(),
     )
   }
