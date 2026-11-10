@@ -40,6 +40,8 @@ import { browserState } from '../tools/BrowserState'
 import { CatalogTools } from '../tools/CatalogTools'
 import { AppDetailTools } from '../tools/AppDetailTools'
 import { GalleryTools } from '../tools/GalleryTools'
+import { McpTools } from '../tools/McpTools'
+import { WindowTools } from '../tools/WindowTools'
 
 export interface GivenResult {
   ui: UiTools
@@ -51,6 +53,8 @@ export interface UiTools {
   catalog: CatalogTools
   app: AppDetailTools
   gallery: GalleryTools
+  mcp: McpTools
+  window: WindowTools
   globalError: () => GlobalError
 }
 
@@ -68,7 +72,9 @@ export function takeUnhandledRequests(): string[] {
   return unhandledRequests.splice(0)
 }
 
-export async function cleanupTestResources(): Promise<void> {
+export async function cleanupTestResources({
+  keepUserDb = false,
+}: { keepUserDb?: boolean } = {}): Promise<void> {
   // The module-scoped filter store dies with the document in a browser; between
   // tests there is no new document, so reset it by hand.
   clearSessionState()
@@ -78,7 +84,7 @@ export async function cleanupTestResources(): Promise<void> {
   }
   if (activeDb) {
     activeDb.close()
-    await activeDb.delete()
+    if (!keepUserDb) await activeDb.delete()
     activeDb = null
   }
 }
@@ -101,12 +107,17 @@ export async function given(
      * suite. Normally the setup-file registration is what you want.
      */
     createRouter?: CreateRouterFn
+    /**
+     * A browser reload: the previous given()'s IndexedDB survives, as
+     * localStorage already does. Without it every given() is a new visitor.
+     */
+    reload?: boolean
   } = {},
 ): Promise<GivenResult> {
   // Clean up any previous resources, the rendered app included: a second given()
   // in one test is a reload, not a second app beside the first.
   cleanup()
-  await cleanupTestResources()
+  await cleanupTestResources({ keepUserDb: opts.reload })
   resetConfigurerCounter()
 
   // 1. Create cfg objects (data carriers)
@@ -132,7 +143,7 @@ export async function given(
   }
   if (browserStateCfg.shouldSeedOfflineData) {
     await browserState.seedCatalogCache(
-      service.getAppCatalogData(),
+      browserStateCfg.editOfflineData(service.getAppCatalogData()),
       service.communityTools.config(),
     )
   }
@@ -225,11 +236,12 @@ export async function given(
     () => {
       const hasAlert = screen.queryByRole('alert')
       const hasTable = screen.queryAllByRole('table').length > 0
-      // Either section's search: a reload can land on the community page.
+      // Any section's search: a reload can land on another section's page.
       const hasSearchbox =
         screen.queryByLabelText('Search apps') ??
         screen.queryByLabelText('Search community tools') ??
-        screen.queryByLabelText('Search service desks')
+        screen.queryByLabelText('Search service desks') ??
+        screen.queryByLabelText('Search MCP servers')
       const hasLoginPage = screen.queryByTestId('login-page')
       const hasTanstackError = document.body.textContent.includes(
         'Something went wrong',
@@ -256,6 +268,8 @@ export async function given(
     catalog: new CatalogTools(),
     app: new AppDetailTools(),
     gallery: new GalleryTools(),
+    mcp: new McpTools(),
+    window: new WindowTools(),
     globalError: () => getGlobalError(),
   }
 

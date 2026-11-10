@@ -2,17 +2,20 @@ import { Link, useRouterState } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTRPC } from '~/api/infra/trpc'
 import { cn } from '~/lib/utils'
+import { useAppCatalogContext } from '../../context/AppCatalogContext'
 
 /**
  * The header's section tabs: one captioned link per section, so each is
  * deep-linkable. The active tab is derived from the pathname rather than an
  * exact-match Link, because Catalog must stay active on the app-detail routes
  * (`/app/<slug>`, #23) and on `/catalog/apps`, which renders the same page.
- * Community tools is hidden until the server says the feature is on.
+ * Community tools is hidden until the server says the feature is on, and MCP
+ * servers until the catalog lists at least one.
  */
 export function SectionTabs() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const trpc = useTRPC()
+  const { mcpServers = [] } = useAppCatalogContext()
   const { data: communityConfig } = useQuery(
     trpc.communityTools.config.queryOptions(),
   )
@@ -43,6 +46,16 @@ export function SectionTabs() {
       caption: 'Where to file a ticket',
       active: pathname.startsWith('/service-desks'),
     },
+    ...(mcpServers.length > 0
+      ? [
+          {
+            to: '/mcp',
+            title: 'MCP servers',
+            caption: 'Plug company systems into your AI',
+            active: pathname.startsWith('/mcp'),
+          } as const,
+        ]
+      : []),
   ] as const
 
   return (

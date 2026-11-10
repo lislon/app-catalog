@@ -15,6 +15,22 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test-user
+          POSTGRES_PASSWORD: test-password
+          POSTGRES_DB: test-database
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      AC_TEST_DATABASE_URL: postgresql://test-user:test-password@localhost:5432/test-database
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1

@@ -11,6 +11,7 @@ export function makeNetworkReplyWithCatalog(
 
   catalog.add(SharedNetwork.appCatalogQuery(service))
   catalog.add(SharedNetwork.serviceDesksQuery(service))
+  catalog.add(SharedNetwork.mcpCatalogConfig(service))
   catalog.add(SharedNetwork.feedbackList(feedback))
   catalog.add(SharedNetwork.feedbackMine(feedback))
   catalog.add(SharedNetwork.feedbackAdd(feedback))

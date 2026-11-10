@@ -6,6 +6,7 @@ import type { AppCatalogCompanySpecificBackend } from '../types/backend/companyS
 import type { BetterAuth } from '../modules/auth/auth'
 import type { TRPCRouter } from '../server/controller'
 import type { ScreenshotCapturer } from '../modules/communityTools/capture'
+import type { McpCatalogConfig } from '@igstack/app-catalog-shared-core'
 
 /**
  * Database connection configuration.
@@ -175,6 +176,9 @@ export interface AcMiddlewareOptions {
 
   /** Community tools configuration (optional) */
   communityTools?: CommunityToolsOptions
+
+  /** MCP tab display settings, served by `mcpCatalog.config` (optional) */
+  mcpCatalog?: McpCatalogConfig
 }
 
 /**

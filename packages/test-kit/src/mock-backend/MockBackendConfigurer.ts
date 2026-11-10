@@ -1,9 +1,12 @@
 import type {
   AppApprovalMethod,
+  CatalogMcpServer,
+  Group,
   GroupingTagDefinition,
   Person,
   Resource,
 } from '@igstack/app-catalog-backend-core'
+import type { McpCatalogConfig } from '@igstack/app-catalog-shared-core'
 import type { MockDb } from './MockDb'
 import type { MockUserContext, UserConfig } from './MockUserContext'
 import type { MockCommunityToolsStore } from './MockCommunityToolsStore'
@@ -99,6 +102,20 @@ export class MockBackendConfigurer {
   withPerson(person: Person): Person {
     this.db.persons.push(person)
     return person
+  }
+
+  withGroup(group: Group): Group {
+    this.db.groups.push(group)
+    return group
+  }
+
+  withMcpServer(server: CatalogMcpServer): CatalogMcpServer {
+    this.db.mcpServers.push(server)
+    return server
+  }
+
+  withMcpCatalogConfig(config: McpCatalogConfig): void {
+    this.db.setMcpCatalogConfig(config)
   }
 }
 

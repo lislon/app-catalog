@@ -1,16 +1,22 @@
 import type {
   AppApprovalMethod,
   AppCatalogData,
+  CatalogMcpServer,
+  Group,
   GroupingTagDefinition,
   Person,
   Resource,
 } from '@igstack/app-catalog-backend-core'
+import type { McpCatalogConfig } from '@igstack/app-catalog-shared-core'
 
 export class MockDb {
   resources: Resource[] = []
   tagsDefinitions: GroupingTagDefinition[] = []
   approvalMethods: AppApprovalMethod[] = []
   persons: Person[] = []
+  groups: Group[] = []
+  mcpServers: CatalogMcpServer[] = []
+  mcpCatalogConfig: McpCatalogConfig = {}
 
   upsertResource(resource: Resource): void {
     this.resources = [
@@ -56,9 +62,26 @@ export class MockDb {
     this.approvalMethods = methods
   }
 
+  setGroups(groups: Group[]): void {
+    this.groups = groups
+  }
+
+  setMcpServers(servers: CatalogMcpServer[]): void {
+    this.mcpServers = servers
+  }
+
+  setMcpCatalogConfig(config: McpCatalogConfig): void {
+    this.mcpCatalogConfig = config
+  }
+
+  getMcpCatalogConfig(): McpCatalogConfig {
+    return this.mcpCatalogConfig
+  }
+
   getAppCatalogData(): AppCatalogData {
     return {
       resources: this.resources,
+      mcpServers: this.mcpServers,
       tagsDefinitions: this.tagsDefinitions,
       // Same rule as the real loader: the portal rides only on getServiceDesks.
       approvalMethods: this.approvalMethods.map((m) => {
@@ -67,7 +90,7 @@ export class MockDb {
         return { ...m, config }
       }),
       persons: this.persons,
-      groups: [],
+      groups: this.groups,
     }
   }
 

@@ -55,7 +55,7 @@
     "test:unit": {
       "cache": true,
       "dependsOn": ["^compile"],
-      "inputs": ["default", "^production"],
+      "inputs": ["default", "^production", { "env": "AC_TEST_DATABASE_URL" }],
       "outputs": ["{projectRoot}/coverage"]
     },
     "test:types": {

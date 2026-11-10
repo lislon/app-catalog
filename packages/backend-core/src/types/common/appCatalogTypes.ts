@@ -8,6 +8,7 @@
 
 import type { AppAccessRequest, ApprovalMethod } from './approvalMethodTypes'
 import type { Group, Person } from './personGroupTypes'
+import type { McpServer } from '@igstack/app-catalog-shared-core'
 
 // ============================================================================
 // TIER VARIANT
@@ -331,8 +332,17 @@ export interface AppVersionInfo {
   coreVersion?: VersionInfo
 }
 
+/**
+ * An MCP server as served by `getData`: the config record, with its source URLs
+ * read back as {@link SourceReference} (pulse included), like a resource's.
+ */
+export type CatalogMcpServer = Omit<McpServer, 'sources'> & {
+  sources: SourceReference[]
+}
+
 export interface AppCatalogData {
   resources: Resource[]
+  mcpServers: CatalogMcpServer[]
   tagsDefinitions: GroupingTagDefinition[]
   approvalMethods: AppApprovalMethod[]
   persons: Person[]

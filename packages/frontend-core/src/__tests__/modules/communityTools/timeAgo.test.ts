@@ -25,4 +25,20 @@ describe('timeAgo', () => {
   it('reads a time in the future as today', () => {
     expect(timeAgo(new Date(2026, 9, 22).toISOString(), now)).toBe('today')
   })
+
+  it('buckets by local calendar day, stable across late-evening and after-midnight', () => {
+    // Reproduces the flaky test bug: "3 days ago" must stay "3 days ago" at
+    // 23:30 and 00:30 local time, even across DST boundaries.
+    const lateEvening = new Date('2026-11-02T23:30:00-08:00') // before midnight
+    const afterMidnight = new Date('2026-11-03T00:30:00-08:00') // after midnight
+    const threeDaysAgo = (from: Date) => {
+      const d = new Date(from)
+      d.setDate(d.getDate() - 3)
+      return d.toISOString()
+    }
+    expect(timeAgo(threeDaysAgo(lateEvening), lateEvening)).toBe('3 days ago')
+    expect(timeAgo(threeDaysAgo(afterMidnight), afterMidnight)).toBe(
+      '3 days ago',
+    )
+  })
 })

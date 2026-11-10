@@ -32,6 +32,9 @@ import type { GivenResult } from '../harness/given'
 import { magazine } from '../mock-backend/magazines'
 import type { Magazine } from '../mock-backend/magazines'
 
+/** Fixed time for deterministic "N days ago" calculations. */
+const PINNED_NOW = new Date('2026-10-21T12:00:00Z')
+
 interface RegisteredCatalog {
   fixture: Magazine
   /**
@@ -66,6 +69,15 @@ const catalogs = new Map<string, RegisteredCatalog>([
     },
   ],
   ['community', { fixture: magazine.community() }],
+  /** MCP servers listed, community tools on: every section tab shows. */
+  [
+    'mcp',
+    {
+      fixture: magazine.mcp(({ backendCfg }) =>
+        backendCfg.communityTools.enable({ captureHosts: [] }),
+      ),
+    },
+  ],
 ])
 
 /** Make a fixture available to `Given the "<name>" catalog`. */
@@ -465,20 +477,24 @@ Then('the current section is {string}', async (_world, title: string) => {
   })
 })
 
-Then('no section tab is {string}', (_world, title: string) => {
-  expect(sectionTabs().map((tab) => tab.textContent)).not.toContainEqual(
-    expect.stringMatching(new RegExp(`^${title}`)),
+/** Everything right of the section tabs, in order: the theme toggle's row. */
+function headerActions(): HTMLElement[] {
+  const row = screen.getByRole('button', { name: 'Toggle theme' }).parentElement
+  if (!row) throw new Error('The theme toggle has no row')
+  return [...row.querySelectorAll<HTMLElement>('a, button')]
+}
+
+Then('no header action is {string}', (_world, name: string) => {
+  expect(headerActions().map((el) => el.textContent.trim())).not.toContainEqual(
+    expect.stringMatching(new RegExp(`^${name}`)),
   )
 })
 
 Then('the header actions are {string}', async (_world, names: string) => {
-  // Everything right of the section tabs, in order: MCP's row.
   await waitFor(() => {
-    const row = screen.getByRole('link', { name: 'MCP' }).parentElement
-    if (!row) throw new Error('MCP has no row')
-    expect(
-      [...row.querySelectorAll('a, button')].map((el) => el.textContent.trim()),
-    ).toEqual(names.split(', '))
+    expect(headerActions().map((el) => el.textContent.trim())).toEqual(
+      names.split(', '),
+    )
   })
 })
 
@@ -1032,14 +1048,23 @@ Then('the feed is filtered to {string}', async (_world, tag: string) => {
 Given(
   'the site of {string} changed {int} day(s) ago',
   async (_world, name: string, days: number) => {
-    // On the real clock: the row measures "N days ago" against it.
-    const at = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+    // Pin Date so "N days ago" buckets stay stable across test runs.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(PINNED_NOW)
+    // Compute N calendar days ago by manipulating the date, not milliseconds,
+    // so DST boundaries don't shift the bucket.
+    const at = new Date(PINNED_NOW)
+    at.setDate(at.getDate() - days)
     await givenOnServer(({ backendCfg }) => {
       const tools = backendCfg.communityTools
       tools.siteUpdated(tools.slugOf(name), at)
     })
   },
 )
+
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 When('I sort by {string}', async (_world, label: string) => {
   await userEvent.setup().click(
@@ -1196,17 +1221,12 @@ Given('{string} was just added', async (_world, name: string) => {
       lastCheckAt: null,
     })
   })
-  // The card asks again every few seconds while it waits; fake clocks let a
-  // scenario step over that wait. They still tick with real time, so the
-  // network and user-event delays run as usual.
+  // The card polls for screenshot completion; fake timers let a scenario step
+  // over that wait. They still tick with real time so async delays work.
   vi.useFakeTimers({
     shouldAdvanceTime: true,
     toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
   })
-})
-
-afterEach(() => {
-  vi.useRealTimers()
 })
 
 Given(

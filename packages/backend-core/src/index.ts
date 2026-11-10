@@ -16,7 +16,10 @@ export type { AcStaticControllerContract } from './server/acStaticControllerCont
 // backend-only
 
 export type { Resource } from './types/common/appCatalogTypes'
-export { getResourcesFromPrisma } from './modules/appCatalog/service.js'
+export {
+  getMcpServersFromPrisma,
+  getResourcesFromPrisma,
+} from './modules/appCatalog/service'
 export * from './types/index'
 
 // Auth
@@ -51,6 +54,13 @@ export {
   type Writer,
 } from './modules/communityTools/writeService'
 export type { CommunityToolsOptions } from './middleware/types'
+
+// MCP server catalog
+export {
+  createMcpCatalogRouter,
+  type McpCatalogConfigResponse,
+} from './modules/mcpCatalog/router'
+export { validateMcpServers } from './modules/mcpCatalog/validateMcpServers'
 export type {
   CaptureResult,
   ScreenshotCapturer,

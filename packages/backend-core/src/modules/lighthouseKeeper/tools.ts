@@ -46,7 +46,10 @@ export function createAppCatalogAITools(
         const app = await prisma.dbResource.findUnique({
           where: { slug },
           include: {
-            sourceRefs: true,
+            sourceLinks: {
+              include: { sourceUrl: true },
+              orderBy: { url: 'asc' },
+            },
           },
         })
 
@@ -67,7 +70,7 @@ export function createAppCatalogAITools(
             appUrl: app.appUrl,
             links: app.links,
             iconName: app.iconName,
-            sources: app.sourceRefs.map((ref) => ref.url),
+            sources: app.sourceLinks.map((link) => link.sourceUrl.url),
             notes: app.notes,
             accessRequest: app.accessRequest,
             deprecated: app.deprecated,

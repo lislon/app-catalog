@@ -1,7 +1,11 @@
 import type {
+  CatalogMcpServer,
   GroupingTagDefinition,
   Resource,
+  SourceReference,
 } from '../types/common/appCatalogTypes'
+import type { McpServer } from '@igstack/app-catalog-shared-core'
+import { validateMcpServers } from '../modules/mcpCatalog/validateMcpServers'
 import { getDbClient } from './client'
 import { TABLE_SYNC_MAGAZINE } from './tableSyncMagazine'
 import { tableSyncPrisma } from './tableSyncPrismaAdapter'
@@ -11,7 +15,11 @@ import { upsertAsset } from '../modules/assets/upsertAsset'
 import type { ApprovalMethod, Group, Person } from '../types'
 import type { PrismaClient } from '../generated/prisma/client'
 import { naturalSort } from '../utils/naturalSort'
-import { parseSourceSlug } from '../utils/parseSourceSlug'
+import {
+  pruneOrphanedSourceUrls,
+  syncSourceLinks,
+  syncSourceUrls,
+} from '../modules/sources/sourcesDb'
 
 export interface SyncAppCatalogResult {
   created: number
@@ -23,17 +31,6 @@ export interface SyncAppCatalogResult {
 interface AssetSyncResult {
   screenshotIds: string[]
   iconName: string | null
-}
-
-/**
- * ISO string to Date, tolerating junk. The per-source schedule comes from a file
- * an agent writes, so a malformed date must drop that one field rather than fail
- * the whole catalog sync on `Invalid Date`.
- */
-function asDate(iso: string | null | undefined): Date | null {
-  if (!iso) return null
-  const t = Date.parse(iso)
-  return Number.isNaN(t) ? null : new Date(t)
 }
 
 function isFileNotFoundError(error: unknown): boolean {
@@ -182,6 +179,36 @@ async function syncAssetsFromFileSystem(
 export interface SyncAppCatalogOptions {
   persons?: Person[]
   groups?: Group[]
+  /** Omitted: MCP rows are left as they are. `[]`: all are removed. */
+  mcpServers?: (McpServer | CatalogMcpServer)[]
+}
+
+/** A resource's slug: its own, else derived from its display name. */
+function slugOf(resource: Pick<Resource, 'slug' | 'displayName'>): string {
+  return (
+    resource.slug ||
+    resource.displayName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+  )
+}
+
+/** A config source as a sync reference: bare URLs carry no schedule. */
+function toSyncRef(source: string | SourceReference): SourceReference {
+  // An enriched source's schedule is the autoupdate registry's copy, and it wins on every sync.
+  const schedule = typeof source === 'string' ? {} : (source.schedule ?? {})
+  return {
+    url: typeof source === 'string' ? source : source.url,
+    sourceSlug: undefined, // Will be derived in syncSourceUrls
+    schedule: {
+      lastCheckedAt: schedule.lastCheckedAt,
+      nextCheckAfter: schedule.nextCheckAfter,
+      lastContentChangeAt: schedule.lastContentChangeAt,
+      checkIntervalHours: schedule.checkIntervalHours,
+      changeHistory: schedule.changeHistory,
+    },
+  }
 }
 
 /**
@@ -199,6 +226,20 @@ export async function syncAppCatalog(
 ): Promise<SyncAppCatalogResult> {
   try {
     const prisma = getDbClient()
+
+    // Validate MCP servers before the first write, so a bad record leaves the
+    // whole catalog as it was. Owners not passed in come from the DB.
+    const mcpServers = options?.mcpServers
+    if (mcpServers) {
+      const [persons, groups] = await Promise.all([
+        options.persons ?? prisma.dbPerson.findMany({ select: { slug: true } }),
+        options.groups ?? prisma.dbGroup.findMany({ select: { slug: true } }),
+      ])
+      validateMcpServers(mcpServers, {
+        resourceSlugs: new Set(resources.map((r) => slugOf(r))),
+        ownerSlugs: new Set([...persons, ...groups].map((o) => o.slug)),
+      })
+    }
 
     // Sync Persons first (groups depend on persons via memberships)
     if (options?.persons) {
@@ -254,26 +295,6 @@ export async function syncAppCatalog(
       ...TABLE_SYNC_MAGAZINE.DbAppTagDefinition,
     }).sync(tagsDefinitions)
 
-    // Collect all unique source slugs for sync
-    const uniqueSourceSlugs = new Set<string>()
-    for (const resource of resources) {
-      for (const source of resource.sources ?? []) {
-        const url = typeof source === 'string' ? source : source.url
-        const sourceSlug = parseSourceSlug(url)
-        uniqueSourceSlugs.add(sourceSlug)
-      }
-    }
-
-    // Sync Source entries using tableSyncPrisma
-    const sources = Array.from(uniqueSourceSlugs).map((slug) => ({
-      slug,
-      userPrompt: null,
-    }))
-    await tableSyncPrisma({
-      prisma,
-      ...TABLE_SYNC_MAGAZINE.Source,
-    }).sync(sources)
-
     // Sort resources: parents first (no parentSlug), then children — for FK integrity
     const sortedResources = [...resources].sort((a, b) => {
       const aIsChild = a.parentSlug ? 1 : 0
@@ -283,12 +304,7 @@ export async function syncAppCatalog(
 
     // Transform Resource to DbResource format (scalar fields only)
     const dbResources = sortedResources.map((resource) => {
-      const slug =
-        resource.slug ||
-        resource.displayName
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '')
+      const slug = slugOf(resource)
 
       return {
         slug,
@@ -349,12 +365,7 @@ export async function syncAppCatalog(
     for (const resource of resources) {
       if (!resource.catalogAddedAt) continue
       const addedAt = new Date(resource.catalogAddedAt)
-      const slug =
-        resource.slug ||
-        resource.displayName
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '')
+      const slug = slugOf(resource)
       await prisma.$executeRaw`
         UPDATE "DbResource"
         SET "createdAt" = ${addedAt}
@@ -362,7 +373,7 @@ export async function syncAppCatalog(
       `
     }
 
-    // Resolve slug -> id for synced resources so SourceReference can reference by resourceId
+    // Resolve slug -> id for synced resources so links can reference by resourceId
     const slugs = dbResources.map((a) => a.slug)
     const resourceRows = await prisma.dbResource.findMany({
       where: { slug: { in: slugs } },
@@ -370,14 +381,19 @@ export async function syncAppCatalog(
     })
     const slugToId = Object.fromEntries(resourceRows.map((r) => [r.slug, r.id]))
 
-    // Build allSourceRefs with resourceId (slug already resolved to id)
-    const allSourceRefs = sortedResources.flatMap((resource) => {
-      const resourceSlug =
-        resource.slug ||
-        resource.displayName
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '')
+    // Build all source references (URLs + schedules) from resources and MCP
+    // servers together, so the prune below sees every cited URL.
+    const allSourceRefs = [
+      ...sortedResources.flatMap((r) => (r.sources ?? []).map(toSyncRef)),
+      ...(mcpServers ?? []).flatMap((s) => s.sources.map(toSyncRef)),
+    ]
+
+    // Sync Source and SourceUrl rows
+    await syncSourceUrls(prisma, allSourceRefs)
+
+    // Build link rows (resource -> URL)
+    const allLinkRows = sortedResources.flatMap((resource) => {
+      const resourceSlug = slugOf(resource)
       const resourceId = slugToId[resourceSlug]
       if (!resourceId) {
         throw new Error(
@@ -387,32 +403,62 @@ export async function syncAppCatalog(
 
       return (resource.sources ?? []).map((source) => {
         const url = typeof source === 'string' ? source : source.url
-        const sourceSlug = parseSourceSlug(url)
-        // A bare URL from config carries no schedule; an enriched source does,
-        // and it is the autoupdate registry's copy that wins on every sync.
-        const schedule =
-          typeof source === 'string' ? {} : (source.schedule ?? {})
-        return {
-          resourceId,
-          sourceSlug,
-          url,
-          parseDate: null,
-          excerpts: [],
-          userPrompt: null,
-          lastCheckedAt: asDate(schedule.lastCheckedAt),
-          nextCheckAfter: asDate(schedule.nextCheckAfter),
-          lastContentChangeAt: asDate(schedule.lastContentChangeAt),
-          checkIntervalHours: schedule.checkIntervalHours ?? null,
-          changeHistory: schedule.changeHistory ?? null,
-        }
+        return { owner: resourceId, url }
       })
     })
 
-    // Then sync all SourceReferences (with set semantics: old ones deleted, new ones created)
-    await tableSyncPrisma({
+    // Collect all synced resource IDs to handle deletions
+    const allOwnerIds = new Set(Object.values(slugToId))
+
+    // Sync all resource->source links (set semantics: old links deleted, new links created)
+    await syncSourceLinks(
       prisma,
-      ...TABLE_SYNC_MAGAZINE.SourceReference,
-    }).sync(allSourceRefs)
+      'DbResourceSourceUrl',
+      'resourceId',
+      allLinkRows,
+      allOwnerIds,
+    )
+
+    if (mcpServers) {
+      // Servers dropped from config are deleted; their links cascade.
+      await tableSyncPrisma({
+        prisma,
+        ...TABLE_SYNC_MAGAZINE.DbMcpServer,
+      }).sync(
+        mcpServers.map((s) => ({
+          slug: s.slug,
+          displayName: s.displayName,
+          description: s.description,
+          category: s.category,
+          aliases: s.aliases ?? [],
+          status: s.status,
+          access: s.access,
+          writeNote: s.writeNote ?? null,
+          sensitiveData: s.sensitiveData ?? null,
+          requiredAppSlugs: s.requiredAppSlugs ?? [],
+          auth: s.auth,
+          transport: s.transport,
+          tools: s.tools,
+          ownerSlug: s.ownerSlug ?? null,
+          support: s.support ?? null,
+        })),
+      )
+      await syncSourceLinks(
+        prisma,
+        'DbMcpServerSourceUrl',
+        'mcpServerSlug',
+        mcpServers.flatMap((s) =>
+          s.sources.map((source) => ({
+            owner: s.slug,
+            url: toSyncRef(source).url,
+          })),
+        ),
+        new Set(mcpServers.map((s) => s.slug)),
+      )
+    }
+
+    // Prune orphaned SourceUrl rows (URLs with no links)
+    await pruneOrphanedSourceUrls(prisma)
 
     // Seed aiMemory only for resources where the static config provides an initial value
     // and the DB currently has none. This preserves AI-written updates across restarts.
@@ -421,12 +467,7 @@ export async function syncAppCatalog(
     )
     if (resourcesWithAiMemorySeed.length > 0) {
       for (const resource of resourcesWithAiMemorySeed) {
-        const slug =
-          resource.slug ||
-          resource.displayName
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-+|-+$/g, '')
+        const slug = slugOf(resource)
         await prisma.dbResource.updateMany({
           where: { slug, aiMemory: null },
           data: { aiMemory: resource.aiMemory },

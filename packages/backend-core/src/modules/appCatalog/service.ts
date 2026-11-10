@@ -4,20 +4,23 @@ import type {
   AppApprovalMethod,
   AppCatalogData,
   AppCategory,
+  CatalogMcpServer,
   GroupingTagDefinition,
   Resource,
-  SourceCheck,
 } from '../../types/common/appCatalogTypes'
 import type { ServiceConfig } from '../../types/common/approvalMethodTypes'
 import type { Group, Person } from '../../types/common/personGroupTypes'
 import { omit } from 'radashi'
-import { parseSourceSlug } from '../../utils/parseSourceSlug'
 import { computeFreshness } from './freshness'
-import { computeSourcePulse } from './sourcePulse'
+import {
+  ensureSourceUrls,
+  syncSourceLinks,
+  toSourceReference,
+} from '../sources/sourcesDb'
 
-/** Prisma query result for DbResource with sourceRefs included (used by rowToResource) */
-type ResourceRowWithSourceRefs = Prisma.DbResourceGetPayload<{
-  include: { sourceRefs: true }
+/** Prisma query result for DbResource with sourceLinks included (used by rowToResource) */
+type ResourceRowWithSourceLinks = Prisma.DbResourceGetPayload<{
+  include: { sourceLinks: { include: { sourceUrl: true } } }
 }>
 
 function capitalize(word: string): string {
@@ -152,27 +155,16 @@ async function getAllApprovalMethodsFromPrisma(): Promise<AppApprovalMethod[]> {
   })
 }
 
-export function rowToResource(row: ResourceRowWithSourceRefs): Resource {
+export function rowToResource(row: ResourceRowWithSourceLinks): Resource {
   const accessRequest =
     row.accessRequest as unknown as Resource['accessRequest']
   const teams = (row.teams as unknown as string[] | null) ?? []
   const tags = (row.tags as unknown as Resource['tags']) ?? []
   const screenshotIds =
     (row.screenshotIds as unknown as Resource['screenshotIds']) ?? []
-  const sources = row.sourceRefs.map((ref) => ({
-    sourceSlug: ref.sourceSlug,
-    url: ref.url,
-    parseDate: ref.parseDate ? ref.parseDate.toISOString() : null,
-    // Derived here rather than shipped raw so the pulse mark can stay a dumb
-    // renderer, the same way `freshness` is computed for the entry below.
-    pulse: computeSourcePulse({
-      lastCheckedAt: ref.lastCheckedAt?.toISOString() ?? null,
-      nextCheckAfter: ref.nextCheckAfter?.toISOString() ?? null,
-      lastContentChangeAt: ref.lastContentChangeAt?.toISOString() ?? null,
-      checkIntervalHours: ref.checkIntervalHours,
-      changeHistory: ref.changeHistory as SourceCheck[] | null,
-    }),
-  }))
+  const sources = row.sourceLinks.map((link) =>
+    toSourceReference(link.sourceUrl),
+  )
   const notes = row.notes == null ? undefined : row.notes
   const background = row.background == null ? undefined : row.background
   const appUrl = row.appUrl == null ? undefined : row.appUrl
@@ -254,7 +246,7 @@ export async function getResourcesFromPrisma(): Promise<Resource[]> {
 
   const rows = await prisma.dbResource.findMany({
     include: {
-      sourceRefs: true,
+      sourceLinks: { include: { sourceUrl: true }, orderBy: { url: 'asc' } },
     },
   })
 
@@ -302,38 +294,32 @@ export async function updateApp(input: UpdateAppInput): Promise<Resource> {
   const updated = await prisma.dbResource.update({
     where: { id },
     data: updatePayload,
-    include: { sourceRefs: true },
+    include: {
+      sourceLinks: { include: { sourceUrl: true }, orderBy: { url: 'asc' } },
+    },
   })
 
   if (data.sources !== undefined) {
     const urls = [...new Set(data.sources.map((u) => u.trim()).filter(Boolean))]
-    const uniqueSourceSlugs = [...new Set(urls.map(parseSourceSlug))]
 
-    for (const sourceSlug of uniqueSourceSlugs) {
-      await prisma.source.upsert({
-        where: { slug: sourceSlug },
-        create: { slug: sourceSlug },
-        update: {},
-      })
-    }
+    // Ensure Source and SourceUrl rows exist without overwriting schedules
+    await ensureSourceUrls(prisma, urls)
 
-    await prisma.sourceReference.deleteMany({
-      where: { resourceId: updated.id },
-    })
-
-    if (urls.length > 0) {
-      await prisma.sourceReference.createMany({
-        data: urls.map((url) => ({
-          resourceId: updated.id,
-          sourceSlug: parseSourceSlug(url),
-          url: url.trim(),
-        })),
-      })
-    }
+    // Sync this resource's links only (pass allOwners to handle sources: [])
+    const linkRows = urls.map((url) => ({ owner: updated.id, url }))
+    await syncSourceLinks(
+      prisma,
+      'DbResourceSourceUrl',
+      'resourceId',
+      linkRows,
+      new Set([updated.id]),
+    )
 
     const refetched = await prisma.dbResource.findUnique({
       where: { id },
-      include: { sourceRefs: true },
+      include: {
+        sourceLinks: { include: { sourceUrl: true }, orderBy: { url: 'asc' } },
+      },
     })
     if (!refetched) throw new Error('Resource not found after update')
     return rowToResource(refetched)
@@ -361,7 +347,9 @@ export async function updateAiMemory(
   const updated = await prisma.dbResource.update({
     where: { id: input.id },
     data: { aiMemory: input.aiMemory },
-    include: { sourceRefs: true },
+    include: {
+      sourceLinks: { include: { sourceUrl: true }, orderBy: { url: 'asc' } },
+    },
   })
   return rowToResource(updated)
 }
@@ -405,6 +393,34 @@ export async function getGroupsFromPrisma(): Promise<Group[]> {
   }))
 }
 
+/** MCP servers from the boot sync, sorted by display name, sources with pulse. */
+export async function getMcpServersFromPrisma(): Promise<CatalogMcpServer[]> {
+  const rows = await getDbClient().dbMcpServer.findMany({
+    include: {
+      sourceLinks: { include: { sourceUrl: true }, orderBy: { url: 'asc' } },
+    },
+    orderBy: { displayName: 'asc' },
+  })
+  return rows.map((row) => ({
+    slug: row.slug,
+    displayName: row.displayName,
+    description: row.description,
+    category: row.category,
+    aliases: row.aliases,
+    status: row.status as CatalogMcpServer['status'],
+    access: row.access as CatalogMcpServer['access'],
+    writeNote: row.writeNote ?? undefined,
+    sensitiveData: row.sensitiveData ?? undefined,
+    requiredAppSlugs: row.requiredAppSlugs,
+    auth: row.auth as CatalogMcpServer['auth'],
+    transport: row.transport as CatalogMcpServer['transport'],
+    tools: row.tools as CatalogMcpServer['tools'],
+    ownerSlug: row.ownerSlug ?? undefined,
+    support: (row.support as CatalogMcpServer['support']) ?? undefined,
+    sources: row.sourceLinks.map((link) => toSourceReference(link.sourceUrl)),
+  }))
+}
+
 export async function getAppCatalogData(
   getResourcesOptional?: () => Promise<Resource[]>,
 ): Promise<AppCatalogData> {
@@ -414,6 +430,7 @@ export async function getAppCatalogData(
 
   return {
     resources,
+    mcpServers: await getMcpServersFromPrisma(),
     tagsDefinitions: await getGroupingTagDefinitionsFromPrisma(),
     approvalMethods: await getApprovalMethodsFromPrisma(),
     persons: await getPersonsFromPrisma(),
